@@ -2,11 +2,27 @@
 
 Cadence is a self-hosted running coach. **Coach Cade** reads your training from Tempo (a privacy-first running log), writes a weekly recap, talks the week through with you, and plans the next one. Everything lives in your own Postgres database. The only thing that leaves your machine is a lean, redacted packet sent to the model you choose (Anthropic, with your own API key), and you can see exactly what was sent.
 
+![Cadence Home: today's run, this week's plan, and a note from Coach Cade](docs/images/dark/hero.png)
+
 - Weekly loop: check-in, recap, coach analysis, next week's plan
 - A living "About you" profile that Coach Cade updates only with your approval
 - Mid-week chat, with a Tempo workout attached if you like
 - Works offline with a stub model and a Tempo export zip, so you can try it without spending anything
 - No login: run it on your home network or behind a VPN
+
+## Try the demo
+
+See Cadence with a season of sample data: Johnny Morrissey, a fictional runner ten weeks into a marathon block, frozen on the evening of Wed Oct 14 2026. No Tempo instance or API key needed.
+
+```bash
+git clone https://github.com/trevordavies095/cadence.git
+cd cadence
+scripts/demo.sh up
+```
+
+Open http://localhost:3001. The weekly reports, Coach Cade's replies and About you were produced by the real app and the live model from Johnny's runs and check-ins. New messages you send in the demo are answered by the offline stub, not the live coach.
+
+**The demo replaces the data in your local Cadence database.** It backs the database up to `.scratch/backups/` first and stops if the backup fails, but don't point it at an instance you use. How the demo is built: [`demo/README.md`](demo/README.md).
 
 ## Get started
 
@@ -59,6 +75,22 @@ stateDiagram-v2
 | **Plan** | Coach Cade analyses the week and plans the next one, day by day |
 | **MidWeek** | Chat, attach a run, and get feedback; the plan is adjusted if needed |
 | **ReviewNotes** | Coach Cade's suggested changes to "About you" wait for you to accept or reject them |
+
+**Your week.** The report built from your running log and your check-in: mileage against recent weeks, heart rate zones, and every run with what you said about it.
+
+![Your week: mileage, heart rate zones and runs for Oct 5 – 11](docs/images/dark/your-week.png)
+
+**The plan.** Coach Cade's read of the week and next week's plan, with the reasons behind each session.
+
+![Plan: Coach Cade's read of the week and the questions it answers](docs/images/dark/plan.png)
+
+**Coach Cade.** Chat during the week and attach a run. The coach reads the splits and heart rate, and changes the rest of the week if needed.
+
+![Coach Cade: a run attached to a message and the coach's split-by-split reply](docs/images/dark/coach-chat.png)
+
+**About you.** What Coach Cade knows about you. Changes it suggests wait for **Looks right**, and you can fix anything in your own words.
+
+![About you: a tidy-up waiting for approval](docs/images/dark/about-you.png)
 
 <details>
 <summary>Detailed lifecycle</summary>
@@ -174,7 +206,9 @@ Set `E2E_DATABASE_URL` to use a different server and `E2E_CLOCK_NOW` to pin anot
 | CORS | `CORS_ORIGIN` | Browser origin allowed by the API (default `http://localhost:3001`) |
 | Frontend → API | `API_SERVICE_URL` | Used by Next rewrites inside Compose (`http://api:5001`) |
 | Secret wrapping key | `DATA_PROTECTION_SECRET_KEY` | HKDF → AES-256-GCM for Tempo + Anthropic keys at rest |
-| Dev clock | `DEV_CLOCK_NOW` | ISO instant; fixes “now” for `/week` when not `NODE_ENV=production` |
+| Dev clock | `DEV_CLOCK_NOW` | ISO instant; fixes “now” when not `NODE_ENV=production`, or in production when `CADENCE_DEMO=1`. Read once at startup |
+| Demo mode | `CADENCE_DEMO` | `1` for the demo instance only: honours `DEV_CLOCK_NOW` in the production image, hides export runs after that clock, and counts the export and the stub as connected. Set by `scripts/demo.sh` |
+| Host ports | `POSTGRES_HOST_PORT`, `API_HOST_PORT`, `FRONTEND_HOST_PORT` | Compose host ports, default `5433` / `5002` / `3001` |
 | Athlete timezone | `ATHLETE_TIMEZONE` | IANA name (e.g. `America/New_York`), default `UTC`. One timezone for every route and page: current week, week boundaries, loop status. An explicit `?timezone=` still overrides. An invalid name stops the API at startup. |
 | LLM provider | `LLM_PROVIDER` | `stub` (default; offline, CI) or `anthropic` (live, uses the encrypted Anthropic key) |
 | Model | `ANTHROPIC_MODEL` | Live model id (default `claude-opus-4-7`) |
@@ -232,9 +266,9 @@ cd api && npm run dev
 | POST | `/dossier/proposals/:id/reject` | Reject → clears pending; dossier unchanged |
 | POST | `/dossier/corrections` | Athlete fix/add note → stub/live LLM rewrite as pending soft-gate proposal (+ thread messages); optional `weekSessionId` |
 | GET | `/dossier/audit` | Dossier audit cadence meta only (`lastAuditAt`, `nextAuditDueAt`, `due`, `intervalWeeks`) |
-| POST | `/dossier/audits` | Coach-initiated audit/trim soft-gate proposal when due (or `force: true`); stub LlmPort trims Current Status / coach-update sludge |
+| POST | `/dossier/audits` | Coach-initiated audit/trim soft-gate proposal when due (or `force: true`); the LlmPort (stub or live) folds coach updates into Current Status |
 | GET | `/onboarding` | Onboarding interview gate (`needs_onboarding` \| `ready` \| `complete`) + questionnaire + Tempo prefills — **403** until accepted |
-| POST | `/onboarding/answers` | Persist onboarding answers; stub LlmPort drafts dossier v1 soft-gate proposal + coach thread summary — **403** until accepted |
+| POST | `/onboarding/answers` | Persist onboarding answers; the LlmPort (stub or live) drafts the dossier v1 soft-gate proposal + coach thread summary — **403** until accepted |
 | GET | `/week` | Current ISO week Mon–Sun for injectable/dev clock (`?timezone=`, default `ATHLETE_TIMEZONE`) |
 | POST | `/weeks/current` | Get-or-create week session for clock “now” (`?timezone=`, default `ATHLETE_TIMEZONE`). Archives only weeks that started *before* it; a week that becomes current is un-archived — **403** until accepted |
 | GET | `/weeks` | List week sessions newest-first — **403** until accepted |

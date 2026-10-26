@@ -63,3 +63,6 @@ frontend/playwright-report/
 
 # Demo: snapshot written by a stub (no key) build; the committed one is demo/snapshot.sql
 /demo/snapshot.stub.sql
+
+# Demo screenshots: LinkedIn crops are for posting, not the repo
+/docs/images/**/linkedin-*.png

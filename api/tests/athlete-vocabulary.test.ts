@@ -10,6 +10,7 @@ import {
   formatDossierCorrectionThreadBody,
   formatDossierProposalThreadBody,
 } from "../src/llm/stub.js";
+import { buildProposedBodyFromSettingsBullets } from "../src/dossier/fromWeeklyReply.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import { buildModelPacket } from "../src/packet/index.js";
 import { PRIVACY_COPY } from "../src/privacy/copy.js";
@@ -147,6 +148,18 @@ describe("athlete vocabulary in system-written text", () => {
       expect(prompt).toMatch(/never write them or a short form such as W43/);
       expect(prompt).toMatch(/Oct 19 – 25/);
     }
+  });
+
+  it("dates Coach Cade's About you updates as a range, not a week id", () => {
+    const body = buildProposedBodyFromSettingsBullets({
+      currentBody: "# About you\n\n## Goal\nSub-3:30",
+      summaryBullets: ["Shoe preference: Endorphin Speed 4 for long runs with a marathon pace block."],
+      isoWeek: "2026-W42",
+    });
+    expect(body).toContain("## Coach update (Oct 12 – 18)");
+    expect(bannedTermsIn(body)).toEqual([]);
+    const fresh = buildProposedBodyFromSettingsBullets({ currentBody: "", summaryBullets: ["x"], isoWeek: null });
+    expect(fresh).toBe("# About you\n\n## Coach update (this week)\n\n- x\n");
   });
 
   it("never shows an ISO week label", () => {
