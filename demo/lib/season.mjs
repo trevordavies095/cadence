@@ -13,14 +13,29 @@ async function currentWeekSession() {
   return json;
 }
 
+/** How many times a failed weekly reply is retried before the build stops. */
+const REPLY_RETRIES = 2;
+
+/**
+ * Wait for the weekly reply. The live model sometimes returns output the API rejects
+ * (e.g. a safety notice over the length limit); retry those like the athlete would.
+ */
 async function waitForReply(weekSessionId, label) {
+  let retries = 0;
   const started = Date.now();
   for (;;) {
     const { json } = await api("GET", `/weeks/${weekSessionId}/reply-run`);
-    const status = json?.run?.status;
-    if (status === "ok") return json.run;
-    if (status === "failed") throw new Error(`${label}: reply run failed: ${JSON.stringify(json.run)}`);
-    if (Date.now() - started > REPLY_TIMEOUT_MS) throw new Error(`${label}: reply run timed out`);
+    const run = json?.run;
+    if (run?.status === "ok") return run;
+    if (run?.status === "failed") {
+      if (retries >= REPLY_RETRIES) {
+        throw new Error(`${label}: reply run failed ${retries + 1} times, last: ${run.errorMessage}`);
+      }
+      retries += 1;
+      console.log(`${label}: reply failed (${run.errorMessage}), retry ${retries} of ${REPLY_RETRIES}`);
+      await api("POST", `/weeks/${weekSessionId}/reply-run/retry`);
+    }
+    if (Date.now() - started > REPLY_TIMEOUT_MS * (retries + 1)) throw new Error(`${label}: reply run timed out`);
     await sleep(1500);
   }
 }

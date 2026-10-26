@@ -59,18 +59,27 @@ COMMIT;
 }
 
 /**
- * Every model call in the database must have come from the provider this build was meant to
- * use. A live build that quietly ran on the stub would publish placeholder coaching.
+ * The model calls that make the demo worth looking at must come from the provider this
+ * build was meant to use. A live build that quietly ran on the stub would publish
+ * placeholder coaching. Only the weekly reply and mid-week chat are checked: the live
+ * adapter hands the About you draft, corrections and the audit to the stub by design.
+ * Returns how many checked calls there were (0 is allowed, e.g. right after onboarding).
  */
+const LIVE_OPERATIONS = ["weekly_reply", "mid_week_chat"];
+
 export function assertProvider(expected) {
-  const found = sql("SELECT DISTINCT provider FROM llm_call_log ORDER BY 1;")
+  const rows = sql(
+    `SELECT operation || ':' || provider FROM llm_call_log
+     WHERE operation IN (${LIVE_OPERATIONS.map((o) => `'${o}'`).join(", ")}) ORDER BY 1;`,
+  )
     .trim()
     .split("\n")
     .filter(Boolean);
-  if (found.length === 0) throw new Error("no model calls were logged");
-  if (found.length !== 1 || found[0] !== expected) {
-    throw new Error(`expected every model call to be ${expected}, the call log has: ${found.join(", ")}`);
+  const wrong = [...new Set(rows.filter((r) => !r.endsWith(`:${expected}`)))];
+  if (wrong.length > 0) {
+    throw new Error(`expected weekly replies and chat from ${expected}, the call log has: ${wrong.join(", ")}`);
   }
+  return rows.length;
 }
 
 /** Delete the saved Anthropic key and Tempo credentials. The LLM call log stays. */
