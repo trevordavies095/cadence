@@ -267,6 +267,20 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
   });
 });
 
+describe("safety callout limits in the tool schema", () => {
+  it("tells the model the same limits the validator enforces", async () => {
+    const { safetyCalloutsJsonSchema, MAX_SAFETY_CALLOUT_BODY, MAX_SAFETY_CALLOUT_TITLE, MAX_SAFETY_CALLOUTS } =
+      await import("../src/llm/index.js");
+    const schema = safetyCalloutsJsonSchema() as {
+      maxItems: number;
+      items: { properties: { title: { maxLength: number }; body: { maxLength: number } } };
+    };
+    expect(schema.maxItems).toBe(MAX_SAFETY_CALLOUTS);
+    expect(schema.items.properties.title.maxLength).toBe(MAX_SAFETY_CALLOUT_TITLE);
+    expect(schema.items.properties.body.maxLength).toBe(MAX_SAFETY_CALLOUT_BODY);
+  });
+});
+
 describe("About you drafts on the live model (mocked Anthropic HTTP)", () => {
   const DRAFT = {
     summaryBullets: ["Goal: Lakeshore Marathon on Sun Nov 15, aiming for 3:30.", "You run Tue, Wed, Thu, Sat and Sun."],
