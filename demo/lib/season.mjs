@@ -1,8 +1,10 @@
 /**
  * Plays Johnny's season through the real API, following demo/athlete-script.json.
- * Each step pins the clock first (the API reads it once, at startup).
+ * Each step runs through runStep, which pins the clock first (the API reads it once, at
+ * startup) and records the real time it took.
  */
-import { api, setClock, sleep } from "./api.mjs";
+import { api, sleep } from "./api.mjs";
+import { runStep } from "./steps.mjs";
 
 const REPLY_TIMEOUT_MS = 20 * 60_000;
 
@@ -23,47 +25,105 @@ async function waitForReply(weekSessionId, label) {
   }
 }
 
+async function pendingNoteCards() {
+  const { json } = await api("GET", "/dossier/proposals");
+  return json.proposals;
+}
+
 /** Accept every pending note card ("Looks right"). Returns how many were accepted. */
 async function acceptPendingNoteCards() {
-  const { json } = await api("GET", "/dossier/proposals");
-  for (const p of json.proposals) {
+  const pending = await pendingNoteCards();
+  for (const p of pending) {
     await api("POST", `/dossier/proposals/${p.id}/accept`, {});
   }
-  return json.proposals.length;
+  return pending.length;
 }
 
 export async function playOnboarding(script) {
   const { onboarding } = script;
-  setClock(onboarding.at);
-  await api("POST", "/disclaimer/accept");
-  const session = await currentWeekSession();
-  const { json } = await api("POST", "/onboarding/answers", {
-    answers: onboarding.answers,
-    weekSessionId: session.id,
+  return runStep({ week: 0, label: "onboarding", at: onboarding.at }, async () => {
+    await api("POST", "/disclaimer/accept");
+    if (process.env.LLM_PROVIDER === "anthropic") {
+      await api("PUT", "/settings/anthropic", { apiKey: process.env.ANTHROPIC_API_KEY });
+    }
+    const session = await currentWeekSession();
+    const { json } = await api("POST", "/onboarding/answers", {
+      answers: onboarding.answers,
+      weekSessionId: session.id,
+    });
+    if (onboarding.acceptOnboardingNoteCard) {
+      await api("POST", `/dossier/proposals/${json.proposal.id}/accept`, {});
+    }
+    console.log("onboarding: About you drafted and accepted");
   });
-  if (onboarding.acceptOnboardingNoteCard) {
-    await api("POST", `/dossier/proposals/${json.proposal.id}/accept`, {});
-  }
-  console.log("onboarding: About you drafted and accepted");
 }
 
-/** Check-in, then Coach Cade's read and next week's plan. */
+/** Check-in, then Coach Cade's read and next week's plan; the athlete opens the plan. */
 export async function playWeek(script, entry) {
   const { week, isoWeek, checkIn } = entry;
   const label = `week ${week}`;
-  const clock = setClock(checkIn.at);
-  const session = await currentWeekSession();
-  if (session.isoWeek !== isoWeek) {
-    throw new Error(`${label}: expected ${isoWeek} at ${checkIn.at}, the API says ${session.isoWeek}`);
-  }
-  await api("POST", `/weeks/${session.id}/recap/subjective`, {
-    week: isoWeek,
-    runs: checkIn.runs,
-    weekly: checkIn.weekly,
+  return runStep({ week, label, at: checkIn.at }, async () => {
+    const session = await currentWeekSession();
+    if (session.isoWeek !== isoWeek) {
+      throw new Error(`${label}: expected ${isoWeek} at ${checkIn.at}, the API says ${session.isoWeek}`);
+    }
+    await api("POST", `/weeks/${session.id}/recap/subjective`, {
+      week: isoWeek,
+      runs: checkIn.runs,
+      weekly: checkIn.weekly,
+    });
+    await waitForReply(session.id, label);
+    await api("POST", `/weeks/${session.id}/reply-run/seen`);
+    const accepted = script.noteCards.weeks1to10 === "accept" ? await acceptPendingNoteCards() : 0;
+    console.log(`${label}: check-in saved, reply ok, ${accepted} note card(s) accepted`);
   });
-  await waitForReply(session.id, label);
-  const policy = script.noteCards.weeks1to10;
-  const accepted = policy === "accept" ? await acceptPendingNoteCards() : 0;
-  console.log(`${label}: check-in saved, reply ok, ${accepted} note card(s) accepted`);
+}
+
+async function findRun({ date, name }) {
+  const { json } = await api(
+    "GET",
+    `/tempo/workouts?startDate=${date}T00:00:00Z&endDate=${date}T23:59:59Z&pageSize=20`,
+  );
+  const run = json.items.find((r) => r.name === name);
+  if (!run) throw new Error(`no run "${name}" on ${date}`);
+  return run.id;
+}
+
+async function chat(script, message, { acceptAfter }) {
+  return runStep({ week: 11, label: `chat ${message.at}`, at: message.at }, async () => {
+    const session = await currentWeekSession();
+    if (session.isoWeek !== script.week11.isoWeek) {
+      throw new Error(`week 11: expected ${script.week11.isoWeek}, the API says ${session.isoWeek}`);
+    }
+    const body = { body: message.body };
+    if (message.attachRun) body.attachmentWorkoutId = await findRun(message.attachRun);
+    await api("POST", `/weeks/${session.id}/chat`, body);
+    const accepted = acceptAfter ? await acceptPendingNoteCards() : 0;
+    console.log(`week 11 chat ${message.at.slice(0, 16)}: sent${message.attachRun ? " with a run" : ""}, ${accepted} note card(s) accepted`);
+  });
+}
+
+/**
+ * Week 11, Monday to Wednesday evening. Note cards from Monday and Tuesday are accepted so
+ * only what Wednesday's reply proposes is left pending (the About you shot).
+ */
+export async function playWeek11(script) {
+  const { messages, fallbackIfNoNoteCard } = script.week11;
+  let clock = null;
+  for (const [i, message] of messages.entries()) {
+    const last = i === messages.length - 1;
+    clock = await chat(script, message, { acceptAfter: !last });
+  }
+  let pending = await pendingNoteCards();
+  if (pending.length === 0) {
+    console.log("week 11: no note card after Wednesday's message, sending the audit fallback");
+    clock = await chat(script, fallbackIfNoNoteCard, { acceptAfter: false });
+    pending = await pendingNoteCards();
+  }
+  if (pending.length !== 1) {
+    console.warn(`WARNING: expected exactly 1 pending note card, found ${pending.length}. Review before publishing.`);
+  } else {
+    console.log("week 11: 1 note card left pending");
+  }
   return clock;
 }

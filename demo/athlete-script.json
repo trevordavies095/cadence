@@ -264,7 +264,7 @@
 
   "week11": {
     "isoWeek": "2026-W42",
-    "intent": "Current week. Three messages Monday to Wednesday evening, ending at the demo clock (Wed Oct 14, 7:30 pm). Monday is a recovery question, Tuesday draws a plan tweak (move the Thursday session), Wednesday attaches the run and surfaces a memory-worthy fact to draw a pending note card. Coach Cade should connect the Achilles to September.",
+    "intent": "Current week. Three messages Monday to Wednesday evening, ending before the demo clock (Wed Oct 14, 7:30 pm), with room for a slow live reply. Monday is a recovery question, Tuesday draws a plan tweak (move the Thursday session), Wednesday attaches the run and surfaces a memory-worthy fact to draw a pending note card. Coach Cade should connect the Achilles to September.",
     "messages": [
       {
         "at": "2026-10-12T20:10:00-04:00",
@@ -275,14 +275,14 @@
         "body": "Easy 6 done this morning. It felt fine, pace around 9:10 and my heart rate stayed low. One thing: I have a work dinner on Thursday so I can't run the session in the morning. Can I swap it to Friday?"
       },
       {
-        "at": "2026-10-14T19:25:00-04:00",
+        "at": "2026-10-14T18:40:00-04:00",
         "attachRun": { "date": "2026-10-14", "name": "Medium-long 9" },
         "body": "Just finished the medium-long 9 this morning, attached. Felt easy for the first six miles. Around mile 7 my right Achilles felt a bit noticeable for a few minutes, then settled and was fine by the end. Nothing like September. For the rest of this block I want to do all my long runs and marathon pace work in the Endorphin Speed, since they have felt best. Do I need to change anything?"
       }
     ],
     "pendingNoteCardTarget": "The Wednesday reply should leave exactly one pending note card (the Achilles twinge and the shoe preference are both worth remembering). Do not accept it.",
     "fallbackIfNoNoteCard": {
-      "at": "2026-10-14T19:27:00-04:00",
+      "at": "2026-10-14T19:20:00-04:00",
       "body": "Can you audit my settings? I think it has got a bit long."
     }
   },

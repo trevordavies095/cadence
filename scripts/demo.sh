@@ -5,7 +5,9 @@
 #   scripts/demo.sh build [opts]    replay the season through the API and write a new snapshot
 #
 # build options:
-#   --through-week N    play onboarding and weeks 1..N (default 1)
+#   --through-week N    play onboarding, weeks 1..N, and (N = 11) the Mon-Wed chat (default 11)
+#   --from-week N       restore the checkpoint taken after week N-1 and replay from week N
+#   --live              use the live model (needs ANTHROPIC_API_KEY; costs money). Default: stub.
 #
 # Uses the default compose stack (project "cadence"). Every wipe backs up the database
 # to .scratch/backups/ first and aborts if the backup fails. Host ports follow
@@ -22,6 +24,7 @@ BACKUP_DIR=".scratch/backups"
 SNAPSHOT="demo/snapshot.sql"
 STUB_SNAPSHOT="demo/snapshot.stub.sql"
 CLOCK_TAG="-- cadence-demo-clock: "
+CHECKPOINT_ROOT=".scratch/demo-checkpoints"
 TIMEOUT_SEC="${DEMO_TIMEOUT_SEC:-180}"
 
 export API_HOST_PORT="${API_HOST_PORT:-5002}"
@@ -83,11 +86,17 @@ reset_db() {
   log "Reset ${DB_NAME}"
 }
 
-# (Re)create the API container with "now" pinned to $1 (ISO instant). The clock is read
-# once at startup, so every change of fictional time is a restart.
+# (Re)create the API container with "now" pinned to $1 (ISO instant), and the live model's
+# thinking effort to $2 when given. The clock is read once at startup, so every change of
+# fictional time is a restart.
 start_api() {
-  DEV_CLOCK_NOW="$1" "${COMPOSE[@]}" up -d --no-deps --force-recreate api >/dev/null
-  wait_for "http://localhost:${API_HOST_PORT}/ready" "API (clock ${1})"
+  ANTHROPIC_EFFORT="${2:-}" DEV_CLOCK_NOW="$1" "${COMPOSE[@]}" up -d --no-deps --force-recreate api >/dev/null
+  wait_for "http://localhost:${API_HOST_PORT}/ready" "API (clock ${1}${2:+, effort ${2}})"
+}
+
+restore_snapshot() {
+  pg -d "$DB_NAME" < "$1"
+  log "Restored $1"
 }
 
 # dump_snapshot FILE CLOCK
@@ -116,8 +125,7 @@ cmd_up() {
   start_postgres
   backup_db
   reset_db
-  pg -d "$DB_NAME" < "$snapshot"
-  log "Restored ${snapshot}"
+  restore_snapshot "$snapshot"
 
   export LLM_PROVIDER=stub
   export DEV_CLOCK_NOW="$clock"
@@ -129,29 +137,49 @@ cmd_up() {
 }
 
 cmd_build() {
-  local through=1
+  local through=11 from=0 live=0
   while (( $# )); do
     case "$1" in
       --through-week) through="${2:?--through-week needs a number}"; shift 2 ;;
+      --from-week) from="${2:?--from-week needs a number}"; shift 2 ;;
+      --live) live=1; shift ;;
       *) die "unknown build option: $1" ;;
     esac
   done
 
+  local mode=stub
+  if (( live )); then
+    [[ -n "${ANTHROPIC_API_KEY:-}" ]] || die "--live needs ANTHROPIC_API_KEY in the environment"
+    mode=live
+    export LLM_PROVIDER=anthropic
+  fi
+  local checkpoint_dir="${CHECKPOINT_ROOT}/${mode}"
+
+  # --from-week N resumes from the checkpoint taken after week N-1 (00 = after onboarding).
+  local checkpoint=""
+  if (( from > 0 )); then
+    checkpoint="${checkpoint_dir}/week-$(printf '%02d' $((from - 1))).sql"
+    [[ -f "$checkpoint" ]] || die "no checkpoint ${checkpoint}. Run a full build first."
+  fi
+
   start_postgres
   backup_db
   reset_db
+  [[ -z "$checkpoint" ]] || restore_snapshot "$checkpoint"
   "${COMPOSE[@]}" build api
-  exec node demo/build.mjs --through-week "$through"
+  exec node demo/build.mjs --through-week "$through" --from-week "$from" --checkpoints "$checkpoint_dir"
 }
 
 case "${1:-}" in
   up) shift; cmd_up "$@" ;;
   build) shift; cmd_build "$@" ;;
   # Internal: called by demo/build.mjs.
-  _clock) start_api "${2:?clock required}" ;;
+  _clock) start_api "${2:?clock required}" "${3:-}" ;;
   _dump) dump_snapshot "${2:?file required}" "${3:?clock required}" ;;
+  # Run SQL from stdin against the demo database (prints rows, no headers).
+  _sql) pg -d "$DB_NAME" -At ;;
   *)
-    sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,16p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 1
     ;;
 esac

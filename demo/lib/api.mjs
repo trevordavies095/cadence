@@ -58,10 +58,13 @@ export function api(method, route, body, { allow = [] } = {}) {
   });
 }
 
-/** Restart the API with "now" pinned to `when` (any Date-parseable string). Returns the ISO instant. */
-export function setClock(when) {
+/**
+ * Restart the API with "now" pinned to `when` (any Date-parseable string), and the live
+ * model's thinking effort set to `effort` when given. Returns the ISO instant.
+ */
+export function setClock(when, effort) {
   const iso = new Date(when).toISOString();
-  const r = spawnSync(DEMO_SH, ["_clock", iso], { stdio: "inherit" });
+  const r = spawnSync(DEMO_SH, effort ? ["_clock", iso, effort] : ["_clock", iso], { stdio: "inherit" });
   if (r.status !== 0) throw new Error(`could not restart the API at ${iso}`);
   return iso;
 }
@@ -70,6 +73,18 @@ export function setClock(when) {
 export function dumpSnapshot(file, clockIso) {
   const r = spawnSync(DEMO_SH, ["_dump", file, clockIso], { stdio: "inherit" });
   if (r.status !== 0) throw new Error(`snapshot dump to ${file} failed`);
+}
+
+/** Run SQL (stdin) against the demo database. Returns stdout; throws on any SQL error. */
+export function sql(text) {
+  const r = spawnSync(DEMO_SH, ["_sql"], { input: text, encoding: "utf8" });
+  if (r.status !== 0) throw new Error(`SQL failed: ${r.stderr || r.stdout}`);
+  return r.stdout;
+}
+
+/** The database's real wall clock, as a timestamptz literal with microseconds. */
+export function realNow() {
+  return sql("select clock_timestamp()::text;").trim();
 }
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
