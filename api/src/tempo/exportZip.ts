@@ -39,6 +39,12 @@ export type ExportTempoPortOptions = {
    * Disable to keep memory lower for huge exports when recap HR is not needed yet.
    */
   loadTimeSeries?: boolean;
+  /**
+   * When set, runs that start after this instant are invisible, as if the export
+   * had been taken then. The demo instance pins the clock in the past while the
+   * export holds runs up to its "now".
+   */
+  asOf?: () => Date;
 };
 
 export type ExportTempoBundle = {
@@ -372,6 +378,9 @@ export function createExportTempoPort(
     throw new TempoExportError("TEMPO_EXPORT_PATH is empty");
   }
   const loadTimeSeries = options.loadTimeSeries !== false;
+  const asOf = options.asOf;
+  const isVisible = (w: IndexedWorkout): boolean =>
+    !asOf || workoutStartedAtMs(w) <= asOf().getTime();
 
   let indexPromise: Promise<ExportIndex> | null = null;
 
@@ -389,7 +398,7 @@ export function createExportTempoPort(
     async listWorkouts(query: ListWorkoutsQuery = {}): Promise<ListWorkoutsResult> {
       const index = await getIndex();
       const filtered = sortWorkouts(
-        index.workouts.filter((w) => matchesQuery(w, query)),
+        index.workouts.filter((w) => isVisible(w) && matchesQuery(w, query)),
         query.sortBy,
         query.sortOrder,
       );
@@ -418,7 +427,7 @@ export function createExportTempoPort(
       }
       const index = await getIndex();
       const raw = index.workoutsById.get(trimmed);
-      if (!raw) return null;
+      if (!raw || !isVisible(raw)) return null;
       const splits = index.splitsByWorkoutId.get(trimmed) ?? [];
       const timeSeries = index.timeSeriesByWorkoutId.get(trimmed);
       const detailRaw: Record<string, unknown> = {

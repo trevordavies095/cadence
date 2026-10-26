@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { FixedClock, SystemClock } from "../src/clock/clock.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createDefaultClock,
+  FixedClock,
+  SystemClock,
+} from "../src/clock/clock.js";
 import { boundsForIsoWeek, resolveIsoWeek } from "../src/clock/isoWeek.js";
 import { createApp } from "../src/app.js";
 
@@ -70,5 +74,34 @@ describe("controllable clock + ISO week", () => {
     expect(body.isoWeek).toBe("2026-W01");
     expect(body.start).toBe("2025-12-29T00:00:00.000Z");
     expect(body.end).toBe("2026-01-04T23:59:59.999Z");
+  });
+});
+
+describe("createDefaultClock", () => {
+  const PINNED = "2026-10-14T23:30:00.000Z";
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("honours DEV_CLOCK_NOW outside production", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("DEV_CLOCK_NOW", PINNED);
+    vi.stubEnv("CADENCE_DEMO", "");
+    expect(createDefaultClock().now().toISOString()).toBe(PINNED);
+  });
+
+  it("ignores DEV_CLOCK_NOW in production without CADENCE_DEMO=1", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DEV_CLOCK_NOW", PINNED);
+    vi.stubEnv("CADENCE_DEMO", "");
+    expect(createDefaultClock()).toBeInstanceOf(SystemClock);
+  });
+
+  it("honours DEV_CLOCK_NOW in production when CADENCE_DEMO=1", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DEV_CLOCK_NOW", PINNED);
+    vi.stubEnv("CADENCE_DEMO", "1");
+    expect(createDefaultClock().now().toISOString()).toBe(PINNED);
   });
 });

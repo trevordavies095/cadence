@@ -1,0 +1,295 @@
+{
+  "_readme": "Everything Johnny Morrissey (fictional) says in the demo, played through the API by `demo.sh build`. Times are America/New_York (EDT, -04:00). Run dates match demo/tempo-export.zip. `intent` fields are reviewer notes and are ignored by the build. Status: DRAFT, awaiting maintainer approval (ticket 04).",
+  "athlete": {
+    "name": "Johnny Morrissey",
+    "timezone": "America/New_York",
+    "goal": "Lakeshore Marathon, Sun Nov 15 2026, target 3:30",
+    "story": "Recreational marathoner, fourth marathon, best 3:41. Weeks 1-5 build, week 6 Achilles tightness, week 7 reduced, week 8 back, weeks 9-10 peak, week 11 mid-week."
+  },
+
+  "onboarding": {
+    "at": "2026-08-03T07:00:00-04:00",
+    "intent": "Fresh start, Monday morning of week 1 (a rest day). Gives Coach Cade a goal, a real schedule, one history item and clear preferences. No Achilles mention: that arrives in week 6.",
+    "answers": {
+      "goal": "Lakeshore Marathon on Sunday Nov 15. It will be my fourth marathon. My best is 3:41 from two years ago and I want to run 3:30 this time.",
+      "schedule": "I run Tuesday, Wednesday, Thursday, Saturday and Sunday. Monday and Friday are off because of work travel. Weekday runs are early, around 6, before work, so about an hour at most. Saturday is an easy hour and Sunday is the long run. Roughly 6 to 7 hours a week, and more on long-run weeks. I took it easy in June and have been back at about 30 miles a week through July.",
+      "injuries_constraints": "Nothing right now. I had shin splints in my first marathon block, so I tend to ramp up carefully. I can't move the Monday and Friday rest days, and I travel for work about one week in six.",
+      "preferences": "Flat paved loops and a canal path for most runs, one hillier route on Thursdays. Sunday long run. I like to know why a session is in the plan. I'm happy to run hard on quality days but I want the easy days to be properly easy. Brooks Ghost for daily miles, Saucony Endorphin Speed for workouts."
+    },
+    "acceptOnboardingNoteCard": true
+  },
+
+  "weeks": [
+    {
+      "week": 1,
+      "isoWeek": "2026-W32",
+      "intent": "Settling in. Hot August, honest about effort. First question is the big one.",
+      "checkIn": {
+        "at": "2026-08-09T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-08-04", "rpe": 3, "felt": 7 },
+          { "date": "2026-08-05", "rpe": 4, "felt": 7 },
+          { "date": "2026-08-06", "rpe": 7, "felt": 6 },
+          { "date": "2026-08-08", "rpe": 3, "felt": 7 },
+          { "date": "2026-08-09", "rpe": 6, "felt": 6 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 7.1,
+          "sleep_range_hrs": [6.3, 7.8],
+          "strength_sessions": { "completed": 1, "planned": 2, "notes": "Skipped Friday, travelled for work." },
+          "stress_level": "Moderate. Normal work week.",
+          "body_check": "Fine. Legs a bit heavy on Thursday after the tempo.",
+          "feeling_into_next_week": "Keen. The heat is the main thing, it was 25 degrees at 6 am by Sunday.",
+          "questions_for_coach": ["Is 3:30 realistic for me from where I am now?"]
+        }
+      }
+    },
+    {
+      "week": 2,
+      "isoWeek": "2026-W33",
+      "intent": "First intervals. Heat makes everything feel harder; asks about adjusting.",
+      "checkIn": {
+        "at": "2026-08-16T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-08-11", "rpe": 4, "felt": 7 },
+          { "date": "2026-08-12", "rpe": 5, "felt": 7 },
+          { "date": "2026-08-13", "rpe": 8, "felt": 6 },
+          { "date": "2026-08-15", "rpe": 4, "felt": 7 },
+          { "date": "2026-08-16", "rpe": 6, "felt": 5 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 6.9,
+          "sleep_range_hrs": [6.0, 7.6],
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "stress_level": "Moderate.",
+          "body_check": "All fine. Sunday was a slog in the humidity but nothing hurts.",
+          "feeling_into_next_week": "Good. A bit worried the 800s were too fast early on.",
+          "questions_for_coach": ["Should I slow the long run down when it is this hot, or hold the pace?"]
+        }
+      }
+    },
+    {
+      "week": 3,
+      "isoWeek": "2026-W34",
+      "intent": "Biggest week so far, work stress up, sleep down. Tired by the weekend.",
+      "checkIn": {
+        "at": "2026-08-23T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-08-18", "rpe": 4, "felt": 6 },
+          { "date": "2026-08-19", "rpe": 5, "felt": 6 },
+          { "date": "2026-08-20", "rpe": 7, "felt": 6 },
+          { "date": "2026-08-22", "rpe": 4, "felt": 5 },
+          { "date": "2026-08-23", "rpe": 7, "felt": 5 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 6.4,
+          "sleep_range_hrs": [5.5, 7.2],
+          "strength_sessions": { "completed": 1, "planned": 2, "notes": "Too tired Wednesday evening." },
+          "stress_level": "High. Deadline at work, late nights Tuesday and Wednesday.",
+          "body_check": "Tired more than sore. Saturday's easy run felt like work.",
+          "feeling_into_next_week": "Hoping the next week eases off a bit.",
+          "questions_for_coach": ["My schedule gets tight when I travel for work. How should I handle missed runs?"]
+        }
+      }
+    },
+    {
+      "week": 4,
+      "isoWeek": "2026-W35",
+      "intent": "Cutback week lands well. Fresh, asks about fuelling for the longer runs ahead.",
+      "checkIn": {
+        "at": "2026-08-30T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-08-25", "rpe": 3, "felt": 8 },
+          { "date": "2026-08-26", "rpe": 4, "felt": 8 },
+          { "date": "2026-08-27", "rpe": 7, "felt": 8 },
+          { "date": "2026-08-29", "rpe": 3, "felt": 8 },
+          { "date": "2026-08-30", "rpe": 5, "felt": 8 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 7.4,
+          "sleep_range_hrs": [6.8, 8.1],
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "stress_level": "Low. Deadline done.",
+          "body_check": "Best I've felt in a month. Legs have some bounce again.",
+          "feeling_into_next_week": "Ready to go again.",
+          "questions_for_coach": ["What should I be eating and drinking on the long runs? I've mostly gone without so far."]
+        }
+      }
+    },
+    {
+      "week": 5,
+      "isoWeek": "2026-W36",
+      "intent": "Strong week: marathon pace session and a 16 miler with a fast finish. Confidence peak before the dip.",
+      "checkIn": {
+        "at": "2026-09-06T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-09-01", "rpe": 3, "felt": 8 },
+          { "date": "2026-09-02", "rpe": 5, "felt": 7 },
+          { "date": "2026-09-03", "rpe": 6, "felt": 8 },
+          { "date": "2026-09-05", "rpe": 3, "felt": 7 },
+          { "date": "2026-09-06", "rpe": 6, "felt": 7 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 7.2,
+          "sleep_range_hrs": [6.5, 7.9],
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "stress_level": "Low to moderate.",
+          "body_check": "Legs a little heavy after the long run, otherwise good.",
+          "feeling_into_next_week": "Confident. Marathon pace felt controlled for the first time.",
+          "questions_for_coach": ["Is it worth trying a gel on the long run next week, or keep it simple?"]
+        }
+      }
+    },
+    {
+      "week": 6,
+      "isoWeek": "2026-W37",
+      "intent": "The Achilles. Right Achilles tight on the Thursday tempo; he stops at 3 miles. Real worry, asks the question athletes ask. Pain notes carry through Saturday and Sunday.",
+      "checkIn": {
+        "at": "2026-09-13T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-09-08", "rpe": 3, "felt": 8 },
+          { "date": "2026-09-09", "rpe": 5, "felt": 7 },
+          { "date": "2026-09-10", "rpe": 7, "felt": 3, "pain": "Right Achilles tight from about mile 2 of the session. Got sharper as I picked up the pace, so I stopped at 3 miles and walked home." },
+          { "date": "2026-09-12", "rpe": 3, "felt": 5, "pain": "Achilles stiff for the first mile, eased after that. About a 3 out of 10." },
+          { "date": "2026-09-13", "rpe": 4, "felt": 6, "pain": "No pain while running. Stiff getting out of the car afterwards." }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 7.0,
+          "sleep_range_hrs": [6.2, 7.7],
+          "strength_sessions": { "completed": 1, "planned": 2, "notes": "Skipped the second one to rest the legs." },
+          "stress_level": "Moderate. Worried about the Achilles.",
+          "body_check": "Right Achilles, just above the heel. Tight and a bit tender to press. No swelling that I can see. It was fine until the tempo.",
+          "feeling_into_next_week": "Anxious. I don't want to throw away the block over this.",
+          "questions_for_coach": ["Should I stop running for a few days, or keep going with easy runs?", "How do I know if this is serious?"]
+        }
+      }
+    },
+    {
+      "week": 7,
+      "isoWeek": "2026-W38",
+      "intent": "Reduced week, easy running only, as the plan from week 6 asked. Pain fades through the week. Sees a physio mid-week and reports the clearance, so quality can return in week 8.",
+      "checkIn": {
+        "at": "2026-09-20T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-09-15", "rpe": 3, "felt": 6, "pain": "Slight tightness for the first half mile, about a 2 out of 10." },
+          { "date": "2026-09-16", "rpe": 3, "felt": 7, "pain": "A hint of it at the start only." },
+          { "date": "2026-09-17", "rpe": 3, "felt": 7 },
+          { "date": "2026-09-19", "rpe": 3, "felt": 8 },
+          { "date": "2026-09-20", "rpe": 4, "felt": 8 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 7.5,
+          "sleep_range_hrs": [6.9, 8.2],
+          "strength_sessions": { "completed": 2, "planned": 2, "notes": "Calf raises and slow heel drops." },
+          "stress_level": "Low. Easier at work.",
+          "body_check": "The Achilles is a lot better. Nothing at all on Saturday or Sunday, and not stiff afterwards. Saw a sports physio on Wednesday: mild Achilles tendinopathy, nothing torn. She cleared me to keep running, gave me slow heel drops twice a day, and said one short tempo next week is fine if the morning stiffness stays gone.",
+          "feeling_into_next_week": "Better. Frustrated about the missing miles but I can live with it.",
+          "questions_for_coach": ["The physio is happy for me to try a short tempo next week. Can we put one in?", "Does the missed week change what is realistic for race day?"]
+        }
+      }
+    },
+    {
+      "week": 8,
+      "isoWeek": "2026-W39",
+      "intent": "Back to normal volume, a short tempo with no pain. Relief. Asks about strength to keep it from coming back.",
+      "checkIn": {
+        "at": "2026-09-27T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-09-22", "rpe": 3, "felt": 8 },
+          { "date": "2026-09-23", "rpe": 4, "felt": 8 },
+          { "date": "2026-09-24", "rpe": 7, "felt": 7 },
+          { "date": "2026-09-26", "rpe": 3, "felt": 8 },
+          { "date": "2026-09-27", "rpe": 5, "felt": 8 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 7.4,
+          "sleep_range_hrs": [6.8, 8.0],
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "stress_level": "Low.",
+          "body_check": "Nothing. I kept checking for the Achilles on the tempo and it was fine.",
+          "feeling_into_next_week": "Relieved and ready to build again.",
+          "questions_for_coach": ["Is there anything I should keep doing for the Achilles through race day?"]
+        }
+      }
+    },
+    {
+      "week": 9,
+      "isoWeek": "2026-W40",
+      "intent": "Peak build begins. Strong marathon pace session and a 17 miler with the last 3 at race pace.",
+      "checkIn": {
+        "at": "2026-10-04T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-09-29", "rpe": 3, "felt": 8 },
+          { "date": "2026-09-30", "rpe": 5, "felt": 8 },
+          { "date": "2026-10-01", "rpe": 6, "felt": 8 },
+          { "date": "2026-10-03", "rpe": 3, "felt": 8 },
+          { "date": "2026-10-04", "rpe": 7, "felt": 7 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 7.5,
+          "sleep_range_hrs": [7.0, 8.0],
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "stress_level": "Low.",
+          "body_check": "Legs tired after the long run but nothing sore. Achilles quiet.",
+          "feeling_into_next_week": "Good. The last three miles at marathon pace were hard but I could have held it.",
+          "questions_for_coach": ["How should the final weeks before the race look?"]
+        }
+      }
+    },
+    {
+      "week": 10,
+      "isoWeek": "2026-W41",
+      "intent": "Peak week: mile repeats and a 20 miler. Tired, sleep slipping, honest about it. Sets up the week 11 chat.",
+      "checkIn": {
+        "at": "2026-10-11T16:00:00-04:00",
+        "runs": [
+          { "date": "2026-10-06", "rpe": 3, "felt": 7 },
+          { "date": "2026-10-07", "rpe": 5, "felt": 7 },
+          { "date": "2026-10-08", "rpe": 9, "felt": 6 },
+          { "date": "2026-10-10", "rpe": 3, "felt": 6 },
+          { "date": "2026-10-11", "rpe": 7, "felt": 6 }
+        ],
+        "weekly": {
+          "sleep_avg_hrs": 6.8,
+          "sleep_range_hrs": [6.0, 7.5],
+          "strength_sessions": { "completed": 1, "planned": 2, "notes": "Skipped Friday." },
+          "stress_level": "Moderate.",
+          "body_check": "Legs heavy, especially after the 20 miler. The Achilles was fine the whole way.",
+          "feeling_into_next_week": "Tired but pleased. The 20 miler was the longest training run I've done in two years.",
+          "questions_for_coach": ["Is my 3:30 target still sensible after this block?", "Is heavy legs on Monday normal after a 20 miler?"]
+        }
+      }
+    }
+  ],
+
+  "week11": {
+    "isoWeek": "2026-W42",
+    "intent": "Current week. Three messages Monday to Wednesday evening, ending before the demo clock (Wed Oct 14, 7:30 pm), with room for a slow live reply. Monday is a recovery question, Tuesday draws a plan tweak (Thursday becomes a short easy run, consistent with Wednesday's easy run in the log), Wednesday attaches the run and surfaces a memory-worthy fact to draw a pending note card. Coach Cade should connect the Achilles to September.",
+    "messages": [
+      {
+        "at": "2026-10-12T20:10:00-04:00",
+        "body": "Legs are heavy today after the 20 miler. Tuesday is an easy 6 as planned. Is it fine to keep it properly slow?"
+      },
+      {
+        "at": "2026-10-13T19:05:00-04:00",
+        "body": "Easy 6 done this morning. It felt fine, pace around 9:10 and my heart rate stayed low. One thing: I have an early work breakfast on Thursday, so I only have about 40 minutes that morning. Can Thursday be a short easy run instead of the tempo, and the marathon pace work move to Sunday's long run?"
+      },
+      {
+        "at": "2026-10-14T18:40:00-04:00",
+        "attachRun": { "date": "2026-10-14", "name": "Medium-long 9" },
+        "body": "Just finished the medium-long 9 this morning, attached. Felt easy for the first six miles. Around mile 7 my right Achilles felt a bit noticeable for a few minutes, then settled and was fine by the end. Nothing like September. For the rest of this block I want to do all my long runs and marathon pace work in the Endorphin Speed, since they have felt best. Do I need to change anything?"
+      }
+    ],
+    "pendingNoteCardTarget": "The Wednesday reply should leave exactly one pending note card (the Achilles twinge and the shoe preference are both worth remembering). Do not accept it.",
+    "fallbackIfNoNoteCard": {
+      "at": "2026-10-14T19:20:00-04:00",
+      "body": "Can you audit my settings? I think it has got a bit long."
+    }
+  },
+
+  "noteCards": {
+    "onboarding": "accept",
+    "weeks1to10": "accept",
+    "week11": "leave pending"
+  }
+}

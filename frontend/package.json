@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "e2e": "playwright test",
-    "e2e:report": "playwright show-report"
+    "e2e:report": "playwright show-report",
+    "demo:shots": "node scripts/demo-shots.mjs"
   },
   "dependencies": {
     "@tabler/icons-react": "^3.49.0",

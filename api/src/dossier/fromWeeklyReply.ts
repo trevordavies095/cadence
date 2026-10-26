@@ -1,3 +1,4 @@
+import { formatIsoWeekRangeShort } from "../clock/weekRangeShort.js";
 import {
   createDossierProposal,
   type DossierProposal,
@@ -15,7 +16,10 @@ export function buildProposedBodyFromSettingsBullets(input: {
 }): string {
   const bullets = input.summaryBullets.map((b) => b.trim()).filter(Boolean);
   const base = (input.currentBody ?? "").trimEnd();
-  const weekLabel = input.isoWeek?.trim() || "this week";
+  // The athlete reads these headings on About you: "Oct 12 – 18", never "2026-W42".
+  const weekLabel = input.isoWeek?.trim()
+    ? formatIsoWeekRangeShort(input.isoWeek)
+    : "this week";
   const section = [
     `## Coach update (${weekLabel})`,
     "",
@@ -23,7 +27,7 @@ export function buildProposedBodyFromSettingsBullets(input: {
   ].join("\n");
 
   if (!base) {
-    return `# Athlete dossier\n\n${section}\n`;
+    return `# About you\n\n${section}\n`;
   }
   return `${base}\n\n${section}\n`;
 }

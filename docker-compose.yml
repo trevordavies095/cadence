@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -32,6 +32,8 @@ services:
       # Override via .env for anything beyond local compose
       DATA_PROTECTION_SECRET_KEY: "${DATA_PROTECTION_SECRET_KEY:-change-me-local-dev-only-not-for-prod}"
       DEV_CLOCK_NOW: "${DEV_CLOCK_NOW:-}"
+      # Demo instance only: lets DEV_CLOCK_NOW apply inside the production image.
+      CADENCE_DEMO: "${CADENCE_DEMO:-}"
       # One timezone for every route/page (IANA name). Blank = UTC.
       ATHLETE_TIMEZONE: "${ATHLETE_TIMEZONE:-}"
       # Coach LLM: blank/stub = offline stub; anthropic = live (uses the saved Anthropic key).
@@ -43,7 +45,7 @@ services:
       # Optional: mount a Tempo export and set TEMPO_EXPORT_PATH to the in-container path
       TEMPO_EXPORT_PATH: "${TEMPO_EXPORT_PATH:-}"
     ports:
-      - "5002:5001"
+      - "${API_HOST_PORT:-5002}:5001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,7 +65,7 @@ services:
     environment:
       API_SERVICE_URL: "http://api:5001"
     ports:
-      - "3001:3000"
+      - "${FRONTEND_HOST_PORT:-3001}:3000"
     depends_on:
       api:
         condition: service_healthy

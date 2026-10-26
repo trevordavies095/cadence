@@ -10,6 +10,7 @@ import {
   formatDossierCorrectionThreadBody,
   formatDossierProposalThreadBody,
 } from "../src/llm/stub.js";
+import { buildProposedBodyFromSettingsBullets } from "../src/dossier/fromWeeklyReply.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import { buildModelPacket } from "../src/packet/index.js";
 import { PRIVACY_COPY } from "../src/privacy/copy.js";
@@ -131,6 +132,34 @@ describe("athlete vocabulary in system-written text", () => {
       expect(text).not.toMatch(/you are coach cade/i);
       expect(text).not.toMatch(/do not sign off/i);
     }
+  });
+
+  it("flags short and full week labels as banned, but not words that start with W", () => {
+    expect(bannedTermsIn("W43's long run")).toEqual(["week label"]);
+    expect(bannedTermsIn("build to peak over W42–W43")).toEqual(["week label"]);
+    expect(bannedTermsIn("the W38 note")).toEqual(["week label"]);
+    expect(bannedTermsIn("plan for 2026-W44")).toEqual(["week label"]);
+    expect(bannedTermsIn("Wednesday at 6 W, Week 4, wW3")).toEqual([]);
+  });
+
+  it("tells the live model never to write week labels", async () => {
+    const { MIDWEEK_SYSTEM_PROMPT, WEEKLY_SYSTEM_PROMPT } = await import("../src/llm/safety.js");
+    for (const prompt of [WEEKLY_SYSTEM_PROMPT, MIDWEEK_SYSTEM_PROMPT]) {
+      expect(prompt).toMatch(/never write them or a short form such as W43/);
+      expect(prompt).toMatch(/Oct 19 – 25/);
+    }
+  });
+
+  it("dates Coach Cade's About you updates as a range, not a week id", () => {
+    const body = buildProposedBodyFromSettingsBullets({
+      currentBody: "# About you\n\n## Goal\nSub-3:30",
+      summaryBullets: ["Shoe preference: Endorphin Speed 4 for long runs with a marathon pace block."],
+      isoWeek: "2026-W42",
+    });
+    expect(body).toContain("## Coach update (Oct 12 – 18)");
+    expect(bannedTermsIn(body)).toEqual([]);
+    const fresh = buildProposedBodyFromSettingsBullets({ currentBody: "", summaryBullets: ["x"], isoWeek: null });
+    expect(fresh).toBe("# About you\n\n## Coach update (this week)\n\n- x\n");
   });
 
   it("never shows an ISO week label", () => {

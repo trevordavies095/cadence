@@ -2,6 +2,7 @@ export {
   createAnthropicLlmPort,
   resolveAnthropicTimeoutMs,
   resolveDefaultLlmPort,
+  withCanonicalStance,
   type AnthropicLlmPortOptions,
 } from "./anthropic.js";
 export {
@@ -41,13 +42,17 @@ export {
   type SchemaResult,
 } from "./schema.js";
 export {
+  ATHLETE_WRITING_PROMPT,
   buildStubSafetyCallouts,
+  DOSSIER_AUDIT_SYSTEM_PROMPT,
+  DOSSIER_CORRECTION_SYSTEM_PROMPT,
+  DOSSIER_V1_SYSTEM_PROMPT,
   MIDWEEK_SYSTEM_PROMPT,
   SAFETY_CALLOUT_PROMPT,
   safetyCalloutsJsonSchema,
   WEEKLY_SYSTEM_PROMPT,
 } from "./safety.js";
-export { COACH_SYSTEM_STANCE } from "./stance.js";
+export { COACH_STANCE_SUMMARY, COACH_SYSTEM_STANCE } from "./stance.js";
 export {
   buildStubAttachedRunFeedback,
   buildStubDossierAudit,

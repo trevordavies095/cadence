@@ -581,7 +581,7 @@ export async function saveOnboardingAnswers(
   proposal: DossierProposal;
   coachMessage: ThreadMessage;
   llm: {
-    mode: "stub";
+    mode: "stub" | "anthropic";
     anthropicConfigured: boolean;
     systemStance: "coach_running_no_diagnose";
   };

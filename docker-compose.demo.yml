@@ -1,0 +1,9 @@
+# Demo instance: layered on docker-compose.yml by scripts/demo.sh. Mounts the synthetic
+# Tempo export so the API reads Johnny Morrissey's runs offline. The clock, timezone and
+# stub model come from the environment demo.sh sets (CADENCE_DEMO, DEV_CLOCK_NOW, ...).
+services:
+  api:
+    environment:
+      TEMPO_EXPORT_PATH: /demo/tempo-export.zip
+    volumes:
+      - ./demo/tempo-export.zip:/demo/tempo-export.zip:ro

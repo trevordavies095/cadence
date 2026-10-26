@@ -27,13 +27,15 @@ export function parseClockInstant(value: string): Date {
 }
 
 /**
- * Resolve clock for the process: DEV_CLOCK_NOW (ISO) when set and not production,
+ * Resolve clock for the process: DEV_CLOCK_NOW (ISO) when set and either not production
+ * or CADENCE_DEMO=1 (the demo instance pins "now" inside the production images),
  * otherwise system time.
  */
 export function createDefaultClock(): Clock {
   const override = process.env.DEV_CLOCK_NOW?.trim();
   const isProd = process.env.NODE_ENV === "production";
-  if (override && !isProd) {
+  const isDemo = process.env.CADENCE_DEMO === "1";
+  if (override && (!isProd || isDemo)) {
     return new FixedClock(parseClockInstant(override));
   }
   return new SystemClock();
