@@ -133,6 +133,22 @@ describe("athlete vocabulary in system-written text", () => {
     }
   });
 
+  it("flags short and full week labels as banned, but not words that start with W", () => {
+    expect(bannedTermsIn("W43's long run")).toEqual(["week label"]);
+    expect(bannedTermsIn("build to peak over W42–W43")).toEqual(["week label"]);
+    expect(bannedTermsIn("the W38 note")).toEqual(["week label"]);
+    expect(bannedTermsIn("plan for 2026-W44")).toEqual(["week label"]);
+    expect(bannedTermsIn("Wednesday at 6 W, Week 4, wW3")).toEqual([]);
+  });
+
+  it("tells the live model never to write week labels", async () => {
+    const { MIDWEEK_SYSTEM_PROMPT, WEEKLY_SYSTEM_PROMPT } = await import("../src/llm/safety.js");
+    for (const prompt of [WEEKLY_SYSTEM_PROMPT, MIDWEEK_SYSTEM_PROMPT]) {
+      expect(prompt).toMatch(/never write them or a short form such as W43/);
+      expect(prompt).toMatch(/Oct 19 – 25/);
+    }
+  });
+
   it("never shows an ISO week label", () => {
     for (const text of Object.values(texts())) {
       expect(text).not.toMatch(/\b\d{4}-W\d{2}\b/);

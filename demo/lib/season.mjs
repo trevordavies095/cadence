@@ -3,10 +3,26 @@
  * Each step runs through runStep, which pins the clock first (the API reads it once, at
  * startup) and records the real time it took.
  */
-import { api, sleep } from "./api.mjs";
+import { api, ApiError, sleep } from "./api.mjs";
 import { runStep } from "./steps.mjs";
 
 const REPLY_TIMEOUT_MS = 20 * 60_000;
+
+/**
+ * POST that the live model answers. A 502 means the model's output failed validation.
+ * Only for routes that save nothing else before the model replies (onboarding upserts
+ * its answers); the chat route saves the athlete's message first, so it is not retried.
+ */
+async function postToModel(route, body, label) {
+  for (let attemptNo = 0; ; attemptNo += 1) {
+    try {
+      return await api("POST", route, body);
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 502 || attemptNo >= REPLY_RETRIES) throw err;
+      console.log(`${label}: model output rejected (${err.body?.message ?? err.body?.error}), retry ${attemptNo + 1} of ${REPLY_RETRIES}`);
+    }
+  }
+}
 
 async function currentWeekSession() {
   const { json } = await api("POST", "/weeks/current");
@@ -62,10 +78,11 @@ export async function playOnboarding(script) {
       await api("PUT", "/settings/anthropic", { apiKey: process.env.ANTHROPIC_API_KEY });
     }
     const session = await currentWeekSession();
-    const { json } = await api("POST", "/onboarding/answers", {
-      answers: onboarding.answers,
-      weekSessionId: session.id,
-    });
+    const { json } = await postToModel(
+      "/onboarding/answers",
+      { answers: onboarding.answers, weekSessionId: session.id },
+      "onboarding",
+    );
     if (onboarding.acceptOnboardingNoteCard) {
       await api("POST", `/dossier/proposals/${json.proposal.id}/accept`, {});
     }

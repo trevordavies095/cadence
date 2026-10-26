@@ -59,25 +59,18 @@ COMMIT;
 }
 
 /**
- * The model calls that make the demo worth looking at must come from the provider this
- * build was meant to use. A live build that quietly ran on the stub would publish
- * placeholder coaching. Only the weekly reply and mid-week chat are checked: the live
- * adapter hands the About you draft, corrections and the audit to the stub by design.
- * Returns how many checked calls there were (0 is allowed, e.g. right after onboarding).
+ * Every model call must come from the provider this build was meant to use: a live build
+ * that quietly ran on the stub would publish placeholder coaching. Returns how many calls
+ * were checked.
  */
-const LIVE_OPERATIONS = ["weekly_reply", "mid_week_chat"];
-
 export function assertProvider(expected) {
-  const rows = sql(
-    `SELECT operation || ':' || provider FROM llm_call_log
-     WHERE operation IN (${LIVE_OPERATIONS.map((o) => `'${o}'`).join(", ")}) ORDER BY 1;`,
-  )
+  const rows = sql("SELECT operation || ':' || provider FROM llm_call_log ORDER BY 1;")
     .trim()
     .split("\n")
     .filter(Boolean);
   const wrong = [...new Set(rows.filter((r) => !r.endsWith(`:${expected}`)))];
   if (wrong.length > 0) {
-    throw new Error(`expected weekly replies and chat from ${expected}, the call log has: ${wrong.join(", ")}`);
+    throw new Error(`expected every model call to be ${expected}, the call log has: ${wrong.join(", ")}`);
   }
   return rows.length;
 }

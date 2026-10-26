@@ -19,22 +19,42 @@ import {
   type LlmCallOptions,
   type LlmPort,
 } from "./port.js";
+import { formatIsoWeekRangeShort } from "../clock/weekRangeShort.js";
 import {
+  DOSSIER_AUDIT_SYSTEM_PROMPT,
+  DOSSIER_CORRECTION_SYSTEM_PROMPT,
+  DOSSIER_V1_SYSTEM_PROMPT,
   MIDWEEK_SYSTEM_PROMPT,
   safetyCalloutsJsonSchema,
   WEEKLY_SYSTEM_PROMPT,
 } from "./safety.js";
 import {
   expectedPlanDates,
+  MAX_BULLET_LENGTH,
+  MAX_DOSSIER_BODY_LENGTH,
+  MAX_DOSSIER_SUMMARY_BULLETS,
+  validateDossierAuditDraft,
+  validateDossierCorrectionDraft,
+  validateDossierV1Draft,
   validateMidWeekChatReply,
   validateWeeklyReply,
 } from "./schema.js";
+import { COACH_STANCE_SUMMARY } from "./stance.js";
 import {
   createStubLlmPort,
   resolvePlanWeekStartMonday,
   resolveWeeklyPlanWeek,
 } from "./stub.js";
-import type { MidWeekChatReply, WeeklyReply } from "./types.js";
+import type {
+  DossierAuditDraft,
+  DossierAuditInput,
+  DossierCorrectionDraft,
+  DossierCorrectionInput,
+  DossierV1Draft,
+  DossierV1Input,
+  MidWeekChatReply,
+  WeeklyReply,
+} from "./types.js";
 
 /** Overall cap for one streamed coach call (adaptive thinking can run minutes). */
 const DEFAULT_TIMEOUT_MS = 900_000;
@@ -48,6 +68,7 @@ const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 const WEEKLY_TOOL_NAME = "submit_weekly_reply";
 const MIDWEEK_TOOL_NAME = "submit_mid_week_chat_reply";
+const ABOUT_YOU_TOOL_NAME = "submit_about_you";
 
 /**
  * Overall cap for an Anthropic call: ANTHROPIC_TIMEOUT_MS (positive integer
@@ -224,6 +245,112 @@ function midWeekChatReplyToolSchema() {
       safetyCallouts: safetyCalloutsJsonSchema(),
     },
   };
+}
+
+/** One tool for onboarding, Fix something and tidy-ups: note-card lines + the full document. */
+function aboutYouToolSchema(description: string) {
+  return {
+    name: ABOUT_YOU_TOOL_NAME,
+    description,
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["summaryBullets", "proposedBody"],
+      properties: {
+        summaryBullets: {
+          type: "array",
+          minItems: 1,
+          maxItems: MAX_DOSSIER_SUMMARY_BULLETS,
+          items: { type: "string", maxLength: MAX_BULLET_LENGTH },
+          description: "Lines on the athlete's note card, one fact or change each.",
+        },
+        proposedBody: {
+          type: "string",
+          description: "The whole About you document in Markdown (# About you, then ## sections).",
+        },
+      },
+    },
+  };
+}
+
+/**
+ * The Stance section is product text, not the model's: drop any the model wrote and
+ * put the canonical one straight after the title.
+ */
+export function withCanonicalStance(body: string): string {
+  const parts = body.replace(/\r\n/g, "\n").split(/^(?=## )/m);
+  const preface = parts[0]!.startsWith("## ") ? "" : parts.shift()!.trim();
+  const sections = parts.filter((p) => !/^## +Stance\b/i.test(p)).map((p) => p.trim());
+  return [
+    preface || "# About you",
+    `## Stance\n${COACH_STANCE_SUMMARY}`,
+    ...sections,
+  ].join("\n\n");
+}
+
+/** Validate a draft, then enforce the Stance section and the length cap on the result. */
+function validateAboutYou<T extends DossierV1Draft>(
+  validate: (raw: unknown) => { ok: true; value: T } | { ok: false; error: string },
+): (raw: unknown) => { ok: true; value: T } | { ok: false; error: string } {
+  return (raw) => {
+    const checked = validate(raw);
+    if (!checked.ok) return checked;
+    const proposedBody = withCanonicalStance(checked.value.proposedBody);
+    if (proposedBody.length > MAX_DOSSIER_BODY_LENGTH) {
+      return { ok: false, error: `proposedBody must be at most ${MAX_DOSSIER_BODY_LENGTH} characters` };
+    }
+    return { ok: true, value: { ...checked.value, proposedBody } };
+  };
+}
+
+/** "Wed Oct 14" for an ISO instant (UTC calendar day). */
+function dayLabel(iso: string): string {
+  const d = new Date(iso);
+  const weekday = d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+  const month = d.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+  return `${weekday} ${month} ${d.getUTCDate()}`;
+}
+
+function weekLabelOf(week: { isoWeek?: string | null } | null | undefined): string | null {
+  const iso = week?.isoWeek?.trim();
+  return iso ? formatIsoWeekRangeShort(iso) : null;
+}
+
+function buildDossierV1UserPrompt(input: DossierV1Input): string {
+  return [
+    "Write the athlete's first About you document from their onboarding answers and what their running log shows.",
+    "Call the submit_about_you tool exactly once.",
+    "Onboarding answers and running-log hints (no identity PII or GPS):",
+    JSON.stringify(input),
+  ].join("\n");
+}
+
+function buildDossierCorrectionUserPrompt(input: DossierCorrectionInput): string {
+  const week = weekLabelOf(input.week);
+  return [
+    week ? `This week: ${week}` : null,
+    "The athlete asked you to fix or add this:",
+    input.athleteMessage.trim(),
+    "Call the submit_about_you tool exactly once with the whole updated document.",
+    "Current About you document:",
+    input.currentDossier.body,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
+function buildDossierAuditUserPrompt(input: DossierAuditInput): string {
+  const nowIso = input.nowIso ?? new Date().toISOString();
+  const intervalWeeks = input.intervalWeeks ?? 5;
+  const next = new Date(Date.parse(nowIso) + intervalWeeks * 7 * 86_400_000).toISOString();
+  const week = weekLabelOf(input.week);
+  return [
+    `Today: ${dayLabel(nowIso)}${week ? ` (week of ${week})` : ""}`,
+    `Next tidy-up due: ${dayLabel(next)} (every ${intervalWeeks} weeks)`,
+    "Tidy the document below. Call the submit_about_you tool exactly once with the whole tidied document.",
+    "Current About you document:",
+    input.currentDossier.body,
+  ].join("\n");
 }
 
 function buildWeeklyUserPrompt(
@@ -546,8 +673,8 @@ async function callAnthropicMessages(options: {
 
 /**
  * Live LlmPort against Anthropic Messages API using the encrypted BYO key.
- * Weekly plan + mid-week chat/attach feedback are live; dossier v1 / dossier
- * correction / dossier audit stay on the stub until their live adapters land.
+ * Weekly plan, mid-week chat/attach feedback and the About you drafts (onboarding,
+ * Fix something, tidy-up) are all live.
  */
 export function createAnthropicLlmPort(
   options?: AnthropicLlmPortOptions,
@@ -569,7 +696,6 @@ export function createAnthropicLlmPort(
     });
   const recorder = options?.recorder ?? createPostgresLlmCallRecorder();
   const appVersion = options?.appVersion ?? resolveAppVersion();
-  const stub = createStubLlmPort({ recorder, appVersion });
   /**
    * Adaptive thinking with readable summaries. tool_choice stays "auto": a
    * forced tool skips the thinking block, so the prompt asks for the tool call.
@@ -688,6 +814,45 @@ export function createAnthropicLlmPort(
     }
   }
 
+  /** One About you call: same key check, reasoning params, logging and validation as the coach replies. */
+  async function aboutYou<T>(
+    operation: LlmCallOperation,
+    callOptions: LlmCallOptions | undefined,
+    system: string,
+    toolDescription: string,
+    userPrompt: string,
+    validate: (raw: unknown) => { ok: true; value: T } | { ok: false; error: string },
+  ): Promise<T> {
+    const apiKey = await readApiKey();
+    if (!apiKey) {
+      throw new LlmNotConfiguredError();
+    }
+    const requestBody: AnthropicMessagesRequest = {
+      model,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      system,
+      tools: [aboutYouToolSchema(toolDescription)],
+      ...REASONING_PARAMS,
+      messages: [{ role: "user", content: userPrompt }],
+    };
+    return attempt(
+      operation,
+      callOptions,
+      requestBody,
+      () =>
+        callAnthropicMessages({
+          apiKey,
+          apiUrl,
+          timeoutMs,
+          idleTimeoutMs,
+          fetchImpl,
+          toolName: ABOUT_YOU_TOOL_NAME,
+          requestBody,
+        }),
+      validate,
+    );
+  }
+
   return {
     async generateWeeklyReply(
       packet: ModelPacket,
@@ -790,9 +955,47 @@ export function createAnthropicLlmPort(
       );
     },
 
-    generateDossierV1: stub.generateDossierV1,
-    generateDossierCorrection: stub.generateDossierCorrection,
-    generateDossierAudit: stub.generateDossierAudit,
+    async generateDossierV1(
+      input: DossierV1Input,
+      callOptions?: LlmCallOptions,
+    ): Promise<DossierV1Draft> {
+      return aboutYou(
+        "dossier_v1",
+        callOptions,
+        DOSSIER_V1_SYSTEM_PROMPT,
+        "Submit the athlete's first About you document and the note-card summary.",
+        buildDossierV1UserPrompt(input),
+        validateAboutYou(validateDossierV1Draft),
+      );
+    },
+
+    async generateDossierCorrection(
+      input: DossierCorrectionInput,
+      callOptions?: LlmCallOptions,
+    ): Promise<DossierCorrectionDraft> {
+      return aboutYou(
+        "dossier_correction",
+        callOptions,
+        DOSSIER_CORRECTION_SYSTEM_PROMPT,
+        "Submit the corrected About you document and what changed.",
+        buildDossierCorrectionUserPrompt(input),
+        validateAboutYou(validateDossierCorrectionDraft),
+      );
+    },
+
+    async generateDossierAudit(
+      input: DossierAuditInput,
+      callOptions?: LlmCallOptions,
+    ): Promise<DossierAuditDraft> {
+      return aboutYou(
+        "dossier_audit",
+        callOptions,
+        DOSSIER_AUDIT_SYSTEM_PROMPT,
+        "Submit the tidied About you document and what changed.",
+        buildDossierAuditUserPrompt(input),
+        validateAboutYou(validateDossierAuditDraft),
+      );
+    },
   };
 }
 

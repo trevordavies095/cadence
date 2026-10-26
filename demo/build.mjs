@@ -52,13 +52,13 @@ async function main() {
 
   if (opts.from === 0) {
     clock = await playOnboarding(script);
+    // Fail on the first model call, not after the whole season.
+    assertProvider(PROVIDER);
     checkpoint(0, clock);
   }
   for (const entry of script.weeks) {
     if (entry.week < Math.max(opts.from, 1) || entry.week > opts.through) continue;
     clock = await playWeek(script, entry);
-    // Fail on the first weekly reply, not after the whole season.
-    assertProvider(PROVIDER);
     checkpoint(entry.week, clock);
   }
   if (opts.through === 11 && opts.from <= 11) {
@@ -67,7 +67,7 @@ async function main() {
   }
 
   // Publishing: move stamps into the fiction, remove secrets, dump, check for leaks.
-  if (assertProvider(PROVIDER) === 0) throw new Error("no weekly replies or chat were logged");
+  if (assertProvider(PROVIDER) === 0) throw new Error("no model calls were logged");
   const moved = fixTimestamps(recordedSteps());
   console.log(`timestamps: ${moved} value(s) moved into the fiction`);
   scrubSecrets();

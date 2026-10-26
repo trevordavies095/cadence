@@ -11,7 +11,11 @@ import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
+  COACH_STANCE_SUMMARY,
   COACH_SYSTEM_STANCE,
+  DOSSIER_AUDIT_SYSTEM_PROMPT,
+  DOSSIER_CORRECTION_SYSTEM_PROMPT,
+  DOSSIER_V1_SYSTEM_PROMPT,
   MIDWEEK_SYSTEM_PROMPT,
   WEEKLY_SYSTEM_PROMPT,
   buildStubMidWeekChatReply,
@@ -24,6 +28,7 @@ import {
   resolveDefaultLlmPort,
   validateMidWeekChatReply,
   validateWeeklyReply,
+  withCanonicalStance,
   type MidWeekChatReply,
   type WeeklyReply,
 } from "../src/llm/index.js";
@@ -259,6 +264,109 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
     await expect(
       port.generateMidWeekChatReply(samplePacket()),
     ).rejects.toBeInstanceOf(LlmNotConfiguredError);
+  });
+});
+
+describe("About you drafts on the live model (mocked Anthropic HTTP)", () => {
+  const DRAFT = {
+    summaryBullets: ["Goal: Lakeshore Marathon on Sun Nov 15, aiming for 3:30.", "You run Tue, Wed, Thu, Sat and Sun."],
+    proposedBody: [
+      "# About you",
+      "",
+      "## Stance",
+      "Model-written stance that must not survive.",
+      "",
+      "## Goal",
+      "Lakeshore Marathon on Sun Nov 15, aiming for 3:30.",
+    ].join("\n"),
+  };
+
+  function capture() {
+    const seen: Array<{ system: string; user: string; tool: string }> = [];
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as {
+        system: string;
+        tools: Array<{ name: string }>;
+        messages: Array<{ content: string }>;
+      };
+      seen.push({ system: body.system, user: body.messages[0]!.content, tool: body.tools[0]!.name });
+      return anthropicStreamResponse(anthropicToolMessage("submit_about_you", DRAFT));
+    }) as unknown as typeof globalThis.fetch;
+    const port = createAnthropicLlmPort({ fetchImpl, readApiKey: async () => API_KEY });
+    return { port, seen };
+  }
+
+  it("onboarding draft goes to the model, with the canonical Stance put back", async () => {
+    const { port, seen } = capture();
+    const draft = await port.generateDossierV1({
+      answers: { goal: "Lakeshore Marathon, 3:30", schedule: "Tue Wed Thu Sat Sun" },
+      prefills: { available: false },
+    });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.tool).toBe("submit_about_you");
+    expect(seen[0]!.system).toBe(DOSSIER_V1_SYSTEM_PROMPT);
+    expect(seen[0]!.user).toContain("Lakeshore Marathon, 3:30");
+    expect(draft.summaryBullets).toEqual(DRAFT.summaryBullets);
+    expect(draft.proposedBody).toContain(`## Stance\n${COACH_STANCE_SUMMARY}`);
+    expect(draft.proposedBody).not.toContain("Model-written stance");
+    expect(draft.proposedBody).toContain("## Goal");
+  });
+
+  it("Fix something sends the athlete's sentence and the current document", async () => {
+    const { port, seen } = capture();
+    await port.generateDossierCorrection({
+      athleteMessage: "I can run on Mondays now.",
+      currentDossier: { versionId: 3, body: "# About you\n\n## Schedule\nTue Thu" },
+      week: { isoWeek: "2026-W42" },
+    });
+    expect(seen[0]!.system).toBe(DOSSIER_CORRECTION_SYSTEM_PROMPT);
+    expect(seen[0]!.user).toContain("I can run on Mondays now.");
+    expect(seen[0]!.user).toContain("## Schedule\nTue Thu");
+    expect(seen[0]!.user).toContain("This week: Oct 12 – 18");
+    expect(seen[0]!.user).not.toMatch(/2026-W42/);
+  });
+
+  it("tidy-up gives the model dates in the athlete's format, not raw ones", async () => {
+    const { port, seen } = capture();
+    await port.generateDossierAudit({
+      currentDossier: { versionId: 7, body: "# About you\n\n## Coach update (Oct 5 – 11)\n- Achilles quiet" },
+      week: { isoWeek: "2026-W42" },
+      nowIso: "2026-10-14T23:20:00.000Z",
+      intervalWeeks: 5,
+    });
+    expect(seen[0]!.system).toBe(DOSSIER_AUDIT_SYSTEM_PROMPT);
+    expect(seen[0]!.user).toContain("Today: Wed Oct 14 (week of Oct 12 – 18)");
+    expect(seen[0]!.user).toContain("Next tidy-up due: Wed Nov 18 (every 5 weeks)");
+    expect(seen[0]!.user).not.toMatch(/2026-W42|2026-11-18/);
+  });
+
+  it("rejects a draft with no note-card lines", async () => {
+    const fetchImpl = vi.fn(async () =>
+      anthropicStreamResponse(
+        anthropicToolMessage("submit_about_you", { summaryBullets: [], proposedBody: "# About you" }),
+      ),
+    ) as unknown as typeof globalThis.fetch;
+    const port = createAnthropicLlmPort({ fetchImpl, readApiKey: async () => API_KEY });
+    await expect(
+      port.generateDossierV1({ answers: { goal: "g", schedule: "s" }, prefills: { available: false } }),
+    ).rejects.toBeInstanceOf(LlmSchemaError);
+  });
+
+  it("all three prompts carry the persona, vocabulary and writing rules", () => {
+    for (const p of [DOSSIER_V1_SYSTEM_PROMPT, DOSSIER_CORRECTION_SYSTEM_PROMPT, DOSSIER_AUDIT_SYSTEM_PROMPT]) {
+      expect(p).toMatch(PERSONA_IDENTITY);
+      expect(p).toMatch(NO_SIGN_OFF);
+      expect(p).toMatch(/never write them or a short form such as W43/);
+      expect(p).toMatch(/never as 2026-10-19/);
+      expect(p).toMatch(/Do not write a Stance section/);
+    }
+  });
+
+  it("withCanonicalStance adds a missing title and Stance, and keeps the other sections in order", () => {
+    const out = withCanonicalStance("## Goal\nRun 3:30\n\n## Stance\nold\n\n## Schedule\nTue");
+    expect(out).toBe(
+      `# About you\n\n## Stance\n${COACH_STANCE_SUMMARY}\n\n## Goal\nRun 3:30\n\n## Schedule\nTue`,
+    );
   });
 });
 

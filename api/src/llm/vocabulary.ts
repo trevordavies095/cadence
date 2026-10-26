@@ -33,11 +33,15 @@ export const ATHLETE_BANNED_TERMS = [
 /** The coach is only ever "Coach Cade"; a bare "Cade" is banned. */
 const BARE_CADE = /(?<!Coach )\bCade\b/;
 
+/** Week ids, full (2026-W43) or short (W43, W43's, W42–W43): weeks are shown as dates. */
+const WEEK_LABEL = /(?<![\w-])(?:\d{4}-)?W\d{1,2}(?![\d])/;
+
 export function bannedTermsIn(text: string): string[] {
   const found: string[] = ATHLETE_BANNED_TERMS.filter((term) => {
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     return new RegExp(`(^|[^\\w-])${escaped}($|[^\\w-])`, "i").test(text);
   });
   if (BARE_CADE.test(text)) found.push("Cade");
+  if (WEEK_LABEL.test(text)) found.push("week label");
   return found;
 }

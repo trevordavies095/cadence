@@ -167,7 +167,7 @@
     {
       "week": 7,
       "isoWeek": "2026-W38",
-      "intent": "Reduced week, easy running only, as the plan from week 6 asked. Pain fades through the week. Asks when speed comes back.",
+      "intent": "Reduced week, easy running only, as the plan from week 6 asked. Pain fades through the week. Sees a physio mid-week and reports the clearance, so quality can return in week 8.",
       "checkIn": {
         "at": "2026-09-20T16:00:00-04:00",
         "runs": [
@@ -182,9 +182,9 @@
           "sleep_range_hrs": [6.9, 8.2],
           "strength_sessions": { "completed": 2, "planned": 2, "notes": "Calf raises and slow heel drops." },
           "stress_level": "Low. Easier at work.",
-          "body_check": "The Achilles is a lot better. Nothing at all on Saturday or Sunday, and not stiff afterwards.",
+          "body_check": "The Achilles is a lot better. Nothing at all on Saturday or Sunday, and not stiff afterwards. Saw a sports physio on Wednesday: mild Achilles tendinopathy, nothing torn. She cleared me to keep running, gave me slow heel drops twice a day, and said one short tempo next week is fine if the morning stiffness stays gone.",
           "feeling_into_next_week": "Better. Frustrated about the missing miles but I can live with it.",
-          "questions_for_coach": ["When can I do a hard session again?", "Does the missed week change what is realistic for race day?"]
+          "questions_for_coach": ["The physio is happy for me to try a short tempo next week. Can we put one in?", "Does the missed week change what is realistic for race day?"]
         }
       }
     },
@@ -264,7 +264,7 @@
 
   "week11": {
     "isoWeek": "2026-W42",
-    "intent": "Current week. Three messages Monday to Wednesday evening, ending before the demo clock (Wed Oct 14, 7:30 pm), with room for a slow live reply. Monday is a recovery question, Tuesday draws a plan tweak (move the Thursday session), Wednesday attaches the run and surfaces a memory-worthy fact to draw a pending note card. Coach Cade should connect the Achilles to September.",
+    "intent": "Current week. Three messages Monday to Wednesday evening, ending before the demo clock (Wed Oct 14, 7:30 pm), with room for a slow live reply. Monday is a recovery question, Tuesday draws a plan tweak (Thursday becomes a short easy run, consistent with Wednesday's easy run in the log), Wednesday attaches the run and surfaces a memory-worthy fact to draw a pending note card. Coach Cade should connect the Achilles to September.",
     "messages": [
       {
         "at": "2026-10-12T20:10:00-04:00",
@@ -272,7 +272,7 @@
       },
       {
         "at": "2026-10-13T19:05:00-04:00",
-        "body": "Easy 6 done this morning. It felt fine, pace around 9:10 and my heart rate stayed low. One thing: I have a work dinner on Thursday so I can't run the session in the morning. Can I swap it to Friday?"
+        "body": "Easy 6 done this morning. It felt fine, pace around 9:10 and my heart rate stayed low. One thing: I have an early work breakfast on Thursday, so I only have about 40 minutes that morning. Can Thursday be a short easy run instead of the tempo, and the marathon pace work move to Sunday's long run?"
       },
       {
         "at": "2026-10-14T18:40:00-04:00",

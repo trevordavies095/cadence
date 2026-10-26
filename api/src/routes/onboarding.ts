@@ -141,7 +141,10 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
         proposal,
         coachMessage,
         llm: {
-          mode: "stub" as const,
+          mode:
+            (process.env.LLM_PROVIDER ?? "stub").trim().toLowerCase() === "anthropic"
+              ? ("anthropic" as const)
+              : ("stub" as const),
           anthropicConfigured: anthropic.configured,
           systemStance: "coach_running_no_diagnose" as const,
         },
