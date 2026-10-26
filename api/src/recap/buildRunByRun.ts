@@ -1,0 +1,275 @@
+import { listAllWorkoutsInWindow } from "./listWindow.js";
+import type { WeekSession } from "../week/store.js";
+import type {
+  TempoPort,
+  TempoShoe,
+  TempoUnitPreference,
+  TempoWorkoutDetail,
+  TempoWorkoutSummary,
+} from "../tempo/port.js";
+import { resolveRecapUnit } from "./buildSummary.js";
+import {
+  buildRunByRunMarkdown,
+  cadenceRpmToSpm,
+  formatSplitPaceList,
+  formatTitleDate,
+} from "./runByRunFormat.js";
+import { percentMaxHr, resolveConfiguredMaxHr } from "./maxHr.js";
+import { computeRunHrMetrics, driftSeverityLabel } from "./runByRunHr.js";
+import {
+  formatSimilarRouteText,
+  formatWeather,
+} from "./similarRouteLine.js";
+import { loadRecapWorkoutDetails } from "./workoutDetails.js";
+import type {
+  RecapRunByRunResult,
+  RunByRunEntry,
+  RunByRunShoe,
+  RunByRunSplit,
+} from "./runByRunTypes.js";
+import type { WeekWindow } from "./weekWindows.js";
+
+const METERS_PER_MILE = 1609.344;
+
+type ShoeLookup = Map<string, RunByRunShoe>;
+
+function shoeMileageMi(shoe: TempoShoe): number | undefined {
+  if (
+    typeof shoe.totalMileage === "number" &&
+    Number.isFinite(shoe.totalMileage) &&
+    shoe.totalMileage >= 0
+  ) {
+    if (shoe.totalMileage > 500) return shoe.totalMileage / METERS_PER_MILE;
+    return shoe.totalMileage;
+  }
+  if (
+    typeof shoe.initialMileageM === "number" &&
+    Number.isFinite(shoe.initialMileageM) &&
+    shoe.initialMileageM > 0
+  ) {
+    return shoe.initialMileageM / METERS_PER_MILE;
+  }
+  return undefined;
+}
+
+function shoeFromPort(shoe: TempoShoe): RunByRunShoe {
+  const label = `${shoe.brand} ${shoe.model}`.trim() || shoe.id.slice(0, 8);
+  const out: RunByRunShoe = { id: shoe.id, label };
+  const mi = shoeMileageMi(shoe);
+  if (mi !== undefined) out.mileageMi = mi;
+  return out;
+}
+
+function shoeFromNested(raw: unknown): RunByRunShoe | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const o = raw as Record<string, unknown>;
+  const id = typeof o.id === "string" ? o.id : undefined;
+  if (!id) return undefined;
+  const brand = typeof o.brand === "string" ? o.brand.trim() : "";
+  const model = typeof o.model === "string" ? o.model.trim() : "";
+  const label = `${brand} ${model}`.trim() || id.slice(0, 8);
+  const out: RunByRunShoe = { id, label };
+  const total =
+    typeof o.totalMileage === "number" && Number.isFinite(o.totalMileage)
+      ? o.totalMileage
+      : undefined;
+  if (total !== undefined && total >= 0) {
+    out.mileageMi = total > 500 ? total / METERS_PER_MILE : total;
+  } else if (
+    typeof o.initialMileageM === "number" &&
+    Number.isFinite(o.initialMileageM) &&
+    o.initialMileageM > 0
+  ) {
+    out.mileageMi = o.initialMileageM / METERS_PER_MILE;
+  }
+  return out;
+}
+
+function buildShoeLookup(shoes: readonly TempoShoe[]): ShoeLookup {
+  const map: ShoeLookup = new Map();
+  for (const s of shoes) {
+    map.set(s.id.toLowerCase(), shoeFromPort(s));
+  }
+  return map;
+}
+
+function mapSplits(detail: TempoWorkoutDetail): RunByRunSplit[] {
+  return detail.splits.map((s) => {
+    const split: RunByRunSplit = {};
+    if (s.idx !== undefined) split.idx = s.idx;
+    if (s.paceS !== undefined) split.paceS = s.paceS;
+    if (s.distanceM !== undefined) split.distanceM = s.distanceM;
+    if (s.durationS !== undefined) split.durationS = s.durationS;
+    if (s.avgHeartRateBpm !== undefined) split.avgHeartRateBpm = s.avgHeartRateBpm;
+    return split;
+  });
+}
+
+function buildEntry(args: {
+  detail: TempoWorkoutDetail;
+  unit: TempoUnitPreference;
+  timeZone: string;
+  zones: readonly { zoneNumber: number; minBpm: number; maxBpm: number }[];
+  shoes: ShoeLookup;
+  maxHr?: number;
+}): RunByRunEntry {
+  const { detail, unit, timeZone, zones, shoes, maxHr } = args;
+  const hr = computeRunHrMetrics({
+    timeSeries: detail.timeSeries,
+    durationS: detail.durationS,
+    zones,
+  });
+
+  const splits = mapSplits(detail);
+  const paceValues = splits
+    .map((s) => s.paceS)
+    .filter((p): p is number => typeof p === "number" && Number.isFinite(p) && p > 0);
+  const splitPacesFormatted = formatSplitPaceList(paceValues, unit);
+
+  const runType =
+    typeof detail.runType === "string" && detail.runType.trim()
+      ? detail.runType.trim()
+      : "Run";
+
+  const entry: RunByRunEntry = {
+    workoutId: detail.id,
+    startedAt: detail.startedAt,
+    titleDate: formatTitleDate(detail.startedAt, timeZone),
+    runType,
+    distanceM: detail.distanceM,
+    durationS: detail.durationS,
+    avgPaceS: detail.avgPaceS,
+    splits,
+  };
+
+  if (detail.name !== undefined) entry.name = detail.name;
+  if (detail.avgHeartRateBpm !== undefined) {
+    entry.avgHeartRateBpm = detail.avgHeartRateBpm;
+  } else if (hr.avgHrFromSeries !== undefined) {
+    entry.avgHeartRateBpm = hr.avgHrFromSeries;
+  }
+  if (detail.maxHeartRateBpm !== undefined) {
+    entry.maxHeartRateBpm = detail.maxHeartRateBpm;
+  }
+  // tempo-cli: summary avgCadenceRpm; fall back to the series mean.
+  const cadenceRpm =
+    typeof detail.avgCadenceRpm === "number" &&
+    Number.isFinite(detail.avgCadenceRpm)
+      ? detail.avgCadenceRpm
+      : hr.avgCadenceRpm;
+  if (cadenceRpm !== undefined) {
+    entry.cadenceSpm = cadenceRpmToSpm(cadenceRpm);
+  }
+  // tempo-cli: % max uses the series-derived average when present, else summary.
+  const pctAvg =
+    hr.avgHrFromSeries ??
+    (typeof detail.avgHeartRateBpm === "number" && detail.avgHeartRateBpm > 0
+      ? Math.round(detail.avgHeartRateBpm)
+      : undefined);
+  const pct = percentMaxHr(pctAvg, maxHr);
+  if (pct !== undefined) entry.pctMaxHr = pct;
+  if (detail.timeSeriesUnavailableReason) {
+    entry.timeSeriesUnavailableReason = detail.timeSeriesUnavailableReason;
+  }
+  if (detail.elevGainM !== undefined) entry.elevGainM = detail.elevGainM;
+  if (detail.elevLossM !== undefined) entry.elevLossM = detail.elevLossM;
+  if (detail.relativeEffort !== undefined) {
+    entry.relativeEffort = detail.relativeEffort;
+  }
+  const weather = formatWeather(detail.weather, unit);
+  if (weather) entry.weather = weather;
+  entry.similarRouteText = formatSimilarRouteText({
+    current: {
+      startedAt: detail.startedAt,
+      avgPaceS: detail.avgPaceS,
+      avgHeartRateBpm: detail.avgHeartRateBpm,
+    },
+    similar: detail.similarRoute,
+    unavailableReason: detail.similarRouteUnavailableReason,
+    unit,
+  });
+  if (detail.notes !== undefined) entry.notes = detail.notes;
+  if (detail.shoeId !== undefined) entry.shoeId = detail.shoeId;
+  if (splitPacesFormatted) entry.splitPacesFormatted = splitPacesFormatted;
+  if (hr.drift) {
+    entry.drift = hr.drift;
+    const severity = driftSeverityLabel(hr.drift.driftBpm, detail.runType);
+    if (severity) entry.driftSeverity = severity;
+  }
+  if (hr.zonePct) entry.zonePct = hr.zonePct;
+  if (hr.zoneSeconds) entry.zoneSeconds = hr.zoneSeconds;
+
+  const shoeId =
+    typeof detail.shoeId === "string" && detail.shoeId.trim()
+      ? detail.shoeId.trim()
+      : undefined;
+  if (shoeId) {
+    const fromList = shoes.get(shoeId.toLowerCase());
+    entry.shoe = fromList ?? shoeFromNested(detail.shoe);
+  } else {
+    const nested = shoeFromNested(detail.shoe);
+    if (nested) entry.shoe = nested;
+  }
+
+  return entry;
+}
+
+/** Build Run-by-run section for a persisted week session via TempoPort. */
+export async function buildRecapRunByRun(args: {
+  session: WeekSession;
+  tempoPort: TempoPort;
+  unit?: TempoUnitPreference;
+}): Promise<RecapRunByRunResult> {
+  const { session, tempoPort } = args;
+  const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
+  const window: WeekWindow = { start: session.start, end: session.end };
+
+  const [summaries, settings, shoes] = await Promise.all([
+    listAllWorkoutsInWindow(tempoPort, window),
+    tempoPort.getSettings(),
+    tempoPort.listShoes({ status: "all" }),
+  ]);
+
+  const details = await loadRecapWorkoutDetails(tempoPort, summaries, {
+    includeSimilarRoutes: true,
+  });
+
+  const shoeLookup = buildShoeLookup(shoes);
+  const zones = settings.heartRateZones.zones;
+  const maxHr = resolveConfiguredMaxHr(settings.heartRateZones);
+  const runs: RunByRunEntry[] = [];
+
+  for (let i = 0; i < summaries.length; i++) {
+    const detail = details[i];
+    if (!detail) continue;
+    runs.push(
+      buildEntry({
+        detail,
+        unit,
+        timeZone: session.timezone,
+        zones,
+        shoes: shoeLookup,
+        maxHr,
+      }),
+    );
+  }
+
+  runs.sort((a, b) => {
+    const ta = new Date(a.startedAt).getTime();
+    const tb = new Date(b.startedAt).getTime();
+    if (ta !== tb) return ta - tb;
+    return a.workoutId.localeCompare(b.workoutId);
+  });
+
+  const markdown = buildRunByRunMarkdown(runs, unit);
+
+  return {
+    weekSessionId: session.id,
+    isoWeek: session.isoWeek,
+    timezone: session.timezone,
+    range: { start: session.start, end: session.end },
+    unit,
+    runs,
+    markdown,
+  };
+}

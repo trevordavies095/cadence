@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The API suite deletes every app table, so it runs against a database named *_test.
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ai_coach_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ai_coach_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/ai_coach_test
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      # TEMPO_EXPORT_PATH stays unset: tests choose their own Tempo source.
+      - run: npm test
+
+  # Drives the real UI in Chromium against the stub model, the mini Tempo export
+  # and a pinned Sunday clock. The harness boots its own API and frontend and
+  # drops and recreates the throwaway ai_coach_e2e database on every run.
+  e2e:
+    name: Browser tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ai_coach
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ai_coach"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            api/package-lock.json
+            frontend/package-lock.json
+      - name: Install the API
+        run: npm ci
+        working-directory: api
+      - name: Install the frontend
+        run: npm ci
+        working-directory: frontend
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Run the browser suite
+        run: npm run e2e
+        working-directory: frontend
+      - name: Keep traces from a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: frontend/test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # The images the home server builds. A build that fails here would fail there.
+  images:
+    name: Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the homelab compose file
+        # The required values are made up for this run; nothing here is a real secret.
+        run: |
+          export POSTGRES_PASSWORD="$(openssl rand -hex 12)"
+          export DATA_PROTECTION_SECRET_KEY="$(openssl rand -hex 16)"
+          docker compose -f docker-compose.homelab.yml --env-file .env.homelab.example config --quiet
+      - name: Build the API image
+        run: docker build ./api
+      - name: Build the web image
+        run: docker build ./frontend

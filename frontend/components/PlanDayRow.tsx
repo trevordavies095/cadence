@@ -1,0 +1,84 @@
+import type { PrescribedDay, UnitPreference } from "@/lib/api";
+
+export function formatDistance(meters: number, unit: UnitPreference): string {
+  if (unit === "metric") return `${(meters / 1000).toFixed(1)} km`;
+  return `${(meters / 1609.344).toFixed(1)} mi`;
+}
+
+export function weekdayLabel(date: string): string {
+  const d = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return date;
+  return d.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** "None", "Rest" and "n/a" mean there is nothing to show. */
+export function meaningful(text: string | null | undefined): string | null {
+  const t = (text ?? "").trim();
+  if (!t) return null;
+  return /^(none|rest|n\/a)\.?$/i.test(t) ? null : t;
+}
+
+const DAY_TYPE_LABEL: Record<string, string> = {
+  easy: "Easy run",
+  quality: "Quality session",
+  long: "Long run",
+  race: "Race",
+  rest: "Rest day",
+  other: "Other",
+};
+
+export function PlanDayRow({
+  day,
+  unit,
+  isToday,
+}: {
+  day: PrescribedDay;
+  unit: UnitPreference;
+  isToday: boolean;
+}) {
+  const run = day.run;
+  const strength = meaningful(day.strength);
+  const notes = meaningful(day.notes);
+  const shoes = meaningful(run?.shoes);
+  return (
+    <li
+      aria-current={isToday ? "date" : undefined}
+      className={
+        isToday
+          ? "flex flex-col gap-1 border-b border-border border-l-4 border-l-ink bg-raised py-3 pl-4 pr-3"
+          : "flex flex-col gap-1 border-b border-border pb-3"
+      }
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <strong>
+          {weekdayLabel(day.date)}
+          {isToday ? (
+            <span className="ml-2 rounded-md border border-ink px-2 py-0.5 text-sm font-semibold">
+              Today
+            </span>
+          ) : null}
+        </strong>
+        <span className="text-muted">
+          {DAY_TYPE_LABEL[day.dayType] ?? day.dayType}
+        </span>
+      </div>
+      {run ? (
+        <p className="m-0">
+          {formatDistance(run.distanceM, unit)}
+          {meaningful(run.structure) ? ` · ${run.structure}` : ""}
+          {meaningful(run.paceOrHr) ? ` · ${run.paceOrHr}` : ""}
+        </p>
+      ) : (
+        <p className="m-0 text-muted">No run</p>
+      )}
+      {shoes ? <p className="m-0">Shoes · {shoes}</p> : null}
+      {strength ? <p className="m-0">Strength · {strength}</p> : null}
+      {notes ? <p className="m-0 text-muted">{notes}</p> : null}
+    </li>
+  );
+}
+

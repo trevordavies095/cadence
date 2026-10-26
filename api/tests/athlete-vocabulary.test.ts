@@ -1,0 +1,159 @@
+import { describe, expect, it } from "vitest";
+import { DISCLAIMER_TEXT } from "../src/disclaimer/text.js";
+import {
+  buildStubDossierAudit,
+  buildStubDossierCorrection,
+  buildStubDossierV1,
+  buildStubMidWeekChatReply,
+  buildStubWeeklyReply,
+  formatDossierAuditThreadBody,
+  formatDossierCorrectionThreadBody,
+  formatDossierProposalThreadBody,
+} from "../src/llm/stub.js";
+import { bannedTermsIn } from "../src/llm/vocabulary.js";
+import { buildModelPacket } from "../src/packet/index.js";
+import { PRIVACY_COPY } from "../src/privacy/copy.js";
+import type { PrescribedWeek } from "../src/llm/types.js";
+
+const DOSSIER_BODY = [
+  "# About you",
+  "",
+  "## Current Status",
+  "Left Achilles niggle, easy volume capped.",
+  "",
+  "## Coach update",
+  "- Retired the old trainers.",
+].join("\n");
+
+function packet(note?: string, prescribedWeek?: PrescribedWeek) {
+  return buildModelPacket({
+    prescribedWeek: prescribedWeek ?? null,
+    dossier: { versionId: 1, body: DOSSIER_BODY },
+    recapMarkdown: "## Summary\n20 mi, steady week.",
+    thread: note
+      ? [
+          {
+            id: "1",
+            role: "athlete",
+            body: note,
+            createdAt: "2026-10-22T12:00:00.000Z",
+            weekSessionId: "00000000-0000-4000-8000-000000000001",
+            attachment: null,
+          },
+        ]
+      : [],
+    attachments: [],
+    week: {
+      isoWeek: "2026-W43",
+      start: "2026-10-19T04:00:00.000Z",
+      end: "2026-10-26T03:59:59.999Z",
+      weekSessionId: "00000000-0000-4000-8000-000000000001",
+    },
+    planWeek: {
+      isoWeek: "2026-W44",
+      startDate: "2026-10-26",
+      endDate: "2026-11-01",
+    },
+  });
+}
+
+function texts(): Record<string, string> {
+  const weekly = buildStubWeeklyReply(packet());
+  const midWeek = buildStubMidWeekChatReply(
+    packet(
+      "Please skip Thursday, sore calf niggle after the long run.",
+      weekly.prescribedWeek,
+    ),
+  );
+  const v1 = buildStubDossierV1({
+    answers: {
+      goal: "Half marathon in January",
+      schedule: "Tue Thu Sat",
+      injuries_constraints: "Left calf",
+      preferences: "Trails",
+    },
+    prefills: { available: false },
+  });
+  const correction = buildStubDossierCorrection({
+    athleteMessage: "I now run on Mondays too.",
+    currentDossier: { versionId: 1, body: DOSSIER_BODY },
+    week: { isoWeek: "2026-W43" },
+  });
+  const audit = buildStubDossierAudit({
+    currentDossier: { versionId: 1, body: DOSSIER_BODY },
+    week: { isoWeek: "2026-W43" },
+    nowIso: "2026-10-25T12:00:00.000Z",
+    intervalWeeks: 5,
+  });
+  return {
+    "weekly analysis": weekly.analysis,
+    "weekly settings bullets": (weekly.settingsProposalBullets ?? []).join("\n"),
+    "mid-week reply": midWeek.body,
+    "mid-week settings bullets": (midWeek.settingsProposalBullets ?? []).join("\n"),
+    "plan day notes": (midWeek.prescribedDayPatches ?? [])
+      .map((d) => d.notes ?? "")
+      .join("\n"),
+    "onboarding summary": v1.summaryBullets.join("\n"),
+    "onboarding document": v1.proposedBody,
+    "onboarding thread message": formatDossierProposalThreadBody(v1),
+    "correction summary": correction.summaryBullets.join("\n"),
+    "correction document": correction.proposedBody,
+    "correction thread message": formatDossierCorrectionThreadBody(correction),
+    "audit summary": audit.summaryBullets.join("\n"),
+    "audit thread message": formatDossierAuditThreadBody(audit),
+    disclaimer: DISCLAIMER_TEXT,
+    "privacy copy": JSON.stringify(PRIVACY_COPY),
+  };
+}
+
+describe("athlete vocabulary in system-written text", () => {
+  for (const [name, text] of Object.entries(texts())) {
+    it(`${name} uses none of the banned terms`, () => {
+      expect(text.length).toBeGreaterThan(0);
+      expect(bannedTermsIn(text)).toEqual([]);
+    });
+  }
+
+  it("matches the multi-word banned term AI Coach as whole words", () => {
+    expect(bannedTermsIn("Welcome to AI Coach")).toEqual(["AI Coach"]);
+    expect(bannedTermsIn("welcome to ai coach.")).toEqual(["AI Coach"]);
+    expect(bannedTermsIn("Cadence AI Coaching")).toEqual([]);
+  });
+
+  it("names the product Cadence in the disclaimer and privacy copy", () => {
+    expect(DISCLAIMER_TEXT).toContain("Cadence");
+    expect(JSON.stringify(PRIVACY_COPY)).toContain("Cadence");
+  });
+
+  it("keeps model-only prompt lines out of the athlete's About you text", () => {
+    for (const name of ["onboarding document", "onboarding thread message"]) {
+      const text = texts()[name];
+      expect(text).not.toMatch(/you are coach cade/i);
+      expect(text).not.toMatch(/do not sign off/i);
+    }
+  });
+
+  it("never shows an ISO week label", () => {
+    for (const text of Object.values(texts())) {
+      expect(text).not.toMatch(/\b\d{4}-W\d{2}\b/);
+    }
+  });
+
+  it("names the plan week as a date range", () => {
+    const { analysis } = buildStubWeeklyReply(packet());
+    expect(analysis).toContain("Oct 26 – Nov 1");
+  });
+});
+
+describe("the coach is only ever Coach Cade", () => {
+  it("allows Coach Cade in full", () => {
+    expect(bannedTermsIn("Coach Cade is reading your week.")).toEqual([]);
+    expect(bannedTermsIn("Noted by Coach Cade")).toEqual([]);
+  });
+
+  it("bans a bare Cade", () => {
+    expect(bannedTermsIn("Cade is reading your week.")).toEqual(["Cade"]);
+    expect(bannedTermsIn("Ask Cade about it")).toEqual(["Cade"]);
+    expect(bannedTermsIn("Coach Cade and Cade")).toEqual(["Cade"]);
+  });
+});

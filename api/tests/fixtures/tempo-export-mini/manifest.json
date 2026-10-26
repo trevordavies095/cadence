@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "tempoVersion": "fixture",
+  "exportDate": "2026-10-20T21:14:20Z",
+  "exportedBy": "cadence-fixture",
+  "statistics": {
+    "settings": 1,
+    "shoes": 1,
+    "workouts": 3,
+    "routes": 2,
+    "splits": 3,
+    "timeSeries": 7,
+    "mediaFiles": 0,
+    "bestEfforts": 0
+  },
+  "dataFormat": {
+    "settings": "data/settings.json",
+    "shoes": "data/shoes.json",
+    "workouts": "data/workouts.json",
+    "routes": "data/routes.json",
+    "splits": "data/splits.json",
+    "timeSeries": "data/time-series.json",
+    "mediaMetadata": "data/media-metadata.json",
+    "bestEfforts": "data/best-efforts.json"
+  },
+  "scrub": {
+    "note": "CI pack: synthetic workouts, no route geometry, no media, no identity PII",
+    "routes": "presence-only (workoutId stubs; no routeGeoJson)",
+    "media": "empty",
+    "identity": "exportedBy fixed; no athlete name/email/age"
+  }
+}

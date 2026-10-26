@@ -1,0 +1,12 @@
+[
+  {
+    "id": "4ca636b8-b06a-43aa-9252-c5ef643a2e0e",
+    "brand": "ASICS",
+    "model": "Nimbus 28",
+    "initialMileageM": 0,
+    "isRetired": false,
+    "createdAt": "2026-10-10T17:45:51.641878Z",
+    "updatedAt": "2026-10-10T17:45:51.641927Z",
+    "workouts": []
+  }
+]

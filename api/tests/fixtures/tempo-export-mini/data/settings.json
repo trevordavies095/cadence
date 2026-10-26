@@ -1,0 +1,18 @@
+{
+  "id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "calculationMethod": 2,
+  "unitPreference": "imperial",
+  "defaultShoeId": "4ca636b8-b06a-43aa-9252-c5ef643a2e0e",
+  "zone1MinBpm": 129,
+  "zone1MaxBpm": 150,
+  "zone2MinBpm": 150,
+  "zone2MaxBpm": 167,
+  "zone3MinBpm": 167,
+  "zone3MaxBpm": 176,
+  "zone4MinBpm": 176,
+  "zone4MaxBpm": 186,
+  "zone5MinBpm": 186,
+  "zone5MaxBpm": 201,
+  "createdAt": "2026-01-01T00:00:00.000Z",
+  "updatedAt": "2026-10-10T00:00:00.000Z"
+}

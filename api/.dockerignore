@@ -1,0 +1,10 @@
+node_modules
+dist
+*.md
+.env
+.env.*
+.git
+VERSION
+# Tests and their fixtures are not part of the image.
+tests/
+vitest.config.ts

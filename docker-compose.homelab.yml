@@ -1,0 +1,93 @@
+# Cadence for a home server. Three containers; only the web page is reachable from outside.
+#
+#   cp .env.homelab.example .env.homelab        # then fill it in
+#   docker compose -f docker-compose.homelab.yml --env-file .env.homelab up -d --build   # build here
+#   docker compose -f docker-compose.homelab.yml --env-file .env.homelab pull && \
+#   docker compose -f docker-compose.homelab.yml --env-file .env.homelab up -d           # or use the published images
+#
+# Differs from docker-compose.yml (the development stack) in that it
+#   - publishes only the web port: Postgres and the API stay inside the compose network
+#   - has no placeholder secrets: the encryption key, database password and timezone are required
+#   - runs the live Anthropic coach by default
+name: cadence-homelab
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    command: ["postgres", "-c", "log_checkpoints=off"]
+    environment:
+      POSTGRES_DB: ai_coach
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai_coach"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      args:
+        APP_VERSION: "${CADENCE_VERSION:-dev}"
+        GIT_COMMIT: "${CADENCE_GIT_COMMIT:-}"
+    image: "${CADENCE_REGISTRY:-ghcr.io/trevordavies095}/cadence-api:${CADENCE_TAG:-latest}"
+    environment:
+      # The password is passed separately, so it can contain any character a URL could not.
+      DATABASE_URL: "postgresql://postgres@postgres:5432/ai_coach"
+      PGPASSWORD: ${POSTGRES_PASSWORD:?required}
+      PORT: "5001"
+      # The browser talks to the web container, which forwards /api to this one, so there are
+      # no cross-origin calls. This is only here so a direct call from your own page works.
+      CORS_ORIGIN: "${PUBLIC_URL:-http://localhost:3001}"
+      # Encrypts the saved Tempo and Anthropic keys. Lose it and you re-enter both keys.
+      DATA_PROTECTION_SECRET_KEY: "${DATA_PROTECTION_SECRET_KEY:?Set DATA_PROTECTION_SECRET_KEY in .env.homelab (openssl rand -base64 32)}"
+      # Your weeks are stored under this timezone. Changing it later hides your history.
+      ATHLETE_TIMEZONE: "${ATHLETE_TIMEZONE:?Set ATHLETE_TIMEZONE in .env.homelab, for example America/New_York}"
+      LLM_PROVIDER: "${LLM_PROVIDER:-anthropic}"
+      ANTHROPIC_MODEL: "${ANTHROPIC_MODEL:-}"
+      ANTHROPIC_EFFORT: "${ANTHROPIC_EFFORT:-}"
+      ANTHROPIC_TIMEOUT_MS: "${ANTHROPIC_TIMEOUT_MS:-}"
+      DATABASE_CONNECT_TIMEOUT_MS: "${DATABASE_CONNECT_TIMEOUT_MS:-}"
+      DATABASE_IDLE_TIMEOUT_MS: "${DATABASE_IDLE_TIMEOUT_MS:-}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        APP_VERSION: "${CADENCE_VERSION:-dev}"
+        GIT_COMMIT: "${CADENCE_GIT_COMMIT:-}"
+        # The /api proxy is fixed when the image is built; the service above is called "api".
+        API_SERVICE_URL: "http://api:5001"
+    image: "${CADENCE_REGISTRY:-ghcr.io/trevordavies095}/cadence-web:${CADENCE_TAG:-latest}"
+    ports:
+      # WEB_BIND=127.0.0.1 keeps it off the network when a reverse proxy runs on the same host.
+      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-3001}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

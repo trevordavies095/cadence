@@ -1,0 +1,62 @@
+# Local agent / editor scratch (not product source)
+.cursor/
+.scratch/
+.vscode/
+.idea/
+CLAUDE.md
+AGENTS.md
+.claude/
+
+# Node / Next.js / API
+node_modules/
+dist/
+.next/
+.next-e2e/
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Editor junk
+*.swp
+*.swo
+*~
+*.orig
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker build copies of the repo VERSION file (not source)
+/api/VERSION
+/frontend/VERSION
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+
+# Real settings for the homelab deployment (the .example file is tracked)
+.env.homelab
+
+# Local-only personal data
+/dogfood/

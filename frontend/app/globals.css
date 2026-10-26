@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens mirror Tempo's frontend/app/globals.css so the log and the coach
+   read as one product. Dark is applied by the appearance bootstrap script. */
+:root {
+  --canvas: #f4f1ea;
+  --raised: #ffffff;
+  --overlay: rgb(28 25 23 / 0.45);
+  --line: #e7e5e4;
+  --ink: #1c1917;
+  --muted: #57534e;
+  --inverse: #fafaf9;
+  --volt: #e8ff00;
+  --on-volt: #1c1917;
+  --danger: #e05656;
+  --on-danger: #1c1917;
+  --hr-zone-1: #2f9e5d;
+  --hr-zone-2: #7cb342;
+  --hr-zone-3: #d9a31a;
+  --hr-zone-4: #e07a2f;
+  --hr-zone-5: var(--danger);
+  --background: var(--canvas);
+  --foreground: var(--ink);
+}
+
+.dark {
+  --canvas: #141210;
+  --raised: #1c1917;
+  --overlay: rgb(0 0 0 / 0.6);
+  --line: #292524;
+  --ink: #f5f5f4;
+  --muted: #a8a29e;
+  --inverse: #0c0a09;
+  --volt: #e8ff00;
+  --on-volt: #1c1917;
+  --danger: #f07171;
+  --on-danger: #1c1917;
+  --hr-zone-1: #3dba70;
+  --hr-zone-2: #9ccc4a;
+  --hr-zone-3: #e8b923;
+  --hr-zone-4: #f08c42;
+  --hr-zone-5: var(--danger);
+  --background: var(--canvas);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-raised: var(--raised);
+  --color-overlay: var(--overlay);
+  --color-border: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-inverse: var(--inverse);
+  --color-volt: var(--volt);
+  --color-on-volt: var(--on-volt);
+  --color-danger: var(--danger);
+  --color-on-danger: var(--on-danger);
+  --color-hr-zone-1: var(--hr-zone-1);
+  --color-hr-zone-2: var(--hr-zone-2);
+  --color-hr-zone-3: var(--hr-zone-3);
+  --color-hr-zone-4: var(--hr-zone-4);
+  --color-hr-zone-5: var(--hr-zone-5);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-tempo: 0.75rem;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  margin: 0;
+  min-height: 100vh;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+input[type="radio"],
+input[type="checkbox"],
+input[type="range"] {
+  accent-color: var(--ink);
+}
+
+input[type="number"],
+input[type="text"],
+input[type="password"],
+input[type="email"],
+select,
+textarea {
+  color-scheme: light;
+}
+
+.dark input[type="number"],
+.dark input[type="text"],
+.dark input[type="password"],
+.dark input[type="email"],
+.dark select,
+.dark textarea {
+  color-scheme: dark;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}

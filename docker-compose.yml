@@ -1,0 +1,79 @@
+name: cadence
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cadence-postgres
+    command: ["postgres", "-c", "log_checkpoints=off"]
+    environment:
+      POSTGRES_DB: ai_coach
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai_coach"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: cadence-api
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/ai_coach"
+      PORT: "5001"
+      CORS_ORIGIN: "http://localhost:3001"
+      # Override via .env for anything beyond local compose
+      DATA_PROTECTION_SECRET_KEY: "${DATA_PROTECTION_SECRET_KEY:-change-me-local-dev-only-not-for-prod}"
+      DEV_CLOCK_NOW: "${DEV_CLOCK_NOW:-}"
+      # One timezone for every route/page (IANA name). Blank = UTC.
+      ATHLETE_TIMEZONE: "${ATHLETE_TIMEZONE:-}"
+      # Coach LLM: blank/stub = offline stub; anthropic = live (uses the saved Anthropic key).
+      LLM_PROVIDER: "${LLM_PROVIDER:-}"
+      ANTHROPIC_MODEL: "${ANTHROPIC_MODEL:-}"
+      # Thinking effort low|medium|high|xhigh|max (blank = xhigh) and overall cap per coach call in ms (blank = 15 min).
+      ANTHROPIC_EFFORT: "${ANTHROPIC_EFFORT:-}"
+      ANTHROPIC_TIMEOUT_MS: "${ANTHROPIC_TIMEOUT_MS:-}"
+      # Optional: mount a Tempo export and set TEMPO_EXPORT_PATH to the in-container path
+      TEMPO_EXPORT_PATH: "${TEMPO_EXPORT_PATH:-}"
+    ports:
+      - "5002:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cadence-frontend
+    environment:
+      API_SERVICE_URL: "http://api:5001"
+    ports:
+      - "3001:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

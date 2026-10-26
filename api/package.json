@@ -1,0 +1,30 @@
+{
+  "name": "cadence-api",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "dev": "APP_VERSION=\"${APP_VERSION:-$(git rev-parse --short HEAD 2>/dev/null || echo dev)}\" tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.4",
+    "hono": "^4.8.3",
+    "pg": "^8.16.3",
+    "stream-json": "^3.7.0",
+    "yauzl": "^3.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/pg": "^8.15.4",
+    "@types/stream-json": "^1.7.8",
+    "@types/yauzl": "^3.4.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}
