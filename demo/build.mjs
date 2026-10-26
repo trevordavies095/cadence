@@ -9,7 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dumpSnapshot } from "./lib/api.mjs";
-import { assertNoLeaks, fixTimestamps, scrubSecrets } from "./lib/finalize.mjs";
+import { assertNoLeaks, assertProvider, fixTimestamps, scrubSecrets } from "./lib/finalize.mjs";
 import { playOnboarding, playWeek, playWeek11 } from "./lib/season.mjs";
 import { checkpoint, initSteps, recordedSteps } from "./lib/steps.mjs";
 
@@ -17,6 +17,7 @@ const DEMO_DIR = path.dirname(fileURLToPath(import.meta.url));
 const LIVE = process.env.LLM_PROVIDER === "anthropic";
 const OUT = path.join(DEMO_DIR, LIVE ? "snapshot.sql" : "snapshot.stub.sql");
 const DEMO_NOW = "2026-10-14T19:30:00-04:00";
+const PROVIDER = LIVE ? "anthropic" : "stub";
 
 function parseArgs(argv) {
   const opts = { through: 11, from: 0, checkpoints: null };
@@ -51,6 +52,8 @@ async function main() {
 
   if (opts.from === 0) {
     clock = await playOnboarding(script);
+    // Fail on the first model call, not after the whole season.
+    assertProvider(PROVIDER);
     checkpoint(0, clock);
   }
   for (const entry of script.weeks) {
@@ -64,6 +67,7 @@ async function main() {
   }
 
   // Publishing: move stamps into the fiction, remove secrets, dump, check for leaks.
+  assertProvider(PROVIDER);
   const moved = fixTimestamps(recordedSteps());
   console.log(`timestamps: ${moved} value(s) moved into the fiction`);
   scrubSecrets();

@@ -58,6 +58,21 @@ COMMIT;
   return Number(out.trim().split("\n").pop());
 }
 
+/**
+ * Every model call in the database must have come from the provider this build was meant to
+ * use. A live build that quietly ran on the stub would publish placeholder coaching.
+ */
+export function assertProvider(expected) {
+  const found = sql("SELECT DISTINCT provider FROM llm_call_log ORDER BY 1;")
+    .trim()
+    .split("\n")
+    .filter(Boolean);
+  if (found.length === 0) throw new Error("no model calls were logged");
+  if (found.length !== 1 || found[0] !== expected) {
+    throw new Error(`expected every model call to be ${expected}, the call log has: ${found.join(", ")}`);
+  }
+}
+
 /** Delete the saved Anthropic key and Tempo credentials. The LLM call log stays. */
 export function scrubSecrets() {
   sql("DELETE FROM anthropic_connection; DELETE FROM tempo_connection;");

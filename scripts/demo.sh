@@ -32,8 +32,9 @@ export FRONTEND_HOST_PORT="${FRONTEND_HOST_PORT:-3001}"
 export POSTGRES_HOST_PORT="${POSTGRES_HOST_PORT:-5433}"
 export CADENCE_DEMO=1
 export ATHLETE_TIMEZONE="America/New_York"
-# Free by default. Only a maintainer's live build sets this to anthropic.
-export LLM_PROVIDER="${DEMO_LLM_PROVIDER:-stub}"
+# Free by default. `build --live` and `up` set this explicitly; the internal subcommands that
+# demo/build.mjs calls inherit it, so this must not overwrite a value that is already set.
+export LLM_PROVIDER="${LLM_PROVIDER:-stub}"
 
 log() { printf '%s\n' "$*"; }
 die() { printf 'demo FAIL: %s\n' "$*" >&2; exit 1; }
@@ -148,6 +149,7 @@ cmd_build() {
   done
 
   local mode=stub
+  export LLM_PROVIDER=stub
   if (( live )); then
     [[ -n "${ANTHROPIC_API_KEY:-}" ]] || die "--live needs ANTHROPIC_API_KEY in the environment"
     mode=live
