@@ -10,7 +10,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -45,7 +45,7 @@ services:
       # Optional: mount a Tempo export and set TEMPO_EXPORT_PATH to the in-container path
       TEMPO_EXPORT_PATH: "${TEMPO_EXPORT_PATH:-}"
     ports:
-      - "5002:5001"
+      - "${API_HOST_PORT:-5002}:5001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -65,7 +65,7 @@ services:
     environment:
       API_SERVICE_URL: "http://api:5001"
     ports:
-      - "3001:3000"
+      - "${FRONTEND_HOST_PORT:-3001}:3000"
     depends_on:
       api:
         condition: service_healthy

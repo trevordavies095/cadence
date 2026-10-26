@@ -88,7 +88,13 @@ export function createApp(options?: CreateAppOptions): Hono {
   const tempoPort =
     options?.tempoPort ??
     (exportPath
-      ? createExportTempoPort({ exportPath })
+      ? createExportTempoPort({
+          exportPath,
+          // Demo instance: the pinned clock may sit before the export's last run.
+          ...(process.env.CADENCE_DEMO === "1"
+            ? { asOf: () => clock.now() }
+            : {}),
+        })
       : createLiveTempoPort({
           dataProtectionKey: options?.dataProtectionKey,
           fetchImpl: options?.tempoFetch,

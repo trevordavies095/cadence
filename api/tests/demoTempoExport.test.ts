@@ -112,3 +112,32 @@ describe("demo Tempo export (Johnny Morrissey)", () => {
     }
   });
 });
+
+describe("demo Tempo export as of a pinned clock", () => {
+  it("hides runs that start after asOf, in lists and by id", async () => {
+    const all = await createExportTempoPort({ exportPath: DEMO_ZIP }).listWorkouts({
+      pageSize: 500,
+      sortBy: "startedAt",
+      sortOrder: "asc",
+    });
+    const port = createExportTempoPort({
+      exportPath: DEMO_ZIP,
+      asOf: () => new Date("2026-08-02T20:30:00-04:00"),
+    });
+
+    const early = await port.listWorkouts({ pageSize: 500 });
+    expect(early.totalCount).toBe(0);
+
+    const week2 = createExportTempoPort({
+      exportPath: DEMO_ZIP,
+      asOf: () => new Date("2026-08-09T16:00:00-04:00"),
+    });
+    const listed = await week2.listWorkouts({ pageSize: 500, sortBy: "startedAt", sortOrder: "asc" });
+    expect(listed.totalCount).toBe(5);
+    expect(listed.items.at(-1)!.startedAt).toMatch(/^2026-08-09/);
+
+    const later = all.items.find((r) => r.startedAt.startsWith("2026-08-11"))!;
+    expect(await week2.getWorkout(later.id)).toBeNull();
+    expect(await week2.getWorkout(listed.items[0]!.id)).not.toBeNull();
+  });
+});

@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "../src/clock/clock.js";
 import { createApp } from "../src/app.js";
 import { createStubLlmPort } from "../src/llm/index.js";
@@ -330,5 +330,66 @@ describe("GET /loop-status (#46)", () => {
     expect(body.primaryCta).toBeNull();
     expect(body.secondaryCta).toBeNull();
     expect(body.flags).toMatchObject({ weekEnding: true, hasPlan: true });
+  });
+});
+
+describe("loop status in demo mode", () => {
+  const ENV_KEYS = ["CADENCE_DEMO", "TEMPO_EXPORT_PATH", "LLM_PROVIDER"] as const;
+  const saved: Record<string, string | undefined> = {};
+
+  beforeAll(async () => {
+    process.env.DATA_PROTECTION_SECRET_KEY = TEST_DATA_PROTECTION_KEY;
+    await migrate();
+  });
+
+  beforeEach(async () => {
+    await resetAppTables();
+    for (const k of ENV_KEYS) saved[k] = process.env[k];
+  });
+
+  afterEach(() => {
+    for (const k of ENV_KEYS) {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    }
+  });
+
+  async function setupPhase() {
+    await acceptAndReady();
+    const app = createApp({
+      dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+      clock: MIDWEEK,
+      llmPort: createStubLlmPort(),
+    });
+    const body = await json(await app.request("/loop-status"));
+    return body.phase as string;
+  }
+
+  it("still asks for connections without the demo flag, even with an export and the stub", async () => {
+    delete process.env.CADENCE_DEMO;
+    process.env.TEMPO_EXPORT_PATH = "/demo/tempo-export.zip";
+    process.env.LLM_PROVIDER = "stub";
+    expect(await setupPhase()).toBe("setup_incomplete");
+  });
+
+  it("treats the export and the stub model as connected when CADENCE_DEMO=1", async () => {
+    process.env.CADENCE_DEMO = "1";
+    process.env.TEMPO_EXPORT_PATH = "/demo/tempo-export.zip";
+    process.env.LLM_PROVIDER = "stub";
+    expect(await setupPhase()).not.toBe("setup_incomplete");
+  });
+
+  it("still needs an Anthropic key in demo mode when the live model is selected", async () => {
+    process.env.CADENCE_DEMO = "1";
+    process.env.TEMPO_EXPORT_PATH = "/demo/tempo-export.zip";
+    process.env.LLM_PROVIDER = "anthropic";
+    expect(await setupPhase()).toBe("setup_incomplete");
+  });
+
+  it("still needs Tempo in demo mode when there is no export", async () => {
+    process.env.CADENCE_DEMO = "1";
+    delete process.env.TEMPO_EXPORT_PATH;
+    process.env.LLM_PROVIDER = "stub";
+    expect(await setupPhase()).toBe("setup_incomplete");
   });
 });

@@ -8,8 +8,8 @@
   },
 
   "onboarding": {
-    "at": "2026-08-02T20:30:00-04:00",
-    "intent": "Fresh start, the evening before week 1. Gives Coach Cade a goal, a real schedule, one history item and clear preferences. No Achilles mention: that arrives in week 6.",
+    "at": "2026-08-03T07:00:00-04:00",
+    "intent": "Fresh start, Monday morning of week 1 (a rest day). Gives Coach Cade a goal, a real schedule, one history item and clear preferences. No Achilles mention: that arrives in week 6.",
     "answers": {
       "goal": "Lakeshore Marathon on Sunday Nov 15. It will be my fourth marathon. My best is 3:41 from two years ago and I want to run 3:30 this time.",
       "schedule": "I run Tuesday, Wednesday, Thursday, Saturday and Sunday. Monday and Friday are off because of work travel. Weekday runs are early, around 6, before work, so about an hour at most. Saturday is an easy hour and Sunday is the long run. Roughly 6 to 7 hours a week, and more on long-run weeks.",

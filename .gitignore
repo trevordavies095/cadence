@@ -60,3 +60,6 @@ frontend/playwright-report/
 
 # Local-only personal data
 /dogfood/
+
+# Demo: snapshot written by a stub (no key) build; the committed one is demo/snapshot.sql
+/demo/snapshot.stub.sql
