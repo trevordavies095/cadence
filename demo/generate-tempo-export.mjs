@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Generate the synthetic Tempo full export for the demo athlete, Johnny Morrissey
- * (fictional): a marathon block from Mon Aug 3 to the morning of Wed Oct 14 2026.
+ * (fictional): four easy base weeks from Mon Jul 6, then the marathon block from Mon Aug 3
+ * to the morning of Wed Oct 14 2026.
  * Spec: .scratch/demo-instance/spec.md ("The story", component 2).
  *
  *   node demo/generate-tempo-export.mjs [--out demo/tempo-export.zip]
@@ -68,7 +69,8 @@ const tempoPace = (week) => pace(7, 48) - (week - 1) * 2;
 const MARATHON_PACE = pace(8, 0);
 
 /** Mean temperature in C for the week (Aug warm, Oct cool). */
-const weekTempC = (week) => [25, 26, 24, 23, 21, 20, 18, 16, 14, 13, 12][week - 1];
+const weekTempC = (week) =>
+  week < 1 ? 27 : [25, 26, 24, 23, 21, 20, 18, 16, 14, 13, 12][week - 1];
 
 // Heart rate (bpm), max ~188. Zones: z2 131-150, z3 150-164, z4 164-177, z5 177-188.
 const HR = { easy: 141, medium: 147, tempo: 170, mp: 160, rep: 180, jog: 142, long: 144, strides: 150 };
@@ -108,6 +110,17 @@ const PLAN = [
   { tue: 5, wed: 8, thu: { kind: "reps", total: 8, n: 5, repM: M_PER_MILE, jogM: 400 }, sat: 4, sun: { miles: 20, finishMp: 4 } },
   // Week 11 (Oct 12 – 18): Mon rest, Tue easy, Wed medium-long this morning. Nothing later.
   { tue: 6, wed: 9, partial: true },
+];
+
+/**
+ * Four easy base weeks before Cadence starts (weeks -3 to 0: Jul 6 - Aug 2), so the
+ * coach has some history at onboarding. Same shape as PLAN, no quality sessions.
+ */
+const BASE = [
+  { tue: 4, wed: 5, thu: { kind: "easy", total: 5 }, sat: 4, sun: { miles: 9 } },
+  { tue: 5, wed: 5, thu: { kind: "easy", total: 6 }, sat: 4, sun: { miles: 10 } },
+  { tue: 5, wed: 6, thu: { kind: "easy", total: 6 }, sat: 5, sun: { miles: 10 } },
+  { tue: 5, wed: 6, thu: { kind: "easy", total: 6 }, sat: 5, sun: { miles: 11 } },
 ];
 
 // --- segments: [distanceM, secondsPerMile, targetHr, label] -----------------------------
@@ -189,8 +202,8 @@ const SHOES = [
   ...s,
   initialMileageM: 0,
   isRetired: false,
-  createdAt: "2026-07-20T12:00:00Z",
-  updatedAt: "2026-07-20T12:00:00Z",
+  createdAt: "2026-06-15T12:00:00Z",
+  updatedAt: "2026-06-15T12:00:00Z",
   workouts: [],
 }));
 
@@ -318,8 +331,8 @@ const fmtMiles = (m) => {
 
 function buildAllWorkouts() {
   const workouts = [];
-  PLAN.forEach((w, i) => {
-    const week = i + 1;
+  const addWeek = (w, week) => {
+    const i = week - 1;
     const add = (dayOffset, hh, mm, spec) => {
       const startedAt = startIso(i, dayOffset, hh, mm);
       const wk = buildWorkout({ key: `${week}-${dayOffset}`, startedAt, week, ...spec });
@@ -370,7 +383,10 @@ function buildAllWorkouts() {
       segments: longRun(week, w.sun),
       stops: 30 + Math.round(rand() * 60),
     });
-  });
+  };
+  PLAN.forEach((w, i) => addWeek(w, i + 1));
+  // After the block, so the block's random draws (and runs) stay exactly as they were.
+  BASE.forEach((w, i) => addWeek(w, i - 3));
   workouts.sort((a, b) => Date.parse(a.startedAt) - Date.parse(b.startedAt));
   return workouts;
 }
@@ -436,8 +452,8 @@ function buildFiles(workouts) {
       zone4MaxBpm: 177,
       zone5MinBpm: 177,
       zone5MaxBpm: 188,
-      createdAt: "2026-07-20T12:00:00Z",
-      updatedAt: "2026-07-20T12:00:00Z",
+      createdAt: "2026-06-15T12:00:00Z",
+      updatedAt: "2026-06-15T12:00:00Z",
     },
     "data/shoes.json": SHOES,
     "data/workouts.json": clean,
@@ -450,10 +466,11 @@ function buildFiles(workouts) {
 }
 
 function weeklyTable(workouts) {
-  const rows = PLAN.map((_, i) => ({ week: i + 1, runs: 0, m: 0 }));
+  const first = 1 - BASE.length;
+  const rows = [...BASE, ...PLAN].map((_, i) => ({ week: first + i, runs: 0, m: 0 }));
   for (const w of workouts) {
-    rows[w.week - 1].runs += 1;
-    rows[w.week - 1].m += w.distanceM;
+    rows[w.week - first].runs += 1;
+    rows[w.week - first].m += w.distanceM;
   }
   const lines = ["week  starts   runs  miles"];
   rows.forEach((r) => {

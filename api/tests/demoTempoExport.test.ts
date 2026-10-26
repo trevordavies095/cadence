@@ -32,13 +32,14 @@ async function allRuns() {
   return { port, runs: listed.items };
 }
 
+/** Miles by week number: 1 is Aug 3, and the base weeks before it are -3 to 0. */
 function weeklyMiles(runs: { startedAt: string; distanceM?: number | null }[]) {
   const week1 = Date.UTC(2026, 7, 3);
-  const miles = new Array<number>(11).fill(0);
+  const miles = new Map<number, number>();
   for (const r of runs) {
     // Runs start ~6-8 am ET, so the UTC date is the same local day.
-    const idx = Math.floor((Date.parse(r.startedAt) - week1) / (7 * 86_400_000));
-    miles[idx] = (miles[idx] ?? 0) + (r.distanceM ?? 0) / M_PER_MILE;
+    const week = Math.floor((Date.parse(r.startedAt) - week1) / (7 * 86_400_000)) + 1;
+    miles.set(week, (miles.get(week) ?? 0) + (r.distanceM ?? 0) / M_PER_MILE);
   }
   return miles;
 }
@@ -60,10 +61,10 @@ describe("demo Tempo export (Johnny Morrissey)", () => {
     expect(settings.unitPreference).toBe("imperial");
   });
 
-  it("covers Aug 3 to the morning of Oct 14 with nothing after demo now", async () => {
+  it("covers four base weeks from Jul 6 and the block to the morning of Oct 14, nothing after demo now", async () => {
     const { runs } = await allRuns();
     const starts = runs.map((r) => Date.parse(r.startedAt));
-    expect(new Date(Math.min(...starts)).toISOString()).toMatch(/^2026-08-04/);
+    expect(new Date(Math.min(...starts)).toISOString()).toMatch(/^2026-07-07/);
     expect(Math.max(...starts)).toBeLessThan(DEMO_NOW_MS);
     expect(new Date(Math.max(...starts)).toISOString()).toMatch(/^2026-10-14T1[01]/);
   });
@@ -71,16 +72,25 @@ describe("demo Tempo export (Johnny Morrissey)", () => {
   it("follows the training arc: cutbacks, Achilles dip in weeks 6-7, recovery in week 8", async () => {
     const { runs } = await allRuns();
     const miles = weeklyMiles(runs);
+    const mi = (week: number) => miles.get(week)!;
 
     for (const w of [1, 2, 3, 4, 5, 8, 9, 10]) {
-      expect(miles[w - 1]).toBeGreaterThanOrEqual(33);
-      expect(miles[w - 1]).toBeLessThanOrEqual(46);
+      expect(mi(w)).toBeGreaterThanOrEqual(33);
+      expect(mi(w)).toBeLessThanOrEqual(46);
     }
-    expect(miles[3]).toBeLessThan(miles[2]!); // week 4 cutback
-    expect(miles[5]).toBeLessThan(miles[4]! - 8); // week 6 cut short
-    expect(miles[6]).toBeLessThan(28); // week 7 reduced
-    expect(miles[7]).toBeGreaterThan(32); // week 8 back to normal
-    expect(miles[9]).toBeGreaterThanOrEqual(44); // week 10 peak
+    expect(mi(4)).toBeLessThan(mi(3)); // week 4 cutback
+    expect(mi(6)).toBeLessThan(mi(5) - 8); // week 6 cut short
+    expect(mi(7)).toBeLessThan(28); // week 7 reduced
+    expect(mi(8)).toBeGreaterThan(32); // week 8 back to normal
+    expect(mi(10)).toBeGreaterThanOrEqual(44); // week 10 peak
+
+    // Base weeks before the block: easy running that builds a little each week.
+    for (const w of [-3, -2, -1, 0]) {
+      expect(mi(w)).toBeGreaterThanOrEqual(25);
+      expect(mi(w)).toBeLessThan(35);
+    }
+    expect(mi(0)).toBeGreaterThan(mi(-3));
+    expect(mi(1)).toBeGreaterThan(mi(0));
   });
 
   it("has the Achilles run cut short and a 20 mile long run, and no quality session in week 7", async () => {
@@ -89,6 +99,10 @@ describe("demo Tempo export (Johnny Morrissey)", () => {
     expect(stopped).toBeDefined();
     expect(stopped!.notes).toMatch(/Achilles/);
     expect(stopped!.startedAt).toMatch(/^2026-09-10/);
+
+    const base = runs.filter((r) => r.startedAt < "2026-08-03");
+    expect(base).toHaveLength(20);
+    expect(base.every((r) => r.runType === "Easy Run" || r.runType === "Long Run")).toBe(true);
 
     const longest = Math.max(...runs.map((r) => (r.distanceM ?? 0) / M_PER_MILE));
     expect(longest).toBeGreaterThan(19.5);
@@ -120,20 +134,25 @@ describe("demo Tempo export as of a pinned clock", () => {
       sortBy: "startedAt",
       sortOrder: "asc",
     });
-    const port = createExportTempoPort({
+    const beforeAnyRun = createExportTempoPort({
       exportPath: DEMO_ZIP,
-      asOf: () => new Date("2026-08-02T20:30:00-04:00"),
+      asOf: () => new Date("2026-07-05T20:30:00-04:00"),
     });
+    expect((await beforeAnyRun.listWorkouts({ pageSize: 500 })).totalCount).toBe(0);
 
-    const early = await port.listWorkouts({ pageSize: 500 });
-    expect(early.totalCount).toBe(0);
+    // Onboarding morning (Mon Aug 3): the four base weeks, nothing from the block yet.
+    const onboarding = createExportTempoPort({
+      exportPath: DEMO_ZIP,
+      asOf: () => new Date("2026-08-03T07:00:00-04:00"),
+    });
+    expect((await onboarding.listWorkouts({ pageSize: 500 })).totalCount).toBe(20);
 
     const week2 = createExportTempoPort({
       exportPath: DEMO_ZIP,
       asOf: () => new Date("2026-08-09T16:00:00-04:00"),
     });
     const listed = await week2.listWorkouts({ pageSize: 500, sortBy: "startedAt", sortOrder: "asc" });
-    expect(listed.totalCount).toBe(5);
+    expect(listed.totalCount).toBe(25);
     expect(listed.items.at(-1)!.startedAt).toMatch(/^2026-08-09/);
 
     const later = all.items.find((r) => r.startedAt.startsWith("2026-08-11"))!;
