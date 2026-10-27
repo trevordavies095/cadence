@@ -2,7 +2,7 @@
 
 import { CoachText } from "@/components/CoachText";
 import { NoteCard } from "@/components/NoteCard";
-import { Notice } from "@/components/ui";
+import { CoachSurface, Notice, cx } from "@/components/ui";
 import type { ThreadMessage, UnitPreference, WorkoutAttachment } from "@/lib/api";
 import { dayLabel, runTypeLabel } from "@/lib/checkIn";
 import { relativeWhen } from "@/lib/time";
@@ -55,20 +55,26 @@ export function ConversationMessage({
   message,
   unit,
   timeZone,
+  onNoteChange,
 }: {
   message: ThreadMessage;
   unit: UnitPreference;
   timeZone?: string;
+  /** Called after a note card in this message changed something, so the page can look again. */
+  onNoteChange?: () => void;
 }) {
-  return (
-    <article className="flex flex-col gap-1 border-b border-border pb-3">
+  const isCoach = message.role === "coach";
+  const content = (
+    <>
       <header className="flex items-baseline gap-3">
-        <span className="font-semibold">{ROLE_LABEL[message.role] ?? "Coach Cade"}</span>
+        <span className={cx("font-semibold", isCoach && "text-accent")}>
+          {ROLE_LABEL[message.role] ?? "Coach Cade"}
+        </span>
         <time className="text-sm text-muted" dateTime={message.createdAt}>
           {relativeWhen(message.createdAt)}
         </time>
       </header>
-      {message.role === "coach" ? (
+      {isCoach ? (
         <CoachText>{message.body}</CoachText>
       ) : (
         <p className="m-0 whitespace-pre-wrap">{message.body}</p>
@@ -82,8 +88,22 @@ export function ConversationMessage({
         <RunCard attachment={message.attachment} unit={unit} timeZone={timeZone} />
       ) : null}
       {message.dossierProposal ? (
-        <NoteCard note={message.dossierProposal} weekSessionId={message.weekSessionId} />
+        <NoteCard
+          note={message.dossierProposal}
+          weekSessionId={message.weekSessionId}
+          onChange={onNoteChange}
+        />
       ) : null}
+    </>
+  );
+  // Coach Cade speaks on its own surface; the athlete's words and system notes stay on canvas.
+  return isCoach ? (
+    <CoachSurface as="article" data-role="coach" className="flex flex-col gap-1">
+      {content}
+    </CoachSurface>
+  ) : (
+    <article data-role={message.role} className="flex flex-col gap-1">
+      {content}
     </article>
   );
 }

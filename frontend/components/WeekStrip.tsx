@@ -46,7 +46,7 @@ export function WeekStrip({
             aria-current={d.isToday ? "date" : undefined}
             className={cx(
               "flex flex-col gap-0.5 border-t-2 pt-2",
-              d.isToday ? "border-ink" : "border-border",
+              d.isToday ? "border-accent" : "border-border",
             )}
           >
             <span className="font-semibold">{name}</span>
@@ -57,7 +57,7 @@ export function WeekStrip({
             <span
               className={cx(
                 "text-sm font-semibold",
-                d.state === "done" && "text-hr-zone-1",
+                d.state === "done" && "text-ok",
                 d.state === "missed" && "text-danger",
                 (d.state === "upcoming" || d.state === "rest") && "text-muted",
               )}

@@ -6,6 +6,7 @@ import {
   ErrorNote,
   Muted,
   Page,
+  PageHead,
   PageTitle,
   WaitingState,
 } from "@/components/ui";
@@ -68,23 +69,27 @@ export default function HistoryPage() {
 
   return (
     <Page>
-      <PageTitle>History</PageTitle>
-      <Muted>Your weeks, newest first.</Muted>
-      {runsUnknown ? (
-        <Muted>Your running log isn’t responding, so miles and runs are blank for now.</Muted>
-      ) : null}
+      <PageHead>
+        <PageTitle>History</PageTitle>
+        <Muted>Your weeks, newest first.</Muted>
+        {runsUnknown ? (
+          <Muted>Your running log isn’t responding, so miles and runs are blank for now.</Muted>
+        ) : null}
+      </PageHead>
 
       {weeks.length === 0 ? (
         <Muted>No weeks yet.</Muted>
       ) : (
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-border text-sm text-muted">
+            <tr className="border-b border-line-strong text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted">
               <th scope="col" className="py-2 pr-4 font-semibold">Week</th>
-              <th scope="col" className="py-2 pr-4 text-right font-semibold">
+              <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
                 {unit === "metric" ? "Km" : "Miles"}
               </th>
-              <th scope="col" className="py-2 pr-4 text-right font-semibold">Runs</th>
+              <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
+                Runs
+              </th>
               <th scope="col" className="py-2 font-semibold">From Coach Cade</th>
             </tr>
           </thead>
@@ -101,12 +106,12 @@ export default function HistoryPage() {
                     </span>
                   ) : null}
                 </th>
-                <td className="py-3 pr-4 text-right tabular-nums">
+                <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">
                   {w.actualDistanceM == null
                     ? "–"
                     : distanceLabel(w.actualDistanceM, unit).replace(/ (mi|km)$/, "")}
                 </td>
-                <td className="py-3 pr-4 text-right tabular-nums">{w.runCount ?? "–"}</td>
+                <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">{w.runCount ?? "–"}</td>
                 <td className="py-3 text-muted">{w.coachHeadline ?? ""}</td>
               </tr>
             ))}

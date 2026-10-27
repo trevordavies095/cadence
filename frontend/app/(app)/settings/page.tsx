@@ -9,6 +9,7 @@ import {
   Input,
   Muted,
   Page,
+  PageHead,
   PageTitle,
   SectionTitle,
   WaitingState,
@@ -194,10 +195,12 @@ export default function SettingsPage() {
 
   return (
     <Page>
-      <PageTitle>Settings</PageTitle>
-      <Muted>{intro}</Muted>
+      <PageHead>
+        <PageTitle>Settings</PageTitle>
+        <Muted>{intro}</Muted>
+      </PageHead>
 
-      <section className="mt-3 flex flex-col gap-3" aria-label="Tempo connection">
+      <section className="flex flex-col gap-3" aria-label="Tempo connection">
         <SectionTitle>Tempo</SectionTitle>
         {tempoOffline ? (
           <Muted>
@@ -255,7 +258,7 @@ export default function SettingsPage() {
         )}
       </section>
 
-      <section className="mt-3 flex flex-col gap-3" aria-label="Anthropic connection">
+      <section className="flex flex-col gap-3" aria-label="Anthropic connection">
         <SectionTitle>Anthropic</SectionTitle>
         {modelOffline ? (
           <Muted>
@@ -310,7 +313,7 @@ export default function SettingsPage() {
         )}
       </section>
 
-      <section className="mt-3 flex flex-col gap-3" aria-label="Appearance">
+      <section className="flex flex-col gap-3" aria-label="Appearance">
         <SectionTitle>Appearance</SectionTitle>
         <div role="radiogroup" aria-label="Appearance" className="flex flex-wrap gap-2">
           {APPEARANCE_CHOICES.map((choice) => {
@@ -335,7 +338,7 @@ export default function SettingsPage() {
         <Muted>System follows your computer’s light or dark setting.</Muted>
       </section>
 
-      <section className="mt-3 flex flex-col gap-2" aria-label="Privacy">
+      <section className="flex flex-col gap-2" aria-label="Privacy">
         <SectionTitle>Privacy</SectionTitle>
         <Muted>
           What Coach Cade reads, what is sent to Anthropic, and what was sent last.
@@ -350,7 +353,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {status && <p className="m-0 text-hr-zone-1">{status}</p>}
+      {status && <p className="m-0 text-ok">{status}</p>}
       <ErrorNote error={error} />
 
       <Muted>

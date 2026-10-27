@@ -13,7 +13,7 @@ const OPEN_PATHS = new Set(["/privacy"]);
 /** A neutral page-shaped placeholder, so nothing flashes while the check runs. */
 function Skeleton() {
   return (
-    <Page>
+    <Page flow>
       <div role="status" aria-busy="true" aria-label="Loading" className="flex flex-col gap-4">
         <div className="h-9 w-1/3 animate-pulse rounded-tempo bg-raised" />
         <div className="h-24 w-full animate-pulse rounded-tempo bg-raised" />
@@ -62,7 +62,7 @@ export function DisclaimerGate({ children }: { children: ReactNode }) {
   if (state === "open" || open) return <>{children}</>;
   if (state === "outage") {
     return (
-      <Page>
+      <Page flow>
         <PageTitle>Can’t reach Coach Cade</PageTitle>
         <Muted>
           Coach Cade isn’t responding. Check that it’s running, then try again. Nothing you’ve

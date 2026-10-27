@@ -116,8 +116,8 @@ test.describe("Home", () => {
 
     const card = page.getByRole("region", { name: "Today" }).or(page.locator('[aria-label="Today"]'));
     await expect(card).toContainText("Easy run · 3.0 mi");
-    await expect(card).toContainText("Effort · Heart rate under 155");
-    await expect(card).toContainText("Shoes · ASICS Nimbus 28");
+    await expect(card.getByRole("term")).toHaveText(["Effort", "Shoes"]);
+    await expect(card.getByRole("definition")).toHaveText(["Heart rate under 155", "ASICS Nimbus 28"]);
     await expect(card).toContainText("Walk if your heart rate climbs.");
     await expect(card).not.toContainText("Strength"); // "None" shows nothing
     await expect(page.getByRole("status")).toHaveCount(0); // quiet when nothing needs the athlete

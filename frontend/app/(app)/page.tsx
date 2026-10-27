@@ -8,8 +8,9 @@ import {
   ErrorNote,
   Muted,
   Page,
+  PageHead,
   PageTitle,
-  SectionTitle,
+  SectionHeader,
   WaitingState,
 } from "@/components/ui";
 import { fetchHome, type HomeRead } from "@/lib/api";
@@ -67,7 +68,7 @@ export default function Home() {
 
   if (!home) {
     return (
-      <Page>
+      <Page flow>
         <PageTitle>Home</PageTitle>
         <ErrorNote error={error} />
         <Muted>Open Settings to connect your accounts, then refresh.</Muted>
@@ -81,28 +82,28 @@ export default function Home() {
 
   return (
     <Page>
-      {home.banner ? (
-        <HomeBanner
-          banner={home.banner}
-          weekSessionId={home.weekSessionId}
-          onChanged={refresh}
-        />
-      ) : null}
+      <PageHead>
+        {home.banner ? (
+          <HomeBanner
+            banner={home.banner}
+            weekSessionId={home.weekSessionId}
+            onChanged={refresh}
+          />
+        ) : null}
 
-      <PageTitle>Home</PageTitle>
-      <ErrorNote error={error} />
+        <PageTitle>Home</PageTitle>
+        <ErrorNote error={error} />
+      </PageHead>
 
       {hasWeek ? (
         <>
           <TodayCard today={home.today} hasPlan={hasPlan} unit={home.units} />
 
           <section className="flex flex-col gap-3" aria-label="Your week so far">
-            <header className="flex flex-wrap items-baseline justify-between gap-3">
-              <SectionTitle>This week</SectionTitle>
-              <span className="text-muted">
-                {home.isoWeek ? isoWeekRangeLabel(home.isoWeek) : null}
-              </span>
-            </header>
+            <SectionHeader
+              title="This week"
+              aside={home.isoWeek ? isoWeekRangeLabel(home.isoWeek) : null}
+            />
             <WeekStrip week={home.week} unit={home.units} />
             {!home.tempoUnavailable ? (
               <p className="m-0 tabular-nums">
