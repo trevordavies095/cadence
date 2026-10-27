@@ -50,6 +50,7 @@ import {
 import {
   createAthleteMessage,
   createCoachMessage,
+  deleteThreadMessage,
   listThreadMessages,
 } from "../thread/store.js";
 import { getWeekSessionById, type WeekSession } from "../week/store.js";
@@ -214,188 +215,200 @@ export function createMidWeekChatRoutes(
       attachment,
     );
 
-    // Ask-in-chat dossier audit/trim (#40 / US-38) — same soft-gate Accept UX.
-    if (isDossierAuditRequest(text)) {
-      const current = await getCurrentDossier();
-      if (!current) {
-        return c.json(
-          {
-            error: "dossier_required",
-            message:
-              "A current dossier is required before an audit/trim proposal can be created.",
-            athleteMessage,
-          },
-          409,
-        );
+    // A reply that fails takes the athlete's message with it, so a resend
+    // is the only copy (#5).
+    let answered = false;
+    try {
+      // Ask-in-chat dossier audit/trim (#40 / US-38) — same soft-gate Accept UX.
+      if (isDossierAuditRequest(text)) {
+        const current = await getCurrentDossier();
+        if (!current) {
+          return c.json(
+            {
+              error: "dossier_required",
+              message:
+                "A current dossier is required before an audit/trim proposal can be created.",
+            },
+            409,
+          );
+        }
+        try {
+          const now = clock.now();
+          const auditMeta = await getDossierAuditMeta(now);
+          const draft = await llmPort.generateDossierAudit({
+            currentDossier: { versionId: current.id, body: current.body },
+            week: { isoWeek: session.isoWeek },
+            nowIso: now.toISOString(),
+            intervalWeeks:
+              auditMeta.intervalWeeks || DEFAULT_AUDIT_INTERVAL_WEEKS,
+          });
+          const dossierProposal = await createProposalFromAudit({
+            summaryBullets: draft.summaryBullets,
+            proposedBody: draft.proposedBody,
+          });
+          const coachMessage = await createCoachMessage(
+            formatDossierAuditThreadBody(draft),
+            session.id,
+            null,
+            null,
+            dossierProposal.id,
+          );
+          answered = true;
+          const existingPrescribed = await getPrescribedWeekBySessionId(
+            session.id,
+          );
+          return c.json(
+            {
+              athleteMessage,
+              coachMessage,
+              safetyCallouts: [],
+              dossierProposal,
+              prescribed: existingPrescribed,
+              threadArtifact: existingPrescribed
+                ? toPrescribedArtifact(existingPrescribed)
+                : null,
+              weekSessionId: session.id,
+              audit: auditMeta,
+              triggeredBy: "ask_in_chat",
+            },
+            201,
+          );
+        } catch (err) {
+          if (err instanceof LlmSchemaError) {
+            return c.json({ error: err.code, message: err.message }, 502);
+          }
+          throw err;
+        }
       }
+
+      // Reload thread after athlete message so the lean packet includes it.
+      const thread = await listThreadMessages(session.id);
+      const attachments = collectThreadAttachments(thread);
+      const existingPrescribed = await getPrescribedWeekBySessionId(session.id);
+
+      // Lean live context (#34): dossier + last N summaries/plans + this week only.
+      const packet = await assembleLeanLiveContext({
+        focusSession: session,
+        recapMarkdown: null,
+        attachments,
+        prescribedWeek: existingPrescribed?.plan ?? null,
+      });
+      assertPacketHasNoPiiOrGps(packet, {
+        forbiddenSubstrings: ["LineString", "rawGpxData", "rawFitData"],
+      });
+      await rememberLastOutboundPacket(packet);
+
       try {
-        const now = clock.now();
-        const auditMeta = await getDossierAuditMeta(now);
-        const draft = await llmPort.generateDossierAudit({
-          currentDossier: { versionId: current.id, body: current.body },
-          week: { isoWeek: session.isoWeek },
-          nowIso: now.toISOString(),
-          intervalWeeks:
-            auditMeta.intervalWeeks || DEFAULT_AUDIT_INTERVAL_WEEKS,
+        const callId = randomUUID();
+        const rawReply = await llmPort.generateMidWeekChatReply(packet, {
+          callId,
+          weekSessionId: session.id,
         });
-        const dossierProposal = await createProposalFromAudit({
-          summaryBullets: draft.summaryBullets,
-          proposedBody: draft.proposedBody,
+        const weekStartMonday = resolvePlanWeekStartMonday(packet);
+        const checked = validateMidWeekChatReply(rawReply, weekStartMonday);
+        if (!checked.ok) {
+          await recordRouteRejection(llmCallRecorder, {
+            parentCallId: callId,
+            operation: "mid_week_chat",
+            weekSessionId: session.id,
+            errorMessage: checked.error,
+          });
+          return c.json(
+            { error: "llm_schema_invalid", message: checked.error },
+            502,
+          );
+        }
+        const reply = checked.value;
+        const coachBody = reply.body?.trim() ?? "";
+        if (!coachBody) {
+          await recordRouteRejection(llmCallRecorder, {
+            parentCallId: callId,
+            operation: "mid_week_chat",
+            weekSessionId: session.id,
+            errorMessage: "mid_week_chat_body_empty",
+          });
+          return c.json(
+            { error: "llm_schema_invalid", message: "mid_week_chat_body_empty" },
+            502,
+          );
+        }
+        // The note comes first so the reply's message can point at it.
+        const dossierProposal = await createProposalFromMidWeekChat({
+          settingsProposalBullets: reply.settingsProposalBullets,
+          isoWeek: session.isoWeek,
         });
         const coachMessage = await createCoachMessage(
-          formatDossierAuditThreadBody(draft),
+          coachBody,
           session.id,
-          null,
-          null,
-          dossierProposal.id,
+          callId,
+          reply.safetyCallouts,
+          dossierProposal?.id ?? null,
         );
-        const existingPrescribed = await getPrescribedWeekBySessionId(
-          session.id,
-        );
+        answered = true;
+
+        let prescribed: PrescribedWeekRecord | null = existingPrescribed;
+        let threadArtifact: PrescribedWeekArtifact | null = existingPrescribed
+          ? toPrescribedArtifact(existingPrescribed)
+          : null;
+        const patches = reply.prescribedDayPatches ?? [];
+        if (patches.length > 0 && existingPrescribed) {
+          const applied = applyPrescribedDayPatches(
+            existingPrescribed.plan,
+            patches,
+            {
+              todayYmd: todayYmdForSession(clock, session.timezone),
+              allowPastDayPatches: reply.allowPastDayPatches === true,
+            },
+          );
+          if (applied.appliedDates.length > 0) {
+            prescribed = await savePrescribedWeek({
+              weekSessionId: session.id,
+              plan: applied.plan,
+              analysis: existingPrescribed.analysis,
+              settingsProposalBullets:
+                existingPrescribed.settingsProposalBullets,
+              safetyCallouts: existingPrescribed.safetyCallouts,
+            });
+            threadArtifact = toPrescribedArtifact(prescribed);
+          }
+        }
+
         return c.json(
           {
             athleteMessage,
             coachMessage,
-            safetyCallouts: [],
+            safetyCallouts: reply.safetyCallouts ?? [],
             dossierProposal,
-            prescribed: existingPrescribed,
-            threadArtifact: existingPrescribed
-              ? toPrescribedArtifact(existingPrescribed)
-              : null,
+            prescribed,
+            threadArtifact,
             weekSessionId: session.id,
-            audit: auditMeta,
-            triggeredBy: "ask_in_chat",
           },
           201,
         );
       } catch (err) {
+        if (err instanceof LlmNotConfiguredError) {
+          return c.json({ error: err.code, message: err.message }, 400);
+        }
+        if (err instanceof LlmHttpError) {
+          return c.json(
+            { error: err.code, status: err.status, message: err.message },
+            502,
+          );
+        }
+        if (err instanceof LlmTransportError) {
+          return c.json({ error: err.code, message: err.message }, 502);
+        }
         if (err instanceof LlmSchemaError) {
           return c.json({ error: err.code, message: err.message }, 502);
         }
         throw err;
       }
-    }
-
-    // Reload thread after athlete message so the lean packet includes it.
-    const thread = await listThreadMessages(session.id);
-    const attachments = collectThreadAttachments(thread);
-    const existingPrescribed = await getPrescribedWeekBySessionId(session.id);
-
-    // Lean live context (#34): dossier + last N summaries/plans + this week only.
-    const packet = await assembleLeanLiveContext({
-      focusSession: session,
-      recapMarkdown: null,
-      attachments,
-      prescribedWeek: existingPrescribed?.plan ?? null,
-    });
-    assertPacketHasNoPiiOrGps(packet, {
-      forbiddenSubstrings: ["LineString", "rawGpxData", "rawFitData"],
-    });
-    await rememberLastOutboundPacket(packet);
-
-    try {
-      const callId = randomUUID();
-      const rawReply = await llmPort.generateMidWeekChatReply(packet, {
-        callId,
-        weekSessionId: session.id,
-      });
-      const weekStartMonday = resolvePlanWeekStartMonday(packet);
-      const checked = validateMidWeekChatReply(rawReply, weekStartMonday);
-      if (!checked.ok) {
-        await recordRouteRejection(llmCallRecorder, {
-          parentCallId: callId,
-          operation: "mid_week_chat",
-          weekSessionId: session.id,
-          errorMessage: checked.error,
+    } finally {
+      if (!answered) {
+        await deleteThreadMessage(athleteMessage.id).catch((err) => {
+          console.error("[mid-week-chat] unanswered message not removed", err);
         });
-        return c.json(
-          { error: "llm_schema_invalid", message: checked.error },
-          502,
-        );
       }
-      const reply = checked.value;
-      const coachBody = reply.body?.trim() ?? "";
-      if (!coachBody) {
-        await recordRouteRejection(llmCallRecorder, {
-          parentCallId: callId,
-          operation: "mid_week_chat",
-          weekSessionId: session.id,
-          errorMessage: "mid_week_chat_body_empty",
-        });
-        return c.json(
-          { error: "llm_schema_invalid", message: "mid_week_chat_body_empty" },
-          502,
-        );
-      }
-      // The note comes first so the reply's message can point at it.
-      const dossierProposal = await createProposalFromMidWeekChat({
-        settingsProposalBullets: reply.settingsProposalBullets,
-        isoWeek: session.isoWeek,
-      });
-      const coachMessage = await createCoachMessage(
-        coachBody,
-        session.id,
-        callId,
-        reply.safetyCallouts,
-        dossierProposal?.id ?? null,
-      );
-
-      let prescribed: PrescribedWeekRecord | null = existingPrescribed;
-      let threadArtifact: PrescribedWeekArtifact | null = existingPrescribed
-        ? toPrescribedArtifact(existingPrescribed)
-        : null;
-      const patches = reply.prescribedDayPatches ?? [];
-      if (patches.length > 0 && existingPrescribed) {
-        const applied = applyPrescribedDayPatches(
-          existingPrescribed.plan,
-          patches,
-          {
-            todayYmd: todayYmdForSession(clock, session.timezone),
-            allowPastDayPatches: reply.allowPastDayPatches === true,
-          },
-        );
-        if (applied.appliedDates.length > 0) {
-          prescribed = await savePrescribedWeek({
-            weekSessionId: session.id,
-            plan: applied.plan,
-            analysis: existingPrescribed.analysis,
-            settingsProposalBullets:
-              existingPrescribed.settingsProposalBullets,
-            safetyCallouts: existingPrescribed.safetyCallouts,
-          });
-          threadArtifact = toPrescribedArtifact(prescribed);
-        }
-      }
-
-      return c.json(
-        {
-          athleteMessage,
-          coachMessage,
-          safetyCallouts: reply.safetyCallouts ?? [],
-          dossierProposal,
-          prescribed,
-          threadArtifact,
-          weekSessionId: session.id,
-        },
-        201,
-      );
-    } catch (err) {
-      if (err instanceof LlmNotConfiguredError) {
-        return c.json({ error: err.code, message: err.message }, 400);
-      }
-      if (err instanceof LlmHttpError) {
-        return c.json(
-          { error: err.code, status: err.status, message: err.message },
-          502,
-        );
-      }
-      if (err instanceof LlmTransportError) {
-        return c.json({ error: err.code, message: err.message }, 502);
-      }
-      if (err instanceof LlmSchemaError) {
-        return c.json({ error: err.code, message: err.message }, 502);
-      }
-      throw err;
     }
   });
 

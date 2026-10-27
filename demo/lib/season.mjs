@@ -3,15 +3,15 @@
  * Each step runs through runStep, which pins the clock first (the API reads it once, at
  * startup) and records the real time it took.
  */
-import { api, ApiError, sleep, sql } from "./api.mjs";
+import { api, ApiError, sleep } from "./api.mjs";
 import { runStep } from "./steps.mjs";
 
 const REPLY_TIMEOUT_MS = 20 * 60_000;
 
 /**
  * POST that the live model answers. A 502 means the model's output failed validation.
- * Only for routes that save nothing else before the model replies (onboarding upserts
- * its answers); chat has its own retry, postChat.
+ * Only for routes that leave nothing behind when the reply fails: onboarding upserts its
+ * answers, and chat removes the unanswered message (#5).
  */
 async function postToModel(route, body, label) {
   for (let attemptNo = 0; ; attemptNo += 1) {
@@ -19,25 +19,6 @@ async function postToModel(route, body, label) {
       return await api("POST", route, body);
     } catch (err) {
       if (!(err instanceof ApiError) || err.status !== 502 || attemptNo >= REPLY_RETRIES) throw err;
-      console.log(`${label}: model output rejected (${err.body?.message ?? err.body?.error}), retry ${attemptNo + 1} of ${REPLY_RETRIES}`);
-    }
-  }
-}
-
-/**
- * The chat route saves the athlete's message before the model replies, so a rejected reply
- * (502) leaves that message without an answer. Remove it and ask again, like a resend.
- */
-async function postChat(weekSessionId, body, label) {
-  for (let attemptNo = 0; ; attemptNo += 1) {
-    try {
-      return await api("POST", `/weeks/${weekSessionId}/chat`, body);
-    } catch (err) {
-      if (!(err instanceof ApiError) || err.status !== 502 || attemptNo >= REPLY_RETRIES) throw err;
-      sql(`DELETE FROM thread_messages WHERE id = (
-             SELECT id FROM thread_messages
-             WHERE week_session_id = '${weekSessionId}' AND role = 'athlete'
-             ORDER BY created_at DESC LIMIT 1);`);
       console.log(`${label}: model output rejected (${err.body?.message ?? err.body?.error}), retry ${attemptNo + 1} of ${REPLY_RETRIES}`);
     }
   }
@@ -148,7 +129,7 @@ async function chat(script, message, { acceptAfter }) {
     }
     const body = { body: message.body };
     if (message.attachRun) body.attachmentWorkoutId = await findRun(message.attachRun);
-    await postChat(session.id, body, `week 11 chat ${message.at.slice(0, 16)}`);
+    await postToModel(`/weeks/${session.id}/chat`, body, `week 11 chat ${message.at.slice(0, 16)}`);
     const accepted = acceptAfter ? await acceptPendingNoteCards() : 0;
     console.log(`week 11 chat ${message.at.slice(0, 16)}: sent${message.attachRun ? " with a run" : ""}, ${accepted} note card(s) accepted`);
   });
