@@ -165,10 +165,21 @@ export async function migrate(): Promise<void> {
       cache_creation_tokens integer,
       outcome text NOT NULL CHECK (outcome IN (
         'ok', 'http_error', 'transport_error', 'schema_invalid',
-        'rejected_by_route'
+        'rejected_by_route', 'repaired'
       )),
       error_message text
     );
+
+    -- 'repaired': the reply was accepted after the validator fixed a soft
+    -- field (an over-long safety callout, #4); error_message says what.
+    ALTER TABLE llm_call_log
+      DROP CONSTRAINT IF EXISTS llm_call_log_outcome_check;
+    ALTER TABLE llm_call_log
+      ADD CONSTRAINT llm_call_log_outcome_check
+      CHECK (outcome IN (
+        'ok', 'http_error', 'transport_error', 'schema_invalid',
+        'rejected_by_route', 'repaired'
+      ));
 
     ALTER TABLE llm_call_log
       ADD COLUMN IF NOT EXISTS thinking_tokens integer;

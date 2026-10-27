@@ -4,7 +4,50 @@ import type { SafetyCallout, SafetyCalloutSeverity } from "./types.js";
 
 export const MAX_SAFETY_CALLOUTS = 5;
 export const MAX_SAFETY_CALLOUT_TITLE = 120;
+/** Target the model is asked for; a longer body is kept and logged. */
 export const MAX_SAFETY_CALLOUT_BODY = 600;
+/** Ceiling a stored body is cut to (#4). */
+export const MAX_SAFETY_CALLOUT_BODY_HARD = 1200;
+
+/** Added when cutting a body drops its pointer to a professional. */
+export const SAFETY_ESCALATION_LINE =
+  "If it gets worse or does not settle, see a qualified clinician.";
+
+const ESCALATION_RE =
+  /\b(clinician|doctor|physio|physiotherapist|physical therapist|professional|GP|urgent care|emergency|ER|911)\b/i;
+
+const SENTENCE_END_RE = /[.!?](?=\s|$)/g;
+
+/** Cut at the last word that fits in `max` characters, ending in an ellipsis. */
+export function cutAtWord(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const head = text.slice(0, max);
+  const space = head.lastIndexOf(" ", max - 1);
+  const kept = (space > 0 ? head.slice(0, space) : head.slice(0, max - 1)).trimEnd();
+  return `${kept}…`;
+}
+
+/**
+ * Cut an over-long callout body to at most `max` characters at the last
+ * sentence that fits, and keep an escalation line in it.
+ */
+export function fitSafetyCalloutBody(body: string, max: number): string {
+  const text = body.trim();
+  if (text.length <= max) return text;
+  const full = cutAtSentence(text, max);
+  if (ESCALATION_RE.test(full)) return full;
+  const kept = cutAtSentence(text, max - SAFETY_ESCALATION_LINE.length - 1);
+  return `${kept} ${SAFETY_ESCALATION_LINE}`;
+}
+
+function cutAtSentence(text: string, max: number): string {
+  const head = text.slice(0, max + 1);
+  let end = -1;
+  for (const match of head.matchAll(SENTENCE_END_RE)) {
+    if (match.index < max) end = match.index;
+  }
+  return end >= 0 ? head.slice(0, end + 1) : cutAtWord(text, max);
+}
 
 const SEVERITIES = new Set<SafetyCalloutSeverity>([
   "info",

@@ -9,8 +9,13 @@ import {
   buildStubWeeklyReply,
   COACH_SYSTEM_STANCE,
   createStubLlmPort,
+  fitSafetyCalloutBody,
+  MAX_SAFETY_CALLOUT_BODY,
+  MAX_SAFETY_CALLOUT_BODY_HARD,
+  MAX_SAFETY_CALLOUT_TITLE,
   MIDWEEK_SYSTEM_PROMPT,
   SAFETY_CALLOUT_PROMPT,
+  SAFETY_ESCALATION_LINE,
   validateMidWeekChatReply,
   validateSafetyCallouts,
   validateWeeklyReply,
@@ -107,6 +112,93 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
       { title: "x", body: "y", severity: "critical" },
     ]);
     expect(badSeverity.ok).toBe(false);
+  });
+
+  it("keeps a body over the target but under the ceiling, with a note (#4)", () => {
+    const body = `${"Ease off and walk if it twinges. ".repeat(25)}See a physio.`;
+    expect(body.length).toBeGreaterThan(MAX_SAFETY_CALLOUT_BODY);
+    expect(body.length).toBeLessThanOrEqual(MAX_SAFETY_CALLOUT_BODY_HARD);
+    const checked = validateSafetyCallouts([{ title: "Achilles", body }]);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    expect(checked.value![0]!.body).toBe(body);
+    expect(checked.repairs).toEqual([
+      `safetyCallouts[0].body over target: ${body.length} chars kept`,
+    ]);
+  });
+
+  it("cuts a body over the ceiling at a sentence and keeps an escalation line (#4)", () => {
+    const body =
+      "See a physio before your next run. " +
+      "Keep the next few days easy and flat. ".repeat(60);
+    expect(body.length).toBeGreaterThan(MAX_SAFETY_CALLOUT_BODY_HARD);
+    const checked = validateSafetyCallouts([{ title: "Achilles", body }]);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    const kept = checked.value![0]!.body;
+    expect(kept.length).toBeLessThanOrEqual(MAX_SAFETY_CALLOUT_BODY_HARD);
+    expect(kept.startsWith("See a physio before your next run.")).toBe(true);
+    expect(kept.endsWith("flat.")).toBe(true);
+    expect(kept).not.toContain(SAFETY_ESCALATION_LINE);
+    expect(checked.repairs).toEqual([
+      `safetyCallouts[0].body cut from ${body.trim().length} to ${kept.length} chars`,
+    ]);
+  });
+
+  it("adds the escalation line when the cut drops it (#4)", () => {
+    const body =
+      "Keep the next few days easy and flat. ".repeat(60) +
+      "If it gets sharper, see a clinician.";
+    const checked = validateSafetyCallouts([{ title: "Achilles", body }]);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    const kept = checked.value![0]!.body;
+    expect(kept.length).toBeLessThanOrEqual(MAX_SAFETY_CALLOUT_BODY_HARD);
+    expect(kept.endsWith(`flat. ${SAFETY_ESCALATION_LINE}`)).toBe(true);
+    expect(checked.repairs![0]).toMatch(/, escalation line added$/);
+  });
+
+  it("cuts a body with no sentence end at a word (#4)", () => {
+    const kept = fitSafetyCalloutBody("easy ".repeat(400).trim(), 100);
+    expect(kept.length).toBeLessThanOrEqual(100);
+    expect(kept).toMatch(/easy… If it gets worse/);
+    expect(kept.endsWith(SAFETY_ESCALATION_LINE)).toBe(true);
+  });
+
+  it("cuts a long title at a word with a note (#4)", () => {
+    const title = "Achilles ".repeat(30).trim();
+    const checked = validateSafetyCallouts([{ title, body: "See a physio." }]);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    const kept = checked.value![0]!.title;
+    expect(kept.length).toBeLessThanOrEqual(MAX_SAFETY_CALLOUT_TITLE);
+    expect(kept.endsWith("Achilles…")).toBe(true);
+    expect(checked.repairs).toEqual([
+      `safetyCallouts[0].title cut from ${title.length} to ${kept.length} chars`,
+    ]);
+  });
+
+  it("weekly and mid-week replies carry the callout repairs up (#4)", () => {
+    const long = "Keep it easy. ".repeat(100);
+    const weekly = validateWeeklyReply(
+      {
+        ...buildStubWeeklyReply(samplePacket()),
+        safetyCallouts: [{ title: "Achilles", body: long }],
+      },
+      PLAN_WEEK_START,
+    );
+    expect(weekly.ok).toBe(true);
+    if (weekly.ok) expect(weekly.repairs).toHaveLength(1);
+
+    const mid = validateMidWeekChatReply({
+      body: "Easy week.",
+      safetyCallouts: [{ title: "Achilles", body: long }],
+    });
+    expect(mid.ok).toBe(true);
+    if (mid.ok) expect(mid.repairs).toHaveLength(1);
+
+    const clean = validateMidWeekChatReply({ body: "Easy week." });
+    expect(clean.ok && clean.repairs).toBeUndefined();
   });
 
   it("stub emits a callout when dossier notes a soft-tissue concern", async () => {

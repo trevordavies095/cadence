@@ -1,8 +1,12 @@
 import {
+  cutAtWord,
+  fitSafetyCalloutBody,
   isSafetyCalloutSeverity,
   MAX_SAFETY_CALLOUT_BODY,
+  MAX_SAFETY_CALLOUT_BODY_HARD,
   MAX_SAFETY_CALLOUT_TITLE,
   MAX_SAFETY_CALLOUTS,
+  SAFETY_ESCALATION_LINE,
 } from "./safety.js";
 import type {
   DayType,
@@ -25,6 +29,7 @@ export const MAX_DOSSIER_SUMMARY_BULLETS = 8;
 export const MAX_DOSSIER_BODY_LENGTH = 12000;
 export {
   MAX_SAFETY_CALLOUT_BODY,
+  MAX_SAFETY_CALLOUT_BODY_HARD,
   MAX_SAFETY_CALLOUT_TITLE,
   MAX_SAFETY_CALLOUTS,
 } from "./safety.js";
@@ -49,9 +54,14 @@ const RUN_TYPES = new Set<RunType>([
 const ISO_WEEK_RE = /^\d{4}-W\d{2}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-export type SchemaOk<T> = { ok: true; value: T };
+/** `repairs` notes soft fields the validator fixed instead of refusing. */
+export type SchemaOk<T> = { ok: true; value: T; repairs?: string[] };
 export type SchemaErr = { ok: false; error: string };
 export type SchemaResult<T> = SchemaOk<T> | SchemaErr;
+
+function withRepairs<T>(value: T, repairs: string[] | undefined): SchemaOk<T> {
+  return repairs ? { ok: true, value, repairs } : { ok: true, value };
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -225,7 +235,10 @@ export function validatePrescribedWeek(
 }
 
 /**
- * Fail-closed validation for optional safety callouts on weekly/mid-week replies.
+ * Validation for optional safety callouts on weekly/mid-week replies.
+ * Shape errors fail closed. Length does not (#4): a long title or body is
+ * kept or cut so the reply still reaches the athlete, and each fix is noted
+ * in `repairs` for the call log.
  */
 export function validateSafetyCallouts(
   raw: unknown,
@@ -241,36 +254,42 @@ export function validateSafetyCallouts(
     };
   }
   const callouts: SafetyCallout[] = [];
+  const repairs: string[] = [];
   for (let i = 0; i < raw.length; i++) {
     const item = raw[i];
     const path = `safetyCallouts[${i}]`;
     if (!isPlainObject(item)) {
       return { ok: false, error: `${path} must be an object` };
     }
-    const title = item.title;
-    if (typeof title !== "string" || title.trim().length === 0) {
+    const titleRaw = item.title;
+    if (typeof titleRaw !== "string" || titleRaw.trim().length === 0) {
       return { ok: false, error: `${path}.title must be a non-empty string` };
     }
+    let title = titleRaw.trim();
     if (title.length > MAX_SAFETY_CALLOUT_TITLE) {
-      return {
-        ok: false,
-        error: `${path}.title must be at most ${MAX_SAFETY_CALLOUT_TITLE} characters`,
-      };
+      const cut = cutAtWord(title, MAX_SAFETY_CALLOUT_TITLE);
+      repairs.push(`${path}.title cut from ${title.length} to ${cut.length} chars`);
+      title = cut;
     }
-    const body = item.body;
-    if (typeof body !== "string" || body.trim().length === 0) {
+    const bodyRaw = item.body;
+    if (typeof bodyRaw !== "string" || bodyRaw.trim().length === 0) {
       return { ok: false, error: `${path}.body must be a non-empty string` };
     }
-    if (body.length > MAX_SAFETY_CALLOUT_BODY) {
-      return {
-        ok: false,
-        error: `${path}.body must be at most ${MAX_SAFETY_CALLOUT_BODY} characters`,
-      };
+    let body = bodyRaw.trim();
+    if (body.length > MAX_SAFETY_CALLOUT_BODY_HARD) {
+      const cut = fitSafetyCalloutBody(body, MAX_SAFETY_CALLOUT_BODY_HARD);
+      const added =
+        cut.endsWith(SAFETY_ESCALATION_LINE) &&
+        !body.endsWith(SAFETY_ESCALATION_LINE);
+      repairs.push(
+        `${path}.body cut from ${body.length} to ${cut.length} chars` +
+          (added ? ", escalation line added" : ""),
+      );
+      body = cut;
+    } else if (body.length > MAX_SAFETY_CALLOUT_BODY) {
+      repairs.push(`${path}.body over target: ${body.length} chars kept`);
     }
-    const callout: SafetyCallout = {
-      title: title.trim(),
-      body: body.trim(),
-    };
+    const callout: SafetyCallout = { title, body };
     if (item.severity !== undefined) {
       if (!isSafetyCalloutSeverity(item.severity)) {
         return {
@@ -282,7 +301,7 @@ export function validateSafetyCallouts(
     }
     callouts.push(callout);
   }
-  return { ok: true, value: callouts };
+  return withRepairs(callouts, repairs.length > 0 ? repairs : undefined);
 }
 
 /**
@@ -326,7 +345,7 @@ export function validateWeeklyReply(
   if (callouts.value !== undefined && callouts.value.length > 0) {
     reply.safetyCallouts = callouts.value;
   }
-  return { ok: true, value: reply };
+  return withRepairs(reply, callouts.repairs);
 }
 
 function parseSettingsProposalBullets(
@@ -501,7 +520,7 @@ export function validateMidWeekChatReply(
   if (raw.allowPastDayPatches === true) {
     reply.allowPastDayPatches = true;
   }
-  return { ok: true, value: reply };
+  return withRepairs(reply, callouts.repairs);
 }
 
 function validateDossierSoftGateDraft(
