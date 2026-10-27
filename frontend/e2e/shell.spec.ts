@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { bannedTermsIn } from "./banned";
 
 const API_URL = process.env.E2E_API_URL ?? "http://localhost:5102";
@@ -38,6 +38,18 @@ test.describe("shell", () => {
     await expect(page).toHaveURL(/\/weeks$/);
   });
 });
+
+/** Serve the real /settings read, but as if the API ran on saved connections. */
+async function serveLiveSources(page: Page) {
+  await page.route(/\/api\/settings$/, async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    const body = await (await route.fetch()).json();
+    body.tempo.source = "connection";
+    body.anthropic.source = "anthropic";
+    body.demo = false;
+    await route.fulfill({ json: body });
+  });
+}
 
 test.describe("Settings", () => {
   test("holds the connections, appearance and privacy, and no longer the sent-to-coach text", async ({
@@ -92,10 +104,25 @@ test.describe("Settings", () => {
     await expect(html).toHaveClass(/\bdark\b/);
   });
 
+  test("offline, both sources read as in use and there are no key fields", async ({ page }) => {
+    // The e2e API runs on the Tempo export and the offline coach (#6).
+    await page.goto("/settings");
+    await expect(page.getByText("Cadence is running offline")).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Tempo connection" }),
+    ).toContainText("In use: a Tempo export file.");
+    await expect(
+      page.getByRole("region", { name: "Anthropic connection" }),
+    ).toContainText("In use: the offline coach");
+    await expect(page.getByLabel("API key")).toHaveCount(0);
+    expect(bannedTermsIn(await page.locator("main").innerText())).toEqual([]);
+  });
+
   test("clearing a connection asks first, and keeping it changes nothing", async ({
     page,
     request,
   }) => {
+    await serveLiveSources(page);
     await page.goto("/settings");
     const anthropic = page.getByRole("region", { name: "Anthropic connection" });
     await anthropic.getByRole("button", { name: "Clear" }).click();

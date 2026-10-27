@@ -13,9 +13,17 @@ export type AnthropicConnection = {
   updatedAt: string | null;
 };
 
+/** What the API is running with (#6): an export or the offline coach needs no saved key. */
+export type SettingsSources = {
+  tempo: "export" | "connection";
+  model: "stub" | "anthropic";
+  demo: boolean;
+};
+
 export type SettingsSummary = {
-  tempo: TempoConnection;
-  anthropic: AnthropicConnection;
+  tempo: TempoConnection & { source: SettingsSources["tempo"] };
+  anthropic: AnthropicConnection & { source: SettingsSources["model"] };
+  demo: boolean;
 };
 
 /** Compact coaching workout summary stored on a thread message (no GPS). */

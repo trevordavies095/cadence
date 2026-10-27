@@ -4,6 +4,7 @@ import { createApp } from "../src/app.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import { pool } from "../src/db.js";
 import { migrate } from "../src/migrate.js";
+import type { RuntimeSources } from "../src/settings/sources.js";
 import {
   acceptAndReady,
   json,
@@ -196,5 +197,45 @@ describe("encrypted connection settings", () => {
       expect(after.tempo).toMatchObject({ configured: true });
       expect(after.anthropic).toMatchObject({ configured: true });
     });
+  });
+});
+
+describe("GET /settings reports the running sources (#6, #12)", () => {
+  beforeAll(async () => {
+    process.env.DATA_PROTECTION_SECRET_KEY = TEST_DATA_PROTECTION_KEY;
+    await migrate();
+  });
+
+  beforeEach(async () => {
+    await resetAppTables();
+    await acceptAndReady();
+  });
+
+  async function summaryFor(sources: RuntimeSources) {
+    const app = createApp({ dataProtectionKey: TEST_DATA_PROTECTION_KEY, sources });
+    return json(await app.request("/settings"));
+  }
+
+  it("offline: the export and the stub, with nothing saved", async () => {
+    const summary = await summaryFor({ tempo: "export", model: "stub", demo: false });
+    expect(summary).toMatchObject({
+      tempo: { configured: false, source: "export" },
+      anthropic: { configured: false, source: "stub" },
+      demo: false,
+    });
+  });
+
+  it("live: saved connections", async () => {
+    const summary = await summaryFor({ tempo: "connection", model: "anthropic", demo: false });
+    expect(summary).toMatchObject({
+      tempo: { source: "connection" },
+      anthropic: { source: "anthropic" },
+      demo: false,
+    });
+  });
+
+  it("demo", async () => {
+    const summary = await summaryFor({ tempo: "export", model: "stub", demo: true });
+    expect(summary.demo).toBe(true);
   });
 });

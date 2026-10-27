@@ -10,6 +10,7 @@ import {
   getAnthropicConnection,
   putAnthropicConnection,
 } from "../settings/anthropicStore.js";
+import type { RuntimeSources } from "../settings/sources.js";
 import {
   deleteTempoConnection,
   getTempoConnection,
@@ -19,13 +20,16 @@ import {
 export type SettingsRouteOptions = {
   /** Override wrapping key (tests). Defaults to DATA_PROTECTION_SECRET_KEY. */
   dataProtectionKey?: string;
+  /** What the API is running with; an export or the stub needs no saved connection (#6). */
+  sources: RuntimeSources;
 };
 
-function protectorFrom(options?: SettingsRouteOptions): SecretProtector {
-  return new SecretProtector(options?.dataProtectionKey);
+function protectorFrom(options: SettingsRouteOptions): SecretProtector {
+  return new SecretProtector(options.dataProtectionKey);
 }
 
-export function createSettingsRoutes(options?: SettingsRouteOptions): Hono {
+export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
+  const { sources } = options;
   const routes = new Hono();
 
   routes.use("/settings", requireDisclaimer);
@@ -36,7 +40,11 @@ export function createSettingsRoutes(options?: SettingsRouteOptions): Hono {
       getTempoConnection(),
       getAnthropicConnection(),
     ]);
-    return c.json({ tempo, anthropic });
+    return c.json({
+      tempo: { ...tempo, source: sources.tempo },
+      anthropic: { ...anthropic, source: sources.model },
+      demo: sources.demo,
+    });
   });
 
   routes.get("/settings/tempo", async (c) => {
@@ -123,6 +131,3 @@ export function createSettingsRoutes(options?: SettingsRouteOptions): Hono {
 
   return routes;
 }
-
-/** Default routes using process env for the wrapping key. */
-export const settingsRoutes = createSettingsRoutes();

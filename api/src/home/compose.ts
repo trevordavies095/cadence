@@ -6,6 +6,7 @@ import type { PrescribedDay } from "../llm/types.js";
 import { resolveLoopStatus, type LoopStatus } from "../loop/status.js";
 import { getPrescribedWeekBySessionId } from "../prescribed/store.js";
 import { listAllWorkoutsInWindow } from "../recap/listWindow.js";
+import type { RuntimeSources } from "../settings/sources.js";
 import { resolveUnitPreference } from "../settings/unitPreferenceStore.js";
 import type { TempoPort, TempoUnitPreference } from "../tempo/port.js";
 import { findWeekSession } from "../week/store.js";
@@ -158,9 +159,10 @@ export async function composeHome(options: {
   clock: Clock;
   athleteTimezone: string;
   tempoPort: TempoPort;
+  sources: RuntimeSources;
 }): Promise<HomeRead> {
-  const { clock, athleteTimezone, tempoPort } = options;
-  const status = await resolveLoopStatus(clock, athleteTimezone);
+  const { clock, athleteTimezone, tempoPort, sources } = options;
+  const status = await resolveLoopStatus(clock, athleteTimezone, sources);
   const banner = await deriveBanner(status);
   const units = await resolveUnitPreference(tempoPort);
 

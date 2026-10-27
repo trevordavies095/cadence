@@ -207,7 +207,7 @@ Set `E2E_DATABASE_URL` to use a different server and `E2E_CLOCK_NOW` to pin anot
 | Frontend → API | `API_SERVICE_URL` | Used by Next rewrites inside Compose (`http://api:5001`) |
 | Secret wrapping key | `DATA_PROTECTION_SECRET_KEY` | HKDF → AES-256-GCM for Tempo + Anthropic keys at rest |
 | Dev clock | `DEV_CLOCK_NOW` | ISO instant; fixes “now” when not `NODE_ENV=production`, or in production when `CADENCE_DEMO=1`. Read once at startup |
-| Demo mode | `CADENCE_DEMO` | `1` for the demo instance only: honours `DEV_CLOCK_NOW` in the production image, hides export runs after that clock, and counts the export and the stub as connected. Set by `scripts/demo.sh` |
+| Demo mode | `CADENCE_DEMO` | `1` for the demo instance only: honours `DEV_CLOCK_NOW` in the production image, hides export runs after that clock, and labels Settings as sample data. Set by `scripts/demo.sh` |
 | Host ports | `POSTGRES_HOST_PORT`, `API_HOST_PORT`, `FRONTEND_HOST_PORT` | Compose host ports, default `5433` / `5002` / `3001` |
 | Athlete timezone | `ATHLETE_TIMEZONE` | IANA name (e.g. `America/New_York`), default `UTC`. One timezone for every route and page: current week, week boundaries, loop status. An explicit `?timezone=` still overrides. An invalid name stops the API at startup. |
 | LLM provider | `LLM_PROVIDER` | `stub` (default; offline, CI) or `anthropic` (live, uses the encrypted Anthropic key) |

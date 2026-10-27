@@ -9,6 +9,7 @@ import type {
 } from "../llmCallLog/types.js";
 import type { ModelPacket } from "../packet/types.js";
 import { readAnthropicApiKey } from "../settings/anthropicStore.js";
+import { resolveLlmProvider } from "../settings/sources.js";
 import { resolveAnthropicEffort, type AnthropicEffort } from "./effort.js";
 import { readMessageStream } from "./anthropicStream.js";
 import {
@@ -1008,8 +1009,7 @@ export function resolveDefaultLlmPort(
   },
 ): LlmPort {
   const env = options?.env ?? process.env;
-  const provider = (env.LLM_PROVIDER ?? "stub").trim().toLowerCase();
-  if (provider === "anthropic" || provider === "live") {
+  if (resolveLlmProvider(env) === "anthropic") {
     return createAnthropicLlmPort(options);
   }
   return createStubLlmPort({
