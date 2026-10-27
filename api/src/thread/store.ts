@@ -130,6 +130,11 @@ export async function createAthleteMessage(
   return getMessage((result.rows[0] as unknown as { id: string }).id);
 }
 
+/** Remove one message, e.g. an athlete message whose reply failed (#5). */
+export async function deleteThreadMessage(id: string): Promise<void> {
+  await pool.query(`DELETE FROM thread_messages WHERE id = $1`, [id]);
+}
+
 /** Coach-authored thread message (dossier proposal summary, weekly analysis, …). */
 export async function createCoachMessage(
   body: string,

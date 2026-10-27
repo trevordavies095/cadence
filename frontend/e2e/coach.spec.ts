@@ -124,6 +124,28 @@ test.describe("Coach", () => {
     await expect(page.getByRole("button", { name: "Remove the attached run" })).toHaveCount(0);
   });
 
+  test("a send the coach can't answer puts the message and its run back, and leaves nothing behind (#5)", async ({
+    page,
+  }) => {
+    await page.route(/\/api\/weeks\/[^/]+\/chat$/, (route) =>
+      route.fulfill({
+        status: 502,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "llm_schema_invalid", message: "bad" }),
+      }),
+    );
+    await page.goto("/chat");
+    await page.getByRole("button", { name: "Add a run" }).click();
+    await page.getByRole("dialog", { name: "Add a run" }).getByRole("button").first().click();
+    await page.getByLabel("Message to Coach Cade").fill("This reply will fail.");
+    await page.getByRole("button", { name: "Send", exact: true }).click();
+
+    await expect(page.getByLabel("Message to Coach Cade")).toHaveValue("This reply will fail.");
+    await expect(page.getByRole("button", { name: "Remove the attached run" })).toBeVisible();
+    const log = page.getByRole("log", { name: "Conversation" });
+    await expect(log.getByText("This reply will fail.", { exact: true })).toHaveCount(0);
+  });
+
   test("a past week can be read but not added to, with a way back to this week", async ({ page, request }) => {
     const real = await currentWeek(request);
     const PAST = "00000000-0000-4000-8000-000000000042";

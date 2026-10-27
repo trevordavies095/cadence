@@ -40,6 +40,8 @@ function runLabel(w: TempoWorkoutSummary, unit: UnitPreference, timeZone: string
 /** A message on its way: what was sent and what the thread held before it. */
 type Sending = {
   body: string;
+  /** The run attached to the message, so a failed send can put it back. */
+  run: TempoWorkoutSummary | null;
   athleteBefore: number;
   coachBefore: number;
   /** "waiting" while the request is open; "recovering" once the connection gave up. */
@@ -202,7 +204,10 @@ function ChatInner() {
         setSending((s) => {
           if (!s) return s; // it arrived
           // If the message never reached Coach Cade, it goes back in the box.
-          if (latest && countRole(latest, "athlete") <= s.athleteBefore) setDraft(s.body);
+          if (latest && countRole(latest, "athlete") <= s.athleteBefore) {
+            setDraft(s.body);
+            setAttached(s.run);
+          }
           setError("Coach Cade didn’t reply. Check back in a while, or send your message again.");
           return null;
         });
@@ -215,11 +220,13 @@ function ChatInner() {
     e.preventDefault();
     const body = draft.trim();
     if (!body || !week || readOnly || sending) return;
-    const runId = attached?.id ?? null;
+    const run = attached;
+    const runId = run?.id ?? null;
     setError(null);
     setNotice(null);
     setSending({
       body,
+      run,
       athleteBefore: countRole(messages, "athlete"),
       coachBefore: countRole(messages, "coach"),
       phase: "waiting",
@@ -240,6 +247,7 @@ function ChatInner() {
       }
       setSending(null);
       setDraft(body);
+      setAttached(run);
       if (err instanceof ApiError && err.code === "week_archived") {
         // A new week began while this page was open. Show it; the draft stays in the box.
         try {
