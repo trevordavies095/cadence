@@ -3,7 +3,15 @@
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
 import { describeError, type UiError } from "@/lib/errors";
 import { useEffect, useState } from "react";
-import { ButtonLink, ErrorNote, Muted, Page, PageTitle, SectionTitle } from "@/components/ui";
+import {
+  ButtonLink,
+  ErrorNote,
+  Muted,
+  Page,
+  PageHead,
+  PageTitle,
+  SectionTitle,
+} from "@/components/ui";
 import {
   fetchLastOutboundPacket,
   fetchPrivacy,
@@ -117,8 +125,10 @@ export default function PrivacyPage() {
       )}
       {state.kind === "ready" && (
         <>
-          <PageTitle>{state.data.title}</PageTitle>
-          <Muted>{state.data.intro}</Muted>
+          <PageHead>
+            <PageTitle>{state.data.title}</PageTitle>
+            <Muted>{state.data.intro}</Muted>
+          </PageHead>
 
           <section className="flex flex-col gap-2">
             <SectionTitle>{state.data.sent.heading}</SectionTitle>

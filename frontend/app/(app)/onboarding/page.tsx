@@ -150,7 +150,7 @@ export default function OnboardingPage() {
 
   if (!started) {
     return (
-      <Page>
+      <Page flow>
         <PageTitle>Let Coach Cade get to know you</PageTitle>
         <p className="m-0 text-lg">
           Five short questions, about two minutes. Coach Cade uses your answers to build the
@@ -184,7 +184,7 @@ export default function OnboardingPage() {
   const required = name === "goal" || name === "days";
 
   return (
-    <Page>
+    <Page flow>
       <PageTitle>A few questions</PageTitle>
       <p className="m-0 text-sm font-semibold text-muted" aria-live="polite">
         {step + 1} of {ONBOARDING_STEPS.length}

@@ -10,6 +10,7 @@ import {
   Field,
   Muted,
   Page,
+  PageHead,
   PageTitle,
   SectionTitle,
   Textarea,
@@ -171,12 +172,14 @@ export default function AboutYouPage() {
 
   return (
     <Page>
-      <PageTitle>About you</PageTitle>
-      <Muted>
-        What Coach Cade knows about you, so every plan starts from the real you.
-        {current ? ` Last changed ${dayLabel(current.createdAt)}.` : ""}
-      </Muted>
-      <ErrorNote error={error} />
+      <PageHead>
+        <PageTitle>About you</PageTitle>
+        <Muted>
+          What Coach Cade knows about you, so every plan starts from the real you.
+          {current ? ` Last changed ${dayLabel(current.createdAt)}.` : ""}
+        </Muted>
+        <ErrorNote error={error} />
+      </PageHead>
 
       {waiting.length > 0 ? (
         <section className="flex flex-col gap-3" aria-label="Waiting for you">

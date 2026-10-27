@@ -205,7 +205,7 @@ export default function CheckInPage() {
 
   if (recapGate?.status === "needs_subjective" && opens) {
     return (
-      <Page>
+      <Page flow>
         <PageTitle>Weekly check-in</PageTitle>
         <p className="m-0 text-lg">Your check-in opens on {dayLabel(opens)}.</p>
         <Muted>
@@ -234,7 +234,7 @@ export default function CheckInPage() {
     const runSteps = steps.flatMap((s) => (s.kind === "run" ? [s.run] : []));
     const rows = summaryRows(answers, runSteps, unit);
     return (
-      <Page>
+      <Page flow>
         <PageTitle>Weekly check-in</PageTitle>
         <p className="m-0 text-lg font-medium">Here’s what you’re sending Coach Cade.</p>
         <dl className="m-0 flex flex-col" aria-label="Your answers">
@@ -280,7 +280,7 @@ export default function CheckInPage() {
   const weekly = answers.weekly ?? {};
 
   return (
-    <Page>
+    <Page flow>
       <PageTitle>Weekly check-in</PageTitle>
       <p className="m-0 text-sm font-semibold text-muted" aria-live="polite">
         {step + 1} of {steps.length}

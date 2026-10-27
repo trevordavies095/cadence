@@ -6,6 +6,7 @@ import {
   ErrorNote,
   Muted,
   Page,
+  PageHead,
   PageTitle,
   WaitingState,
 } from "@/components/ui";
@@ -68,11 +69,13 @@ export default function HistoryPage() {
 
   return (
     <Page>
-      <PageTitle>History</PageTitle>
-      <Muted>Your weeks, newest first.</Muted>
-      {runsUnknown ? (
-        <Muted>Your running log isn’t responding, so miles and runs are blank for now.</Muted>
-      ) : null}
+      <PageHead>
+        <PageTitle>History</PageTitle>
+        <Muted>Your weeks, newest first.</Muted>
+        {runsUnknown ? (
+          <Muted>Your running log isn’t responding, so miles and runs are blank for now.</Muted>
+        ) : null}
+      </PageHead>
 
       {weeks.length === 0 ? (
         <Muted>No weeks yet.</Muted>

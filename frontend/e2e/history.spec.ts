@@ -110,7 +110,11 @@ test.describe("History", () => {
 
     await expect(page).toHaveURL(new RegExp(`/review\\?week=${PAST}`));
     await expect(page.getByRole("heading", { name: "Your week", level: 1 })).toBeVisible();
-    await expect(page.locator("main > p", { hasText: "Oct 12 – 18" })).toBeVisible();
+    await expect(
+      page
+        .getByRole("heading", { name: "Your week", level: 1 })
+        .locator("xpath=following-sibling::p[1]"),
+    ).toHaveText("Oct 12 – 18");
     const report = page.getByRole("region", { name: "Your week", exact: true });
     await expect(report.getByRole("table", { name: "This week in numbers" })).toBeVisible();
 

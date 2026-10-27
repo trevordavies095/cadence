@@ -269,14 +269,14 @@ export function YourWeek({
 
       {zones ? (
         <div className="flex flex-col gap-2">
-          <h3 className="m-0 text-lg font-semibold">Heart rate zones</h3>
+          <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">Heart rate zones</h3>
           <ZoneBar zones={zones.distribution} />
         </div>
       ) : null}
 
       {runs && runs.runs.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h3 className="m-0 text-lg font-semibold">Your runs</h3>
+          <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">Your runs</h3>
           <Table
             label="Your runs"
             head={["Run", "Distance", "Time", "Pace", "Heart rate", "Heart rate drift"]}
@@ -324,7 +324,7 @@ export function YourWeek({
 
       {trends?.trends.included ? (
         <div className="flex flex-col gap-2">
-          <h3 className="m-0 text-lg font-semibold">The last four weeks</h3>
+          <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">The last four weeks</h3>
           <Table
             label="The last four weeks"
             head={["", ...trends.trends.weekLabels.map((w) => isoWeekRangeLabel(w))]}
@@ -366,7 +366,7 @@ export function YourWeek({
 
       {notable && notable.notable.bullets.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h3 className="m-0 text-lg font-semibold">Worth noting</h3>
+          <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">Worth noting</h3>
           <ul className="m-0 flex list-disc flex-col gap-1 pl-5">
             {notable.notable.bullets.map((b) => (
               <li key={b}>{b}</li>
@@ -377,7 +377,7 @@ export function YourWeek({
 
       {checkIn.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h3 className="m-0 text-lg font-semibold">Your check-in</h3>
+          <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">Your check-in</h3>
           <Card>
             <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
               {checkIn.map(([label, value]) => (

@@ -16,7 +16,9 @@ import {
   Muted,
   Notice,
   Page,
+  PageHead,
   PageTitle,
+  SectionHeader,
   SectionTitle,
   WaitingState,
 } from "@/components/ui";
@@ -176,9 +178,11 @@ function ReviewInner() {
 
   return (
     <Page>
-      <PageTitle>Your week</PageTitle>
-      {week ? <Muted>{isoWeekRangeLabel(week.isoWeek)}</Muted> : null}
-      <ErrorNote error={error} />
+      <PageHead>
+        <PageTitle>Your week</PageTitle>
+        {week ? <Muted>{isoWeekRangeLabel(week.isoWeek)}</Muted> : null}
+        <ErrorNote error={error} />
+      </PageHead>
 
       {week && (checkInDone || readOnly) ? (
         <section className="flex flex-col gap-3" aria-label="Your week">
@@ -256,10 +260,7 @@ function ReviewInner() {
           </section>
 
           <section className="flex flex-col gap-3" aria-label="Next week">
-            <header className="flex items-baseline justify-between gap-3">
-              <SectionTitle>Next week</SectionTitle>
-              <span className="text-muted">{isoWeekRangeLabel(plan.plan.week)}</span>
-            </header>
+            <SectionHeader title="Next week" aside={isoWeekRangeLabel(plan.plan.week)} />
             <ol className="m-0 flex list-none flex-col gap-3 p-0">
               {plan.plan.days.map((day) => (
                 <PlanDayRow key={day.date} day={day} unit={unit} isToday={false} />

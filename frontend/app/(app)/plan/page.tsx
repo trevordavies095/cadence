@@ -10,8 +10,9 @@ import {
   Muted,
   Notice,
   Page,
+  PageHead,
   PageTitle,
-  SectionTitle,
+  SectionHeader,
   WaitingState,
   ErrorNote,
 } from "@/components/ui";
@@ -175,31 +176,33 @@ export default function PlanPage() {
 
   return (
     <Page>
-      <PageTitle>Plan</PageTitle>
+      <PageHead>
+        <PageTitle>Plan</PageTitle>
 
-      <div role="group" aria-label="Which week" className="flex gap-2">
-        {(["this", "next"] as const).map((which) => (
-          <Button
-            key={which}
-            aria-pressed={view === which}
-            className={
-              view === which ? "border-ink" : "border-border text-muted"
-            }
-            onClick={() => setView(which)}
-          >
-            {which === "this" ? "This week" : "Next week"}
-          </Button>
-        ))}
-      </div>
+        <div role="group" aria-label="Which week" className="flex gap-2">
+          {(["this", "next"] as const).map((which) => (
+            <Button
+              key={which}
+              aria-pressed={view === which}
+              className={
+                view === which ? "border-ink" : "border-border text-muted"
+              }
+              onClick={() => setView(which)}
+            >
+              {which === "this" ? "This week" : "Next week"}
+            </Button>
+          ))}
+        </div>
+      </PageHead>
 
       <section
         className="flex flex-col gap-3"
         aria-label={view === "next" ? "Next week plan" : "Week plan"}
       >
-        <header className="flex items-baseline justify-between gap-3">
-          <SectionTitle>{view === "next" ? "Next week" : "This week"}</SectionTitle>
-          <span className="text-muted">{weekLabel}</span>
-        </header>
+        <SectionHeader
+          title={view === "next" ? "Next week" : "This week"}
+          aside={weekLabel}
+        />
 
         {selected ? (
           <>
@@ -239,62 +242,63 @@ export default function PlanPage() {
         )}
       </section>
 
-      {runPending ? (
-        <Banner>
-          Coach Cade is reading your week. Next week’s plan will appear here
-          when it’s ready.
-        </Banner>
-      ) : null}
-
-      {planUnlocked ? (
-        confirming ? (
-          <Banner
-            action={
-              <div className="flex gap-2">
-                <Button
-                  variant="primary"
-                  disabled={planBusy || !week}
-                  onClick={() => void onRequestWeeklyPlan()}
-                >
-                  Redo it
-                </Button>
-                <Button onClick={() => setConfirming(false)}>Cancel</Button>
-              </div>
-            }
-          >
-            This replaces next week’s plan and takes a couple of minutes.
+      <div className="flex flex-col gap-4">
+        {runPending ? (
+          <Banner>
+            Coach Cade is reading your week. Next week’s plan will appear here
+            when it’s ready.
           </Banner>
-        ) : (
-          <div>
-            <Button
-              disabled={planBusy || runPending || !week}
-              onClick={() => setConfirming(true)}
-            >
-              {planBusy
-                ? "Coach Cade is working on it…"
-                : nextPlan
-                  ? "Ask Coach Cade to redo next week"
-                  : "Ask Coach Cade to plan next week"}
-            </Button>
-          </div>
-        )
-      ) : (
-        <Muted>
-          Coach Cade plans next week once your weekly check-in is done. It opens on Saturday.
-        </Muted>
-      )}
-      <ErrorNote error={error} />
-      <Muted>
-        <ButtonLink href="/chat" variant="quiet">
-          Talk to Coach Cade
-        </ButtonLink>{" "}
-        or look back at your{" "}
-        <ButtonLink href="/weeks" variant="quiet">
-          past weeks
-        </ButtonLink>
-        .
-      </Muted>
+        ) : null}
 
+        {planUnlocked ? (
+          confirming ? (
+            <Banner
+              action={
+                <div className="flex gap-2">
+                  <Button
+                    variant="primary"
+                    disabled={planBusy || !week}
+                    onClick={() => void onRequestWeeklyPlan()}
+                  >
+                    Redo it
+                  </Button>
+                  <Button onClick={() => setConfirming(false)}>Cancel</Button>
+                </div>
+              }
+            >
+              This replaces next week’s plan and takes a couple of minutes.
+            </Banner>
+          ) : (
+            <div>
+              <Button
+                disabled={planBusy || runPending || !week}
+                onClick={() => setConfirming(true)}
+              >
+                {planBusy
+                  ? "Coach Cade is working on it…"
+                  : nextPlan
+                    ? "Ask Coach Cade to redo next week"
+                    : "Ask Coach Cade to plan next week"}
+              </Button>
+            </div>
+          )
+        ) : (
+          <Muted>
+            Coach Cade plans next week once your weekly check-in is done. It opens on Saturday.
+          </Muted>
+        )}
+        <ErrorNote error={error} />
+        <Muted>
+          <ButtonLink href="/chat" variant="quiet">
+            Talk to Coach Cade
+          </ButtonLink>{" "}
+          or look back at your{" "}
+          <ButtonLink href="/weeks" variant="quiet">
+            past weeks
+          </ButtonLink>
+          .
+        </Muted>
+      </div>
     </Page>
   );
 }

@@ -13,13 +13,17 @@ const ALLOWED = [
   "blockquote", "code", "pre", "a",
 ];
 
+/** Level 3 and below: a small uppercase muted eyebrow. */
+const EYEBROW = "m-0 mt-2 text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-muted";
+
 const components: ComponentProps<typeof ReactMarkdown>["components"] = {
-  h1: (p) => <h3 className="m-0 mt-3 text-xl font-semibold leading-snug" {...strip(p)} />,
-  h2: (p) => <h3 className="m-0 mt-3 text-xl font-semibold leading-snug" {...strip(p)} />,
-  h3: (p) => <h4 className="m-0 mt-2 text-lg font-semibold leading-snug" {...strip(p)} />,
-  h4: (p) => <h5 className="m-0 mt-2 text-base font-semibold" {...strip(p)} />,
-  h5: (p) => <h5 className="m-0 mt-2 text-base font-semibold" {...strip(p)} />,
-  h6: (p) => <h6 className="m-0 mt-2 text-base font-semibold" {...strip(p)} />,
+  // One register below the app's section titles, so Coach Cade's headings never read as the app's.
+  h1: (p) => <h3 className="m-0 mt-3 text-lg font-semibold leading-snug" {...strip(p)} />,
+  h2: (p) => <h3 className="m-0 mt-3 text-lg font-semibold leading-snug" {...strip(p)} />,
+  h3: (p) => <h4 className={EYEBROW} {...strip(p)} />,
+  h4: (p) => <h5 className={EYEBROW} {...strip(p)} />,
+  h5: (p) => <h5 className={EYEBROW} {...strip(p)} />,
+  h6: (p) => <h6 className={EYEBROW} {...strip(p)} />,
   p: (p) => <p className="m-0" {...strip(p)} />,
   ul: (p) => <ul className="m-0 flex list-disc flex-col gap-1 pl-5" {...strip(p)} />,
   ol: (p) => <ol className="m-0 flex list-decimal flex-col gap-1 pl-5" {...strip(p)} />,
