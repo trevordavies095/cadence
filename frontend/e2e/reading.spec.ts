@@ -111,3 +111,84 @@ test.describe("the Sunday message", () => {
     );
   });
 });
+
+const LONG_PARAGRAPH =
+  "Big week in the books with forty-five miles, your longest run in two years, and a long run " +
+  "with a genuine negative split. That is a confidence builder, and the goal is still live. " +
+  "Two things tell me we pull the reins a little this week before we go hard again: the Thursday " +
+  "session drifted into a harder zone than planned, and the Sunday drift was well above target. " +
+  "Combine that with short sleep and heavy legs into Monday, and the smart play is a modest " +
+  "step-back now so we can hit one more quality block before the taper begins.";
+
+const PROSE = [
+  LONG_PARAGRAPH,
+  "",
+  "**Is the goal still sensible?** Yes, with one caveat about the next long run.",
+  "",
+  "**Don't** run the easy days fast.",
+  "",
+  "| Day | Session | Pace | Heart rate | Shoes | Notes |",
+  "| --- | --- | --- | --- | --- | --- |",
+  "| Tue | 5 mi easy | 9:40 to 9:50 per mile | Zone 2, under 148 | Ghost 16 | Flat canal, walk if grim |",
+].join("\n");
+
+/** Characters per rendered line of a block of prose, from its height and line height. */
+async function charactersPerLine(page: Page, text: string) {
+  return page.getByText(text.slice(0, 40)).evaluate((el) => {
+    const style = getComputedStyle(el);
+    const lines = Math.round(el.getBoundingClientRect().height / parseFloat(style.lineHeight));
+    return (el.textContent ?? "").length / lines;
+  });
+}
+
+test.describe("coach prose", () => {
+  test.beforeEach(async ({ page }) => {
+    const week = await (await page.request.post(`${API_URL}/weeks/current`)).json();
+    await page.route(/\/api\/thread\?/, (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifacts: [],
+          messages: [
+            {
+              id: "long",
+              role: "coach",
+              kind: "chat",
+              body: PROSE,
+              createdAt: "2026-10-25T16:00:00.000Z",
+              weekSessionId: week.id,
+              safetyCallouts: [],
+            },
+          ],
+        }),
+      }),
+    );
+    await page.goto("/chat");
+  });
+
+  test("keeps paragraphs to a comfortable line length", async ({ page }) => {
+    const perLine = await charactersPerLine(page, LONG_PARAGRAPH);
+    // About 65: the research range is 50 to 75, and the old column ran past 100.
+    expect(perLine).toBeGreaterThan(58);
+    expect(perLine).toBeLessThan(70);
+  });
+
+  test("lets a table use the full width", async ({ page }) => {
+    const message = page.locator('article[data-role="coach"]');
+    const widths = await message.evaluate((el) => {
+      const p = el.querySelector("p")!.getBoundingClientRect().width;
+      const table = el.querySelector("table")!.getBoundingClientRect().width;
+      return { p, table };
+    });
+    expect(widths.table).toBeGreaterThan(widths.p);
+  });
+
+  test("sets a bold answer as the lead, and leaves bold words inside a sentence alone", async ({
+    page,
+  }) => {
+    const lead = page.locator("strong", { hasText: "Is the goal still sensible?" });
+    await expect(lead).toHaveCSS("display", "block");
+    const inline = page.locator("strong", { hasText: "Don't" });
+    await expect(inline).toHaveCSS("display", "inline");
+  });
+});
