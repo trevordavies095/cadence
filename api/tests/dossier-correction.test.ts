@@ -117,6 +117,8 @@ describe("athlete dossier correction → applied note (#18, #102)", () => {
     expect(coach.body).toContain("I've updated what I know about you");
     // The change is already made; the message must not ask for an approval.
     expect(coach.body).not.toContain("Accept");
+    // The bullets are on the note card, not repeated in the message (#19).
+    expect(coach.body).not.toContain("Summary:");
     expect(coach.weekSessionId).toBe(week.id);
 
     // Nothing waits, and the current version is the corrected one.

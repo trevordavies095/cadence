@@ -120,7 +120,9 @@ describe("dossier audit/trim proposals (#40)", () => {
 
     const coach = body.coachMessage as { role: string; body: string };
     expect(coach.role).toBe("coach");
-    expect(coach.body).toContain("Accept");
+    // Names the card's real action, not a button that does not exist (#19).
+    expect(coach.body).toContain("Nothing changes until you say it looks right.");
+    expect(coach.body).not.toContain("Accept");
 
     const pending = await json(await app.request("/dossier/proposals"));
     expect((pending.proposals as unknown[]).length).toBe(1);

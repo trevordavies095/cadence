@@ -526,33 +526,27 @@ export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
 }
 
 /** Athlete-facing coach thread summary for a pending dossier soft-gate. */
-export function formatDossierProposalThreadBody(draft: {
+export function formatDossierProposalThreadBody(_draft: {
   summaryBullets: string[];
 }): string {
-  const bullets = draft.summaryBullets.map((b) => `• ${b}`).join("\n");
+  // The note card under this message lists the bullets and holds the actions (#19).
   return [
-    "Here is what I understood from your answers, and from your running log where I could see it.",
-    "",
-    "Summary:",
-    bullets,
-    "",
-    "Accept to save it, or Reject to start over. The full text is under About you.",
-  ].join("\n");
+    "Here's what I understood from your answers, and from your running log where I could see it.",
+    "If it looks right, say so below. If something's off, tell me what to fix.",
+    "The full text is under About you.",
+  ].join(" ");
 }
 
 /** Athlete-facing coach thread summary for a pending correction rewrite (#18). */
-export function formatDossierCorrectionThreadBody(draft: {
+export function formatDossierCorrectionThreadBody(_draft: {
   summaryBullets: string[];
 }): string {
-  const bullets = draft.summaryBullets.map((b) => `• ${b}`).join("\n");
+  // The note card under this message lists the bullets and holds the actions (#19).
   return [
     "I've updated what I know about you, based on your correction.",
-    "",
-    "Summary:",
-    bullets,
-    "",
-    "If that isn't right, you can undo it. The full text is under About you.",
-  ].join("\n");
+    "If that isn't right, you can undo it.",
+    "The full text is under About you.",
+  ].join(" ");
 }
 
 /**
@@ -724,18 +718,15 @@ export function buildStubDossierAudit(
 }
 
 /** Athlete-facing coach thread summary for a pending dossier audit (#40). */
-export function formatDossierAuditThreadBody(draft: {
+export function formatDossierAuditThreadBody(_draft: {
   summaryBullets: string[];
 }): string {
-  const bullets = draft.summaryBullets.map((b) => `• ${b}`).join("\n");
+  // The note card under this message lists the bullets and holds the actions (#19).
   return [
-    "I've drafted a tidy-up of what I know about you. Nothing changes until you Accept.",
-    "",
-    "Summary:",
-    bullets,
-    "",
-    "Accept to save the tidy-up, or Reject to discard it. The full text is under About you.",
-  ].join("\n");
+    "I've drafted a tidy-up of what I know about you. Nothing changes until you say it looks right.",
+    "If something's off, tell me what to fix.",
+    "The full text is under About you.",
+  ].join(" ");
 }
 
 /**

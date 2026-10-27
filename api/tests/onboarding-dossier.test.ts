@@ -155,8 +155,9 @@ describe("onboarding → stub LLM dossier v1 proposal + Accept", () => {
       weekSessionId: string | null;
     };
     expect(coachMessage.role).toBe("coach");
-    expect(coachMessage.body).toContain("Summary:");
-    expect(coachMessage.body).toContain("Half marathon");
+    // The bullets are on the note card, not repeated in the message (#19).
+    expect(coachMessage.body).toContain("If it looks right, say so below.");
+    expect(coachMessage.body).not.toContain("Half marathon");
     expect(coachMessage.weekSessionId).toBe(week.id);
 
     const llm = body.llm as {
@@ -174,7 +175,7 @@ describe("onboarding → stub LLM dossier v1 proposal + Accept", () => {
     expect(proposals[0]!.id).toBe(proposal.id);
 
     // Coach summary is attached to the week (thread list may also surface artifacts).
-    expect(coachMessage.body).toContain("Here is what I understood");
+    expect(coachMessage.body).toContain("Here's what I understood");
     expect(coachMessage.weekSessionId).toBe(week.id);
   });
 
