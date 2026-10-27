@@ -11,6 +11,16 @@ function parseYmd(ymd: string): Ymd | null {
   return { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) };
 }
 
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** Athlete-facing calendar day: "Mon Oct 19"; "" when unparsable. */
+export function formatDayShort(ymd: string): string {
+  const a = parseYmd(ymd);
+  if (!a) return "";
+  const weekday = WEEKDAYS[new Date(Date.UTC(a.y, a.m - 1, a.d)).getUTCDay()];
+  return `${weekday} ${MONTHS[a.m - 1]} ${a.d}`;
+}
+
 /**
  * Athlete-facing week range from two calendar dates: "Oct 19 – 25",
  * "Oct 26 – Nov 1", or "Dec 28 – Jan 3, 2027" when the year changes.

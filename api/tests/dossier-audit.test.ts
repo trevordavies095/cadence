@@ -67,13 +67,17 @@ describe("dossier audit/trim proposals (#40)", () => {
     const checked = validateDossierAuditDraft(a);
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
-    expect(checked.value.proposedBody).toContain(
-      "Current Status (updated 2026-10-21)",
-    );
+    expect(checked.value.proposedBody).toMatch(/^## Current Status$/m);
+    expect(checked.value.proposedBody).toContain("Tidied Wed Oct 21 (Oct 19 – 25).");
     expect(checked.value.proposedBody).toContain("Achilles flared");
     expect(checked.value.proposedBody).not.toMatch(/^## Coach update/m);
-    expect(checked.value.proposedBody).toContain("Last audit: 2026-10-21");
-    expect(checked.value.proposedBody).toContain("Next due: 2026-11-25");
+    expect(checked.value.proposedBody).toContain("- Last tidy-up: Wed Oct 21");
+    expect(checked.value.proposedBody).toContain(
+      "- Next one around Wed Nov 25 (every 5 weeks)",
+    );
+    expect(checked.value.proposedBody).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+    expect(buildStubDossierAudit({ ...input, currentDossier: { versionId: 2, body: a.proposedBody } })
+      .proposedBody.match(/^## Tidy-ups$/gm)).toHaveLength(1);
     expect(checked.value.summaryBullets.length).toBeGreaterThan(0);
   });
 
@@ -173,7 +177,7 @@ describe("dossier audit/trim proposals (#40)", () => {
     };
     expect(proposal.status).toBe("pending");
     expect(proposal.kind).toBe("audit");
-    expect(proposal.proposedBody).toContain("Current Status (updated 2026-10-21)");
+    expect(proposal.proposedBody).toContain("Tidied Wed Oct 21");
     expect(proposal.proposedBody).not.toMatch(/^## Coach update/m);
 
     // No silent mutation until Accept.

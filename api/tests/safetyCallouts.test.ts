@@ -201,9 +201,23 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
     expect(clean.ok && clean.repairs).toBeUndefined();
   });
 
-  it("stub emits a callout when dossier notes a soft-tissue concern", async () => {
+  function athlete(body: string, at: string) {
+    return {
+      id: at,
+      role: "athlete" as const,
+      body,
+      createdAt: at,
+      weekSessionId: "00000000-0000-4000-8000-000000000001",
+      attachment: null,
+    };
+  }
+
+  it("stub emits a callout when the latest athlete message raises a red flag (#9)", async () => {
+    const flagged = samplePacket({
+      thread: [athlete("My Achilles flared on the downhill.", "2026-10-22T12:00:00.000Z")],
+    });
     const port = createStubLlmPort();
-    const reply = await port.generateWeeklyReply(samplePacket());
+    const reply = await port.generateWeeklyReply(flagged);
     expect(reply.safetyCallouts?.length).toBeGreaterThan(0);
     expect(reply.safetyCallouts![0]!.title).toMatch(/professional/i);
     expect(reply.safetyCallouts![0]!.body.toLowerCase()).toMatch(
@@ -213,9 +227,23 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
     const checked = validateWeeklyReply(reply, PLAN_WEEK_START);
     expect(checked.ok).toBe(true);
 
-    const mid = buildStubMidWeekChatReply(samplePacket());
+    const mid = buildStubMidWeekChatReply(flagged);
     expect(mid.safetyCallouts?.length).toBeGreaterThan(0);
     expect(validateMidWeekChatReply(mid).ok).toBe(true);
+  });
+
+  it("stub ignores red flags in About you, the report and earlier messages (#9)", () => {
+    const calm = samplePacket({
+      recapMarkdown: "## Summary\nAchilles sore after the long run.",
+      thread: [
+        athlete("Saw my physio about the Achilles.", "2026-10-20T12:00:00.000Z"),
+        athlete("Easy run felt smooth today.", "2026-10-22T12:00:00.000Z"),
+      ],
+    });
+    expect(RED_FLAG_NOTE).toMatch(/Achilles/);
+    expect(buildStubWeeklyReply(calm).safetyCallouts).toBeUndefined();
+    expect(buildStubMidWeekChatReply(calm).safetyCallouts).toBeUndefined();
+    expect(buildStubWeeklyReply(samplePacket()).safetyCallouts).toBeUndefined();
   });
 
   it("stub omits callouts when no red-flag language is present", () => {
@@ -261,6 +289,12 @@ describe("POST /week/reply surfaces safety callouts (#32)", () => {
     );
     const weekSessionId = week.id as string;
     await unlockPlanCheckIn(app, weekSessionId);
+    // The stub's notice keys off the latest athlete message (#9).
+    await app.request(`/weeks/${weekSessionId}/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ body: "My Achilles flared on the long run." }),
+    });
 
     const res = await app.request("/week/reply", {
       method: "POST",
