@@ -731,7 +731,9 @@ export function createAnthropicLlmPort(
     call: () => Promise<AnthropicCallResult>,
     validate: (
       toolInput: unknown,
-    ) => { ok: true; value: T } | { ok: false; error: string },
+    ) =>
+      | { ok: true; value: T; repairs?: string[] }
+      | { ok: false; error: string },
   ): Promise<T> {
     const startedAt = Date.now();
     const callId = callOptions?.callId;
@@ -764,8 +766,8 @@ export function createAnthropicLlmPort(
           thinkingTokens: result.usage.thinkingTokens,
           cacheReadTokens: result.usage.cacheReadTokens,
           cacheCreationTokens: result.usage.cacheCreationTokens,
-          outcome: "ok",
-          errorMessage: null,
+          outcome: validated.repairs ? "repaired" : "ok",
+          errorMessage: validated.repairs?.join("; ") ?? null,
         });
       }
       return validated.value;
