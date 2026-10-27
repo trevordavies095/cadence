@@ -50,6 +50,16 @@ Ports are offset from Tempo's defaults (3000 / 5001 / 5432) so both can run side
 
 To run it on a home server, use `docker-compose.homelab.yml` with `.env.homelab.example` (copy it to `.env.homelab`): `docker compose -f docker-compose.homelab.yml --env-file .env.homelab up -d --build`. It keeps Postgres and the API on the internal network and exposes only the web page.
 
+## What it costs
+
+Cadence is free. The live coach uses your own Anthropic API key, so you pay Anthropic per call. Rough figures on the defaults (Opus 4.7, effort `xhigh`):
+
+| Usage | Per week |
+|-------|----------|
+| Weekly reply only | ~$0.30 |
+| Reply + a few chat messages | ~$1 |
+| Chatting most days | ~$2 |
+
 ## How it works
 
 Each week follows the same loop. Coach Cade builds the recap from your Tempo data, you add a short check-in, and the coach replies with an analysis and next week's plan. During the week you can chat and attach a run. Anything worth remembering is proposed as a change to "About you", and nothing is saved until you accept it.
