@@ -21,8 +21,11 @@ export function Banner({
     <div
       role={role ?? (tone === "danger" ? "alert" : "status")}
       className={cx(
-        "flex flex-wrap items-center justify-between gap-3 rounded-tempo border bg-raised px-4 py-3",
-        tone === "danger" ? "border-danger" : "border-border",
+        "flex flex-wrap items-center justify-between gap-3 rounded-tempo border border-l-[3px] px-4 py-3",
+        // Info is Coach Cade asking for something, so it sits on his paper.
+        tone === "danger"
+          ? "border-danger bg-[color-mix(in_srgb,var(--danger)_8%,var(--raised))]"
+          : "border-border border-l-accent bg-coach-bg",
         className,
       )}
     >
