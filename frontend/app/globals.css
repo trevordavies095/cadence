@@ -2,46 +2,58 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Tokens mirror Tempo's frontend/app/globals.css so the log and the coach
-   read as one product. Dark is applied by the appearance bootstrap script. */
+/* Tokens started from Tempo's; Cadence tunes its own. Values and rationale:
+   docs/adr/0001-color-scheme.md. Dark is applied by the appearance bootstrap
+   script. Volt is for the one primary action on a page; accent carries
+   structure (the current page, today, Coach Cade's voice). */
 :root {
   --canvas: #f4f1ea;
   --raised: #ffffff;
   --overlay: rgb(28 25 23 / 0.45);
-  --line: #e7e5e4;
+  --line: #d9d4cb;
+  --line-strong: #b8b2a7;
   --ink: #1c1917;
   --muted: #57534e;
   --inverse: #fafaf9;
+  --accent: #5f6d00;
+  --coach-bg: #fbfbe9;
+  --ok: #2c784a;
+  --warn: #8f5f00;
   --volt: #e8ff00;
   --on-volt: #1c1917;
-  --danger: #e05656;
+  --danger: #c43e3e;
   --on-danger: #1c1917;
-  --hr-zone-1: #2f9e5d;
-  --hr-zone-2: #7cb342;
-  --hr-zone-3: #d9a31a;
-  --hr-zone-4: #e07a2f;
-  --hr-zone-5: var(--danger);
+  --hr-zone-1: #4a9467;
+  --hr-zone-2: #88ad5c;
+  --hr-zone-3: #c9a044;
+  --hr-zone-4: #cf834d;
+  --hr-zone-5: #cf6161;
   --background: var(--canvas);
   --foreground: var(--ink);
 }
 
 .dark {
-  --canvas: #141210;
-  --raised: #1c1917;
+  --canvas: #121110;
+  --raised: #211e1b;
   --overlay: rgb(0 0 0 / 0.6);
-  --line: #292524;
+  --line: #3a3531;
+  --line-strong: #5a534c;
   --ink: #f5f5f4;
   --muted: #a8a29e;
   --inverse: #0c0a09;
+  --accent: #cfe300;
+  --coach-bg: #1f1f12;
+  --ok: #3dba70;
+  --warn: #e0b13a;
   --volt: #e8ff00;
   --on-volt: #1c1917;
   --danger: #f07171;
   --on-danger: #1c1917;
-  --hr-zone-1: #3dba70;
-  --hr-zone-2: #9ccc4a;
-  --hr-zone-3: #e8b923;
-  --hr-zone-4: #f08c42;
-  --hr-zone-5: var(--danger);
+  --hr-zone-1: #4fae78;
+  --hr-zone-2: #a0c25e;
+  --hr-zone-3: #d8b246;
+  --hr-zone-4: #e0915c;
+  --hr-zone-5: #e07a7a;
   --background: var(--canvas);
   --foreground: var(--ink);
 }
@@ -51,9 +63,14 @@
   --color-raised: var(--raised);
   --color-overlay: var(--overlay);
   --color-border: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-inverse: var(--inverse);
+  --color-accent: var(--accent);
+  --color-coach-bg: var(--coach-bg);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
   --color-volt: var(--volt);
   --color-on-volt: var(--on-volt);
   --color-danger: var(--danger);
@@ -86,7 +103,7 @@ body {
 input[type="radio"],
 input[type="checkbox"],
 input[type="range"] {
-  accent-color: var(--ink);
+  accent-color: var(--accent);
 }
 
 input[type="number"],
