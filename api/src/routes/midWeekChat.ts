@@ -210,6 +210,7 @@ export function createMidWeekChatRoutes(
     }
 
     const athleteMessage = await createAthleteMessage(
+      clock.now(),
       text,
       session.id,
       attachment,
@@ -245,8 +246,10 @@ export function createMidWeekChatRoutes(
           const dossierProposal = await createProposalFromAudit({
             summaryBullets: draft.summaryBullets,
             proposedBody: draft.proposedBody,
+            at: clock.now(),
           });
           const coachMessage = await createCoachMessage(
+            clock.now(),
             formatDossierAuditThreadBody(draft),
             session.id,
             null,
@@ -336,8 +339,10 @@ export function createMidWeekChatRoutes(
         const dossierProposal = await createProposalFromMidWeekChat({
           settingsProposalBullets: reply.settingsProposalBullets,
           isoWeek: session.isoWeek,
+          at: clock.now(),
         });
         const coachMessage = await createCoachMessage(
+          clock.now(),
           coachBody,
           session.id,
           callId,
@@ -368,6 +373,7 @@ export function createMidWeekChatRoutes(
               settingsProposalBullets:
                 existingPrescribed.settingsProposalBullets,
               safetyCallouts: existingPrescribed.safetyCallouts,
+              at: clock.now(),
             });
             threadArtifact = toPrescribedArtifact(prescribed);
           }

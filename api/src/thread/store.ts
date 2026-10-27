@@ -98,33 +98,35 @@ export async function listThreadMessages(
     const result = await pool.query<Row>(
       `${SELECT_MESSAGE}
        WHERE m.week_session_id = $1
-       ORDER BY m.created_at ASC, m.id ASC`,
+       ORDER BY m.created_at ASC, m.seq ASC`,
       [weekSessionId],
     );
     return result.rows.map(toMessage);
   }
 
   const result = await pool.query<Row>(
-    `${SELECT_MESSAGE} ORDER BY m.created_at ASC, m.id ASC`,
+    `${SELECT_MESSAGE} ORDER BY m.created_at ASC, m.seq ASC`,
   );
   return result.rows.map(toMessage);
 }
 
 export async function createAthleteMessage(
+  at: Date,
   body: string,
   weekSessionId?: string | null,
   attachment?: ModelPacketAttachment | null,
 ): Promise<ThreadMessage> {
   const result = await pool.query<Row>(
     `
-    INSERT INTO thread_messages (role, body, week_session_id, attachment)
-    VALUES ('athlete', $1, $2, $3::jsonb)
+    INSERT INTO thread_messages (role, body, week_session_id, attachment, created_at)
+    VALUES ('athlete', $1, $2, $3::jsonb, $4)
     RETURNING id::text AS id
     `,
     [
       body,
       weekSessionId ?? null,
       attachment ? JSON.stringify(attachment) : null,
+      at,
     ],
   );
   return getMessage((result.rows[0] as unknown as { id: string }).id);
@@ -137,6 +139,7 @@ export async function deleteThreadMessage(id: string): Promise<void> {
 
 /** Coach-authored thread message (dossier proposal summary, weekly analysis, …). */
 export async function createCoachMessage(
+  at: Date,
   body: string,
   weekSessionId?: string | null,
   llmCallId?: string | null,
@@ -146,8 +149,8 @@ export async function createCoachMessage(
   const result = await pool.query<{ id: string }>(
     `
     INSERT INTO thread_messages
-      (role, body, week_session_id, attachment, llm_call_id, safety_callouts, dossier_proposal_id)
-    VALUES ('coach', $1, $2, NULL, $3, $4::jsonb, $5)
+      (role, body, week_session_id, attachment, llm_call_id, safety_callouts, dossier_proposal_id, created_at)
+    VALUES ('coach', $1, $2, NULL, $3, $4::jsonb, $5, $6)
     RETURNING id::text AS id
     `,
     [
@@ -158,6 +161,7 @@ export async function createCoachMessage(
         ? JSON.stringify(safetyCallouts)
         : null,
       dossierProposalId ?? null,
+      at,
     ],
   );
   return getMessage(result.rows[0]!.id);

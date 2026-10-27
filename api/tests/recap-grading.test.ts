@@ -293,6 +293,7 @@ describe("recap skeleton grading with export fixture (#41)", () => {
     };
 
     await savePrescribedWeek({
+      at: new Date(),
       weekSessionId,
       plan,
       analysis: "Fixture plan for grading.",

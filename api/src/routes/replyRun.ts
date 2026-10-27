@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import { getLatestRun, markLatestRunSeen } from "../replyRun/store.js";
 import { getWeekSessionById } from "../week/store.js";
+import type { Clock } from "../clock/clock.js";
 import type { ReplyRunner } from "./weeklyReply.js";
 
 /**
@@ -9,7 +10,10 @@ import type { ReplyRunner } from "./weeklyReply.js";
  * finishing or skipping the check-in (and by an explicit redo), never from here
  * except to retry a failed one.
  */
-export function createReplyRunRoutes(options: { runner: ReplyRunner }): Hono {
+export function createReplyRunRoutes(options: {
+  runner: ReplyRunner;
+  clock: Clock;
+}): Hono {
   const routes = new Hono();
   const { runner } = options;
 
@@ -28,7 +32,7 @@ export function createReplyRunRoutes(options: { runner: ReplyRunner }): Hono {
     const weekSessionId = c.req.param("weekSessionId")?.trim() ?? "";
     const session = await getWeekSessionById(weekSessionId);
     if (!session) return c.json({ error: "week_session_not_found" }, 404);
-    return c.json({ run: await markLatestRunSeen(session.id) });
+    return c.json({ run: await markLatestRunSeen(options.clock.now(), session.id) });
   });
 
   routes.post("/weeks/:weekSessionId/reply-run/retry", async (c) => {

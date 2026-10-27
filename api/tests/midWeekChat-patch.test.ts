@@ -194,6 +194,7 @@ describe("stub prescribed day patches (#38)", () => {
 // week's plan directly.
 async function seedCurrentWeekPlan(weekSessionId: string): Promise<void> {
   await savePrescribedWeek({
+    at: new Date(),
     weekSessionId,
     plan: samplePlan(),
     analysis: "Seeded current-week plan.",

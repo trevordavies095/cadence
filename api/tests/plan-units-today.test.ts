@@ -94,6 +94,7 @@ describe("plan reads carry the athlete's units and today (#96)", () => {
 
     const { savePrescribedWeek } = await import("../src/prescribed/store.js");
     await savePrescribedWeek({
+      at: new Date(),
       weekSessionId: id,
       plan: { week: "2026-W43", days: [] },
       analysis: "Fixture.",

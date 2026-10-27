@@ -161,15 +161,18 @@ describe("POST /packet lean live context (#34)", () => {
       const id = session.id as string;
 
       await createAthleteMessage(
+        new Date(),
         `Mid-week chatter ${week.chatMarker} — should not enter live packet.`,
         id,
       );
       await saveWeekRecap({
+        at: new Date(),
         weekSessionId: id,
         markdown: `# Weekly Recap — ${week.isoWeek}\n\n${week.recapMarker}`,
         subjective: "skipped",
       });
       await savePrescribedWeek({
+        at: new Date(),
         weekSessionId: id,
         plan: restPlan(week.isoWeek, week.monday),
         analysis: `ANALYSIS_${week.isoWeek}`,
@@ -193,7 +196,7 @@ describe("POST /packet lean live context (#34)", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ body: COACHING_NOTE }),
     });
-    await createAthleteMessage("Live week note CURRENT_WEEK_CHAT", liveId);
+    await createAthleteMessage(new Date(), "Live week note CURRENT_WEEK_CHAT", liveId);
 
     const res = await liveApp.request("/packet", {
       method: "POST",
@@ -259,6 +262,7 @@ describe("POST /packet lean live context (#34)", () => {
         await app.request("/weeks/current", { method: "POST" }),
       );
       await saveWeekRecap({
+        at: new Date(),
         weekSessionId: session.id as string,
         markdown: `Recap for ${session.isoWeek as string}`,
         subjective: "skipped",

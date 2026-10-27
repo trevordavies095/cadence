@@ -240,7 +240,7 @@ describe("GET /loop-status (#46)", () => {
     const week = await json(
       await app.request("/weeks/current", { method: "POST" }),
     );
-    await saveSubjectiveAnswers(week.id as string, {
+    await saveSubjectiveAnswers(new Date(), week.id as string, {
       week: week.isoWeek as string,
       runs: [],
       weekly: {},
@@ -274,6 +274,7 @@ describe("GET /loop-status (#46)", () => {
       await app.request("/weeks/current", { method: "POST" }),
     );
     await savePrescribedWeek({
+      at: new Date(),
       weekSessionId: week.id as string,
       plan: {
         week: week.isoWeek as string,
@@ -309,13 +310,14 @@ describe("GET /loop-status (#46)", () => {
       await app.request("/weeks/current", { method: "POST" }),
     );
     const weekSessionId = week.id as string;
-    await saveSubjectiveAnswers(weekSessionId, {
+    await saveSubjectiveAnswers(new Date(), weekSessionId, {
       week: week.isoWeek as string,
       runs: [],
       weekly: {},
     });
-    const next = await ensureWeekSession("2026-W44", "UTC");
+    const next = await ensureWeekSession(new Date(), "2026-W44", "UTC");
     await savePrescribedWeek({
+      at: new Date(),
       weekSessionId: next.session.id,
       plan: {
         week: "2026-W44",

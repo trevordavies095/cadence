@@ -9,10 +9,13 @@ import { sql } from "./api.mjs";
 const lit = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
 /**
- * Rows are stamped with the real database time. Each recorded step has the real window it
- * ran in and the fictional instant it stands for: shift every timestamptz in that window
- * by the same offset (order and durations survive). Fails if any stamp is still inside a
- * real window afterwards. Returns the number of values moved.
+ * On-screen rows are stamped from the pinned app clock, so they already carry the fiction
+ * (#7). Operational rows (LLM call log, settings, the last packet) keep the real database
+ * time. Each recorded step has the real window it ran in and the fictional instant it
+ * stands for: shift every timestamptz in that window by the same offset (order and
+ * durations survive). Stamps outside every real window, the fiction ones included, are
+ * left alone. Fails if any stamp is still inside a real window afterwards. Returns the
+ * number of values moved.
  */
 export function fixTimestamps(steps) {
   if (steps.length === 0) throw new Error("no recorded steps to map timestamps from");

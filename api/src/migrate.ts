@@ -208,6 +208,13 @@ export async function migrate(): Promise<void> {
     ALTER TABLE weekly_reply_runs
       ADD COLUMN IF NOT EXISTS seen_at timestamptz;
 
+    -- Rows are stamped from the app clock (#7), so under a pinned clock many share
+    -- one instant. seq keeps insertion order as the tie-breaker; uuid ids are random.
+    ALTER TABLE thread_messages
+      ADD COLUMN IF NOT EXISTS seq bigserial;
+    ALTER TABLE weekly_reply_runs
+      ADD COLUMN IF NOT EXISTS seq bigserial;
+
     -- Last unit preference read from Tempo, so plans keep the athlete's units
     -- when Tempo is unreachable.
     CREATE TABLE IF NOT EXISTS athlete_preferences (

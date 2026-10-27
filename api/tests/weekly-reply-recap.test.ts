@@ -109,6 +109,7 @@ describe("weekly reply fills recap from stored week recap (#79)", () => {
     const { app, weekSessionId } = await liveApp();
     await unlockPlanCheckIn(app, weekSessionId, "finish");
     await saveWeekRecap({
+      at: new Date(),
       weekSessionId,
       markdown: STORED_RECAP,
       subjective: "present",
@@ -123,6 +124,7 @@ describe("weekly reply fills recap from stored week recap (#79)", () => {
     const { app, weekSessionId } = await liveApp();
     await unlockPlanCheckIn(app, weekSessionId, "finish");
     await saveWeekRecap({
+      at: new Date(),
       weekSessionId,
       markdown: STORED_RECAP,
       subjective: "present",

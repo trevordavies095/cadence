@@ -273,15 +273,15 @@ describe("weekly reply runs (#97)", () => {
 
   it("marks runs orphaned by a restart as failed so they never block the week", async () => {
     const { id } = await open();
-    const run = await createPendingRun(id);
+    const run = await createPendingRun(new Date(), id);
     expect(run).not.toBeNull();
-    expect(await createPendingRun(id)).toBeNull();
+    expect(await createPendingRun(new Date(), id)).toBeNull();
 
-    expect(await failInterruptedRuns()).toBe(1);
+    expect(await failInterruptedRuns(new Date())).toBe(1);
     expect(await getLatestRun(id)).toMatchObject({
       status: "failed",
       errorMessage: "Interrupted by a restart",
     });
-    expect(await createPendingRun(id)).not.toBeNull();
+    expect(await createPendingRun(new Date(), id)).not.toBeNull();
   });
 });
