@@ -306,6 +306,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         settingsProposalBullets: checked.value.settingsProposalBullets,
         isoWeek:
           checked.value.prescribedWeek.week || packet.week?.isoWeek || null,
+        at: clock.now(),
       });
 
       let prescribed = null;
@@ -316,6 +317,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
           const planIso =
             packet.planWeek?.isoWeek ?? toPacketPlanWeek(reviewed).isoWeek;
           const { session: planSession } = await ensureWeekSession(
+            clock.now(),
             planIso,
             reviewed.timezone,
           );
@@ -326,8 +328,10 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
             settingsProposalBullets:
               checked.value.settingsProposalBullets ?? null,
             safetyCallouts: checked.value.safetyCallouts ?? null,
+            at: clock.now(),
           });
           coachMessage = await createCoachMessage(
+            clock.now(),
             checked.value.analysis,
             reviewedSessionId,
             callId,
@@ -385,6 +389,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       await finishRun(run.id, {
         status: "failed",
         errorMessage: err instanceof Error ? err.message : String(err),
+        at: clock.now(),
       }).catch(() => undefined);
       throw err;
     }
@@ -395,6 +400,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         outcome.status >= 200 && outcome.status < 300
           ? null
           : failureText(outcome),
+      at: clock.now(),
     });
     return outcome;
   }
@@ -403,7 +409,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
     prepare,
 
     async runNow(body, session) {
-      const run = await createPendingRun(session.id);
+      const run = await createPendingRun(clock.now(), session.id);
       if (!run) {
         return {
           status: 409,
@@ -420,7 +426,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
     async startInBackground(weekSessionId) {
       const session = await getWeekSessionById(weekSessionId);
       if (!session) return { ok: false, reason: "not_found" };
-      const run = await createPendingRun(session.id);
+      const run = await createPendingRun(clock.now(), session.id);
       if (!run) return { ok: false, reason: "pending" };
 
       // Not awaited: the caller answers the athlete immediately. Every failure

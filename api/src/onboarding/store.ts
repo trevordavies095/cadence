@@ -35,18 +35,19 @@ export async function getOnboardingAnswers(): Promise<StoredOnboardingAnswers | 
 
 /** Upsert single-athlete onboarding answers (visible to later dossier generation). */
 export async function saveOnboardingAnswers(
+  at: Date,
   answers: OnboardingAnswers,
 ): Promise<StoredOnboardingAnswers> {
   const result = await pool.query<Row>(
     `
-    INSERT INTO onboarding_answers (id, answers)
-    VALUES (1, $1::jsonb)
+    INSERT INTO onboarding_answers (id, answers, created_at, updated_at)
+    VALUES (1, $1::jsonb, $2, $2)
     ON CONFLICT (id) DO UPDATE
       SET answers = EXCLUDED.answers,
-          updated_at = NOW()
+          updated_at = EXCLUDED.updated_at
     RETURNING answers, created_at, updated_at
     `,
-    [JSON.stringify(answers)],
+    [JSON.stringify(answers), at],
   );
   return toStored(result.rows[0]!);
 }

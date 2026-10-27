@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
+import type { Clock } from "../clock/clock.js";
 import { createDossierProposal } from "../dossier/proposals.js";
 import { getCurrentDossier } from "../dossier/store.js";
 import {
@@ -20,11 +21,12 @@ import { getWeekSessionById } from "../week/store.js";
 export type OnboardingRouteOptions = {
   tempoPort: TempoPort;
   llmPort: LlmPort;
+  clock: Clock;
 };
 
 export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
   const routes = new Hono();
-  const { tempoPort, llmPort } = options;
+  const { tempoPort, llmPort, clock } = options;
 
   routes.use("/onboarding", requireDisclaimer);
   routes.use("/onboarding/*", requireDisclaimer);
@@ -95,7 +97,7 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
       }
     }
 
-    const stored = await saveOnboardingAnswers(parsed.answers);
+    const stored = await saveOnboardingAnswers(clock.now(), parsed.answers);
     const prefills = await buildOnboardingPrefills(tempoPort);
     const anthropic = await getAnthropicConnection();
 
@@ -120,9 +122,11 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
       summaryBullets: draft.summaryBullets,
       proposedBody: draft.proposedBody,
       kind: "onboarding",
+      at: clock.now(),
     });
 
     const coachMessage = await createCoachMessage(
+      clock.now(),
       formatDossierProposalThreadBody(draft),
       weekSessionId,
       callId,

@@ -9,10 +9,12 @@ import {
 export async function createProposalFromCorrection(input: {
   summaryBullets: string[];
   proposedBody: string;
+  at: Date;
 }): Promise<DossierProposal> {
   return createDossierProposal({
     summaryBullets: input.summaryBullets,
     proposedBody: input.proposedBody,
     kind: "correction",
+    at: input.at,
   });
 }

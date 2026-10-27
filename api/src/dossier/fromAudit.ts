@@ -11,11 +11,13 @@ import {
 export async function createProposalFromAudit(input: {
   summaryBullets: string[];
   proposedBody: string;
+  at: Date;
 }): Promise<DossierProposal> {
   const kind: DossierProposalKind = "audit";
   return createDossierProposal({
     summaryBullets: input.summaryBullets,
     proposedBody: input.proposedBody,
     kind,
+    at: input.at,
   });
 }

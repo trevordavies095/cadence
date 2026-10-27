@@ -57,6 +57,7 @@ export async function savePrescribedWeek(input: {
   analysis: string;
   settingsProposalBullets?: string[] | null;
   safetyCallouts?: SafetyCallout[] | null;
+  at: Date;
 }): Promise<PrescribedWeekRecord> {
   const bullets = input.settingsProposalBullets ?? null;
   const callouts =
@@ -66,15 +67,16 @@ export async function savePrescribedWeek(input: {
   const result = await pool.query<Row>(
     `
     INSERT INTO prescribed_weeks (
-      week_session_id, plan, analysis, settings_proposal_bullets, safety_callouts
+      week_session_id, plan, analysis, settings_proposal_bullets, safety_callouts,
+      created_at, updated_at
     )
-    VALUES ($1, $2::jsonb, $3, $4, $5::jsonb)
+    VALUES ($1, $2::jsonb, $3, $4, $5::jsonb, $6, $6)
     ON CONFLICT (week_session_id) DO UPDATE SET
       plan = EXCLUDED.plan,
       analysis = EXCLUDED.analysis,
       settings_proposal_bullets = EXCLUDED.settings_proposal_bullets,
       safety_callouts = EXCLUDED.safety_callouts,
-      updated_at = NOW()
+      updated_at = EXCLUDED.updated_at
     RETURNING
       week_session_id::text,
       plan,
@@ -90,6 +92,7 @@ export async function savePrescribedWeek(input: {
       input.analysis,
       bullets,
       callouts ? JSON.stringify(callouts) : null,
+      input.at,
     ],
   );
   return toRecord(result.rows[0]!);

@@ -64,8 +64,9 @@ async function loopStatus(app: App) {
 }
 
 async function savePlanForW44() {
-  const next = await ensureWeekSession("2026-W44", TZ);
+  const next = await ensureWeekSession(new Date(), "2026-W44", TZ);
   await savePrescribedWeek({
+    at: new Date(),
     weekSessionId: next.session.id,
     plan: { week: "2026-W44", days: [] },
     analysis: "Next week.",

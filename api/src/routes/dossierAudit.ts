@@ -118,9 +118,11 @@ export function createDossierAuditRoutes(
     const dossierProposal = await createProposalFromAudit({
       summaryBullets: draft.summaryBullets,
       proposedBody: draft.proposedBody,
+      at: clock.now(),
     });
 
     const coachMessage = await createCoachMessage(
+      clock.now(),
       formatDossierAuditThreadBody(draft),
       weekSessionId,
       callId,

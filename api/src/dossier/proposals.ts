@@ -85,17 +85,18 @@ export async function createDossierProposal(input: {
   summaryBullets: string[];
   proposedBody: string;
   kind?: DossierProposalKind;
+  at: Date;
 }): Promise<DossierProposal> {
   const kind = input.kind ?? "settings";
 
   if (!AUTO_APPLY_KINDS.includes(kind)) {
     const result = await pool.query<Row>(
       `
-      INSERT INTO dossier_proposals (summary_bullets, proposed_body, kind)
-      VALUES ($1, $2, $3)
+      INSERT INTO dossier_proposals (summary_bullets, proposed_body, kind, created_at)
+      VALUES ($1, $2, $3, $4)
       RETURNING ${PROPOSAL_COLS}
       `,
-      [input.summaryBullets, input.proposedBody, kind],
+      [input.summaryBullets, input.proposedBody, kind, input.at],
     );
     return toProposal(result.rows[0]!);
   }
@@ -107,15 +108,15 @@ export async function createDossierProposal(input: {
     await client.query("BEGIN");
     const previousId = await latestVersionId(client);
     const version = await client.query<{ id: string | number }>(
-      "INSERT INTO dossier_versions (body) VALUES ($1) RETURNING id",
-      [input.proposedBody],
+      "INSERT INTO dossier_versions (body, created_at) VALUES ($1, $2) RETURNING id",
+      [input.proposedBody, input.at],
     );
     const result = await client.query<Row>(
       `
       INSERT INTO dossier_proposals
-        (summary_bullets, proposed_body, kind, status, resolved_at,
+        (summary_bullets, proposed_body, kind, status, created_at, resolved_at,
          applied_version_id, previous_version_id)
-      VALUES ($1, $2, $3, 'accepted', NOW(), $4, $5)
+      VALUES ($1, $2, $3, 'accepted', $6, $6, $4, $5)
       RETURNING ${PROPOSAL_COLS}
       `,
       [
@@ -124,6 +125,7 @@ export async function createDossierProposal(input: {
         kind,
         Number(version.rows[0]!.id),
         previousId,
+        input.at,
       ],
     );
     await client.query("COMMIT");
@@ -159,8 +161,8 @@ export type RejectProposalResult =
   | { ok: false; reason: "not_pending"; proposal: DossierProposal };
 
 export type AcceptDossierProposalOptions = {
-  /** Injectable "now" for audit cadence stamps (#40). Defaults to system time. */
-  acceptedAt?: Date;
+  /** App-clock "now": the new version, resolved_at and audit cadence (#7, #40). */
+  acceptedAt: Date;
   /**
    * When set, install this body as the new dossier version instead of the
    * stored proposal body (light-edit-then-accept, #50). Omit to accept original.
@@ -170,7 +172,7 @@ export type AcceptDossierProposalOptions = {
 
 export async function acceptDossierProposal(
   id: number,
-  options?: AcceptDossierProposalOptions,
+  options: AcceptDossierProposalOptions,
 ): Promise<AcceptProposalResult> {
   const client = await pool.connect();
   try {
@@ -199,7 +201,7 @@ export async function acceptDossierProposal(
     }
 
     const bodyToInstall =
-      options?.proposedBody !== undefined
+      options.proposedBody !== undefined
         ? options.proposedBody
         : row.proposed_body;
     const previousId = await latestVersionId(client);
@@ -210,28 +212,28 @@ export async function acceptDossierProposal(
       created_at: Date;
     }>(
       `
-      INSERT INTO dossier_versions (body)
-      VALUES ($1)
+      INSERT INTO dossier_versions (body, created_at)
+      VALUES ($1, $2)
       RETURNING id, body, created_at
       `,
-      [bodyToInstall],
+      [bodyToInstall, options.acceptedAt],
     );
     const versionRow = versionResult.rows[0]!;
 
     const updated = await client.query<Row>(
       `
       UPDATE dossier_proposals
-      SET status = 'accepted', resolved_at = NOW(),
+      SET status = 'accepted', resolved_at = $4,
           applied_version_id = $2, previous_version_id = $3
       WHERE id = $1
       RETURNING ${PROPOSAL_COLS}
       `,
-      [id, Number(versionRow.id), previousId],
+      [id, Number(versionRow.id), previousId, options.acceptedAt],
     );
     const proposal = toProposal(updated.rows[0]!);
     if (proposal.kind === "audit") {
       await recordAuditAccepted(
-        options?.acceptedAt ?? new Date(),
+        options.acceptedAt,
         process.env,
         client,
       );
@@ -256,6 +258,7 @@ export async function acceptDossierProposal(
 }
 
 export async function rejectDossierProposal(
+  at: Date,
   id: number,
 ): Promise<RejectProposalResult> {
   const client = await pool.connect();
@@ -287,11 +290,11 @@ export async function rejectDossierProposal(
     const updated = await client.query<Row>(
       `
       UPDATE dossier_proposals
-      SET status = 'rejected', resolved_at = NOW()
+      SET status = 'rejected', resolved_at = $2
       WHERE id = $1
       RETURNING ${PROPOSAL_COLS}
       `,
-      [id],
+      [id, at],
     );
     await client.query("COMMIT");
     return { ok: true, proposal: toProposal(updated.rows[0]!) };
@@ -314,6 +317,7 @@ export type UndoProposalResult =
  * version, so history only ever grows and an undo is itself visible.
  */
 export async function undoDossierProposal(
+  at: Date,
   id: number,
 ): Promise<UndoProposalResult> {
   const client = await pool.connect();
@@ -355,18 +359,18 @@ export async function undoDossierProposal(
       body: string;
       created_at: Date;
     }>(
-      "INSERT INTO dossier_versions (body) VALUES ($1) RETURNING id, body, created_at",
-      [previousBody],
+      "INSERT INTO dossier_versions (body, created_at) VALUES ($1, $2) RETURNING id, body, created_at",
+      [previousBody, at],
     );
     const versionRow = versionResult.rows[0]!;
     const updated = await client.query<Row>(
       `
       UPDATE dossier_proposals
-      SET status = 'undone', resolved_at = NOW()
+      SET status = 'undone', resolved_at = $2
       WHERE id = $1
       RETURNING ${PROPOSAL_COLS}
       `,
-      [id],
+      [id, at],
     );
     await client.query("COMMIT");
     return {
@@ -408,13 +412,14 @@ export async function listResolvedDossierProposals(
  * still waiting for a yes (onboarding, tidy-up) so approving one later cannot
  * overwrite the correction with older text.
  */
-export async function rejectWaitingDossierProposals(): Promise<number> {
+export async function rejectWaitingDossierProposals(at: Date): Promise<number> {
   const result = await pool.query(
     `
     UPDATE dossier_proposals
-    SET status = 'rejected', resolved_at = NOW()
+    SET status = 'rejected', resolved_at = $1
     WHERE status = 'pending' AND kind IN ('onboarding', 'audit')
     `,
+    [at],
   );
   return result.rowCount ?? 0;
 }

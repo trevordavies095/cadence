@@ -41,19 +41,20 @@ export async function getSubjectiveAnswers(
 
 /** Upsert subjective answers for a week session (completion path for needs_subjective). */
 export async function saveSubjectiveAnswers(
+  at: Date,
   weekSessionId: string,
   answers: SubjectiveAnswers,
 ): Promise<StoredSubjectiveAnswers> {
   const result = await pool.query<Row>(
     `
-    INSERT INTO week_subjective_answers (week_session_id, answers)
-    VALUES ($1::uuid, $2::jsonb)
+    INSERT INTO week_subjective_answers (week_session_id, answers, created_at, updated_at)
+    VALUES ($1::uuid, $2::jsonb, $3, $3)
     ON CONFLICT (week_session_id) DO UPDATE
       SET answers = EXCLUDED.answers,
-          updated_at = NOW()
+          updated_at = EXCLUDED.updated_at
     RETURNING week_session_id::text, answers, created_at, updated_at
     `,
-    [weekSessionId, JSON.stringify(answers)],
+    [weekSessionId, JSON.stringify(answers), at],
   );
   return toStored(result.rows[0]!);
 }

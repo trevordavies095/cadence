@@ -107,6 +107,7 @@ describe("week session model", () => {
     expect(posted.status).toBe(201);
 
     await saveWeekRecap({
+      at: new Date(),
       weekSessionId: weekNId,
       markdown: "# Weekly Recap — 2026-W43\n\nArchived-week fixture.",
       subjective: "skipped",
@@ -215,7 +216,7 @@ describe("week session model", () => {
     expect(current.session.isoWeek).toBe("2026-W43");
     expect(current.session.archived).toBe(false);
 
-    const future = await ensureWeekSession("2026-W44", tz);
+    const future = await ensureWeekSession(new Date(), "2026-W44", tz);
     expect(future.created).toBe(true);
     expect(future.session.isoWeek).toBe("2026-W44");
     expect(future.session.timezone).toBe(tz);
@@ -241,10 +242,10 @@ describe("week session model", () => {
   });
 
   it("ensureWeekSession is idempotent for the same iso week + timezone", async () => {
-    const first = await ensureWeekSession("2026-W44", "America/New_York");
+    const first = await ensureWeekSession(new Date(), "2026-W44", "America/New_York");
     expect(first.created).toBe(true);
 
-    const second = await ensureWeekSession("2026-W44", "America/New_York");
+    const second = await ensureWeekSession(new Date(), "2026-W44", "America/New_York");
     expect(second.created).toBe(false);
     expect(second.session.id).toBe(first.session.id);
     expect(second.session.isoWeek).toBe(first.session.isoWeek);
