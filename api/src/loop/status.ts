@@ -8,8 +8,8 @@ import {
   type CheckInStatus,
 } from "../recap/checkInStatus.js";
 import { getLatestRun, type ReplyRun } from "../replyRun/store.js";
-import { resolveTempoExportPath } from "../tempo/exportZip.js";
 import { getAnthropicConnection } from "../settings/anthropicStore.js";
+import type { RuntimeSources } from "../settings/sources.js";
 import { getTempoConnection } from "../settings/tempoStore.js";
 import {
   findWeekSession,
@@ -141,7 +141,8 @@ function ctasForPhase(
  */
 export async function resolveLoopStatus(
   clock: Clock,
-  timezone = "UTC",
+  timezone: string,
+  sources: RuntimeSources,
 ): Promise<LoopStatus> {
   const [tempo, anthropic, dossier, pending] = await Promise.all([
     getTempoConnection(),
@@ -150,14 +151,9 @@ export async function resolveLoopStatus(
     listPendingDossierProposals(),
   ]);
 
-  // Demo instance: the offline Tempo export and the stub model stand in for the two
-  // saved connections, so Home does not ask a demo visitor for keys they do not need.
-  const demo = process.env.CADENCE_DEMO === "1";
-  const stubModel =
-    (process.env.LLM_PROVIDER ?? "stub").trim().toLowerCase() !== "anthropic";
-  const tempoConfigured =
-    tempo.configured || (demo && resolveTempoExportPath() != null);
-  const anthropicConfigured = anthropic.configured || (demo && stubModel);
+  // An export zip or the stub model stands in for its saved connection (#6).
+  const tempoConfigured = tempo.configured || sources.tempo === "export";
+  const anthropicConfigured = anthropic.configured || sources.model === "stub";
   const setupComplete = tempoConfigured && anthropicConfigured;
   const onboardingComplete = dossier != null;
   const onboardingReview = pending.some((p) => p.kind === "onboarding");

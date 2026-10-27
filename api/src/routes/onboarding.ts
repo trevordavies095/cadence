@@ -14,6 +14,7 @@ import { resolveOnboardingGate } from "../onboarding/gate.js";
 import { parseOnboardingAnswers } from "../onboarding/questionnaire.js";
 import { saveOnboardingAnswers } from "../onboarding/store.js";
 import { getAnthropicConnection } from "../settings/anthropicStore.js";
+import { resolveLlmProvider } from "../settings/sources.js";
 import type { TempoPort } from "../tempo/port.js";
 import { createCoachMessage } from "../thread/store.js";
 import { getWeekSessionById } from "../week/store.js";
@@ -145,10 +146,7 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
         proposal,
         coachMessage,
         llm: {
-          mode:
-            (process.env.LLM_PROVIDER ?? "stub").trim().toLowerCase() === "anthropic"
-              ? ("anthropic" as const)
-              : ("stub" as const),
+          mode: resolveLlmProvider(),
           anthropicConfigured: anthropic.configured,
           systemStance: "coach_running_no_diagnose" as const,
         },
