@@ -60,6 +60,13 @@ export type TempoWorkoutSummary = {
 export type ThreadMessage = {
   id: string;
   role: "athlete" | "coach" | "system";
+  /** "weekly_read" is the short Sunday message that points at the plan. */
+  kind?: "chat" | "weekly_read";
+  /**
+   * Where a weekly_read message's link goes: "plan" while the week it planned is
+   * this week or next, "week" (that week's Your week page) after that.
+   */
+  readLink?: "plan" | "week";
   body: string;
   createdAt: string;
   weekSessionId: string | null;
