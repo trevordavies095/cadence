@@ -269,6 +269,9 @@ function ChatInner() {
     }
   }
 
+  // A note waiting for "Looks right" is the one thing to do, so Send steps back until it's answered.
+  const noteWaiting = messages.some((m) => m.dossierProposal?.status === "pending");
+
   if (!loaded) {
     return (
       <WaitingState>
@@ -299,7 +302,13 @@ function ChatInner() {
           </Muted>
         ) : (
           messages.map((m) => (
-            <ConversationMessage key={m.id} message={m} unit={unit} timeZone={week?.timezone} />
+            <ConversationMessage
+              key={m.id}
+              message={m}
+              unit={unit}
+              timeZone={week?.timezone}
+              onNoteChange={() => void refresh()?.catch(() => undefined)}
+            />
           ))
         )}
         {sending ? (
@@ -349,7 +358,11 @@ function ChatInner() {
             required
           />
           <div className="relative flex items-center gap-3">
-            <Button type="submit" variant="primary" disabled={sending !== null}>
+            <Button
+              type="submit"
+              variant={noteWaiting ? "secondary" : "primary"}
+              disabled={sending !== null}
+            >
               {sending ? "Sending…" : "Send"}
             </Button>
             {recentRuns.length > 0 && !attached ? (

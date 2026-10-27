@@ -55,10 +55,13 @@ export function ConversationMessage({
   message,
   unit,
   timeZone,
+  onNoteChange,
 }: {
   message: ThreadMessage;
   unit: UnitPreference;
   timeZone?: string;
+  /** Called after a note card in this message changed something, so the page can look again. */
+  onNoteChange?: () => void;
 }) {
   const isCoach = message.role === "coach";
   const content = (
@@ -85,7 +88,11 @@ export function ConversationMessage({
         <RunCard attachment={message.attachment} unit={unit} timeZone={timeZone} />
       ) : null}
       {message.dossierProposal ? (
-        <NoteCard note={message.dossierProposal} weekSessionId={message.weekSessionId} />
+        <NoteCard
+          note={message.dossierProposal}
+          weekSessionId={message.weekSessionId}
+          onChange={onNoteChange}
+        />
       ) : null}
     </>
   );
