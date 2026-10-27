@@ -126,6 +126,17 @@ describe("athlete vocabulary in system-written text", () => {
     });
   }
 
+  it("thread messages for a note card name its real actions and leave the bullets to the card (#19)", () => {
+    const t = texts();
+    for (const name of [
+      "onboarding thread message",
+      "correction thread message",
+      "audit thread message",
+    ]) {
+      expect(t[name], name).not.toMatch(/Accept|Reject|Summary:|•/);
+    }
+  });
+
   it("the chat reply never quotes the athlete back (#9)", () => {
     const t = texts();
     expect(t["mid-week reply"]).not.toContain("sore calf niggle");
