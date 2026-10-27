@@ -2,6 +2,7 @@ import type { Clock } from "../clock/clock.js";
 import { getCurrentDossier } from "../dossier/store.js";
 import type { PrescribedWeek } from "../llm/types.js";
 import { listThreadMessages } from "../thread/store.js";
+import { fullWeeklyRead } from "../thread/weeklyRead.js";
 import {
   getOrCreateCurrentWeekSession,
   getWeekSessionById,
@@ -70,14 +71,21 @@ export async function assembleLeanLiveContext(
   // Defense in depth: even if listThreadMessages were widened, drop other weeks.
   const leanThread = filterThreadToFocusWeek(threadMessages, focusId);
 
+  // The athlete sees one paragraph of the Sunday read in the conversation; the
+  // model gets the whole read behind the latest one, so a Sunday-evening question
+  // about the new plan is answered with its reasoning in view.
+  const lastRead = leanThread.map((m) => m.kind).lastIndexOf("weekly_read");
+  const fullRead =
+    lastRead >= 0 ? await fullWeeklyRead(input.focusSession) : null;
+
   return buildModelPacket({
     dossier: dossier
       ? { versionId: dossier.id, body: dossier.body }
       : null,
     recapMarkdown: input.recapMarkdown ?? null,
-    thread: leanThread.map((m) => ({
+    thread: leanThread.map((m, i) => ({
       role: m.role,
-      body: m.body,
+      body: i === lastRead && fullRead ? fullRead : m.body,
       createdAt: m.createdAt,
       weekSessionId: m.weekSessionId,
     })),

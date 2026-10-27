@@ -38,6 +38,7 @@ import {
 import { savePrescribedWeek } from "../prescribed/store.js";
 import { getWeekRecapBySessionId } from "../recap/recapStore.js";
 import { createCoachMessage } from "../thread/store.js";
+import { weeklyReadMessageBody } from "../thread/weeklyRead.js";
 import { nextIsoWeekBounds } from "../clock/isoWeek.js";
 import { trackReplyRun } from "../replyRun/inflight.js";
 import {
@@ -330,13 +331,15 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
             safetyCallouts: checked.value.safetyCallouts ?? null,
             at: clock.now(),
           });
+          // One paragraph and a link; the full read is on the plan, not repeated here.
           coachMessage = await createCoachMessage(
             clock.now(),
-            checked.value.analysis,
+            weeklyReadMessageBody(checked.value.analysis),
             reviewedSessionId,
             callId,
             checked.value.safetyCallouts,
             dossierProposal?.id ?? null,
+            "weekly_read",
           );
         }
       }

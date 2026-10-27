@@ -2,7 +2,7 @@
 
 import { CoachText } from "@/components/CoachText";
 import { NoteCard } from "@/components/NoteCard";
-import { CoachSurface, Notice, cx } from "@/components/ui";
+import { ButtonLink, CoachSurface, Notice, cx } from "@/components/ui";
 import type { ThreadMessage, UnitPreference, WorkoutAttachment } from "@/lib/api";
 import { dayLabel, runTypeLabel } from "@/lib/checkIn";
 import { relativeWhen } from "@/lib/time";
@@ -79,6 +79,20 @@ export function ConversationMessage({
       ) : (
         <p className="m-0 whitespace-pre-wrap">{message.body}</p>
       )}
+      {message.kind === "weekly_read" ? (
+        <div>
+          <ButtonLink
+            href={
+              message.readLink === "week" && message.weekSessionId
+                ? `/review?week=${message.weekSessionId}`
+                : "/plan"
+            }
+            variant="quiet"
+          >
+            Open the plan
+          </ButtonLink>
+        </div>
+      ) : null}
       {(message.safetyCallouts ?? []).map((c) => (
         <Notice key={`${c.title}:${c.body}`} title={c.title} severity={c.severity ?? "info"}>
           {c.body}
