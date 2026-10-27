@@ -309,7 +309,7 @@ export default function AboutYouPage() {
               <Button type="submit" disabled={saving}>
                 {saving ? "Saving…" : "Save"}
               </Button>
-              {saved ? <span className="text-hr-zone-1">Saved.</span> : null}
+              {saved ? <span className="text-ok">Saved.</span> : null}
             </div>
           </form>
         </details>

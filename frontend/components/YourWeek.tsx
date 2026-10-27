@@ -10,7 +10,7 @@ import {
 import { describeError, type UiError } from "@/lib/errors";
 import { distanceLabel, durationLabel, localYmd, paceLabel } from "@/lib/units";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
-import { Card, ErrorNote, Muted, Notice, cx } from "./ui";
+import { Card, ErrorNote, LabelValueList, Muted, Notice, cx } from "./ui";
 
 type SummaryRow = {
   metric: string;
@@ -79,11 +79,14 @@ function Table({
       >
         <thead>
           <tr>
-            {head.map((h) => (
+            {head.map((h, i) => (
               <th
                 key={h}
                 scope="col"
-                className="border-b border-border px-3 py-2 text-sm font-semibold text-muted first:pl-0"
+                className={cx(
+                  "border-b border-line-strong px-3 py-2 text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted first:pl-0",
+                  i > 0 && "text-right whitespace-nowrap",
+                )}
               >
                 {h}
               </th>
@@ -96,14 +99,17 @@ function Table({
   );
 }
 
+/** The row-label column: left-aligned, free to wrap. */
 const cell = "border-b border-border px-3 py-2 first:pl-0";
+/** Numeric cells: right-aligned, tabular, kept on one line. */
+const num = cx(cell, "text-right tabular-nums whitespace-nowrap");
 
 function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
   if (zones.noHrTimeSeriesInWeek) {
     return <Muted>No heart rate data came in for this week.</Muted>;
   }
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 rounded-tempo border border-border bg-raised p-4">
       <div
         className="relative flex h-5 w-full overflow-hidden rounded-md border border-border"
         role="img"
@@ -130,7 +136,7 @@ function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
       <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-sm tabular-nums">
         {ZONES.map((z, i) => (
           <li key={z} className="flex items-center gap-1.5">
-            <span className={cx("size-3 rounded-sm", ZONE_BG[z])} aria-hidden />
+            <span className={cx("size-2 rounded-sm", ZONE_BG[z])} aria-hidden />
             Zone {i + 1} {zones.zonePct[z]}%
           </li>
         ))}
@@ -258,10 +264,10 @@ export function YourWeek({
               <th scope="row" className={cx(cell, "font-semibold")}>
                 {r.metric}
               </th>
-              <td className={cell}>{r.thisWeek}</td>
-              <td className={cell}>{r.prevWeek}</td>
-              <td className={cell}>{r.threeWkAvg}</td>
-              <td className={cell}>{r.delta}</td>
+              <td className={num}>{r.thisWeek}</td>
+              <td className={num}>{r.prevWeek}</td>
+              <td className={num}>{r.threeWkAvg}</td>
+              <td className={num}>{r.delta}</td>
             </tr>
           ))}
         </Table>
@@ -283,11 +289,6 @@ export function YourWeek({
           >
             {runs.runs.map((r) => {
               const mine = answerByDate.get(localYmd(r.startedAt, timezone));
-              const said = [
-                mine?.rpe != null ? `effort ${mine.rpe}/10` : null,
-                mine?.felt != null ? `went ${mine.felt}/10` : null,
-                mine?.pain ? mine.pain : null,
-              ].filter(Boolean);
               return (
                 <tr key={r.workoutId} className="align-top">
                   <th scope="row" className={cx(cell, "font-semibold")}>
@@ -296,19 +297,23 @@ export function YourWeek({
                       {r.runType ?? "Run"}
                       {r.shoe ? ` · ${r.shoe.label}` : ""}
                     </span>
-                    {said.length > 0 ? (
-                      <span className="block font-normal text-muted">
-                        You said: {said.join(" · ")}
-                      </span>
-                    ) : null}
+                    <LabelValueList
+                      size="compact"
+                      className="mt-1 font-normal"
+                      items={[
+                        ["Effort", mine?.rpe != null ? `${mine.rpe}/10` : null],
+                        ["Went", mine?.felt != null ? `${mine.felt}/10` : null],
+                        ["Pain", mine?.pain],
+                      ]}
+                    />
                   </th>
-                  <td className={cell}>{distanceLabel(r.distanceM, unit)}</td>
-                  <td className={cell}>{durationLabel(r.durationS)}</td>
-                  <td className={cell}>{paceLabel(r.avgPaceS, unit)}</td>
-                  <td className={cell}>
+                  <td className={num}>{distanceLabel(r.distanceM, unit)}</td>
+                  <td className={num}>{durationLabel(r.durationS)}</td>
+                  <td className={num}>{paceLabel(r.avgPaceS, unit)}</td>
+                  <td className={num}>
                     {r.avgHeartRateBpm != null ? `${r.avgHeartRateBpm} bpm` : "–"}
                   </td>
-                  <td className={cell}>
+                  <td className={num}>
                     {r.drift
                       ? `${r.drift.driftBpm > 0 ? "+" : ""}${r.drift.driftBpm} bpm${
                           r.drift.driftBpm > 10 ? " (high)" : ""
@@ -354,7 +359,7 @@ export function YourWeek({
                   {label}
                 </th>
                 {values.map((v, i) => (
-                  <td key={i} className={cell}>
+                  <td key={i} className={num}>
                     {v}
                   </td>
                 ))}

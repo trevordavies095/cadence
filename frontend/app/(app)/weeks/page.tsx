@@ -82,12 +82,14 @@ export default function HistoryPage() {
       ) : (
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-border text-sm text-muted">
+            <tr className="border-b border-line-strong text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted">
               <th scope="col" className="py-2 pr-4 font-semibold">Week</th>
-              <th scope="col" className="py-2 pr-4 text-right font-semibold">
+              <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
                 {unit === "metric" ? "Km" : "Miles"}
               </th>
-              <th scope="col" className="py-2 pr-4 text-right font-semibold">Runs</th>
+              <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
+                Runs
+              </th>
               <th scope="col" className="py-2 font-semibold">From Coach Cade</th>
             </tr>
           </thead>
@@ -104,12 +106,12 @@ export default function HistoryPage() {
                     </span>
                   ) : null}
                 </th>
-                <td className="py-3 pr-4 text-right tabular-nums">
+                <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">
                   {w.actualDistanceM == null
                     ? "–"
                     : distanceLabel(w.actualDistanceM, unit).replace(/ (mi|km)$/, "")}
                 </td>
-                <td className="py-3 pr-4 text-right tabular-nums">{w.runCount ?? "–"}</td>
+                <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">{w.runCount ?? "–"}</td>
                 <td className="py-3 text-muted">{w.coachHeadline ?? ""}</td>
               </tr>
             ))}

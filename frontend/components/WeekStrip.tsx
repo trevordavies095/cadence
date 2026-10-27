@@ -57,7 +57,7 @@ export function WeekStrip({
             <span
               className={cx(
                 "text-sm font-semibold",
-                d.state === "done" && "text-hr-zone-1",
+                d.state === "done" && "text-ok",
                 d.state === "missed" && "text-danger",
                 (d.state === "upcoming" || d.state === "rest") && "text-muted",
               )}

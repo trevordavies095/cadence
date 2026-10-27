@@ -353,7 +353,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {status && <p className="m-0 text-hr-zone-1">{status}</p>}
+      {status && <p className="m-0 text-ok">{status}</p>}
       <ErrorNote error={error} />
 
       <Muted>
