@@ -38,7 +38,7 @@ const components: ComponentProps<typeof ReactMarkdown>["components"] = {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="underline underline-offset-4"
+      className="underline decoration-accent decoration-2 underline-offset-4"
     >
       {children}
     </a>
