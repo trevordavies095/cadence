@@ -5,6 +5,7 @@ import type {
 } from "../llmCallLog/types.js";
 import { nextIsoWeekBounds } from "../clock/isoWeek.js";
 import {
+  formatDayShort,
   formatIsoWeekRangeShort,
   formatWeekRangeShort,
 } from "../clock/weekRangeShort.js";
@@ -247,12 +248,6 @@ export function buildStubWeeklyReply(packet: ModelPacket): WeeklyReply {
   return reply;
 }
 
-function truncateForReply(text: string, max = 120): string {
-  const trimmed = text.trim().replace(/\s+/g, " ");
-  if (trimmed.length <= max) return trimmed;
-  return `${trimmed.slice(0, max - 1)}…`;
-}
-
 function formatPaceMinPerKm(avgPaceS: number): string {
   const total = Math.max(0, Math.round(avgPaceS));
   const mins = Math.floor(total / 60);
@@ -321,11 +316,26 @@ function buildStubMidWeekSettingsBullets(
   const lastAthlete = [...packet.thread]
     .reverse()
     .find((m) => m.role === "athlete");
-  const note = lastAthlete?.body?.trim();
+  const note = lastAthlete?.body?.trim().replace(/\s+/g, " ");
   if (!note || !STUB_MIDWEEK_MEMORY_RE.test(note)) return undefined;
-  return [
-    `This week you reported "${truncateForReply(note, 80)}". Add it to what Coach Cade knows about you.`,
-  ];
+  // The line lands in About you, so it keeps the athlete's words, whole
+  // sentences only and never cut off with an ellipsis (#9).
+  const prefix = "You told me: ";
+  return [`${prefix}${wholeSentencesUpTo(note, MAX_BULLET_LENGTH - prefix.length)}`];
+}
+
+/** Leading sentences of `text` that fit in `max` characters; else whole words. */
+function wholeSentencesUpTo(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const sentences = text.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [];
+  let kept = "";
+  for (const s of sentences) {
+    if ((kept + s).trimEnd().length > max) break;
+    kept += s;
+  }
+  if (kept.trim()) return kept.trimEnd();
+  const words = text.slice(0, max + 1).split(" ");
+  return words.slice(0, -1).join(" ") || text.slice(0, max);
 }
 
 const PLAN_CHANGE_RE =
@@ -370,9 +380,10 @@ export function buildStubMidWeekChatReply(packet: ModelPacket): MidWeekChatReply
   const lastAthlete = [...packet.thread]
     .reverse()
     .find((m) => m.role === "athlete");
+  // Acknowledge the note without quoting it back (#9).
   const heard = lastAthlete?.body?.trim()
-    ? `Heard: "${truncateForReply(lastAthlete.body)}".`
-    : "Got your note.";
+    ? "Got your note."
+    : "Nothing new from you yet.";
   const dossierNote = packet.dossier?.body?.trim()
     ? "I'll keep what I know about you in mind."
     : "I don't have much on file about you yet, so keep easy days honest.";
@@ -382,7 +393,7 @@ export function buildStubMidWeekChatReply(packet: ModelPacket): MidWeekChatReply
     "No run attached. Say more if something needs to change.";
   const patches = buildStubPrescribedDayPatches(packet);
   const patchNote = patches?.length
-    ? `Updated the plan for ${patches.map((p) => p.date).join(", ")}. Only the days still to come change.`
+    ? `Updated the plan for ${patches.map((p) => formatDayShort(p.date)).join(", ")}. Only the days still to come change.`
     : null;
   const reply: MidWeekChatReply = {
     body: [
@@ -410,11 +421,14 @@ function formatDistanceHint(
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
-/** Soft-gate summary line — keep ≤ MAX_BULLET_LENGTH; full text lives in proposedBody. */
+/**
+ * Soft-gate summary line, at most MAX_BULLET_LENGTH. Long answers keep their
+ * leading whole sentences, never an ellipsis (#9); the full text lives in proposedBody.
+ */
 function dossierSummaryBullet(label: string, value: string): string {
   const prefix = `${label}: `;
-  const maxValue = Math.max(24, MAX_BULLET_LENGTH - prefix.length);
-  return `${prefix}${truncateForReply(value, maxValue)}`;
+  const text = value.trim().replace(/\s+/g, " ");
+  return `${prefix}${wholeSentencesUpTo(text, MAX_BULLET_LENGTH - prefix.length)}`;
 }
 
 /** Pure builder for onboarding → dossier v1 (issue #17). */
@@ -438,20 +452,12 @@ export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
     const z2 = prefills.heartRateZones?.zones.find((z) => z.zoneNumber === 2);
     if (z2) {
       summaryBullets.push(
-        truncateForReply(
-          `Easy heart rate zone about ${z2.minBpm}–${z2.maxBpm} bpm (from your running log)`,
-          MAX_BULLET_LENGTH,
-        ),
+        `Easy heart rate zone about ${z2.minBpm}–${z2.maxBpm} bpm (from your running log)`,
       );
     }
     const shoe = prefills.shoes?.[0];
     if (shoe) {
-      summaryBullets.push(
-        truncateForReply(
-          `Main shoe: ${shoe.brand} ${shoe.model}`,
-          MAX_BULLET_LENGTH,
-        ),
-      );
+      summaryBullets.push(`Main shoe: ${shoe.brand} ${shoe.model}`);
     }
   } else {
     summaryBullets.push("Your running log was not available, so this comes from your answers only");
@@ -491,7 +497,7 @@ export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
   }
 
   const proposedBody = [
-    "# About you (v1)",
+    "# About you",
     "",
     "## Stance",
     COACH_STANCE_SUMMARY,
@@ -513,7 +519,7 @@ export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
     ...tempoLines,
     "",
     "## Coaching notes",
-    "Protect easy days. Cap quality when constraints are present. Revisit this brief after week one.",
+    "Protect easy days. Cap quality when constraints are present. Revisit this after week one.",
   ].join("\n");
 
   return { summaryBullets, proposedBody };
@@ -562,7 +568,7 @@ export function buildStubDossierCorrection(
     : "this week";
   const base = input.currentDossier.body.trimEnd();
   const summaryBullets = [
-    `Your correction (${weekLabel}): ${truncateForReply(note, 160)}`,
+    dossierSummaryBullet(`Your correction (${weekLabel})`, note),
     "Saved to what I know about you.",
   ];
   const proposedBody = [
@@ -638,6 +644,8 @@ export function buildStubDossierAudit(
   const updatedYmd = ymdFromIso(input.nowIso);
   const intervalWeeks = input.intervalWeeks ?? 5;
   const nextDueYmd = addWeeksYmd(updatedYmd, intervalWeeks);
+  const updatedDay = formatDayShort(updatedYmd);
+  const nextDueDay = formatDayShort(nextDueYmd);
 
   const { preface, sections } = splitMarkdownSections(
     input.currentDossier.body,
@@ -657,7 +665,7 @@ export function buildStubDossierAudit(
 
   const statusIdx = kept.findIndex((s) => /^current status\b/i.test(s.title));
   const statusLines = [
-    `**Tidied ${updatedYmd} (${weekLabel}).** Older update lines are folded into this status.`,
+    `**Tidied ${updatedDay} (${weekLabel}).** Older update lines are folded into this status.`,
     "",
   ];
   if (consolidatedBullets.length > 0) {
@@ -674,26 +682,25 @@ export function buildStubDossierAudit(
       statusLines.push(prior);
     }
     kept[statusIdx] = {
-      title: `Current Status (updated ${updatedYmd})`,
+      title: "Current Status",
       body: statusLines.join("\n").trimEnd(),
     };
   } else {
     kept.unshift({
-      title: `Current Status (updated ${updatedYmd})`,
+      title: "Current Status",
       body: statusLines.join("\n").trimEnd(),
     });
   }
 
-  // Drop a prior Settings audit meta section; we rewrite it below.
+  // Drop a prior tidy-up section (or its old "Settings audit" name); we rewrite it below.
   const withoutAuditMeta = kept.filter(
-    (s) => !/^settings audit\b/i.test(s.title),
+    (s) => !/^(settings audit|tidy-ups)\b/i.test(s.title),
   );
   withoutAuditMeta.push({
-    title: "Settings audit",
+    title: "Tidy-ups",
     body: [
-      `- Last audit: ${updatedYmd}`,
-      `- Next due: ${nextDueYmd} (~${intervalWeeks} weeks)`,
-      "- Focus: trim/consolidate Current Status; remove superseded coach-update sludge.",
+      `- Last tidy-up: ${updatedDay}`,
+      `- Next one around ${nextDueDay} (every ${intervalWeeks} weeks)`,
     ].join("\n"),
   });
 
@@ -706,11 +713,11 @@ export function buildStubDossierAudit(
 
   const removed = coachUpdates.length;
   const summaryBullets = [
-    `Tidy-up (${weekLabel}): rewrite Current Status (updated ${updatedYmd}).`,
+    `Rewrite Current Status (${weekLabel}).`,
     removed > 0
       ? `Fold ${removed} older update section(s) into Current Status and remove superseded log entries.`
       : "No older update sections to fold in. Current Status is rewritten.",
-    `Next tidy-up around ${nextDueYmd} (every ${intervalWeeks} weeks). Accept to apply.`,
+    `Next tidy-up around ${nextDueDay} (every ${intervalWeeks} weeks). Accept to apply.`,
   ];
 
   return { summaryBullets, proposedBody };

@@ -175,27 +175,16 @@ export function safetyCalloutsJsonSchema(): Record<string, unknown> {
   };
 }
 
-function packetSafetyCorpus(packet: ModelPacket): string {
-  const parts: string[] = [];
-  if (packet.dossier?.body) parts.push(packet.dossier.body);
-  if (packet.recapMarkdown) parts.push(packet.recapMarkdown);
-  for (const m of packet.thread ?? []) {
-    if (m.body) parts.push(m.body);
-  }
-  for (const week of packet.recentHistory ?? []) {
-    if (week.recapMarkdown) parts.push(week.recapMarkdown);
-    if (week.analysis) parts.push(week.analysis);
-  }
-  return parts.join("\n");
-}
-
 /**
- * Deterministic stub callouts when packet text mentions soft red flags.
- * Empty when nothing matches — keeps happy-path replies clean.
+ * Deterministic stub callout when the athlete's latest message mentions a soft
+ * red flag. About you and older messages are ignored, so one injury does not
+ * put a notice on every later reply (#9).
  */
 export function buildStubSafetyCallouts(packet: ModelPacket): SafetyCallout[] {
-  const corpus = packetSafetyCorpus(packet);
-  if (!corpus.trim() || !STUB_RED_FLAG_RE.test(corpus)) {
+  const latest = [...(packet.thread ?? [])]
+    .reverse()
+    .find((m) => m.role === "athlete");
+  if (!latest?.body || !STUB_RED_FLAG_RE.test(latest.body)) {
     return [];
   }
   return [

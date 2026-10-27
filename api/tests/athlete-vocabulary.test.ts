@@ -11,10 +11,18 @@ import {
   formatDossierProposalThreadBody,
 } from "../src/llm/stub.js";
 import { buildProposedBodyFromSettingsBullets } from "../src/dossier/fromWeeklyReply.js";
+import { formatDayShort } from "../src/clock/weekRangeShort.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import { buildModelPacket } from "../src/packet/index.js";
 import { PRIVACY_COPY } from "../src/privacy/copy.js";
 import type { PrescribedWeek } from "../src/llm/types.js";
+
+const SKIP_NOTE = "Please skip Thursday, sore calf niggle after the long run.";
+const LONG_GOAL =
+  "Run a half marathon in January under 1:45, then build toward a spring marathon. " +
+  "I would like to keep two easy runs, one workout and a long run each week, and I care " +
+  "more about arriving healthy than about the exact time, because last year I got hurt " +
+  "in the final block and had to pull out three weeks before the race.";
 
 const DOSSIER_BODY = [
   "# About you",
@@ -61,14 +69,11 @@ function packet(note?: string, prescribedWeek?: PrescribedWeek) {
 function texts(): Record<string, string> {
   const weekly = buildStubWeeklyReply(packet());
   const midWeek = buildStubMidWeekChatReply(
-    packet(
-      "Please skip Thursday, sore calf niggle after the long run.",
-      weekly.prescribedWeek,
-    ),
+    packet(SKIP_NOTE, weekly.prescribedWeek),
   );
   const v1 = buildStubDossierV1({
     answers: {
-      goal: "Half marathon in January",
+      goal: LONG_GOAL,
       schedule: "Tue Thu Sat",
       injuries_constraints: "Left calf",
       preferences: "Trails",
@@ -114,6 +119,50 @@ describe("athlete vocabulary in system-written text", () => {
       expect(bannedTermsIn(text)).toEqual([]);
     });
   }
+
+  for (const [name, text] of Object.entries(texts())) {
+    it(`${name} is not cut off with an ellipsis (#9)`, () => {
+      expect(text).not.toContain("…");
+    });
+  }
+
+  it("the chat reply never quotes the athlete back (#9)", () => {
+    const t = texts();
+    expect(t["mid-week reply"]).not.toContain("sore calf niggle");
+    expect(t["mid-week reply"]).not.toContain("Heard:");
+  });
+
+  it("the chat note card keeps the athlete's words whole, for About you (#9)", () => {
+    expect(texts()["mid-week settings bullets"]).toBe(`You told me: ${SKIP_NOTE}`);
+  });
+
+  it("a long onboarding answer keeps whole sentences on the card (#9)", () => {
+    const goal = texts()["onboarding summary"].split("\n")[0]!;
+    expect(goal.length).toBeLessThanOrEqual(280);
+    expect(goal).toMatch(/^Goal: Run a half marathon in January under 1:45, .*\.$/);
+    expect(goal).not.toContain("had to pull out");
+  });
+
+  it("names plan and tidy-up dates the way the athlete reads them (#9)", () => {
+    const t = texts();
+    expect(t["mid-week reply"]).toMatch(
+      /Updated the plan for (Mon|Tue|Wed|Thu|Fri|Sat|Sun) [A-Z][a-z]{2} \d{1,2}\./,
+    );
+    expect(t["audit summary"]).toContain("Next tidy-up around Sun Nov 29 (every 5 weeks).");
+  });
+
+  it("flags raw dates, but not other dashed numbers (#9)", () => {
+    expect(bannedTermsIn("Updated the plan for 2026-10-15.")).toEqual(["raw date"]);
+    expect(bannedTermsIn("(updated 2026-10-14)")).toEqual(["raw date"]);
+    expect(bannedTermsIn("Run 10-15 min easy, call 555-1234")).toEqual([]);
+  });
+
+  it("formats a calendar day as Mon Oct 19 (#9)", () => {
+    expect(formatDayShort("2026-10-19")).toBe("Mon Oct 19");
+    expect(formatDayShort("2026-11-01")).toBe("Sun Nov 1");
+    expect(formatDayShort("2027-01-03")).toBe("Sun Jan 3");
+    expect(formatDayShort("not a date")).toBe("");
+  });
 
   it("matches the multi-word banned term AI Coach as whole words", () => {
     expect(bannedTermsIn("Welcome to AI Coach")).toEqual(["AI Coach"]);

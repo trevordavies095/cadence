@@ -64,7 +64,8 @@ describe("mid-week free chat (#35)", () => {
     expect(coach.role).toBe("coach");
     expect(String(coach.body)).toContain("Quick check-in for this week");
     expect(String(coach.body)).not.toContain("2026-W43");
-    expect(String(coach.body)).toContain("Felt heavy");
+    // The reply acknowledges the note without quoting it back (#9).
+    expect(String(coach.body)).not.toContain("Felt heavy");
     expect(coach.weekSessionId).toBe(week.id);
 
     const listed = await json(
