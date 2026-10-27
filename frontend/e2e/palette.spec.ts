@@ -90,3 +90,102 @@ test.describe("palette", () => {
     });
   }
 });
+
+/** The volt token as the browser paints it, so it compares against computed backgrounds. */
+async function voltBackground(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const probe = document.createElement("div");
+    probe.style.backgroundColor = "var(--volt)";
+    document.body.appendChild(probe);
+    const value = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return value;
+  });
+}
+
+/** Visible elements painted volt, described for a readable failure. */
+async function voltElements(page: Page): Promise<string[]> {
+  const volt = await voltBackground(page);
+  return page.evaluate((v) => {
+    const found: string[] = [];
+    for (const el of Array.from(document.body.querySelectorAll<HTMLElement>("*"))) {
+      const style = getComputedStyle(el);
+      if (style.backgroundColor !== v) continue;
+      if (style.visibility === "hidden" || style.display === "none") continue;
+      const box = el.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) continue;
+      found.push(`<${el.tagName.toLowerCase()}> ${(el.textContent ?? "").trim().slice(0, 40)}`);
+    }
+    return found;
+  }, volt);
+}
+
+async function settle(page: Page, route: string) {
+  await page.goto(route);
+  await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText("Loading…")).toHaveCount(0);
+}
+
+test.describe("one volt per page", () => {
+  // Route, and the most volt elements it may show.
+  const PAGES: Array<[string, number]> = [
+    ["/", 1],
+    ["/plan", 1],
+    ["/chat", 1],
+    ["/weeks", 0],
+  ];
+
+  for (const theme of THEMES) {
+    test(`${theme}: volt marks at most one thing, and none on History`, async ({ page }) => {
+      await openIn(page, theme);
+      for (const [route, max] of PAGES) {
+        await settle(page, route);
+        const volt = await voltElements(page);
+        expect(volt.length, `${theme} ${route} volt elements:\n${volt.join("\n")}`).toBeLessThanOrEqual(
+          max,
+        );
+      }
+    });
+
+    test(`${theme}: the current page in the header is underlined, not volt`, async ({ page }) => {
+      await openIn(page, theme);
+      const volt = await voltBackground(page);
+      for (const [route] of PAGES) {
+        await settle(page, route);
+        const current = page
+          .getByRole("navigation", { name: "Main" })
+          .locator('[aria-current="page"]');
+        await expect(current).toHaveCount(1);
+        const mark = await current.evaluate((el) => {
+          const s = getComputedStyle(el);
+          return {
+            background: s.backgroundColor,
+            border:
+              parseFloat(s.borderBottomWidth) > 0 &&
+              s.borderBottomStyle !== "none" &&
+              s.borderBottomColor !== "rgba(0, 0, 0, 0)",
+            shadow: s.boxShadow !== "none",
+            underline: s.textDecorationLine.includes("underline"),
+          };
+        });
+        expect(mark.background, `${theme} ${route} active nav background`).not.toBe(volt);
+        expect(
+          mark.border || mark.shadow || mark.underline,
+          `${theme} ${route} active nav has no visible underline`,
+        ).toBe(true);
+      }
+    });
+
+    test(`${theme}: About you's submit is not volt while the box is empty`, async ({ page }) => {
+      await openIn(page, theme);
+      const volt = await voltBackground(page);
+      await settle(page, "/dossier");
+      await expect(page.getByLabel("What should Coach Cade know?")).toHaveValue("");
+      const submit = page.getByRole("button", { name: "Tell Coach Cade" });
+      await expect(submit).toBeDisabled();
+      const background = await submit.evaluate((el) => getComputedStyle(el).backgroundColor);
+      expect(background).not.toBe(volt);
+    });
+  }
+});

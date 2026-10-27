@@ -27,11 +27,12 @@ const NAV: NavItem[] = [
   },
 ];
 
-// Volt marks the active item only; every other item stays quiet.
+// The current page is ink text over a 2px accent underline; every other item
+// stays quiet. Volt is kept for the page's one primary action, never the header.
 const linkBase =
-  "inline-flex items-center rounded-tempo px-3 py-1.5 text-base font-semibold";
-const linkIdle = "text-muted hover:text-ink";
-const linkActive = "bg-volt text-on-volt";
+  "inline-flex items-center border-b-2 px-3 py-1.5 text-base font-semibold";
+const linkIdle = "border-transparent text-muted hover:text-ink";
+const linkActive = "border-accent text-ink";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -65,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             title="Settings"
             aria-current={settingsActive ? "page" : undefined}
             className={cx(
-              "inline-flex h-10 w-10 items-center justify-center rounded-tempo",
+              "inline-flex h-10 w-10 items-center justify-center border-b-2",
               settingsActive ? linkActive : linkIdle,
             )}
           >

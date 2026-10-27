@@ -200,7 +200,12 @@ export default function AboutYouPage() {
               />
             </Field>
             <div>
-              <Button type="submit" variant="primary" disabled={telling || !tell.trim()}>
+              {/* A waiting note's "Looks right" holds volt; this submit steps back. */}
+              <Button
+                type="submit"
+                variant={waiting.length > 0 ? "secondary" : "primary"}
+                disabled={telling || !tell.trim()}
+              >
                 {telling ? "Passing it on…" : "Tell Coach Cade"}
               </Button>
             </div>
