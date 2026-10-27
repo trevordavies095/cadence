@@ -141,6 +141,8 @@ describe("createStubLlmPort", () => {
 
     expect(reply.analysis.length).toBeGreaterThan(0);
     expect(reply.analysis).toContain("Headline");
+    // Each section heading appears once, not again as a label on the next line (#20).
+    expect(reply.analysis).not.toMatch(/^(Headline|Answers):/m);
     expect(reply.analysis).toMatch(/Achilles|soft-tissue/i);
 
     const checked = validateWeeklyReply(reply, PLAN_WEEK_START);

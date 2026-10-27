@@ -192,8 +192,8 @@ function buildStubAnalysis(packet: ModelPacket): string {
   const weekLabel = planRange ? `Next week (${planRange})` : "Next week";
 
   const headline = hasRecap
-    ? `Headline: ${weekLabel} looks workable. Protect easy days and land the long run.`
-    : `Headline: I don't have much to go on for ${weekLabel.toLowerCase()}, so this is a conservative base week.`;
+    ? `${weekLabel} looks workable. Protect easy days and land the long run.`
+    : `I don't have much to go on for ${weekLabel.toLowerCase()}, so this is a conservative base week.`;
 
   const concerns: string[] = [];
   if (hasDossier && /achilles|niggle|pain|sore/i.test(packet.dossier!.body)) {
@@ -212,7 +212,7 @@ function buildStubAnalysis(packet: ModelPacket): string {
   }
 
   const answers =
-    "Answers: Keep quality to one session, shoes as listed, and treat rest days as real rest.";
+    "Keep quality to one session, shoes as listed, and treat rest days as real rest.";
 
   return ["## Headline", headline, "", "## Concerns", ...concerns, "", "## Answers", answers].join(
     "\n",
