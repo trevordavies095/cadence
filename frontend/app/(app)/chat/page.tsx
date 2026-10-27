@@ -7,6 +7,7 @@ import { ConversationMessage } from "@/components/ConversationMessage";
 import {
   Button,
   ButtonLink,
+  CoachSurface,
   ErrorNote,
   Muted,
   Textarea,
@@ -60,7 +61,7 @@ function PendingExchange({ sending, stored }: { sending: Sending; stored: boolea
   return (
     <>
       {stored ? null : (
-        <article className="flex flex-col gap-1 border-b border-border pb-3">
+        <article data-role="athlete" className="flex flex-col gap-1">
           <header className="flex items-baseline gap-3">
             <span className="font-semibold">You</span>
             <span className="text-sm text-muted">Just now</span>
@@ -68,9 +69,15 @@ function PendingExchange({ sending, stored }: { sending: Sending; stored: boolea
           <p className="m-0 whitespace-pre-wrap">{sending.body}</p>
         </article>
       )}
-      <article className="flex flex-col gap-1 pb-3" role="status" aria-live="polite">
+      <CoachSurface
+        as="article"
+        data-role="coach"
+        className="flex flex-col gap-1"
+        role="status"
+        aria-live="polite"
+      >
         <header className="flex items-baseline gap-3">
-          <span className="font-semibold">Coach Cade</span>
+          <span className="font-semibold text-accent">Coach Cade</span>
         </header>
         <p className="m-0 text-muted">
           {sending.phase === "recovering"
@@ -81,7 +88,7 @@ function PendingExchange({ sending, stored }: { sending: Sending; stored: boolea
           <div className="h-3 w-4/5 animate-pulse rounded-tempo bg-raised" />
           <div className="h-3 w-3/5 animate-pulse rounded-tempo bg-raised" />
         </div>
-      </article>
+      </CoachSurface>
     </>
   );
 }

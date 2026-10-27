@@ -11,6 +11,7 @@ import {
   Banner,
   Button,
   ButtonLink,
+  CoachSurface,
   ErrorNote,
   Muted,
   Notice,
@@ -246,7 +247,9 @@ function ReviewInner() {
               </Notice>
             ))}
             {plan.analysis?.trim() ? (
-              <CoachText>{plan.analysis}</CoachText>
+              <CoachSurface>
+                <CoachText>{plan.analysis}</CoachText>
+              </CoachSurface>
             ) : (
               <Muted>Coach Cade had nothing to add.</Muted>
             )}

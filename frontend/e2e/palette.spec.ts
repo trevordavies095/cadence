@@ -189,3 +189,41 @@ test.describe("one volt per page", () => {
     });
   }
 });
+
+const API_URL = process.env.E2E_API_URL ?? "http://localhost:5102";
+
+test.describe("Coach Cade's voice", () => {
+  test.beforeAll(async ({ request }) => {
+    // One exchange, so the conversation has both an athlete message and a reply.
+    // Avoids words the stub coach treats as something to remember.
+    const week = (await (await request.post(`${API_URL}/weeks/current`)).json()) as { id: string };
+    const res = await request.post(`${API_URL}/weeks/${week.id}/chat`, {
+      data: { body: "Checking in: the week is going fine." },
+    });
+    expect(res.ok()).toBeTruthy();
+  });
+
+  for (const theme of THEMES) {
+    test(`${theme}: a reply sits on its own surface, the athlete's message does not`, async ({ page }) => {
+      await openIn(page, theme);
+      await page.goto("/chat");
+      const log = page.getByRole("log", { name: "Conversation" });
+      const reply = log.locator('article[data-role="coach"]').first();
+      const mine = log.locator('article[data-role="athlete"]').first();
+      await expect(reply).toBeVisible();
+      await expect(mine).toBeVisible();
+
+      const surface = (el: Element) => {
+        const s = getComputedStyle(el);
+        return { background: s.backgroundColor, ruleWidth: parseFloat(s.borderLeftWidth) };
+      };
+      const coach = await reply.evaluate(surface);
+      const athlete = await mine.evaluate(surface);
+
+      expect(coach.background, `${theme}: reply and athlete message share a background`).not.toBe(
+        athlete.background,
+      );
+      expect(coach.ruleWidth, `${theme}: reply has no left rule`).toBeGreaterThan(0);
+    });
+  }
+});

@@ -6,6 +6,7 @@ import {
   Banner,
   Button,
   ButtonLink,
+  CoachSurface,
   Muted,
   Notice,
   Page,
@@ -212,7 +213,9 @@ export default function PlanPage() {
               </Notice>
             ))}
             {selected.analysis?.trim() ? (
-              <CoachText>{selected.analysis}</CoachText>
+              <CoachSurface>
+                <CoachText>{selected.analysis}</CoachText>
+              </CoachSurface>
             ) : null}
             <ol className="m-0 flex list-none flex-col gap-3 p-0">
               {selected.plan.days.map((day) => (
