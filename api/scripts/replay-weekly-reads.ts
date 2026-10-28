@@ -15,6 +15,7 @@
  * --dry-run to exercise the whole run with the offline stub, at no cost, into a
  * separate folder.
  */
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -115,7 +116,8 @@ async function replay(calls: StoredCall[]): Promise<void> {
           recorder: memoryRecorder(log),
         });
     const started = Date.now();
-    const reply = await port.generateWeeklyReply(call.packet);
+    // The port writes its log row, with any repairs and token counts, only for a call with an id.
+    const reply = await port.generateWeeklyReply(call.packet, { callId: randomUUID() });
     const row = log.at(-1);
     writeFileSync(
       file,
@@ -207,7 +209,18 @@ function report(): void {
     const reasons = oldSessionReasons(s.old.analysis);
     const daysWithNotes = n.prescribedWeek.days.filter((d) => d.notes?.trim()).length;
     const repeatsHeadline = n.analysis.includes(n.headline.slice(0, 60));
-    const listsDays = /^\s*[-*]\s+\**(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/m.test(n.analysis);
+    const listsDays =
+      /^\s*[-*]\s+\**(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/m.test(n.analysis) ||
+      /^\|\s*\**(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/m.test(n.analysis);
+    const standAlone = [...(n.flags ?? []).map((f) => f.detail), ...(n.answers ?? []).map((a) => a.answer)];
+    // A reference to another part, such as "the table above" or "see below", not "below the 80% target".
+    const pointsAcross = standAlone.some((t) =>
+      /\b(?:table|list|section|chart|plan|notes?)\s+(?:above|below)\b|\b(?:see|as)\s+(?:above|below)\b|\b(?:above|below)\s*[.,;)]/i.test(t),
+    );
+    const tableRows = (text: string) =>
+      text.split("\n").map((l) => l.trim()).filter((l) => l.startsWith("|") && !/^\|[\s|:-]+\|$/.test(l) && l.length > 20);
+    const analysisRows = new Set(tableRows(n.analysis));
+    const repeatsAnswerTable = (n.answers ?? []).some((a) => tableRows(a.answer).some((r) => analysisRows.has(r)));
     const banned = bannedTermsIn(newText);
 
     out.push(
@@ -223,7 +236,9 @@ function report(): void {
       `| Questions answered | ${questions.length} | ${n.answers?.length ?? 0} |`,
       `| Session reasons | ${reasons.length} in the read | ${daysWithNotes} days with notes |`,
       `| Read repeats the headline | | ${repeatsHeadline ? "yes" : "no"} |`,
-      `| Read lists the days | | ${listsDays ? "yes" : "no"} |`,
+      `| Read lists the days (as a list or a table) | | ${listsDays ? "yes" : "no"} |`,
+      `| A flag or answer points "above" or "below" | | ${pointsAcross ? "yes" : "no"} |`,
+      `| Read repeats an answer's table | | ${repeatsAnswerTable ? "yes" : "no"} |`,
       `| Internal words | | ${banned.length ? banned.join(", ") : "none"} |`,
       "",
       `Figures in the old read not found anywhere in the new reply: ${missing.length ? missing.join(", ") : "none"}`,
