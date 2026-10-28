@@ -205,7 +205,7 @@ export default function PlanPage() {
         {selected ? (
           <>
             {/* Next week's read is fresh; this week's was written last Sunday and the days come first. */}
-            <CoachRead record={selected} fullReadOpen={view === "next"} />
+            <CoachRead record={selected} fresh={view === "next"} />
             <ol className="m-0 flex list-none flex-col gap-3 p-0">
               {selected.plan.days.map((day) => (
                 <PlanDayRow

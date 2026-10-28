@@ -368,6 +368,40 @@ test.describe("The full read", () => {
     await expect(week.getByText(/so Thursday is shorter/)).toBeVisible();
   });
 
+  test("on this week's plan, last Sunday's answers fold away with it, under a label that says so", async ({
+    page,
+  }) => {
+    await serveThisPlan(page, {
+      readSections: {
+        ...SECTIONS,
+        answers: [{ question: "Is 3:30 still sensible?", answer: "Yes, with one caveat." }],
+      },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "This week" }).click();
+    const week = page.getByRole("region", { name: "Week plan" });
+
+    await expect(week.getByRole("region", { name: "Watching" })).toBeVisible();
+    await expect(week.getByText("Is 3:30 still sensible?")).toBeHidden();
+    await week.getByText("Your questions and the full read", { exact: true }).click();
+    await expect(week.getByText("Is 3:30 still sensible?")).toBeVisible();
+    await expect(week.getByText(/so Thursday is shorter/)).toBeVisible();
+  });
+
+  test("on next week's plan, the answers stay in view above the full read", async ({ page }) => {
+    await serveNextPlan(page, {
+      readSections: {
+        ...SECTIONS,
+        answers: [{ question: "Is 3:30 still sensible?", answer: "Yes, with one caveat." }],
+      },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+    await expect(next.getByText("Is 3:30 still sensible?")).toBeVisible();
+    await expect(next.locator("summary")).toHaveText("The full read");
+  });
+
   test("is open on the Your week page", async ({ page }) => {
     await serveNextPlan(page, { readSections: SECTIONS });
     await page.route(/\/api\/weeks\/[^/]+\/reply-run$/, (route) =>

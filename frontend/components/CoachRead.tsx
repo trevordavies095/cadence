@@ -15,25 +15,50 @@ function withStop(title: string): string {
  * Coach Cade's read of a week, the same on Plan and on Your week: safety notices
  * first, never folded away, then on Coach Cade's surface the headline, what
  * Coach Cade is watching, the answers to the athlete's questions, and the rest
- * of the read under "The full read". Plans made before these parts show the
- * read as it was, with nothing folded.
+ * of the read under "The full read". Once the week is under way the answers
+ * fold away with it. Plans made before these parts show the read as it was,
+ * with nothing folded.
  */
 export function CoachRead({
   record,
   emptyText,
-  fullReadOpen,
+  fresh,
 }: {
   record: Pick<PrescribedWeekRecord, "analysis" | "safetyCallouts" | "readSections">;
   /** Shown when there is no read; nothing is shown when left out. */
   emptyText?: string;
-  /** Whether "The full read" starts open: yes while the read is fresh, no once the week is under way. */
-  fullReadOpen: boolean;
+  /**
+   * Whether the read is fresh: next week's plan and Your week, where everything
+   * is open. Once the week is under way, the answers to last Sunday's questions
+   * fold away with the full read, so the days come first.
+   */
+  fresh: boolean;
 }) {
   const sections = record.readSections;
   const headline = sections?.headline?.trim();
   const flags = sections?.flags ?? [];
   const answers = sections?.answers ?? [];
   const analysis = record.analysis?.trim();
+  const foldAnswers = !fresh && answers.length > 0;
+  const questions =
+    answers.length > 0 ? (
+      <section aria-label="Your questions" className="flex flex-col gap-3">
+        <h3 className={EYEBROW}>Your questions</h3>
+        {answers.map((a, i) => (
+          <div key={`${a.question}-${i}`} className="flex flex-col gap-1">
+            <p className={`m-0 font-semibold ${MEASURE}`} data-part="question">
+              {a.question}
+            </p>
+            <CoachText>{a.answer}</CoachText>
+          </div>
+        ))}
+      </section>
+    ) : null;
+  const foldLabel = foldAnswers
+    ? analysis
+      ? "Your questions and the full read"
+      : "Your questions"
+    : "The full read";
   return (
     <>
       {(record.safetyCallouts ?? []).map((c) => (
@@ -66,26 +91,15 @@ export function CoachRead({
               </ul>
             </section>
           ) : null}
-          {answers.length > 0 ? (
-            <section aria-label="Your questions" className="flex flex-col gap-3">
-              <h3 className={EYEBROW}>Your questions</h3>
-              {answers.map((a, i) => (
-                <div key={`${a.question}-${i}`} className="flex flex-col gap-1">
-                  <p className={`m-0 font-semibold ${MEASURE}`} data-part="question">
-                    {a.question}
-                  </p>
-                  <CoachText>{a.answer}</CoachText>
-                </div>
-              ))}
-            </section>
-          ) : null}
-          {analysis && sections ? (
+          {foldAnswers ? null : questions}
+          {sections && (analysis || foldAnswers) ? (
             // Keyed on the default so switching weeks resets it rather than keeping the last toggle.
-            <details key={String(fullReadOpen)} open={fullReadOpen} data-part="full-read">
-              <summary className={`cursor-pointer ${EYEBROW}`}>The full read</summary>
-              <CoachText className="mt-3" quietHeadings>
-                {analysis}
-              </CoachText>
+            <details key={String(fresh)} open={fresh} data-part="full-read">
+              <summary className={`cursor-pointer ${EYEBROW}`}>{foldLabel}</summary>
+              <div className="mt-3 flex flex-col gap-4">
+                {foldAnswers ? questions : null}
+                {analysis ? <CoachText quietHeadings>{analysis}</CoachText> : null}
+              </div>
             </details>
           ) : analysis ? (
             <CoachText>{analysis}</CoachText>
