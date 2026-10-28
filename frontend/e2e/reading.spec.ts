@@ -74,6 +74,11 @@ async function servePastWeek(page: Page, currentId: string) {
 }
 
 test.describe("the Sunday message", () => {
+  // The past week forwards requests to the real API; let any still in flight end quietly.
+  test.afterEach(async ({ page }) => {
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+  });
+
   test("on this week's conversation, shows one paragraph and opens the plan", async ({ page }) => {
     const week = await (await page.request.post(`${API_URL}/weeks/current`)).json();
     await page.route(/\/api\/thread\?/, (route) =>
