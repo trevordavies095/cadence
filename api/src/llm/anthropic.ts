@@ -119,32 +119,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /** The reason for a session, shown beside it on the plan. */
 const DAY_NOTES_DESCRIPTION = `Why this session, this week: one or two sentences, under ${DAY_NOTES_TARGET} characters. Shown beside the session.`;
 
-/** Keywords strict tool use cannot compile; the validators still enforce each one. */
-const STRICT_UNSUPPORTED = new Set(["maxItems", "maxLength", "minLength", "minimum", "maximum", "multipleOf"]);
-
-/**
- * A schema strict tool use accepts: the same shape with the size and length
- * limits removed (minItems survives only as 0 or 1). The reply is still
- * validated against the full limits after it arrives, so nothing is lost; strict
- * mode only guarantees the shape, such as the plan arriving as an object rather
- * than a string of JSON.
- */
-export function toStrictSchema(schema: unknown): unknown {
-  if (Array.isArray(schema)) return schema.map(toStrictSchema);
-  if (!isPlainObject(schema)) return schema;
-  const out: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(schema)) {
-    if (STRICT_UNSUPPORTED.has(key)) continue;
-    if (key === "minItems" && typeof value === "number" && value > 1) continue;
-    // Property names are data, not keywords: copy them through untouched.
-    out[key] =
-      key === "properties" && isPlainObject(value)
-        ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, toStrictSchema(v)]))
-        : toStrictSchema(value);
-  }
-  return out;
-}
-
 function weeklyReplyToolSchema() {
   return {
     type: "object",
@@ -514,8 +488,6 @@ type AnthropicMessagesRequest = {
   tools: Array<{
     name: string;
     description: string;
-    /** Grammar-constrained sampling: the tool input always matches input_schema. */
-    strict?: boolean;
     input_schema: Record<string, unknown>;
   }>;
   thinking: { type: "adaptive"; display: "summarized" };
@@ -964,10 +936,7 @@ export function createAnthropicLlmPort(
             name: WEEKLY_TOOL_NAME,
             description:
               "Submit the weekly coaching analysis and structured 7-day prescribed week.",
-            // Strict, so the plan always arrives as an object: a reply refused for its
-            // shape is a failed read for the athlete (found in the reading-flow replay).
-            strict: true,
-            input_schema: toStrictSchema(weeklyReplyToolSchema()) as Record<string, unknown>,
+            input_schema: weeklyReplyToolSchema(),
           },
         ],
         ...REASONING_PARAMS,
