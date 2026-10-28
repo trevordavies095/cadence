@@ -119,7 +119,21 @@ describe("flags and answers are validated", () => {
   it("tells the model what flags and answers are", () => {
     expect(WEEKLY_SYSTEM_PROMPT).toMatch(/Flags are what you are watching, not a summary/);
     expect(WEEKLY_SYSTEM_PROMPT).toMatch(/question quoted exactly as they wrote it/);
-    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/do not restate the headline, flags or answers/);
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/do not restate the headline, flags or answers/i);
+  });
+
+  it("carries the replay's fixes: corrections first, parts that stand alone, no repeated tables", () => {
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/A correction comes first/);
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/never point to something "above" or "below"/);
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/never repeat an answer's table or list/);
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/as a list or as a table/);
+  });
+
+  it("names the internal words the model reached for in the replay", () => {
+    for (const word of ["RPE", "mid-week", "prescribed"]) {
+      expect(WEEKLY_SYSTEM_PROMPT).toContain(word);
+    }
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/how hard it felt/);
   });
 });
 

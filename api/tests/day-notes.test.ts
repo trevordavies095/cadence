@@ -84,7 +84,7 @@ describe("day notes carry the reason for a session", () => {
   it("tells the model where the reasons go and to keep the days out of the read", () => {
     expect(WEEKLY_SYSTEM_PROMPT).toMatch(/reason for each session in that day's notes/);
     expect(WEEKLY_SYSTEM_PROMPT).toMatch(/under 200 characters/);
-    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/do not list the days or describe each session/);
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/do not list the days or describe each session/i);
   });
 
   it("gives the stub's days short notes in plain words", () => {

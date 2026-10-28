@@ -72,7 +72,7 @@ export const SAFETY_CALLOUT_PROMPT = [
 
 /** How the model names things when it speaks to the athlete. */
 export const ATHLETE_VOCABULARY_PROMPT =
-  "Speak to the athlete in plain running language. Never use internal terms such as dossier, proposal, soft-gate, packet, recap, subjective or artifact. Say \"what I know about you\", \"your weekly report\", \"your check-in\" or \"the plan\" instead, and never tell the athlete to open a page by name. " +
+  "Speak to the athlete in plain running language. Never use internal terms such as dossier, proposal, soft-gate, packet, recap, subjective, artifact, RPE, mid-week or prescribed. Say \"what I know about you\", \"your weekly report\", \"your check-in\", \"the plan\", \"how hard it felt\" (or \"effort 7/10\"), \"during the week\" and \"planned\" instead, and never tell the athlete to open a page by name. " +
   "Week ids such as 2026-W43 are internal: never write them or a short form such as W43 or W43's. Name a week the way the athlete reads it: \"this week\", \"next week\", \"the week of Oct 19\", \"Oct 19 – 25\" or \"4 weeks out from the race\".";
 
 /**
@@ -148,9 +148,11 @@ export const MIDWEEK_REPLY_SHAPE_PROMPT = [
 export const WEEKLY_READ_SHAPE_PROMPT = [
   "The headline is the sentence you would say if you could say only one thing about the week and the plan: one or two plain sentences, no label.",
   "Flags are what you are watching, not a summary of the week: at most five, each a few-word title and one line of detail.",
+  "Choose flags by what the athlete needs to act on. A correction comes first: when the athlete ran a session differently from the plan, flag it, and explain in the analysis what happened and why it matters.",
   "Answers are one per question the athlete asked in the weekly check-in or the conversation, with the question quoted exactly as they wrote it. When they asked nothing, leave answers empty.",
   "Put the reason for each session in that day's notes: one or two sentences on why this session, this week, under 200 characters. The athlete sees them beside the session.",
-  "The athlete reads the headline, then the flags, then the answers, then the analysis. The analysis holds your reasoning; do not restate the headline, flags or answers in it, and do not list the days or describe each session in it.",
+  "The athlete reads the headline, then the flags, then the answers, then the analysis, and the analysis may be folded away. Make each flag and answer stand on its own: never point to something \"above\" or \"below\", or to a table in another part.",
+  "The analysis holds your reasoning. Do not restate the headline, flags or answers in it, and never repeat an answer's table or list there. Do not list the days or describe each session in it, as a list or as a table; the day rows already show them.",
 ].join(" ");
 
 /** System prompt for weekly plan generation (live Anthropic + docs). */
