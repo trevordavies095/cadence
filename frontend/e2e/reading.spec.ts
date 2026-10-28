@@ -197,3 +197,290 @@ test.describe("coach prose", () => {
     await expect(inline).toHaveCSS("display", "inline");
   });
 });
+
+const PLAN_DAYS = [
+  { date: "2026-10-26", dayType: "easy", run: { type: "easy", distanceM: 4828 } },
+  { date: "2026-10-27", dayType: "rest", run: null },
+  { date: "2026-10-28", dayType: "easy", run: { type: "easy", distanceM: 4828 } },
+  { date: "2026-10-29", dayType: "rest", run: null },
+  { date: "2026-10-30", dayType: "easy", run: { type: "easy", distanceM: 4828 } },
+  { date: "2026-10-31", dayType: "rest", run: null },
+  { date: "2026-11-01", dayType: "long", run: { type: "long", distanceM: 8047 } },
+];
+
+async function serveNextPlan(page: Page, extra: Record<string, unknown>) {
+  await page.route(/\/api\/weeks\/[^/]+\/prescribed\/next/, async (route) => {
+    const real = await (await route.fetch()).json();
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...real,
+        prescribed: {
+          weekSessionId: "w44",
+          plan: { week: "2026-W44", days: PLAN_DAYS },
+          analysis: "## Flags\n- Sleep slipped to 6.8 hours.",
+          settingsProposalBullets: null,
+          safetyCallouts: null,
+          createdAt: "2026-10-25T16:00:00.000Z",
+          updatedAt: "2026-10-25T16:00:00.000Z",
+          ...extra,
+        },
+      }),
+    });
+  });
+}
+
+test.describe("Coach Cade's read", () => {
+  test("opens with the headline, in bold, before the rest of the read", async ({ page }) => {
+    await serveNextPlan(page, {
+      readSections: { headline: "Big week. We pull back a little before the next block." },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+
+    const next = page.getByRole("region", { name: "Next week plan" });
+    const headline = next.locator('[data-part="headline"]');
+    await expect(headline).toHaveText("Big week. We pull back a little before the next block.");
+    await expect(headline).toHaveCSS("font-weight", "600");
+    // The headline comes first inside Coach Cade's surface, then the read.
+    const order = await next.evaluate((el) =>
+      Array.from(el.querySelectorAll('[data-part="headline"], li')).map((n) => n.textContent),
+    );
+    expect(order[0]).toBe("Big week. We pull back a little before the next block.");
+    expect(order[1]).toContain("Sleep slipped");
+  });
+
+  test("a plan made before the headline shows the read as it was", async ({ page }) => {
+    await serveNextPlan(page, { readSections: null });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+
+    const next = page.getByRole("region", { name: "Next week plan" });
+    await expect(next).toContainText("Sleep slipped");
+    await expect(next.locator('[data-part="headline"]')).toHaveCount(0);
+  });
+});
+
+test.describe("Watching and Your questions", () => {
+  const FLAGS = [
+    { title: "Sleep", detail: "Down to 6.8 hours. Protect it this week." },
+    { title: "Long-run drift?", detail: "Plus 16.9 bpm, above the plus 10 target." },
+  ];
+  const ANSWERS = [
+    { question: "Is 3:30 still sensible?", answer: "**Yes,** with one caveat about the next long run." },
+  ];
+
+  test("sit between the headline and the read, each under its own label", async ({ page }) => {
+    await serveNextPlan(page, {
+      readSections: { headline: "Big week. We pull back a little.", flags: FLAGS, answers: ANSWERS },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+
+    const watching = next.getByRole("region", { name: "Watching" });
+    await expect(watching.getByRole("heading", { name: "Watching" })).toBeVisible();
+    await expect(watching.getByRole("listitem")).toHaveText([
+      "Sleep. Down to 6.8 hours. Protect it this week.",
+      "Long-run drift? Plus 16.9 bpm, above the plus 10 target.",
+    ]);
+
+    const questions = next.getByRole("region", { name: "Your questions" });
+    await expect(questions.locator('[data-part="question"]')).toHaveText(["Is 3:30 still sensible?"]);
+    await expect(questions.locator("strong", { hasText: "Yes," })).toBeVisible();
+
+    // Headline, then Watching, then Your questions, then the read.
+    const order = await next.evaluate((el) =>
+      Array.from(el.querySelectorAll('[data-part="headline"], h3, h4, p, li'))
+        .map((n) => n.textContent ?? "")
+        .filter((t) => /Big week|^Watching$|^Your questions$|Sleep slipped/.test(t)),
+    );
+    expect(order).toEqual([
+      "Big week. We pull back a little.",
+      "Watching",
+      "Your questions",
+      "Sleep slipped to 6.8 hours.",
+    ]);
+  });
+
+  test("show nothing when there is nothing to watch and no questions", async ({ page }) => {
+    await serveNextPlan(page, { readSections: { headline: "A quiet week.", flags: [], answers: [] } });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+    await expect(next.locator('[data-part="headline"]')).toHaveText("A quiet week.");
+    await expect(next.getByRole("region", { name: "Watching" })).toHaveCount(0);
+    await expect(next.getByRole("region", { name: "Your questions" })).toHaveCount(0);
+  });
+});
+
+test.describe("The full read", () => {
+  const SECTIONS = {
+    headline: "Big week. We pull back a little.",
+    flags: [{ title: "Sleep", detail: "Down to 6.8 hours." }],
+    answers: [],
+  };
+  const CALLOUT = { title: "See a professional", body: "If the Achilles gets worse, see a clinician.", severity: "caution" };
+
+  async function serveThisPlan(page: Page, extra: Record<string, unknown>) {
+    await page.route(/\/api\/weeks\/[^/]+\/prescribed$/, async (route) => {
+      const real = await (await route.fetch()).json();
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...real,
+          prescribed: {
+            weekSessionId: "w43",
+            plan: { week: "2026-W43", days: PLAN_DAYS.map((d, i) => ({ ...d, date: `2026-10-${19 + i}` })) },
+            analysis: "## Why this plan\nSleep slipped to 6.8 hours, so Thursday is shorter.",
+            settingsProposalBullets: null,
+            safetyCallouts: null,
+            createdAt: "2026-10-18T16:00:00.000Z",
+            updatedAt: "2026-10-18T16:00:00.000Z",
+            ...extra,
+          },
+        }),
+      });
+    });
+  }
+
+  test("is open on next week's plan, where the read is fresh", async ({ page }) => {
+    await serveNextPlan(page, { readSections: SECTIONS });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+    await expect(next.locator('[data-part="full-read"]')).toHaveAttribute("open", "");
+    await expect(next.getByText("Sleep slipped to 6.8 hours.")).toBeVisible();
+  });
+
+  test("is closed on this week's plan, opens on request, and never hides a safety notice", async ({ page }) => {
+    await serveThisPlan(page, { readSections: SECTIONS, safetyCallouts: [CALLOUT] });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "This week" }).click();
+    const week = page.getByRole("region", { name: "Week plan" });
+
+    await expect(week.locator('[data-part="headline"]')).toBeVisible();
+    await expect(week.getByRole("region", { name: "Watching" })).toBeVisible();
+    await expect(week.getByText("See a professional")).toBeVisible();
+    await expect(week.getByText(/so Thursday is shorter/)).toBeHidden();
+
+    await week.getByText("The full read", { exact: true }).click();
+    await expect(week.getByText(/so Thursday is shorter/)).toBeVisible();
+  });
+
+  test("on this week's plan, last Sunday's answers fold away with it, under a label that says so", async ({
+    page,
+  }) => {
+    await serveThisPlan(page, {
+      readSections: {
+        ...SECTIONS,
+        answers: [{ question: "Is 3:30 still sensible?", answer: "Yes, with one caveat." }],
+      },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "This week" }).click();
+    const week = page.getByRole("region", { name: "Week plan" });
+
+    await expect(week.getByRole("region", { name: "Watching" })).toBeVisible();
+    await expect(week.getByText("Is 3:30 still sensible?")).toBeHidden();
+    await week.getByText("Your questions and the full read", { exact: true }).click();
+    await expect(week.getByText("Is 3:30 still sensible?")).toBeVisible();
+    await expect(week.getByText(/so Thursday is shorter/)).toBeVisible();
+  });
+
+  test("on next week's plan, the answers stay in view above the full read", async ({ page }) => {
+    await serveNextPlan(page, {
+      readSections: {
+        ...SECTIONS,
+        answers: [{ question: "Is 3:30 still sensible?", answer: "Yes, with one caveat." }],
+      },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+    await expect(next.getByText("Is 3:30 still sensible?")).toBeVisible();
+    await expect(next.locator("summary")).toHaveText("The full read");
+  });
+
+  test("is open on the Your week page", async ({ page }) => {
+    await serveNextPlan(page, { readSections: SECTIONS });
+    await page.route(/\/api\/weeks\/[^/]+\/reply-run$/, (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          run: {
+            id: "r1",
+            weekSessionId: "w43",
+            status: "ok",
+            llmCallId: null,
+            errorMessage: null,
+            startedAt: "2026-10-25T16:00:00.000Z",
+            finishedAt: "2026-10-25T16:01:00.000Z",
+            seenAt: null,
+          },
+        }),
+      }),
+    );
+    await page.goto("/review");
+    const read = page.getByRole("region", { name: "Coach Cade’s read" });
+    await expect(read.locator('[data-part="full-read"]')).toHaveAttribute("open", "");
+    await expect(read.getByText("Sleep slipped to 6.8 hours.")).toBeVisible();
+  });
+
+  test("is not folded on a plan made before the read had parts", async ({ page }) => {
+    await serveThisPlan(page, { readSections: null });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "This week" }).click();
+    const week = page.getByRole("region", { name: "Week plan" });
+    await expect(week.getByText(/so Thursday is shorter/)).toBeVisible();
+    await expect(week.locator('[data-part="full-read"]')).toHaveCount(0);
+  });
+});
+
+test.describe("Coach Cade's read keeps its labels in order", () => {
+  test("the full read's headings and its label are as quiet as Watching", async ({ page }) => {
+    await serveNextPlan(page, {
+      analysis: "## About Thursday last week\nThe fast miles were closer to 10K effort.",
+      readSections: {
+        headline: "Big week.",
+        flags: [{ title: "Sleep", detail: "Down to 6.8 hours." }],
+        answers: [{ question: "Is 3:30 still sensible?", answer: "Yes, with one caveat." }],
+      },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+
+    const size = (loc: import("@playwright/test").Locator) =>
+      loc.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    const watching = await size(next.getByRole("heading", { name: "Watching" }));
+    expect(await size(next.getByRole("heading", { name: "About Thursday last week" }))).toBe(watching);
+    expect(await size(next.locator("summary", { hasText: "The full read" }))).toBe(watching);
+
+    // The athlete's question reads as strongly as the answer, not fainter.
+    const question = next.locator('[data-part="question"]');
+    const answer = next.getByText("Yes, with one caveat.");
+    expect(await size(question)).toBe(await size(answer));
+    await expect(question).toHaveCSS("font-weight", "600");
+    const color = (loc: import("@playwright/test").Locator) =>
+      loc.evaluate((el) => getComputedStyle(el).color);
+    expect(await color(question)).toBe(await color(answer));
+  });
+
+  test("a safety notice has room before Coach Cade's read", async ({ page }) => {
+    await serveNextPlan(page, {
+      safetyCallouts: [{ title: "Achilles", body: "If it gets worse, see a physiotherapist.", severity: "caution" }],
+      readSections: { headline: "Big week.", flags: [], answers: [] },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+    const noticeBottom = await next.getByText("Achilles", { exact: true }).locator("xpath=..").evaluate(
+      (el) => el.getBoundingClientRect().bottom,
+    );
+    const readTop = await next.locator('[data-part="headline"]').locator("xpath=..").evaluate(
+      (el) => el.getBoundingClientRect().top,
+    );
+    expect(readTop - noticeBottom).toBeGreaterThanOrEqual(20);
+  });
+});

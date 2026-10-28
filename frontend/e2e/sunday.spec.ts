@@ -55,7 +55,9 @@ test.describe("Sunday: check-in to Your week", () => {
     // It polls, then the coach's read and next week's plan arrive.
     const read = page.getByRole("region", { name: "Coach Cade’s read" });
     await expect(read).toBeVisible({ timeout: 20_000 });
-    await expect(read.getByRole("heading", { name: "Headline" })).toBeVisible();
+    // The read opens with Coach Cade's headline, and the read below does not repeat it.
+    await expect(read.locator('[data-part="headline"]')).toContainText("looks workable");
+    await expect(read.getByText(/looks workable/)).toHaveCount(1);
 
     const next = page.getByRole("region", { name: "Next week" });
     await expect(next.getByRole("listitem")).toHaveCount(7);

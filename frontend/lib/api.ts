@@ -125,8 +125,19 @@ export type PrescribedWeekRecord = {
   analysis: string;
   settingsProposalBullets: string[] | null;
   safetyCallouts: SafetyCallout[] | null;
+  /** The parts of the read laid out on their own; null on plans made before them. */
+  readSections?: ReadSections | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/** The parts of Coach Cade's read laid out on their own. */
+export type ReadSections = {
+  headline: string;
+  /** What Coach Cade is watching, shown as "Watching". */
+  flags?: Array<{ title: string; detail: string }>;
+  /** Answers to the athlete's own questions, shown as "Your questions". */
+  answers?: Array<{ question: string; answer: string }>;
 };
 
 export type PrescribedWeekArtifact = {

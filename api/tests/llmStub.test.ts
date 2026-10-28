@@ -117,6 +117,7 @@ describe("prescribed-week schema validation", () => {
 
     const badReply = validateWeeklyReply(
       {
+        headline: "A steady week.",
         analysis: "",
         prescribedWeek: {
           week: ISO_WEEK,
@@ -140,10 +141,13 @@ describe("createStubLlmPort", () => {
     const reply = await port.generateWeeklyReply(samplePacket());
 
     expect(reply.analysis.length).toBeGreaterThan(0);
-    expect(reply.analysis).toContain("Headline");
+    expect(reply.headline.trim().length).toBeGreaterThan(0);
+    // The headline is shown above the read, so the read does not repeat it.
+    expect(reply.analysis).not.toContain(reply.headline);
     // Each section heading appears once, not again as a label on the next line (#20).
     expect(reply.analysis).not.toMatch(/^(Headline|Answers):/m);
-    expect(reply.analysis).toMatch(/Achilles|soft-tissue/i);
+    // The soft-tissue concern is something Coach Cade is watching.
+    expect(reply.flags?.map((f) => f.title).join(" ")).toMatch(/soft-tissue/i);
 
     const checked = validateWeeklyReply(reply, PLAN_WEEK_START);
     expect(checked.ok).toBe(true);
@@ -214,7 +218,7 @@ describe("POST /week/reply week-loop (export TempoPort + LlmPort stub)", () => {
     const body = await json(res);
     const reply = body.reply as WeeklyReply;
 
-    expect(reply.analysis).toContain("Headline");
+    expect(reply.headline).toMatch(/looks workable/);
     // Reviewed week is 2026-W43 (Mon 2026-10-19); the plan is for 2026-W44.
     const weekStart = "2026-10-26";
     const validated = validateWeeklyReply(reply, weekStart);
