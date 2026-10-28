@@ -4,8 +4,13 @@ import type { PrescribedWeek, SafetyCallout } from "../llm/types.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import { getPrescribedWeekBySessionId } from "../prescribed/store.js";
 import { getWeekRecapBySessionId } from "../recap/recapStore.js";
-import { createAthleteMessage, listThreadMessages } from "../thread/store.js";
-import { getWeekSessionById } from "../week/store.js";
+import {
+  createAthleteMessage,
+  listThreadMessages,
+  type ThreadMessage,
+} from "../thread/store.js";
+import { weeklyReadLink } from "../thread/weeklyRead.js";
+import { getWeekSessionById, type WeekSession } from "../week/store.js";
 
 export type PrescribedWeekArtifact = {
   kind: "prescribed_week";
@@ -29,6 +34,29 @@ export type WeeklyRecapArtifact = {
 
 export type ThreadArtifact = PrescribedWeekArtifact | WeeklyRecapArtifact;
 
+/** A thread message as the page gets it: weekly_read messages say where their link goes. */
+export type ThreadMessageView = ThreadMessage & { readLink?: "plan" | "week" };
+
+async function withReadLinks(
+  messages: ThreadMessage[],
+  now: Date,
+): Promise<ThreadMessageView[]> {
+  const sessions = new Map<string, WeekSession | null>();
+  const out: ThreadMessageView[] = [];
+  for (const m of messages) {
+    if (m.kind !== "weekly_read" || !m.weekSessionId) {
+      out.push(m);
+      continue;
+    }
+    if (!sessions.has(m.weekSessionId)) {
+      sessions.set(m.weekSessionId, await getWeekSessionById(m.weekSessionId));
+    }
+    const reviewed = sessions.get(m.weekSessionId);
+    out.push(reviewed ? { ...m, readLink: weeklyReadLink(reviewed, now) } : m);
+  }
+  return out;
+}
+
 export function createThreadRoutes(options: { clock: Clock }): Hono {
   const { clock } = options;
   const threadRoutes = new Hono();
@@ -44,7 +72,10 @@ export function createThreadRoutes(options: { clock: Clock }): Hono {
         return c.json({ error: "week_session_not_found" }, 404);
       }
     }
-    const messages = await listThreadMessages(weekSessionId);
+    const messages = await withReadLinks(
+      await listThreadMessages(weekSessionId),
+      clock.now(),
+    );
     const artifacts: ThreadArtifact[] = [];
     if (weekSessionId) {
       const recap = await getWeekRecapBySessionId(weekSessionId);

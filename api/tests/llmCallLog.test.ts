@@ -160,6 +160,7 @@ describe("LLM call log (#68 tracer)", () => {
       messages: Array<{ content: string }>;
     };
     expect(request.system).toMatch(/do not diagnose/i);
+    expect(request.system).toMatch(/Lead with the conclusion/);
     expect(request.tools[0]!.name).toBe("submit_weekly_reply");
     expect(request.messages[0]!.content).toContain("Keep Achilles easy");
     const raw = JSON.parse(row.responseRaw as string) as { usage: unknown };
@@ -196,6 +197,9 @@ describe("LLM call log (#68 tracer)", () => {
       inputTokens: 1234,
       stopReason: "tool_use",
     });
+    const request = row.request as { system: string };
+    expect(request.system).toMatch(/Lead with the conclusion/);
+    expect(request.system).toMatch(/first sentence is the answer/);
     expect(JSON.stringify(row)).not.toContain(API_KEY);
   });
 

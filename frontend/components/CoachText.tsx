@@ -13,6 +13,37 @@ const ALLOWED = [
   "blockquote", "code", "pre", "a",
 ];
 
+/**
+ * Prose keeps to about 65 characters a line, so the eye finds the next line. Geist's
+ * "0" is about a third wider than its average letter, so 50ch lands near 65 characters.
+ */
+const MEASURE = "max-w-[50ch]";
+
+type HastNode = {
+  type: string;
+  tagName?: string;
+  value?: string;
+  children?: HastNode[];
+};
+
+function hastText(node: HastNode): string {
+  if (node.type === "text") return node.value ?? "";
+  return (node.children ?? []).map(hastText).join("");
+}
+
+/**
+ * A paragraph that opens with a bold run-in ending a sentence or a label, such as
+ * "**Yes.**" or "**Thursday:**", followed by more text. The run-in reads as the lead.
+ */
+function opensWithLead(node: HastNode | undefined): boolean {
+  const kids = (node?.children ?? []).filter(
+    (c) => !(c.type === "text" && !(c.value ?? "").trim()),
+  );
+  const [first, ...rest] = kids;
+  if (!first || first.type !== "element" || first.tagName !== "strong") return false;
+  return rest.length > 0 && /[.?!:]$/.test(hastText(first).trim());
+}
+
 /** Level 3 and below: a small uppercase muted eyebrow. */
 const EYEBROW = "m-0 mt-2 text-[0.8125rem] font-semibold uppercase tracking-[0.08em] text-muted";
 
@@ -24,9 +55,19 @@ const components: ComponentProps<typeof ReactMarkdown>["components"] = {
   h4: (p) => <h5 className={EYEBROW} {...strip(p)} />,
   h5: (p) => <h5 className={EYEBROW} {...strip(p)} />,
   h6: (p) => <h6 className={EYEBROW} {...strip(p)} />,
-  p: (p) => <p className="m-0" {...strip(p)} />,
+  p: (p) => (
+    <p
+      className={cx(
+        "m-0",
+        MEASURE,
+        opensWithLead(p.node as HastNode | undefined) && "[&>strong:first-child]:block",
+      )}
+      {...strip(p)}
+    />
+  ),
   ul: (p) => <ul className="m-0 flex list-disc flex-col gap-1 pl-5" {...strip(p)} />,
   ol: (p) => <ol className="m-0 flex list-decimal flex-col gap-1 pl-5" {...strip(p)} />,
+  li: (p) => <li className={MEASURE} {...strip(p)} />,
   blockquote: (p) => (
     <blockquote className="m-0 border-l-4 border-border pl-4 text-muted" {...strip(p)} />
   ),

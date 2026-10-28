@@ -231,6 +231,12 @@ export async function migrate(): Promise<void> {
     -- render them as notices instead of text woven into the body.
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS safety_callouts jsonb;
+
+    -- What a message is, beyond who wrote it. "weekly_read" is the short Sunday
+    -- message that points at the plan; the full read lives on the plan record.
+    ALTER TABLE thread_messages
+      ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'chat'
+        CHECK (kind IN ('chat', 'weekly_read'));
   `);
 
   await rotateKeyDerivation();

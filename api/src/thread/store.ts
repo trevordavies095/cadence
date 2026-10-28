@@ -6,9 +6,13 @@ import type {
 } from "../dossier/proposals.js";
 import type { ModelPacketAttachment } from "../packet/types.js";
 
+/** "weekly_read" is the short Sunday message pointing at the plan; everything else is "chat". */
+export type ThreadMessageKind = "chat" | "weekly_read";
+
 export type ThreadMessage = {
   id: string;
   role: "athlete" | "coach" | "system";
+  kind: ThreadMessageKind;
   body: string;
   createdAt: string;
   weekSessionId: string | null;
@@ -36,6 +40,7 @@ export type ThreadNote = {
 type Row = {
   id: string;
   role: string;
+  kind: ThreadMessageKind;
   body: string;
   created_at: Date;
   week_session_id: string | null;
@@ -52,7 +57,7 @@ type Row = {
 };
 
 const SELECT_MESSAGE = `
-  SELECT m.id::text AS id, m.role, m.body, m.created_at, m.week_session_id::text AS week_session_id,
+  SELECT m.id::text AS id, m.role, m.kind, m.body, m.created_at, m.week_session_id::text AS week_session_id,
          m.attachment, m.llm_call_id::text AS llm_call_id, m.safety_callouts,
          p.id AS p_id, p.kind AS p_kind, p.status AS p_status,
          p.summary_bullets AS p_bullets, p.applied_version_id AS p_applied,
@@ -64,6 +69,7 @@ function toMessage(row: Row): ThreadMessage {
   return {
     id: row.id,
     role: row.role as ThreadMessage["role"],
+    kind: row.kind ?? "chat",
     body: row.body,
     createdAt: row.created_at.toISOString(),
     weekSessionId: row.week_session_id,
@@ -145,12 +151,13 @@ export async function createCoachMessage(
   llmCallId?: string | null,
   safetyCallouts?: SafetyCallout[] | null,
   dossierProposalId?: number | null,
+  kind: ThreadMessageKind = "chat",
 ): Promise<ThreadMessage> {
   const result = await pool.query<{ id: string }>(
     `
     INSERT INTO thread_messages
-      (role, body, week_session_id, attachment, llm_call_id, safety_callouts, dossier_proposal_id, created_at)
-    VALUES ('coach', $1, $2, NULL, $3, $4::jsonb, $5, $6)
+      (role, body, week_session_id, attachment, llm_call_id, safety_callouts, dossier_proposal_id, created_at, kind)
+    VALUES ('coach', $1, $2, NULL, $3, $4::jsonb, $5, $6, $7)
     RETURNING id::text AS id
     `,
     [
@@ -162,6 +169,7 @@ export async function createCoachMessage(
         : null,
       dossierProposalId ?? null,
       at,
+      kind,
     ],
   );
   return getMessage(result.rows[0]!.id);
