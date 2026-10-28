@@ -117,8 +117,19 @@ export type SafetyCallout = {
  * settings-proposal bullets (soft-gated via dossier proposals — #31)
  * + optional safety callouts (#32).
  */
+/**
+ * The parts of Coach Cade's read the pages lay out on their own, stored beside
+ * the full read. Flags and answers join the headline in later steps.
+ */
+export type ReadSections = {
+  /** The one or two sentences Coach Cade would say if it could say only one thing. */
+  headline: string;
+};
+
 export type WeeklyReply = {
-  /** Headline read, concerns/flags, answers (markdown or plain prose). */
+  /** The one or two sentences that matter most; opens the read on Plan. */
+  headline: string;
+  /** The full read: markdown, up to 4,000 characters. */
   analysis: string;
   prescribedWeek: PrescribedWeek;
   settingsProposalBullets?: string[];

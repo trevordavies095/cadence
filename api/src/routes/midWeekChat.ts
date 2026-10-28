@@ -373,6 +373,7 @@ export function createMidWeekChatRoutes(
               settingsProposalBullets:
                 existingPrescribed.settingsProposalBullets,
               safetyCallouts: existingPrescribed.safetyCallouts,
+              readSections: existingPrescribed.readSections,
               at: clock.now(),
             });
             threadArtifact = toPrescribedArtifact(prescribed);

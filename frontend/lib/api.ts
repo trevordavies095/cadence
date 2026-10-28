@@ -125,8 +125,15 @@ export type PrescribedWeekRecord = {
   analysis: string;
   settingsProposalBullets: string[] | null;
   safetyCallouts: SafetyCallout[] | null;
+  /** The parts of the read laid out on their own; null on plans made before them. */
+  readSections?: ReadSections | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/** The headline Coach Cade opens the read with (flags and answers come later). */
+export type ReadSections = {
+  headline: string;
 };
 
 export type PrescribedWeekArtifact = {

@@ -427,7 +427,7 @@ describe("resolveDefaultLlmPort + createApp LLM_PROVIDER", () => {
   it("defaults to stub (CI)", async () => {
     const port = resolveDefaultLlmPort({ env: {} });
     const reply = await port.generateWeeklyReply(samplePacket());
-    expect(reply.analysis).toContain("Headline");
+    expect(reply.headline).toMatch(/Next week/);
   });
 
   it("selects anthropic when LLM_PROVIDER=anthropic", async () => {

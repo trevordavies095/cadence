@@ -182,18 +182,24 @@ function buildStubDays(weekStartMonday: string): PrescribedDay[] {
   });
 }
 
-function buildStubAnalysis(packet: ModelPacket): string {
+/** The stub's headline: the same sentence its read opens with. */
+function buildStubHeadline(packet: ModelPacket): string {
   const hasRecap = Boolean(packet.recapMarkdown?.trim());
-  const hasDossier = Boolean(packet.dossier?.body?.trim());
-  const attachmentCount = packet.attachments?.length ?? 0;
   const planRange = packet.planWeek
     ? formatWeekRangeShort(packet.planWeek.startDate, packet.planWeek.endDate)
     : null;
   const weekLabel = planRange ? `Next week (${planRange})` : "Next week";
-
-  const headline = hasRecap
+  return hasRecap
     ? `${weekLabel} looks workable. Protect easy days and land the long run.`
     : `I don't have much to go on for ${weekLabel.toLowerCase()}, so this is a conservative base week.`;
+}
+
+function buildStubAnalysis(packet: ModelPacket): string {
+  const hasRecap = Boolean(packet.recapMarkdown?.trim());
+  const hasDossier = Boolean(packet.dossier?.body?.trim());
+  const attachmentCount = packet.attachments?.length ?? 0;
+
+  const headline = buildStubHeadline(packet);
 
   const concerns: string[] = [];
   if (hasDossier && /achilles|niggle|pain|sore/i.test(packet.dossier!.body)) {
@@ -214,9 +220,8 @@ function buildStubAnalysis(packet: ModelPacket): string {
   const answers =
     "Keep quality to one session, shoes as listed, and treat rest days as real rest.";
 
-  return ["## Headline", headline, "", "## Concerns", ...concerns, "", "## Answers", answers].join(
-    "\n",
-  );
+  // The headline is its own field, shown above the read, so the read does not repeat it.
+  return ["## Concerns", ...concerns, "", "## Answers", answers].join("\n");
 }
 
 function buildStubSettingsBullets(packet: ModelPacket): string[] | undefined {
@@ -238,6 +243,7 @@ export function buildStubWeeklyReply(packet: ModelPacket): WeeklyReply {
     days: buildStubDays(weekStartMonday),
   };
   const reply: WeeklyReply = {
+    headline: buildStubHeadline(packet),
     analysis: buildStubAnalysis(packet),
     prescribedWeek,
   };

@@ -23,6 +23,8 @@ import type {
 } from "./types.js";
 
 export const MAX_ANALYSIS_LENGTH = 4000;
+/** The headline is cut at a word past this, never refused (see the reading-flow spec). */
+export const MAX_HEADLINE_LENGTH = 280;
 export const MAX_SETTINGS_PROPOSAL_BULLETS = 8;
 export const MAX_BULLET_LENGTH = 280;
 export const MAX_DOSSIER_SUMMARY_BULLETS = 8;
@@ -315,6 +317,18 @@ export function validateWeeklyReply(
     return { ok: false, error: "weekly reply must be an object" };
   }
 
+  const headlineRaw = raw.headline;
+  if (typeof headlineRaw !== "string" || headlineRaw.trim().length === 0) {
+    return { ok: false, error: "headline is required and must be non-empty" };
+  }
+  const repairs: string[] = [];
+  let headline = headlineRaw.trim();
+  if (headline.length > MAX_HEADLINE_LENGTH) {
+    const cut = cutAtWord(headline, MAX_HEADLINE_LENGTH);
+    repairs.push(`headline cut from ${headline.length} to ${cut.length} chars`);
+    headline = cut;
+  }
+
   const analysis = raw.analysis;
   if (typeof analysis !== "string" || analysis.trim().length === 0) {
     return { ok: false, error: "analysis is required and must be non-empty" };
@@ -336,6 +350,7 @@ export function validateWeeklyReply(
   if (!callouts.ok) return callouts;
 
   const reply: WeeklyReply = {
+    headline,
     analysis: analysis.trim(),
     prescribedWeek: prescribed.value,
   };
@@ -345,7 +360,8 @@ export function validateWeeklyReply(
   if (callouts.value !== undefined && callouts.value.length > 0) {
     reply.safetyCallouts = callouts.value;
   }
-  return withRepairs(reply, callouts.repairs);
+  repairs.push(...(callouts.repairs ?? []));
+  return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
 }
 
 function parseSettingsProposalBullets(

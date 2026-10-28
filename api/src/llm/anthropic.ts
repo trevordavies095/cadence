@@ -30,6 +30,7 @@ import {
   WEEKLY_SYSTEM_PROMPT,
 } from "./safety.js";
 import {
+  MAX_HEADLINE_LENGTH,
   expectedPlanDates,
   MAX_BULLET_LENGTH,
   MAX_DOSSIER_BODY_LENGTH,
@@ -114,12 +115,17 @@ function weeklyReplyToolSchema() {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["analysis", "prescribedWeek"],
+    required: ["headline", "analysis", "prescribedWeek"],
     properties: {
+      headline: {
+        type: "string",
+        description:
+          `One or two plain sentences, at most ${MAX_HEADLINE_LENGTH} characters: what you would say if you could say only one thing about the week and the plan. No markdown, no label.`,
+      },
       analysis: {
         type: "string",
         description:
-          "Headline read, concerns/flags, and answers (markdown or plain prose).",
+          "The full read in markdown: concerns, answers to the athlete's questions and your reasoning. The athlete sees the headline above it.",
       },
       prescribedWeek: {
         type: "object",
@@ -368,7 +374,7 @@ function buildWeeklyUserPrompt(
     `prescribedWeek.days must use these exact dates Mon–Sun: ${dates.join(", ")}`,
     "Prescribe one coherent week of running training for this athlete.",
     "Call the submit_weekly_reply tool exactly once with your full answer.",
-    "Include analysis with headline, concerns/flags, and answers.",
+    "Include a headline (the one or two sentences you would say if you could say only one thing) and the analysis (the full read: concerns, answers and reasoning).",
     "When red flags appear, populate safetyCallouts (escalate; do not diagnose).",
     "Model packet (redacted; no identity PII or GPS):",
     JSON.stringify(packet),

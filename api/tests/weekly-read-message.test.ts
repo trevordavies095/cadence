@@ -7,7 +7,6 @@ import { createStubLlmPort, type LlmPort } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import type { ModelPacket } from "../src/packet/types.js";
 import { createExportTempoPort } from "../src/tempo/exportZip.js";
-import { weeklyReadMessageBody } from "../src/thread/weeklyRead.js";
 import {
   acceptAndReady,
   json,
@@ -26,18 +25,6 @@ type Message = {
   readLink?: string;
   weekSessionId: string;
 };
-
-describe("weeklyReadMessageBody", () => {
-  it("keeps the first paragraph and drops the headings", () => {
-    const read =
-      "## Headline\nBig week. Pull back a little.\n\nSo this week: 37 miles.\n\n## Flags\n- Sleep";
-    expect(weeklyReadMessageBody(read)).toBe("Big week. Pull back a little.");
-  });
-
-  it("returns a read with no headings and no blank lines whole", () => {
-    expect(weeklyReadMessageBody("One line only.")).toBe("One line only.");
-  });
-});
 
 describe("the Sunday message in the conversation", () => {
   beforeAll(async () => {
@@ -83,17 +70,21 @@ describe("the Sunday message in the conversation", () => {
     return (await json(res)).messages as Message[];
   }
 
-  it("posts one paragraph, not the full read, and links to the plan", async () => {
+  it("posts the headline, not the full read, and links to the plan", async () => {
     const app = appAt("2026-10-21T15:00:00.000Z");
     const { weekSessionId, planSessionId } = await readTheWeek(app);
 
     const prescribed = await json(await app.request(`/weeks/${planSessionId}/prescribed`));
-    const analysis = (prescribed.prescribed as { analysis: string }).analysis;
+    const record = prescribed.prescribed as {
+      analysis: string;
+      readSections: { headline: string };
+    };
+    const analysis = record.analysis;
 
     const coach = (await thread(app, weekSessionId)).filter((m) => m.role === "coach");
     expect(coach).toHaveLength(1);
     expect(coach[0]!.kind).toBe("weekly_read");
-    expect(coach[0]!.body).toBe(weeklyReadMessageBody(analysis));
+    expect(coach[0]!.body).toBe(record.readSections.headline);
     expect(coach[0]!.body).not.toMatch(/\n\s*\n/);
     expect(coach[0]!.body).not.toMatch(/^#/m);
     expect(coach[0]!.body.length).toBeLessThan(analysis.length);

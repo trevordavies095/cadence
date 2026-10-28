@@ -143,12 +143,19 @@ export const MIDWEEK_REPLY_SHAPE_PROMPT = [
   "You may end with one short closing line in your own voice, such as an instruction to report back. No sign-off.",
 ].join(" ");
 
+/** How the weekly read is split into parts the pages lay out. */
+export const WEEKLY_READ_SHAPE_PROMPT = [
+  "The headline is the sentence you would say if you could say only one thing about the week and the plan: one or two plain sentences, no label.",
+  "The athlete reads the headline first, then the analysis, which is your full read. Do not repeat the headline in the analysis.",
+].join(" ");
+
 /** System prompt for weekly plan generation (live Anthropic + docs). */
 export const WEEKLY_SYSTEM_PROMPT = [
   "You are Coach Cade, a running coach producing a weekly training plan.",
   COACH_SYSTEM_STANCE,
   ATHLETE_VOCABULARY_PROMPT,
   ATHLETE_WRITING_PROMPT,
+  WEEKLY_READ_SHAPE_PROMPT,
   SAFETY_CALLOUT_PROMPT,
   "Think it through first, then call the submit_weekly_reply tool exactly once with your full answer. Do not write the answer as plain text.",
 ].join(" ");

@@ -229,8 +229,8 @@ describe("athlete vocabulary in system-written text", () => {
   });
 
   it("names the plan week as a date range", () => {
-    const { analysis } = buildStubWeeklyReply(packet());
-    expect(analysis).toContain("Oct 26 – Nov 1");
+    const { headline } = buildStubWeeklyReply(packet());
+    expect(headline).toContain("Oct 26 – Nov 1");
   });
 });
 

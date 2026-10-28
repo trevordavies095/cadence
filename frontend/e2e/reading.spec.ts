@@ -197,3 +197,66 @@ test.describe("coach prose", () => {
     await expect(inline).toHaveCSS("display", "inline");
   });
 });
+
+const PLAN_DAYS = [
+  { date: "2026-10-26", dayType: "easy", run: { type: "easy", distanceM: 4828 } },
+  { date: "2026-10-27", dayType: "rest", run: null },
+  { date: "2026-10-28", dayType: "easy", run: { type: "easy", distanceM: 4828 } },
+  { date: "2026-10-29", dayType: "rest", run: null },
+  { date: "2026-10-30", dayType: "easy", run: { type: "easy", distanceM: 4828 } },
+  { date: "2026-10-31", dayType: "rest", run: null },
+  { date: "2026-11-01", dayType: "long", run: { type: "long", distanceM: 8047 } },
+];
+
+async function serveNextPlan(page: Page, extra: Record<string, unknown>) {
+  await page.route(/\/api\/weeks\/[^/]+\/prescribed\/next/, async (route) => {
+    const real = await (await route.fetch()).json();
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...real,
+        prescribed: {
+          weekSessionId: "w44",
+          plan: { week: "2026-W44", days: PLAN_DAYS },
+          analysis: "## Flags\n- Sleep slipped to 6.8 hours.",
+          settingsProposalBullets: null,
+          safetyCallouts: null,
+          createdAt: "2026-10-25T16:00:00.000Z",
+          updatedAt: "2026-10-25T16:00:00.000Z",
+          ...extra,
+        },
+      }),
+    });
+  });
+}
+
+test.describe("Coach Cade's read", () => {
+  test("opens with the headline, in bold, before the rest of the read", async ({ page }) => {
+    await serveNextPlan(page, {
+      readSections: { headline: "Big week. We pull back a little before the next block." },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+
+    const next = page.getByRole("region", { name: "Next week plan" });
+    const headline = next.locator('[data-part="headline"]');
+    await expect(headline).toHaveText("Big week. We pull back a little before the next block.");
+    await expect(headline).toHaveCSS("font-weight", "600");
+    // The headline comes first inside Coach Cade's surface, then the read.
+    const order = await next.evaluate((el) =>
+      Array.from(el.querySelectorAll('[data-part="headline"], li')).map((n) => n.textContent),
+    );
+    expect(order[0]).toBe("Big week. We pull back a little before the next block.");
+    expect(order[1]).toContain("Sleep slipped");
+  });
+
+  test("a plan made before the headline shows the read as it was", async ({ page }) => {
+    await serveNextPlan(page, { readSections: null });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+
+    const next = page.getByRole("region", { name: "Next week plan" });
+    await expect(next).toContainText("Sleep slipped");
+    await expect(next.locator('[data-part="headline"]')).toHaveCount(0);
+  });
+});

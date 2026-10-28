@@ -237,6 +237,11 @@ export async function migrate(): Promise<void> {
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'chat'
         CHECK (kind IN ('chat', 'weekly_read'));
+
+    -- The parts of Coach Cade's read the pages lay out on their own (headline,
+    -- and later flags and answers). Null on plans made before they existed.
+    ALTER TABLE prescribed_weeks
+      ADD COLUMN IF NOT EXISTS read_sections jsonb;
   `);
 
   await rotateKeyDerivation();
