@@ -40,7 +40,8 @@ export function fitSafetyCalloutBody(body: string, max: number): string {
   return `${kept} ${SAFETY_ESCALATION_LINE}`;
 }
 
-function cutAtSentence(text: string, max: number): string {
+/** Cut at the last sentence that ends within `max` characters, or at a word when none does. */
+export function cutAtSentence(text: string, max: number): string {
   const head = text.slice(0, max + 1);
   let end = -1;
   for (const match of head.matchAll(SENTENCE_END_RE)) {
@@ -148,7 +149,8 @@ export const WEEKLY_READ_SHAPE_PROMPT = [
   "The headline is the sentence you would say if you could say only one thing about the week and the plan: one or two plain sentences, no label.",
   "Flags are what you are watching, not a summary of the week: at most five, each a few-word title and one line of detail.",
   "Answers are one per question the athlete asked in the weekly check-in or the conversation, with the question quoted exactly as they wrote it. When they asked nothing, leave answers empty.",
-  "The athlete reads the headline, then the flags, then the answers, then the analysis. The analysis holds your reasoning; do not restate the headline, flags or answers in it.",
+  "Put the reason for each session in that day's notes: one or two sentences on why this session, this week, under 200 characters. The athlete sees them beside the session.",
+  "The athlete reads the headline, then the flags, then the answers, then the analysis. The analysis holds your reasoning; do not restate the headline, flags or answers in it, and do not list the days or describe each session in it.",
 ].join(" ");
 
 /** System prompt for weekly plan generation (live Anthropic + docs). */

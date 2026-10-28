@@ -1,4 +1,5 @@
 import {
+  cutAtSentence,
   cutAtWord,
   fitSafetyCalloutBody,
   isSafetyCalloutSeverity,
@@ -32,6 +33,9 @@ export const MAX_READ_FLAGS = 5;
 export const MAX_READ_ANSWERS = 8;
 export const MAX_FLAG_TITLE_LENGTH = 80;
 export const MAX_FLAG_DETAIL_LENGTH = 280;
+/** Day notes carry the reason for a session: asked for 200, kept to 400 at a sentence. */
+export const DAY_NOTES_TARGET = 200;
+export const MAX_DAY_NOTES_LENGTH = 400;
 export const MAX_SETTINGS_PROPOSAL_BULLETS = 8;
 export const MAX_BULLET_LENGTH = 280;
 export const MAX_DOSSIER_SUMMARY_BULLETS = 8;
@@ -146,6 +150,7 @@ function parseDay(
   value: unknown,
   index: number,
   expectedDate: string,
+  repairs: string[],
 ): SchemaResult<PrescribedDay> {
   const path = `prescribedWeek.days[${index}]`;
   if (!isPlainObject(value)) {
@@ -194,8 +199,30 @@ function parseDay(
   const day: PrescribedDay = { date, dayType };
   if (runResult.value !== undefined) day.run = runResult.value;
   if (strength.value !== undefined) day.strength = strength.value;
-  if (notes.value !== undefined) day.notes = notes.value;
+  if (notes.value !== undefined) day.notes = fitDayNotes(notes.value, `${path}.notes`, repairs);
   return { ok: true, value: day };
+}
+
+/**
+ * Day notes hold the reason for a session, shown beside it. Past the ceiling they
+ * are cut at a sentence; past the target they are kept. Either way it is noted.
+ */
+function fitDayNotes(
+  notes: string | null,
+  path: string,
+  repairs: string[],
+): string | null {
+  if (notes == null) return notes;
+  const text = notes.trim();
+  if (text.length > MAX_DAY_NOTES_LENGTH) {
+    const cut = cutAtSentence(text, MAX_DAY_NOTES_LENGTH);
+    repairs.push(`${path} cut from ${text.length} to ${cut.length} chars`);
+    return cut;
+  }
+  if (text.length > DAY_NOTES_TARGET) {
+    repairs.push(`${path} over target: ${text.length} chars kept`);
+  }
+  return notes;
 }
 
 /**
@@ -233,14 +260,15 @@ export function validatePrescribedWeek(
   }
 
   const days: PrescribedDay[] = [];
+  const repairs: string[] = [];
   for (let i = 0; i < 7; i++) {
     const expected = addDaysYmd(weekStartMonday, i);
-    const parsed = parseDay(daysRaw[i], i, expected);
+    const parsed = parseDay(daysRaw[i], i, expected, repairs);
     if (!parsed.ok) return parsed;
     days.push(parsed.value);
   }
 
-  return { ok: true, value: { week, days } };
+  return withRepairs({ week, days }, repairs.length > 0 ? repairs : undefined);
 }
 
 /**
@@ -374,7 +402,7 @@ export function validateWeeklyReply(
   if (callouts.value !== undefined && callouts.value.length > 0) {
     reply.safetyCallouts = callouts.value;
   }
-  repairs.push(...(callouts.repairs ?? []));
+  repairs.push(...(prescribed.repairs ?? []), ...(callouts.repairs ?? []));
   return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
 }
 
@@ -501,6 +529,7 @@ export function validatePrescribedDayPatches(
   const expectedIndex = new Map(expected.map((d, i) => [d, i]));
   const seen = new Set<string>();
   const patches: PrescribedDay[] = [];
+  const repairs: string[] = [];
   for (let i = 0; i < raw.length; i++) {
     const dateRaw =
       isPlainObject(raw[i]) && typeof raw[i].date === "string"
@@ -526,7 +555,8 @@ export function validatePrescribedDayPatches(
       };
     }
     seen.add(dateRaw);
-    const parsed = parseDay(raw[i], dayIndex, dateRaw);
+    const dayRepairs: string[] = [];
+    const parsed = parseDay(raw[i], dayIndex, dateRaw, dayRepairs);
     if (!parsed.ok) {
       return {
         ok: false,
@@ -537,8 +567,13 @@ export function validatePrescribedDayPatches(
       };
     }
     patches.push(parsed.value);
+    repairs.push(
+      ...dayRepairs.map((r) =>
+        r.replace(`prescribedWeek.days[${dayIndex}]`, `prescribedDayPatches[${i}]`),
+      ),
+    );
   }
-  return { ok: true, value: patches };
+  return withRepairs(patches, repairs.length > 0 ? repairs : undefined);
 }
 
 /**
@@ -570,6 +605,7 @@ export function validateMidWeekChatReply(
   if (!callouts.ok) return callouts;
 
   let patches: PrescribedDay[] | undefined;
+  let patchRepairs: string[] | undefined;
   if (raw.prescribedDayPatches !== undefined) {
     if (!weekStartMonday) {
       return {
@@ -583,6 +619,7 @@ export function validateMidWeekChatReply(
     );
     if (!checked.ok) return checked;
     patches = checked.value;
+    patchRepairs = checked.repairs;
   }
 
   if (
@@ -605,7 +642,8 @@ export function validateMidWeekChatReply(
   if (raw.allowPastDayPatches === true) {
     reply.allowPastDayPatches = true;
   }
-  return withRepairs(reply, callouts.repairs);
+  const repairs = [...(patchRepairs ?? []), ...(callouts.repairs ?? [])];
+  return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
 }
 
 function validateDossierSoftGateDraft(

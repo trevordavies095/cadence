@@ -30,6 +30,7 @@ import {
   WEEKLY_SYSTEM_PROMPT,
 } from "./safety.js";
 import {
+  DAY_NOTES_TARGET,
   MAX_FLAG_DETAIL_LENGTH,
   MAX_FLAG_TITLE_LENGTH,
   MAX_HEADLINE_LENGTH,
@@ -114,6 +115,9 @@ export type AnthropicLlmPortOptions = {
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+/** The reason for a session, shown beside it on the plan. */
+const DAY_NOTES_DESCRIPTION = `Why this session, this week: one or two sentences, under ${DAY_NOTES_TARGET} characters. Shown beside the session.`;
 
 function weeklyReplyToolSchema() {
   return {
@@ -215,7 +219,10 @@ function weeklyReplyToolSchema() {
                   required: ["type", "distanceM"],
                 },
                 strength: { type: ["string", "null"] },
-                notes: { type: ["string", "null"] },
+                notes: {
+                  type: ["string", "null"],
+                  description: DAY_NOTES_DESCRIPTION,
+                },
               },
             },
           },
@@ -262,7 +269,7 @@ function prescribedDayJsonSchema(): Record<string, unknown> {
         required: ["type", "distanceM"],
       },
       strength: { type: ["string", "null"] },
-      notes: { type: ["string", "null"] },
+      notes: { type: ["string", "null"], description: DAY_NOTES_DESCRIPTION },
     },
   };
 }
