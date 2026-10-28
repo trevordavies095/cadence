@@ -38,7 +38,9 @@ export function RunCard({
     durationLabel(attachment.durationS),
     paceLabel(attachment.avgPaceS, unit),
     attachment.avgHeartRateBpm != null ? `${attachment.avgHeartRateBpm} bpm avg` : null,
+    attachment.maxHeartRateBpm != null ? `${attachment.maxHeartRateBpm} bpm max` : null,
   ].filter(Boolean);
+  const splits = attachment.splits ?? [];
   return (
     <div
       className="mt-1 flex flex-col gap-0.5 border-l-4 border-ink bg-canvas px-3 py-2"
@@ -46,6 +48,50 @@ export function RunCard({
     >
       <p className="m-0 font-semibold">{title}</p>
       <p className="m-0 text-muted">{bits.join(" · ")}</p>
+      {splits.length > 0 ? (
+        <details className="mt-1">
+          <summary className="cursor-pointer text-sm font-semibold text-muted">Splits</summary>
+          <SplitsTable splits={splits} unit={unit} />
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+const SPLIT_HEAD = "border-b border-line-strong px-3 py-1.5 text-right text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted first:pl-0 first:text-left";
+const SPLIT_CELL = "whitespace-nowrap border-b border-border px-3 py-1.5 text-right first:pl-0 first:text-left";
+
+/** The run's splits as the athlete's watch recorded them, in the athlete's units. */
+function SplitsTable({
+  splits,
+  unit,
+}: {
+  splits: NonNullable<WorkoutAttachment["splits"]>;
+  unit: UnitPreference;
+}) {
+  return (
+    <div className="mt-2 overflow-x-auto">
+      <table aria-label="Splits" className="w-full border-collapse tabular-nums">
+        <thead>
+          <tr>
+            {["Split", "Distance", "Pace", "Heart rate"].map((h) => (
+              <th key={h} scope="col" className={SPLIT_HEAD}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {splits.map((s, i) => (
+            <tr key={s.idx ?? i}>
+              <td className={SPLIT_CELL}>{(s.idx ?? i) + 1}</td>
+              <td className={SPLIT_CELL}>{s.distanceM != null ? distanceLabel(s.distanceM, unit) : "–"}</td>
+              <td className={SPLIT_CELL}>{s.paceS != null ? paceLabel(s.paceS, unit) : "–"}</td>
+              <td className={SPLIT_CELL}>{s.avgHeartRateBpm != null ? `${s.avgHeartRateBpm} bpm` : "–"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

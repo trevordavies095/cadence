@@ -43,6 +43,15 @@ export type WorkoutAttachment = {
   notes?: string | null;
   hasRoute?: boolean;
   splitsCount?: number;
+  /** Per-split numbers the coach was shown; pace is seconds per kilometre. */
+  splits?: Array<{
+    idx?: number;
+    kind?: string | null;
+    distanceM?: number | null;
+    durationS?: number | null;
+    paceS?: number | null;
+    avgHeartRateBpm?: number | null;
+  }>;
 };
 
 export type TempoWorkoutSummary = {
