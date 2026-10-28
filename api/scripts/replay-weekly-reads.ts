@@ -103,6 +103,7 @@ async function replay(calls: StoredCall[]): Promise<void> {
   }
   for (const [i, call] of calls.entries()) {
     const file = path.join(OUT, `${String(i + 1).padStart(2, "0")}.json`);
+    const failedFile = file.replace(/\.json$/, ".failed.json");
     if (existsSync(file)) {
       console.log(`${path.basename(file)} exists, skipped`);
       continue;
@@ -117,7 +118,32 @@ async function replay(calls: StoredCall[]): Promise<void> {
         });
     const started = Date.now();
     // The port writes its log row, with any repairs and token counts, only for a call with an id.
-    const reply = await port.generateWeeklyReply(call.packet, { callId: randomUUID() });
+    let reply: WeeklyReply;
+    try {
+      reply = await port.generateWeeklyReply(call.packet, { callId: randomUUID() });
+    } catch (err) {
+      // A refused reply is a finding, not a reason to stop: keep what the model sent and move on.
+      const failed = log.at(-1);
+      writeFileSync(
+        failedFile,
+        JSON.stringify(
+          {
+            originalCallAt: call.createdAt,
+            model: call.model,
+            replayedAt: new Date().toISOString(),
+            error: err instanceof Error ? err.message : String(err),
+            outcome: failed?.outcome ?? null,
+            stopReason: failed?.stopReason ?? null,
+            outputTokens: failed?.outputTokens ?? null,
+            responseRaw: failed?.responseRaw ?? null,
+          },
+          null,
+          2,
+        ),
+      );
+      console.log(`${path.basename(file)} refused: ${err instanceof Error ? err.message : err}; saved ${path.basename(failedFile)}`);
+      continue;
+    }
     const row = log.at(-1);
     writeFileSync(
       file,
@@ -252,6 +278,17 @@ function report(): void {
       "Verdict: _to be judged_",
       "",
     );
+  }
+  const failures = Array.from({ length: 10 }, (_, i) =>
+    path.join(OUT, `${String(i + 1).padStart(2, "0")}.failed.json`),
+  ).filter((f) => existsSync(f) && !existsSync(f.replace(/\.failed\.json$/, ".json")));
+  if (failures.length > 0) {
+    out.push("## Refused replies", "");
+    for (const f of failures) {
+      const d = JSON.parse(readFileSync(f, "utf8")) as { originalCallAt: string; error: string; stopReason: string | null };
+      out.push(`- ${path.basename(f)} (week read on ${d.originalCallAt.slice(0, 10)}): ${d.error}; stop reason ${d.stopReason}`);
+    }
+    out.push("");
   }
   writeFileSync(path.join(OUT, "report.md"), out.join("\n"));
   console.log(`report written to ${path.join(OUT, "report.md")}`);
