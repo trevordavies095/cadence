@@ -15,15 +15,19 @@ function withStop(title: string): string {
  * Coach Cade's read of a week, the same on Plan and on Your week: safety notices
  * first, never folded away, then on Coach Cade's surface the headline, what
  * Coach Cade is watching, the answers to the athlete's questions, and the rest
- * of the read. Plans made before these parts show the read as it was.
+ * of the read under "The full read". Plans made before these parts show the
+ * read as it was, with nothing folded.
  */
 export function CoachRead({
   record,
   emptyText,
+  fullReadOpen,
 }: {
   record: Pick<PrescribedWeekRecord, "analysis" | "safetyCallouts" | "readSections">;
   /** Shown when there is no read; nothing is shown when left out. */
   emptyText?: string;
+  /** Whether "The full read" starts open: yes while the read is fresh, no once the week is under way. */
+  fullReadOpen: boolean;
 }) {
   const sections = record.readSections;
   const headline = sections?.headline?.trim();
@@ -69,7 +73,17 @@ export function CoachRead({
               ))}
             </section>
           ) : null}
-          {analysis ? <CoachText>{analysis}</CoachText> : null}
+          {analysis && sections ? (
+            // Keyed on the default so switching weeks resets it rather than keeping the last toggle.
+            <details key={String(fullReadOpen)} open={fullReadOpen} data-part="full-read">
+              <summary className="cursor-pointer text-sm font-semibold text-muted">
+                The full read
+              </summary>
+              <CoachText className="mt-3">{analysis}</CoachText>
+            </details>
+          ) : analysis ? (
+            <CoachText>{analysis}</CoachText>
+          ) : null}
         </CoachSurface>
       ) : emptyText ? (
         <Muted>{emptyText}</Muted>

@@ -243,7 +243,7 @@ function ReviewInner() {
         <>
           <section className="flex flex-col gap-3" aria-label="Coach Cade’s read">
             <SectionTitle>Coach Cade’s read</SectionTitle>
-            <CoachRead record={plan} emptyText="Coach Cade had nothing to add." />
+            <CoachRead record={plan} emptyText="Coach Cade had nothing to add." fullReadOpen />
           </section>
 
           <section className="flex flex-col gap-3" aria-label="Next week">

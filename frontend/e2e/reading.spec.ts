@@ -313,3 +313,92 @@ test.describe("Watching and Your questions", () => {
     await expect(next.getByRole("region", { name: "Your questions" })).toHaveCount(0);
   });
 });
+
+test.describe("The full read", () => {
+  const SECTIONS = {
+    headline: "Big week. We pull back a little.",
+    flags: [{ title: "Sleep", detail: "Down to 6.8 hours." }],
+    answers: [],
+  };
+  const CALLOUT = { title: "See a professional", body: "If the Achilles gets worse, see a clinician.", severity: "caution" };
+
+  async function serveThisPlan(page: Page, extra: Record<string, unknown>) {
+    await page.route(/\/api\/weeks\/[^/]+\/prescribed$/, async (route) => {
+      const real = await (await route.fetch()).json();
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...real,
+          prescribed: {
+            weekSessionId: "w43",
+            plan: { week: "2026-W43", days: PLAN_DAYS.map((d, i) => ({ ...d, date: `2026-10-${19 + i}` })) },
+            analysis: "## Why this plan\nSleep slipped to 6.8 hours, so Thursday is shorter.",
+            settingsProposalBullets: null,
+            safetyCallouts: null,
+            createdAt: "2026-10-18T16:00:00.000Z",
+            updatedAt: "2026-10-18T16:00:00.000Z",
+            ...extra,
+          },
+        }),
+      });
+    });
+  }
+
+  test("is open on next week's plan, where the read is fresh", async ({ page }) => {
+    await serveNextPlan(page, { readSections: SECTIONS });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+    await expect(next.locator('[data-part="full-read"]')).toHaveAttribute("open", "");
+    await expect(next.getByText("Sleep slipped to 6.8 hours.")).toBeVisible();
+  });
+
+  test("is closed on this week's plan, opens on request, and never hides a safety notice", async ({ page }) => {
+    await serveThisPlan(page, { readSections: SECTIONS, safetyCallouts: [CALLOUT] });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "This week" }).click();
+    const week = page.getByRole("region", { name: "Week plan" });
+
+    await expect(week.locator('[data-part="headline"]')).toBeVisible();
+    await expect(week.getByRole("region", { name: "Watching" })).toBeVisible();
+    await expect(week.getByText("See a professional")).toBeVisible();
+    await expect(week.getByText(/so Thursday is shorter/)).toBeHidden();
+
+    await week.getByText("The full read", { exact: true }).click();
+    await expect(week.getByText(/so Thursday is shorter/)).toBeVisible();
+  });
+
+  test("is open on the Your week page", async ({ page }) => {
+    await serveNextPlan(page, { readSections: SECTIONS });
+    await page.route(/\/api\/weeks\/[^/]+\/reply-run$/, (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          run: {
+            id: "r1",
+            weekSessionId: "w43",
+            status: "ok",
+            llmCallId: null,
+            errorMessage: null,
+            startedAt: "2026-10-25T16:00:00.000Z",
+            finishedAt: "2026-10-25T16:01:00.000Z",
+            seenAt: null,
+          },
+        }),
+      }),
+    );
+    await page.goto("/review");
+    const read = page.getByRole("region", { name: "Coach Cade’s read" });
+    await expect(read.locator('[data-part="full-read"]')).toHaveAttribute("open", "");
+    await expect(read.getByText("Sleep slipped to 6.8 hours.")).toBeVisible();
+  });
+
+  test("is not folded on a plan made before the read had parts", async ({ page }) => {
+    await serveThisPlan(page, { readSections: null });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "This week" }).click();
+    const week = page.getByRole("region", { name: "Week plan" });
+    await expect(week.getByText(/so Thursday is shorter/)).toBeVisible();
+    await expect(week.locator('[data-part="full-read"]')).toHaveCount(0);
+  });
+});
