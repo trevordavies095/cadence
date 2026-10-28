@@ -146,7 +146,8 @@ describe("createStubLlmPort", () => {
     expect(reply.analysis).not.toContain(reply.headline);
     // Each section heading appears once, not again as a label on the next line (#20).
     expect(reply.analysis).not.toMatch(/^(Headline|Answers):/m);
-    expect(reply.analysis).toMatch(/Achilles|soft-tissue/i);
+    // The soft-tissue concern is something Coach Cade is watching.
+    expect(reply.flags?.map((f) => f.title).join(" ")).toMatch(/soft-tissue/i);
 
     const checked = validateWeeklyReply(reply, PLAN_WEEK_START);
     expect(checked.ok).toBe(true);

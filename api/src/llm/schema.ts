@@ -17,6 +17,8 @@ import type {
   PrescribedDay,
   PrescribedRun,
   PrescribedWeek,
+  ReadAnswer,
+  ReadFlag,
   RunType,
   SafetyCallout,
   WeeklyReply,
@@ -25,6 +27,11 @@ import type {
 export const MAX_ANALYSIS_LENGTH = 4000;
 /** The headline is cut at a word past this, never refused (see the reading-flow spec). */
 export const MAX_HEADLINE_LENGTH = 280;
+/** Flags and answers: the counts fail closed; flag text is cut at a word and logged. */
+export const MAX_READ_FLAGS = 5;
+export const MAX_READ_ANSWERS = 8;
+export const MAX_FLAG_TITLE_LENGTH = 80;
+export const MAX_FLAG_DETAIL_LENGTH = 280;
 export const MAX_SETTINGS_PROPOSAL_BULLETS = 8;
 export const MAX_BULLET_LENGTH = 280;
 export const MAX_DOSSIER_SUMMARY_BULLETS = 8;
@@ -349,8 +356,15 @@ export function validateWeeklyReply(
   const callouts = validateSafetyCallouts(raw.safetyCallouts);
   if (!callouts.ok) return callouts;
 
+  const flags = parseReadFlags(raw.flags, repairs);
+  if (!flags.ok) return flags;
+  const answers = parseReadAnswers(raw.answers);
+  if (!answers.ok) return answers;
+
   const reply: WeeklyReply = {
     headline,
+    flags: flags.value,
+    answers: answers.value,
     analysis: analysis.trim(),
     prescribedWeek: prescribed.value,
   };
@@ -362,6 +376,61 @@ export function validateWeeklyReply(
   }
   repairs.push(...(callouts.repairs ?? []));
   return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+}
+
+/** A text field cut at a word past `max`, with the cut noted in `repairs`. */
+function fitText(text: string, max: number, path: string, repairs: string[]): string {
+  if (text.length <= max) return text;
+  const cut = cutAtWord(text, max);
+  repairs.push(`${path} cut from ${text.length} to ${cut.length} chars`);
+  return cut;
+}
+
+function nonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+/** What Coach Cade is watching. Count and shape fail closed; long text is cut and noted. */
+function parseReadFlags(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[]> {
+  if (raw === undefined || raw === null) return { ok: true, value: [] };
+  if (!Array.isArray(raw)) return { ok: false, error: "flags must be an array" };
+  if (raw.length > MAX_READ_FLAGS) {
+    return { ok: false, error: `flags must have at most ${MAX_READ_FLAGS} items` };
+  }
+  const flags: ReadFlag[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const item = raw[i];
+    const title = isPlainObject(item) ? nonEmptyString(item.title) : null;
+    const detail = isPlainObject(item) ? nonEmptyString(item.detail) : null;
+    if (!title || !detail) {
+      return { ok: false, error: `flags[${i}] needs a non-empty title and detail` };
+    }
+    flags.push({
+      title: fitText(title, MAX_FLAG_TITLE_LENGTH, `flags[${i}].title`, repairs),
+      detail: fitText(detail, MAX_FLAG_DETAIL_LENGTH, `flags[${i}].detail`, repairs),
+    });
+  }
+  return { ok: true, value: flags };
+}
+
+/** Answers to the athlete's questions. Count and shape fail closed; length is free. */
+function parseReadAnswers(raw: unknown): SchemaResult<ReadAnswer[]> {
+  if (raw === undefined || raw === null) return { ok: true, value: [] };
+  if (!Array.isArray(raw)) return { ok: false, error: "answers must be an array" };
+  if (raw.length > MAX_READ_ANSWERS) {
+    return { ok: false, error: `answers must have at most ${MAX_READ_ANSWERS} items` };
+  }
+  const answers: ReadAnswer[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const item = raw[i];
+    const question = isPlainObject(item) ? nonEmptyString(item.question) : null;
+    const answer = isPlainObject(item) ? nonEmptyString(item.answer) : null;
+    if (!question || !answer) {
+      return { ok: false, error: `answers[${i}] needs a non-empty question and answer` };
+    }
+    answers.push({ question, answer });
+  }
+  return { ok: true, value: answers };
 }
 
 function parseSettingsProposalBullets(

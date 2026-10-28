@@ -146,7 +146,9 @@ export const MIDWEEK_REPLY_SHAPE_PROMPT = [
 /** How the weekly read is split into parts the pages lay out. */
 export const WEEKLY_READ_SHAPE_PROMPT = [
   "The headline is the sentence you would say if you could say only one thing about the week and the plan: one or two plain sentences, no label.",
-  "The athlete reads the headline first, then the analysis, which is your full read. Do not repeat the headline in the analysis.",
+  "Flags are what you are watching, not a summary of the week: at most five, each a few-word title and one line of detail.",
+  "Answers are one per question the athlete asked in the weekly check-in or the conversation, with the question quoted exactly as they wrote it. When they asked nothing, leave answers empty.",
+  "The athlete reads the headline, then the flags, then the answers, then the analysis. The analysis holds your reasoning; do not restate the headline, flags or answers in it.",
 ].join(" ");
 
 /** System prompt for weekly plan generation (live Anthropic + docs). */

@@ -35,6 +35,8 @@ import type {
   MidWeekChatReply,
   PrescribedDay,
   PrescribedWeek,
+  ReadAnswer,
+  ReadFlag,
   WeeklyReply,
 } from "./types.js";
 
@@ -194,34 +196,63 @@ function buildStubHeadline(packet: ModelPacket): string {
     : `I don't have much to go on for ${weekLabel.toLowerCase()}, so this is a conservative base week.`;
 }
 
-function buildStubAnalysis(packet: ModelPacket): string {
+/** What the stub watches: the same concerns its read used to list. */
+function buildStubFlags(packet: ModelPacket): ReadFlag[] {
   const hasRecap = Boolean(packet.recapMarkdown?.trim());
   const hasDossier = Boolean(packet.dossier?.body?.trim());
   const attachmentCount = packet.attachments?.length ?? 0;
-
-  const headline = buildStubHeadline(packet);
-
-  const concerns: string[] = [];
+  const flags: ReadFlag[] = [];
   if (hasDossier && /achilles|niggle|pain|sore/i.test(packet.dossier!.body)) {
-    concerns.push(
-      "Flag: your profile mentions a soft-tissue concern. Cap quality and keep volume honest.",
-    );
+    flags.push({
+      title: "Soft-tissue concern",
+      detail: "Your profile mentions one. Cap quality and keep volume honest.",
+    });
   }
   if (!hasRecap) {
-    concerns.push("Flag: there is no weekly report for this week, so the plan follows a standard template.");
+    flags.push({
+      title: "No weekly report",
+      detail: "There is no report for this week, so the plan follows a standard template.",
+    });
   }
   if (attachmentCount === 0) {
-    concerns.push("Flag: no runs were attached, so I am working from your profile and weekly report only.");
+    flags.push({
+      title: "No runs attached",
+      detail: "I am working from your profile and weekly report only.",
+    });
   }
-  if (concerns.length === 0) {
-    concerns.push("Flag: nothing major to flag. Watch heart rate drift on easy days.");
+  if (flags.length === 0) {
+    flags.push({ title: "Heart rate drift", detail: "Nothing major. Watch drift on easy days." });
   }
+  return flags;
+}
 
-  const answers =
-    "Keep quality to one session, shoes as listed, and treat rest days as real rest.";
+/** The athlete's check-in questions, as they wrote them, from the weekly report. */
+function stubQuestions(packet: ModelPacket): string[] {
+  const md = packet.recapMarkdown ?? "";
+  const section = /^## Questions for coach\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(md);
+  if (!section) return [];
+  return section[1]!
+    .split("\n")
+    .map((line) => /^\s*\d+\.\s+(.*\S)\s*$/.exec(line)?.[1] ?? null)
+    .filter((q): q is string => q !== null);
+}
 
-  // The headline is its own field, shown above the read, so the read does not repeat it.
-  return ["## Concerns", ...concerns, "", "## Answers", answers].join("\n");
+/** One plain answer per question the athlete asked; none when they asked nothing. */
+function buildStubAnswers(packet: ModelPacket): ReadAnswer[] {
+  return stubQuestions(packet)
+    .slice(0, 8)
+    .map((question) => ({
+      question,
+      answer: "Keep quality to one session and treat rest days as real rest. Ask me again during the week if it still feels off.",
+    }));
+}
+
+/** The stub's reasoning; the headline, flags and answers are shown above it. */
+function buildStubAnalysis(): string {
+  return [
+    "## Why this plan",
+    "Keep quality to one session, shoes as listed, and treat rest days as real rest.",
+  ].join("\n");
 }
 
 function buildStubSettingsBullets(packet: ModelPacket): string[] | undefined {
@@ -244,7 +275,9 @@ export function buildStubWeeklyReply(packet: ModelPacket): WeeklyReply {
   };
   const reply: WeeklyReply = {
     headline: buildStubHeadline(packet),
-    analysis: buildStubAnalysis(packet),
+    flags: buildStubFlags(packet),
+    answers: buildStubAnswers(packet),
+    analysis: buildStubAnalysis(),
     prescribedWeek,
   };
   const bullets = buildStubSettingsBullets(packet);

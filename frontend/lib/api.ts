@@ -131,9 +131,13 @@ export type PrescribedWeekRecord = {
   updatedAt: string;
 };
 
-/** The headline Coach Cade opens the read with (flags and answers come later). */
+/** The parts of Coach Cade's read laid out on their own. */
 export type ReadSections = {
   headline: string;
+  /** What Coach Cade is watching, shown as "Watching". */
+  flags?: Array<{ title: string; detail: string }>;
+  /** Answers to the athlete's own questions, shown as "Your questions". */
+  answers?: Array<{ question: string; answer: string }>;
 };
 
 export type PrescribedWeekArtifact = {

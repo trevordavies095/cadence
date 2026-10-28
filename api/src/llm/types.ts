@@ -117,18 +117,29 @@ export type SafetyCallout = {
  * settings-proposal bullets (soft-gated via dossier proposals — #31)
  * + optional safety callouts (#32).
  */
-/**
- * The parts of Coach Cade's read the pages lay out on their own, stored beside
- * the full read. Flags and answers join the headline in later steps.
- */
+/** Something Coach Cade is watching: a short title and one line of detail. */
+export type ReadFlag = { title: string; detail: string };
+
+/** An answer to the athlete's own question, quoted as they wrote it. */
+export type ReadAnswer = { question: string; answer: string };
+
+/** The parts of Coach Cade's read the pages lay out on their own, stored beside the full read. */
 export type ReadSections = {
   /** The one or two sentences Coach Cade would say if it could say only one thing. */
   headline: string;
+  /** Shown as "Watching"; empty when there is nothing to watch. */
+  flags: ReadFlag[];
+  /** Shown as "Your questions"; empty when the athlete asked nothing. */
+  answers: ReadAnswer[];
 };
 
 export type WeeklyReply = {
   /** The one or two sentences that matter most; opens the read on Plan. */
   headline: string;
+  /** Up to five things Coach Cade is watching. */
+  flags?: ReadFlag[];
+  /** Answers to the athlete's questions, up to eight. */
+  answers?: ReadAnswer[];
   /** The full read: markdown, up to 4,000 characters. */
   analysis: string;
   prescribedWeek: PrescribedWeek;

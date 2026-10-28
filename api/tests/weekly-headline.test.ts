@@ -133,7 +133,7 @@ describe("the weekly headline is stored and shown", () => {
     const { headline, planSessionId } = await readTheWeek(a);
     const got = await json(await a.request(`/weeks/${planSessionId}/prescribed`));
     const record = got.prescribed as { analysis: string; readSections: { headline: string } };
-    expect(record.readSections).toEqual({ headline });
+    expect(record.readSections.headline).toBe(headline);
     expect(record.analysis.trim()).not.toBe("");
   });
 
@@ -155,7 +155,8 @@ describe("the weekly headline is stored and shown", () => {
       at: new Date("2026-10-27T15:00:00.000Z"),
     });
     const after = await json(await a.request(`/weeks/${planSessionId}/prescribed`));
-    expect((after.prescribed as { readSections: unknown }).readSections).toEqual({ headline });
+    expect((after.prescribed as { readSections: unknown }).readSections).toEqual(record.readSections);
+    expect(record.readSections.headline).toBe(headline);
   });
 
   it("leaves plans made before the headline with no sections", async () => {

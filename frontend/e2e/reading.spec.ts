@@ -260,3 +260,56 @@ test.describe("Coach Cade's read", () => {
     await expect(next.locator('[data-part="headline"]')).toHaveCount(0);
   });
 });
+
+test.describe("Watching and Your questions", () => {
+  const FLAGS = [
+    { title: "Sleep", detail: "Down to 6.8 hours. Protect it this week." },
+    { title: "Long-run drift?", detail: "Plus 16.9 bpm, above the plus 10 target." },
+  ];
+  const ANSWERS = [
+    { question: "Is 3:30 still sensible?", answer: "**Yes,** with one caveat about the next long run." },
+  ];
+
+  test("sit between the headline and the read, each under its own label", async ({ page }) => {
+    await serveNextPlan(page, {
+      readSections: { headline: "Big week. We pull back a little.", flags: FLAGS, answers: ANSWERS },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+
+    const watching = next.getByRole("region", { name: "Watching" });
+    await expect(watching.getByRole("heading", { name: "Watching" })).toBeVisible();
+    await expect(watching.getByRole("listitem")).toHaveText([
+      "Sleep. Down to 6.8 hours. Protect it this week.",
+      "Long-run drift? Plus 16.9 bpm, above the plus 10 target.",
+    ]);
+
+    const questions = next.getByRole("region", { name: "Your questions" });
+    await expect(questions.locator('[data-part="question"]')).toHaveText(["Is 3:30 still sensible?"]);
+    await expect(questions.locator("strong", { hasText: "Yes," })).toBeVisible();
+
+    // Headline, then Watching, then Your questions, then the read.
+    const order = await next.evaluate((el) =>
+      Array.from(el.querySelectorAll('[data-part="headline"], h3, h4, p, li'))
+        .map((n) => n.textContent ?? "")
+        .filter((t) => /Big week|^Watching$|^Your questions$|Sleep slipped/.test(t)),
+    );
+    expect(order).toEqual([
+      "Big week. We pull back a little.",
+      "Watching",
+      "Your questions",
+      "Sleep slipped to 6.8 hours.",
+    ]);
+  });
+
+  test("show nothing when there is nothing to watch and no questions", async ({ page }) => {
+    await serveNextPlan(page, { readSections: { headline: "A quiet week.", flags: [], answers: [] } });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+    await expect(next.locator('[data-part="headline"]')).toHaveText("A quiet week.");
+    await expect(next.getByRole("region", { name: "Watching" })).toHaveCount(0);
+    await expect(next.getByRole("region", { name: "Your questions" })).toHaveCount(0);
+  });
+});

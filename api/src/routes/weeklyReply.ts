@@ -328,7 +328,11 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
             settingsProposalBullets:
               checked.value.settingsProposalBullets ?? null,
             safetyCallouts: checked.value.safetyCallouts ?? null,
-            readSections: { headline: checked.value.headline },
+            readSections: {
+              headline: checked.value.headline,
+              flags: checked.value.flags ?? [],
+              answers: checked.value.answers ?? [],
+            },
             at: clock.now(),
           });
           // The headline and a link; the full read is on the plan, not repeated here.
