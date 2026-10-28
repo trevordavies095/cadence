@@ -484,3 +484,50 @@ test.describe("Coach Cade's read keeps its labels in order", () => {
     expect(readTop - noticeBottom).toBeGreaterThanOrEqual(20);
   });
 });
+
+test.describe("Plan changes from the conversation", () => {
+  const CHANGED = [
+    { date: "2026-10-22", dayType: "easy", run: { type: "easy", distanceM: 6437, structure: "Easy 4 mi, flat canal" }, notes: "Work breakfast, so Thursday is short and easy." },
+    { date: "2026-10-25", dayType: "long", run: { type: "long", distanceM: 24140, structure: "10 easy, 4 at goal pace, 1 easy" }, notes: "The marathon-pace work moves here." },
+  ];
+
+  async function serveReply(page: Page, extra: Record<string, unknown>) {
+    const week = await (await page.request.post(`${API_URL}/weeks/current`)).json();
+    await page.route(/\/api\/thread\?/, (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifacts: [],
+          messages: [
+            {
+              id: "patched",
+              role: "coach",
+              kind: "chat",
+              body: "Yes to the swap. Thursday goes easy so Sunday can carry the goal-pace work.",
+              createdAt: "2026-10-21T18:00:00.000Z",
+              weekSessionId: week.id,
+              safetyCallouts: [],
+              ...extra,
+            },
+          ],
+        }),
+      }),
+    );
+    await page.goto("/chat");
+  }
+
+  test("a reply that changed days shows them as a card naming the days", async ({ page }) => {
+    await serveReply(page, { planChanges: CHANGED });
+    const card = page.getByRole("region", { name: "Coach Cade changed Thu and Sun" });
+    await expect(card).toBeVisible();
+    await expect(card.getByRole("listitem")).toHaveCount(2);
+    await expect(card).toContainText("Easy 4 mi, flat canal");
+    await expect(card).toContainText("The marathon-pace work moves here.");
+  });
+
+  test("a reply that changed nothing has no card", async ({ page }) => {
+    await serveReply(page, { planChanges: null });
+    await expect(page.getByText("Yes to the swap.")).toBeVisible();
+    await expect(page.getByRole("region", { name: /Coach Cade changed/ })).toHaveCount(0);
+  });
+});
