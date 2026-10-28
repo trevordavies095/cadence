@@ -132,7 +132,11 @@ export function NoteCard({
         {!inactive ? (
           <div className="flex flex-wrap items-center gap-3">
             {note.status === "pending" ? (
-              <Button variant="primary" disabled={busy} onClick={() => void looksRight()}>
+              <Button
+                variant={fixing ? "secondary" : "primary"}
+                disabled={busy}
+                onClick={() => void looksRight()}
+              >
                 Looks right
               </Button>
             ) : (

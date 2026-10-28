@@ -28,7 +28,7 @@ async function listed(app: ReturnType<typeof appAt>) {
 async function seedArchivedFutureWeek() {
   const early = appAt("2026-10-21T15:00:00.000Z");
   await early.request("/weeks/current", { method: "POST" });
-  const future = await ensureWeekSession("2026-W44", "UTC");
+  const future = await ensureWeekSession(new Date(), "2026-W44", "UTC");
   await pool.query(
     `UPDATE week_sessions SET archived_at = NOW() WHERE id = $1`,
     [future.session.id],
@@ -52,7 +52,7 @@ describe("week archiving (#77)", () => {
     const current = await json(
       await app.request("/weeks/current", { method: "POST" }),
     );
-    const future = await ensureWeekSession("2026-W44", "UTC");
+    const future = await ensureWeekSession(new Date(), "2026-W44", "UTC");
 
     await app.request("/weeks/current", { method: "POST" });
 

@@ -10,7 +10,9 @@ export type LlmCallOutcome =
   | "http_error"
   | "transport_error"
   | "schema_invalid"
-  | "rejected_by_route";
+  | "rejected_by_route"
+  /** Accepted after the validator fixed a soft field; errorMessage says what. */
+  | "repaired";
 
 /** One row to append to the LLM call log. */
 export type LlmCallRecord = {

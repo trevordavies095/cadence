@@ -55,7 +55,9 @@ test.describe("Sunday: check-in to Your week", () => {
     // It polls, then the coach's read and next week's plan arrive.
     const read = page.getByRole("region", { name: "Coach Cade’s read" });
     await expect(read).toBeVisible({ timeout: 20_000 });
-    await expect(read.getByRole("heading", { name: "Headline" })).toBeVisible();
+    // The read opens with Coach Cade's headline, and the read below does not repeat it.
+    await expect(read.locator('[data-part="headline"]')).toContainText("looks workable");
+    await expect(read.getByText(/looks workable/)).toHaveCount(1);
 
     const next = page.getByRole("region", { name: "Next week" });
     await expect(next.getByRole("listitem")).toHaveCount(7);
@@ -169,7 +171,9 @@ test.describe("Your week: the report", () => {
     await expect(week).toContainText("Minor tightness");
     await expect(week).toContainText("Is the foot a worry?");
     // The Tuesday run carries what the athlete said about it.
-    await expect(week).toContainText("effort 3/10");
+    const runs = week.getByRole("table", { name: "Your runs" });
+    await expect(runs.getByRole("term").filter({ hasText: "Effort" })).toHaveCount(1);
+    await expect(runs.getByRole("definition").filter({ hasText: "3/10" })).toHaveCount(1);
     await expect(week).toContainText("Sore foot after");
     await expect(week.getByText("You skipped this week’s check-in")).toHaveCount(0);
   });

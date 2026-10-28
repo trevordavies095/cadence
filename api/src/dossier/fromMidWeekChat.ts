@@ -11,9 +11,11 @@ import type { DossierProposal } from "./proposals.js";
 export async function createProposalFromMidWeekChat(input: {
   settingsProposalBullets?: string[] | null;
   isoWeek?: string | null;
+  at: Date;
 }): Promise<DossierProposal | null> {
   return createProposalFromWeeklyReply({
     settingsProposalBullets: input.settingsProposalBullets,
     isoWeek: input.isoWeek,
+    at: input.at,
   });
 }

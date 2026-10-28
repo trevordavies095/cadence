@@ -35,15 +35,16 @@ export async function saveWeekRecap(input: {
   weekSessionId: string;
   markdown: string;
   subjective: "skipped" | "present";
+  at: Date;
 }): Promise<WeekRecapRecord> {
   const result = await pool.query<Row>(
     `
-    INSERT INTO week_recaps (week_session_id, markdown, subjective)
-    VALUES ($1::uuid, $2, $3)
+    INSERT INTO week_recaps (week_session_id, markdown, subjective, created_at, updated_at)
+    VALUES ($1::uuid, $2, $3, $4, $4)
     ON CONFLICT (week_session_id) DO UPDATE SET
       markdown = EXCLUDED.markdown,
       subjective = EXCLUDED.subjective,
-      updated_at = NOW()
+      updated_at = EXCLUDED.updated_at
     RETURNING
       week_session_id::text,
       markdown,
@@ -51,7 +52,7 @@ export async function saveWeekRecap(input: {
       created_at,
       updated_at
     `,
-    [input.weekSessionId, input.markdown, input.subjective],
+    [input.weekSessionId, input.markdown, input.subjective, input.at],
   );
   return toRecord(result.rows[0]!);
 }

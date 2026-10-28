@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { resolveLlmProvider } from "../settings/sources.js";
 import { resolveAppVersion } from "./appVersion.js";
 import type { LlmCallOperation, LlmCallRecorder } from "./types.js";
 
@@ -19,13 +20,10 @@ export async function recordRouteRejection(
   if (!recorder) return;
   try {
     const parent = await recorder.get(input.parentCallId).catch(() => null);
-    const live = ["anthropic", "live"].includes(
-      (process.env.LLM_PROVIDER ?? "stub").trim().toLowerCase(),
-    );
     await recorder.record({
       id: randomUUID(),
       operation: input.operation,
-      provider: parent?.provider ?? (live ? "anthropic" : "stub"),
+      provider: parent?.provider ?? resolveLlmProvider(),
       model: parent?.model ?? null,
       appVersion: parent?.appVersion ?? resolveAppVersion(),
       weekSessionId: parent?.weekSessionId ?? input.weekSessionId,

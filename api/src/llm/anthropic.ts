@@ -9,6 +9,7 @@ import type {
 } from "../llmCallLog/types.js";
 import type { ModelPacket } from "../packet/types.js";
 import { readAnthropicApiKey } from "../settings/anthropicStore.js";
+import { resolveLlmProvider } from "../settings/sources.js";
 import { resolveAnthropicEffort, type AnthropicEffort } from "./effort.js";
 import { readMessageStream } from "./anthropicStream.js";
 import {
@@ -29,6 +30,12 @@ import {
   WEEKLY_SYSTEM_PROMPT,
 } from "./safety.js";
 import {
+  DAY_NOTES_TARGET,
+  MAX_FLAG_DETAIL_LENGTH,
+  MAX_FLAG_TITLE_LENGTH,
+  MAX_HEADLINE_LENGTH,
+  MAX_READ_ANSWERS,
+  MAX_READ_FLAGS,
   expectedPlanDates,
   MAX_BULLET_LENGTH,
   MAX_DOSSIER_BODY_LENGTH,
@@ -109,16 +116,66 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/** The reason for a session, shown beside it on the plan. */
+const DAY_NOTES_DESCRIPTION = `Why this session, this week: one or two sentences, under ${DAY_NOTES_TARGET} characters. Shown beside the session.`;
+
 function weeklyReplyToolSchema() {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["analysis", "prescribedWeek"],
+    required: ["headline", "analysis", "prescribedWeek"],
     properties: {
+      headline: {
+        type: "string",
+        description:
+          `One or two plain sentences, at most ${MAX_HEADLINE_LENGTH} characters: what you would say if you could say only one thing about the week and the plan. No markdown, no label.`,
+      },
+      flags: {
+        type: "array",
+        maxItems: MAX_READ_FLAGS,
+        description:
+          "What you are watching, not a summary of the week. Shown as a short list under \"Watching\".",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["title", "detail"],
+          properties: {
+            title: {
+              type: "string",
+              description: `A few words, at most ${MAX_FLAG_TITLE_LENGTH} characters.`,
+            },
+            detail: {
+              type: "string",
+              description: `One line, at most ${MAX_FLAG_DETAIL_LENGTH} characters.`,
+            },
+          },
+        },
+      },
+      answers: {
+        type: "array",
+        maxItems: MAX_READ_ANSWERS,
+        description:
+          "One per question the athlete asked in the check-in or the conversation. Empty when they asked nothing.",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["question", "answer"],
+          properties: {
+            question: {
+              type: "string",
+              description: "The athlete's question, quoted exactly as they wrote it.",
+            },
+            answer: {
+              type: "string",
+              description: "Your answer, in markdown if it needs more than a paragraph.",
+            },
+          },
+        },
+      },
       analysis: {
         type: "string",
         description:
-          "Headline read, concerns/flags, and answers (markdown or plain prose).",
+          "The rest of your read in markdown: your reasoning about the week and the plan. The athlete sees the headline, flags and answers above it.",
       },
       prescribedWeek: {
         type: "object",
@@ -162,7 +219,10 @@ function weeklyReplyToolSchema() {
                   required: ["type", "distanceM"],
                 },
                 strength: { type: ["string", "null"] },
-                notes: { type: ["string", "null"] },
+                notes: {
+                  type: ["string", "null"],
+                  description: DAY_NOTES_DESCRIPTION,
+                },
               },
             },
           },
@@ -209,7 +269,7 @@ function prescribedDayJsonSchema(): Record<string, unknown> {
         required: ["type", "distanceM"],
       },
       strength: { type: ["string", "null"] },
-      notes: { type: ["string", "null"] },
+      notes: { type: ["string", "null"], description: DAY_NOTES_DESCRIPTION },
     },
   };
 }
@@ -367,7 +427,7 @@ function buildWeeklyUserPrompt(
     `prescribedWeek.days must use these exact dates Mon–Sun: ${dates.join(", ")}`,
     "Prescribe one coherent week of running training for this athlete.",
     "Call the submit_weekly_reply tool exactly once with your full answer.",
-    "Include analysis with headline, concerns/flags, and answers.",
+    "Include a headline (the one or two sentences you would say if you could say only one thing), flags (what you are watching), answers (one per question the athlete asked, quoted as written) and the analysis (your reasoning).",
     "When red flags appear, populate safetyCallouts (escalate; do not diagnose).",
     "Model packet (redacted; no identity PII or GPS):",
     JSON.stringify(packet),
@@ -731,7 +791,9 @@ export function createAnthropicLlmPort(
     call: () => Promise<AnthropicCallResult>,
     validate: (
       toolInput: unknown,
-    ) => { ok: true; value: T } | { ok: false; error: string },
+    ) =>
+      | { ok: true; value: T; repairs?: string[] }
+      | { ok: false; error: string },
   ): Promise<T> {
     const startedAt = Date.now();
     const callId = callOptions?.callId;
@@ -764,8 +826,8 @@ export function createAnthropicLlmPort(
           thinkingTokens: result.usage.thinkingTokens,
           cacheReadTokens: result.usage.cacheReadTokens,
           cacheCreationTokens: result.usage.cacheCreationTokens,
-          outcome: "ok",
-          errorMessage: null,
+          outcome: validated.repairs ? "repaired" : "ok",
+          errorMessage: validated.repairs?.join("; ") ?? null,
         });
       }
       return validated.value;
@@ -1006,8 +1068,7 @@ export function resolveDefaultLlmPort(
   },
 ): LlmPort {
   const env = options?.env ?? process.env;
-  const provider = (env.LLM_PROVIDER ?? "stub").trim().toLowerCase();
-  if (provider === "anthropic" || provider === "live") {
+  if (resolveLlmProvider(env) === "anthropic") {
     return createAnthropicLlmPort(options);
   }
   return createStubLlmPort({

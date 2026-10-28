@@ -10,6 +10,7 @@ import {
   Field,
   Muted,
   Page,
+  PageHead,
   PageTitle,
   SectionTitle,
   Textarea,
@@ -171,12 +172,14 @@ export default function AboutYouPage() {
 
   return (
     <Page>
-      <PageTitle>About you</PageTitle>
-      <Muted>
-        What Coach Cade knows about you, so every plan starts from the real you.
-        {current ? ` Last changed ${dayLabel(current.createdAt)}.` : ""}
-      </Muted>
-      <ErrorNote error={error} />
+      <PageHead>
+        <PageTitle>About you</PageTitle>
+        <Muted>
+          What Coach Cade knows about you, so every plan starts from the real you.
+          {current ? ` Last changed ${dayLabel(current.createdAt)}.` : ""}
+        </Muted>
+        <ErrorNote error={error} />
+      </PageHead>
 
       {waiting.length > 0 ? (
         <section className="flex flex-col gap-3" aria-label="Waiting for you">
@@ -200,7 +203,12 @@ export default function AboutYouPage() {
               />
             </Field>
             <div>
-              <Button type="submit" variant="primary" disabled={telling || !tell.trim()}>
+              {/* A waiting note's "Looks right" holds volt; this submit steps back. */}
+              <Button
+                type="submit"
+                variant={waiting.length > 0 ? "secondary" : "primary"}
+                disabled={telling || !tell.trim()}
+              >
                 {telling ? "Passing it on…" : "Tell Coach Cade"}
               </Button>
             </div>
@@ -301,7 +309,7 @@ export default function AboutYouPage() {
               <Button type="submit" disabled={saving}>
                 {saving ? "Saving…" : "Save"}
               </Button>
-              {saved ? <span className="text-hr-zone-1">Saved.</span> : null}
+              {saved ? <span className="text-ok">Saved.</span> : null}
             </div>
           </form>
         </details>

@@ -13,9 +13,17 @@ export type AnthropicConnection = {
   updatedAt: string | null;
 };
 
+/** What the API is running with (#6): an export or the offline coach needs no saved key. */
+export type SettingsSources = {
+  tempo: "export" | "connection";
+  model: "stub" | "anthropic";
+  demo: boolean;
+};
+
 export type SettingsSummary = {
-  tempo: TempoConnection;
-  anthropic: AnthropicConnection;
+  tempo: TempoConnection & { source: SettingsSources["tempo"] };
+  anthropic: AnthropicConnection & { source: SettingsSources["model"] };
+  demo: boolean;
 };
 
 /** Compact coaching workout summary stored on a thread message (no GPS). */
@@ -35,6 +43,15 @@ export type WorkoutAttachment = {
   notes?: string | null;
   hasRoute?: boolean;
   splitsCount?: number;
+  /** Per-split numbers the coach was shown; pace is seconds per kilometre. */
+  splits?: Array<{
+    idx?: number;
+    kind?: string | null;
+    distanceM?: number | null;
+    durationS?: number | null;
+    paceS?: number | null;
+    avgHeartRateBpm?: number | null;
+  }>;
 };
 
 export type TempoWorkoutSummary = {
@@ -52,6 +69,13 @@ export type TempoWorkoutSummary = {
 export type ThreadMessage = {
   id: string;
   role: "athlete" | "coach" | "system";
+  /** "weekly_read" is the short Sunday message that points at the plan. */
+  kind?: "chat" | "weekly_read";
+  /**
+   * Where a weekly_read message's link goes: "plan" while the week it planned is
+   * this week or next, "week" (that week's Your week page) after that.
+   */
+  readLink?: "plan" | "week";
   body: string;
   createdAt: string;
   weekSessionId: string | null;
@@ -62,6 +86,8 @@ export type ThreadMessage = {
   llmCallId?: string | null;
   /** The note this reply produced, as it stands now; null when it produced none. */
   dossierProposal?: ThreadNote | null;
+  /** The plan days this reply changed, as they were then; null when it changed none. */
+  planChanges?: PrescribedDay[] | null;
 };
 
 /** What a thread message shows of the note it produced. */
@@ -110,8 +136,19 @@ export type PrescribedWeekRecord = {
   analysis: string;
   settingsProposalBullets: string[] | null;
   safetyCallouts: SafetyCallout[] | null;
+  /** The parts of the read laid out on their own; null on plans made before them. */
+  readSections?: ReadSections | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/** The parts of Coach Cade's read laid out on their own. */
+export type ReadSections = {
+  headline: string;
+  /** What Coach Cade is watching, shown as "Watching". */
+  flags?: Array<{ title: string; detail: string }>;
+  /** Answers to the athlete's own questions, shown as "Your questions". */
+  answers?: Array<{ question: string; answer: string }>;
 };
 
 export type PrescribedWeekArtifact = {

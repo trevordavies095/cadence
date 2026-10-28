@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
+import type { Clock } from "../clock/clock.js";
 import { createProposalFromCorrection } from "../dossier/fromCorrection.js";
 import {
   listPendingDossierProposals,
@@ -20,6 +21,7 @@ import { getWeekSessionById } from "../week/store.js";
 
 export type DossierCorrectionRouteOptions = {
   llmPort: LlmPort;
+  clock: Clock;
 };
 
 /**
@@ -30,7 +32,7 @@ export function createDossierCorrectionRoutes(
   options: DossierCorrectionRouteOptions,
 ): Hono {
   const routes = new Hono();
-  const { llmPort } = options;
+  const { llmPort, clock } = options;
 
   routes.use("/dossier/corrections", requireDisclaimer);
 
@@ -84,7 +86,7 @@ export function createDossierCorrectionRoutes(
       isoWeek = session.isoWeek;
     }
 
-    const athleteMessage = await createAthleteMessage(text, weekSessionId);
+    const athleteMessage = await createAthleteMessage(clock.now(), text, weekSessionId);
 
     const callId = randomUUID();
     let draft;
@@ -107,12 +109,14 @@ export function createDossierCorrectionRoutes(
     const dossierProposal = await createProposalFromCorrection({
       summaryBullets: draft.summaryBullets,
       proposedBody: draft.proposedBody,
+      at: clock.now(),
     });
 
     // Anything still waiting for a yes was drafted from older text.
-    await rejectWaitingDossierProposals();
+    await rejectWaitingDossierProposals(clock.now());
 
     const coachMessage = await createCoachMessage(
+      clock.now(),
       formatDossierCorrectionThreadBody(draft),
       weekSessionId,
       callId,

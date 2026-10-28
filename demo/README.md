@@ -48,8 +48,10 @@ Then read the season before publishing it: every weekly read, the chat, About yo
 
 ### Hand edits in the current snapshot
 
-- About you headings `Coach update (2026-W34)` and `(2026-W42)` changed to `(Aug 17 – 23)` and `(Oct 12 – 18)`, which is what the app writes now.
-- "achilles" capitalised in the pending tidy-up card.
+Rebuilt live on 2026-10-28 for the reading-flow changes (headline, Watching, Your questions, day notes, plan-change cards, run card splits). Three words in the plan rows were edited; the model call log keeps what the model wrote:
+
+- Two day notes: "Standard mid-week easy" changed to "Standard midweek easy".
+- One answer, in the week of Sep 28: "Your physio prescribed them" changed to "Your physio set them".
 
 ## Screenshots
 

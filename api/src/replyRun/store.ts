@@ -47,16 +47,17 @@ function toRun(row: Row): ReplyRun {
  * (the unique partial index allows at most one pending run per week).
  */
 export async function createPendingRun(
+  at: Date,
   weekSessionId: string,
 ): Promise<ReplyRun | null> {
   const result = await pool.query<Row>(
     `
-    INSERT INTO weekly_reply_runs (week_session_id, status)
-    VALUES ($1, 'pending')
+    INSERT INTO weekly_reply_runs (week_session_id, status, started_at)
+    VALUES ($1, 'pending', $2)
     ON CONFLICT (week_session_id) WHERE status = 'pending' DO NOTHING
     RETURNING ${COLUMNS}
     `,
-    [weekSessionId],
+    [weekSessionId, at],
   );
   const row = result.rows[0];
   return row ? toRun(row) : null;
@@ -68,16 +69,23 @@ export async function finishRun(
     status: "ok" | "failed";
     llmCallId?: string | null;
     errorMessage?: string | null;
+    at: Date;
   },
 ): Promise<ReplyRun | null> {
   const result = await pool.query<Row>(
     `
     UPDATE weekly_reply_runs
-    SET status = $2, llm_call_id = $3, error_message = $4, finished_at = NOW()
+    SET status = $2, llm_call_id = $3, error_message = $4, finished_at = $5
     WHERE id = $1
     RETURNING ${COLUMNS}
     `,
-    [id, outcome.status, outcome.llmCallId ?? null, outcome.errorMessage ?? null],
+    [
+      id,
+      outcome.status,
+      outcome.llmCallId ?? null,
+      outcome.errorMessage ?? null,
+      outcome.at,
+    ],
   );
   const row = result.rows[0];
   return row ? toRun(row) : null;
@@ -91,7 +99,7 @@ export async function getLatestRun(
     SELECT ${COLUMNS}
     FROM weekly_reply_runs
     WHERE week_session_id = $1
-    ORDER BY started_at DESC, id DESC
+    ORDER BY started_at DESC, seq DESC
     LIMIT 1
     `,
     [weekSessionId],
@@ -112,36 +120,38 @@ export async function hasPendingRun(weekSessionId: string): Promise<boolean> {
  * A run lives in the API process, so a restart orphans any pending row.
  * Mark those failed at startup so they never block the week.
  */
-export async function failInterruptedRuns(): Promise<number> {
+export async function failInterruptedRuns(at: Date): Promise<number> {
   const result = await pool.query(
     `
     UPDATE weekly_reply_runs
     SET status = 'failed',
         error_message = 'Interrupted by a restart',
-        finished_at = NOW()
+        finished_at = $1
     WHERE status = 'pending'
     `,
+    [at],
   );
   return result.rowCount ?? 0;
 }
 
 /** The athlete opened the plan from the latest finished run: stop announcing it. */
 export async function markLatestRunSeen(
+  at: Date,
   weekSessionId: string,
 ): Promise<ReplyRun | null> {
   const result = await pool.query<Row>(
     `
     UPDATE weekly_reply_runs
-    SET seen_at = COALESCE(seen_at, NOW())
+    SET seen_at = COALESCE(seen_at, $2)
     WHERE id = (
       SELECT id FROM weekly_reply_runs
       WHERE week_session_id = $1 AND status = 'ok'
-      ORDER BY started_at DESC, id DESC
+      ORDER BY started_at DESC, seq DESC
       LIMIT 1
     )
     RETURNING ${COLUMNS}
     `,
-    [weekSessionId],
+    [weekSessionId, at],
   );
   const row = result.rows[0];
   return row ? toRun(row) : null;

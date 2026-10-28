@@ -160,11 +160,41 @@ describe("LLM call log (#68 tracer)", () => {
       messages: Array<{ content: string }>;
     };
     expect(request.system).toMatch(/do not diagnose/i);
+    expect(request.system).toMatch(/Lead with the conclusion/);
     expect(request.tools[0]!.name).toBe("submit_weekly_reply");
     expect(request.messages[0]!.content).toContain("Keep Achilles easy");
     const raw = JSON.parse(row.responseRaw as string) as { usage: unknown };
     expect(raw.usage).toEqual(USAGE);
     expect(JSON.stringify(row)).not.toContain(API_KEY);
+  });
+
+  it("cuts an over-long headline at a word and logs the cut as a repair", async () => {
+    const long = `${"Big week, steady legs, and the goal is still live. ".repeat(8)}End.`;
+    const fetchImpl = vi.fn(async () =>
+      anthropicResponse("submit_weekly_reply", {
+        ...buildStubWeeklyReply(samplePacket()),
+        headline: long,
+      }),
+    ) as unknown as typeof globalThis.fetch;
+    const { app, weekSessionId } = await liveApp(fetchImpl);
+    await unlockPlanCheckIn(app, weekSessionId);
+
+    const res = await app.request("/week/reply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ weekSessionId, packet: samplePacket() }),
+    });
+    expect(res.status).toBe(200);
+    const body = await json(res);
+    const stored = (body.prescribed as { readSections: { headline: string } }).readSections;
+    expect(stored.headline.length).toBeLessThanOrEqual(280);
+    expect(stored.headline.endsWith("…")).toBe(true);
+    expect(long.startsWith(stored.headline.slice(0, -1))).toBe(true);
+
+    const [coach] = await coachMessages(app, weekSessionId);
+    const row = await json(await app.request(`/llm-calls/${coach!.llmCallId as string}`));
+    expect(row.outcome).toBe("repaired");
+    expect(row.errorMessage).toMatch(/headline cut from \d+ to \d+ chars/);
   });
 
   it("records a successful mid-week chat and links the coach message", async () => {
@@ -196,7 +226,75 @@ describe("LLM call log (#68 tracer)", () => {
       inputTokens: 1234,
       stopReason: "tool_use",
     });
+    const request = row.request as { system: string };
+    expect(request.system).toMatch(/Lead with the conclusion/);
+    expect(request.system).toMatch(/first sentence is the answer/);
     expect(JSON.stringify(row)).not.toContain(API_KEY);
+  });
+
+  const LONG_CALLOUT = {
+    title: "Achilles",
+    body:
+      "Keep the next few days easy and flat. ".repeat(60) +
+      "If it gets sharper, see a clinician.",
+    severity: "caution",
+  };
+
+  async function expectRepairedRow(
+    app: ReturnType<typeof createApp>,
+    callId: string,
+  ) {
+    const row = await json(await app.request(`/llm-calls/${callId}`));
+    expect(row).toMatchObject({ id: callId, outcome: "repaired" });
+    expect(row.errorMessage).toMatch(
+      /^safetyCallouts\[0\]\.body cut from \d+ to \d+ chars, escalation line added$/,
+    );
+    const listed = await json(await app.request("/llm-calls?outcome=repaired"));
+    expect(JSON.stringify(listed)).toContain(callId);
+  }
+
+  it("delivers a weekly reply with an over-long callout and logs it as repaired (#4)", async () => {
+    const fetchImpl = vi.fn(async () =>
+      anthropicResponse("submit_weekly_reply", {
+        ...buildStubWeeklyReply(samplePacket()),
+        safetyCallouts: [LONG_CALLOUT],
+      }),
+    ) as unknown as typeof globalThis.fetch;
+    const { app, weekSessionId } = await liveApp(fetchImpl);
+    await unlockPlanCheckIn(app, weekSessionId);
+
+    const res = await app.request("/week/reply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ weekSessionId, packet: samplePacket() }),
+    });
+    expect(res.status).toBe(200);
+
+    const [coach] = await coachMessages(app, weekSessionId);
+    const [callout] = coach!.safetyCallouts as Array<{ body: string }>;
+    expect(callout!.body.length).toBeLessThanOrEqual(1200);
+    expect(callout!.body).toMatch(/see a qualified clinician\.$/);
+    await expectRepairedRow(app, coach!.llmCallId as string);
+  });
+
+  it("delivers a chat reply with an over-long callout and logs it as repaired (#4)", async () => {
+    const reply = { body: "Ease off this week.", safetyCallouts: [LONG_CALLOUT] };
+    const fetchImpl = vi.fn(async () =>
+      anthropicResponse("submit_mid_week_chat_reply", reply),
+    ) as unknown as typeof globalThis.fetch;
+    const { app, weekSessionId } = await liveApp(fetchImpl);
+
+    const res = await app.request(`/weeks/${weekSessionId}/chat`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ body: "My Achilles twinged today." }),
+    });
+    expect(res.status).toBe(201);
+
+    const [coach] = await coachMessages(app, weekSessionId);
+    const [callout] = coach!.safetyCallouts as Array<{ body: string }>;
+    expect(callout!.body.length).toBeLessThanOrEqual(1200);
+    await expectRepairedRow(app, coach!.llmCallId as string);
   });
 
   it("leaves the call id null on messages no model call produced", async () => {

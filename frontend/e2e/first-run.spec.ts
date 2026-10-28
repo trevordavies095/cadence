@@ -85,6 +85,21 @@ test.describe("first run", () => {
     await expect(page.getByText("Proposed notes")).toHaveCount(0);
     await expect(page.getByLabel("The full text Coach Cade reads")).toHaveCount(0);
 
+    // 4b. One volt per page: while the note waits, it is the one thing to do on Coach Cade too.
+    await page.goto("/chat");
+    const chatNote = page.locator('[aria-label="Here’s what Coach Cade understood"]');
+    const looksRight = chatNote.getByRole("button", { name: "Looks right" });
+    await expect(looksRight).toBeVisible();
+    const background = (el: Element) => getComputedStyle(el).backgroundColor;
+    const send = page.getByRole("button", { name: "Send", exact: true });
+    expect(await send.evaluate(background)).not.toBe(await looksRight.evaluate(background));
+    // Opening the fix form makes its Send the action, so Looks right steps back.
+    await chatNote.getByRole("button", { name: "Fix something" }).click();
+    expect(await looksRight.evaluate(background)).toBe(
+      await chatNote.getByRole("button", { name: "Fix something" }).evaluate(background),
+    );
+    await page.goto("/dossier");
+
     // 5. Looks right installs the profile and the banner goes away.
     await card.getByRole("button", { name: "Looks right" }).click();
     // The draft is no longer waiting: it is now what the coach knows, and it is listed.

@@ -39,6 +39,7 @@ export function buildProposedBodyFromSettingsBullets(input: {
 export async function createProposalFromWeeklyReply(input: {
   settingsProposalBullets?: string[] | null;
   isoWeek?: string | null;
+  at: Date;
 }): Promise<DossierProposal | null> {
   const bullets = (input.settingsProposalBullets ?? [])
     .map((b) => b.trim())
@@ -55,5 +56,6 @@ export async function createProposalFromWeeklyReply(input: {
   return createDossierProposal({
     summaryBullets: bullets,
     proposedBody,
+    at: input.at,
   });
 }

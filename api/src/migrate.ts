@@ -165,10 +165,21 @@ export async function migrate(): Promise<void> {
       cache_creation_tokens integer,
       outcome text NOT NULL CHECK (outcome IN (
         'ok', 'http_error', 'transport_error', 'schema_invalid',
-        'rejected_by_route'
+        'rejected_by_route', 'repaired'
       )),
       error_message text
     );
+
+    -- 'repaired': the reply was accepted after the validator fixed a soft
+    -- field (an over-long safety callout, #4); error_message says what.
+    ALTER TABLE llm_call_log
+      DROP CONSTRAINT IF EXISTS llm_call_log_outcome_check;
+    ALTER TABLE llm_call_log
+      ADD CONSTRAINT llm_call_log_outcome_check
+      CHECK (outcome IN (
+        'ok', 'http_error', 'transport_error', 'schema_invalid',
+        'rejected_by_route', 'repaired'
+      ));
 
     ALTER TABLE llm_call_log
       ADD COLUMN IF NOT EXISTS thinking_tokens integer;
@@ -197,6 +208,13 @@ export async function migrate(): Promise<void> {
     ALTER TABLE weekly_reply_runs
       ADD COLUMN IF NOT EXISTS seen_at timestamptz;
 
+    -- Rows are stamped from the app clock (#7), so under a pinned clock many share
+    -- one instant. seq keeps insertion order as the tie-breaker; uuid ids are random.
+    ALTER TABLE thread_messages
+      ADD COLUMN IF NOT EXISTS seq bigserial;
+    ALTER TABLE weekly_reply_runs
+      ADD COLUMN IF NOT EXISTS seq bigserial;
+
     -- Last unit preference read from Tempo, so plans keep the athlete's units
     -- when Tempo is unreachable.
     CREATE TABLE IF NOT EXISTS athlete_preferences (
@@ -213,6 +231,22 @@ export async function migrate(): Promise<void> {
     -- render them as notices instead of text woven into the body.
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS safety_callouts jsonb;
+
+    -- What a message is, beyond who wrote it. "weekly_read" is the short Sunday
+    -- message that points at the plan; the full read lives on the plan record.
+    ALTER TABLE thread_messages
+      ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'chat'
+        CHECK (kind IN ('chat', 'weekly_read'));
+
+    -- The parts of Coach Cade's read the pages lay out on their own (headline,
+    -- and later flags and answers). Null on plans made before they existed.
+    ALTER TABLE prescribed_weeks
+      ADD COLUMN IF NOT EXISTS read_sections jsonb;
+
+    -- The days a coach reply changed, as they were changed then: a snapshot, so a
+    -- later change never rewrites an old message's card.
+    ALTER TABLE thread_messages
+      ADD COLUMN IF NOT EXISTS plan_changes jsonb;
   `);
 
   await rotateKeyDerivation();

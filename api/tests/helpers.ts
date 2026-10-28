@@ -57,7 +57,7 @@ export async function unlockPlanCheckIn(
   mode: "skip" | "finish" = "skip",
 ): Promise<void> {
   if (mode === "finish") {
-    await saveSubjectiveAnswers(weekSessionId, {
+    await saveSubjectiveAnswers(new Date(), weekSessionId, {
       week: "2026-W43",
       runs: [{ date: "2026-10-20", rpe: 5, felt: 7 }],
       weekly: { stress_level: "ok" },
@@ -65,6 +65,7 @@ export async function unlockPlanCheckIn(
     return;
   }
   await saveWeekRecap({
+    at: new Date(),
     weekSessionId,
     markdown: "# Weekly Recap\n\nCheck-in skipped (test unlock).",
     subjective: "skipped",

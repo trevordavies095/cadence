@@ -9,6 +9,7 @@ import {
   Input,
   Muted,
   Page,
+  PageHead,
   PageTitle,
   SectionTitle,
   WaitingState,
@@ -27,6 +28,7 @@ import {
   putAnthropicConnection,
   putTempoConnection,
   type AnthropicConnection,
+  type SettingsSources,
   type TempoConnection,
 } from "@/lib/api";
 
@@ -67,6 +69,7 @@ export default function SettingsPage() {
   const [gate, setGate] = useState<GateState>("loading");
   const [tempo, setTempo] = useState<TempoConnection | null>(null);
   const [anthropic, setAnthropic] = useState<AnthropicConnection | null>(null);
+  const [sources, setSources] = useState<SettingsSources | null>(null);
   const [appearance, setAppearance] = useState<AppearancePreference>("dark");
   const [confirming, setConfirming] = useState<"tempo" | "anthropic" | null>(null);
   const [tempoBaseUrl, setTempoBaseUrl] = useState("http://localhost:5001");
@@ -84,6 +87,11 @@ export default function SettingsPage() {
         if (cancelled) return;
         setTempo(settings.tempo);
         setAnthropic(settings.anthropic);
+        setSources({
+          tempo: settings.tempo.source,
+          model: settings.anthropic.source,
+          demo: settings.demo,
+        });
         setAppearance(readStoredAppearance());
         if (settings.tempo.baseUrl) setTempoBaseUrl(settings.tempo.baseUrl);
         setGate("open");
@@ -176,108 +184,136 @@ export default function SettingsPage() {
     );
   }
 
+  // An export or the offline coach is already in use: a saved key would be ignored (#6).
+  const tempoOffline = sources?.tempo === "export";
+  const modelOffline = sources?.model === "stub";
+  const intro = sources?.demo
+    ? "This demo runs on a sample running log and an offline coach. Nothing here needs a key."
+    : tempoOffline && modelOffline
+      ? "Cadence is running offline, from a Tempo export file with the offline coach. No keys are needed."
+      : `${tempoOffline ? "Add your Anthropic API key." : modelOffline ? "Connect Tempo." : "Connect Tempo and your Anthropic API key."} Keys are encrypted at rest and never shown in full after save.`;
+
   return (
     <Page>
-      <PageTitle>Settings</PageTitle>
-      <Muted>
-        Connect Tempo and your Anthropic API key. Keys are encrypted at rest and
-        never shown in full after save.
-      </Muted>
+      <PageHead>
+        <PageTitle>Settings</PageTitle>
+        <Muted>{intro}</Muted>
+      </PageHead>
 
-      <section className="mt-3 flex flex-col gap-3" aria-label="Tempo connection">
+      <section className="flex flex-col gap-3" aria-label="Tempo connection">
         <SectionTitle>Tempo</SectionTitle>
-        <Muted>
-          {tempo?.configured
-            ? `Configured — ${tempo.baseUrl} · key ${tempo.maskedKey}`
-            : "Not configured — base URL and API key required."}
-        </Muted>
-        <form onSubmit={(e) => void onSaveTempo(e)} className="flex flex-col gap-3">
-          <Field label="Base URL">
-            <Input
-              value={tempoBaseUrl}
-              onChange={(e) => setTempoBaseUrl(e.target.value)}
-              placeholder="http://localhost:5001"
-              required
-            />
-          </Field>
-          <Field label="API key">
-            <Input
-              type="password"
-              value={tempoApiKey}
-              onChange={(e) => setTempoApiKey(e.target.value)}
-              placeholder={tempo?.configured ? "Enter new key to rotate" : "tmp_…"}
-              required
-              autoComplete="off"
-            />
-          </Field>
-          <div className="flex flex-wrap gap-3">
-            <Button type="submit" variant="primary" disabled={busy}>
-              Save Tempo
-            </Button>
-            <Button
-              disabled={busy || !tempo?.configured}
-              onClick={() => setConfirming("tempo")}
-            >
-              Clear
-            </Button>
-          </div>
-          {confirming === "tempo" ? (
-            <ConfirmClear
-              question="Remove the Tempo connection?"
-              consequence="Coach Cade can’t see your runs until you connect again."
-              onConfirm={() => void onClearTempo()}
-              onCancel={() => setConfirming(null)}
-            />
-          ) : null}
-        </form>
+        {tempoOffline ? (
+          <Muted>
+            {sources?.demo
+              ? "In use: a sample running log."
+              : "In use: a Tempo export file. To read from your Tempo instance instead, unset TEMPO_EXPORT_PATH and restart."}
+          </Muted>
+        ) : (
+          <>
+            <Muted>
+              {tempo?.configured
+                ? `Configured — ${tempo.baseUrl} · key ${tempo.maskedKey}`
+                : "Not configured — base URL and API key required."}
+            </Muted>
+            <form onSubmit={(e) => void onSaveTempo(e)} className="flex flex-col gap-3">
+              <Field label="Base URL">
+                <Input
+                  value={tempoBaseUrl}
+                  onChange={(e) => setTempoBaseUrl(e.target.value)}
+                  placeholder="http://localhost:5001"
+                  required
+                />
+              </Field>
+              <Field label="API key">
+                <Input
+                  type="password"
+                  value={tempoApiKey}
+                  onChange={(e) => setTempoApiKey(e.target.value)}
+                  placeholder={tempo?.configured ? "Enter new key to rotate" : "tmp_…"}
+                  required
+                  autoComplete="off"
+                />
+              </Field>
+              <div className="flex flex-wrap gap-3">
+                <Button type="submit" variant="primary" disabled={busy}>
+                  Save Tempo
+                </Button>
+                <Button
+                  disabled={busy || !tempo?.configured}
+                  onClick={() => setConfirming("tempo")}
+                >
+                  Clear
+                </Button>
+              </div>
+              {confirming === "tempo" ? (
+                <ConfirmClear
+                  question="Remove the Tempo connection?"
+                  consequence="Coach Cade can’t see your runs until you connect again."
+                  onConfirm={() => void onClearTempo()}
+                  onCancel={() => setConfirming(null)}
+                />
+              ) : null}
+            </form>
+          </>
+        )}
       </section>
 
-      <section className="mt-3 flex flex-col gap-3" aria-label="Anthropic connection">
+      <section className="flex flex-col gap-3" aria-label="Anthropic connection">
         <SectionTitle>Anthropic</SectionTitle>
-        <Muted>
-          {anthropic?.configured
-            ? `Configured — key ${anthropic.maskedKey}`
-            : "Not configured — BYO API key required for coaching replies."}
-        </Muted>
-        <form
-          onSubmit={(e) => void onSaveAnthropic(e)}
-          className="flex flex-col gap-3"
-        >
-          <Field label="API key">
-            <Input
-              type="password"
-              value={anthropicKey}
-              onChange={(e) => setAnthropicKey(e.target.value)}
-              placeholder={
-                anthropic?.configured ? "Enter new key to rotate" : "sk-ant-…"
-              }
-              required
-              autoComplete="off"
-            />
-          </Field>
-          <div className="flex flex-wrap gap-3">
-            <Button type="submit" variant="primary" disabled={busy}>
-              Save Anthropic
-            </Button>
-            <Button
-              disabled={busy || !anthropic?.configured}
-              onClick={() => setConfirming("anthropic")}
+        {modelOffline ? (
+          <Muted>
+            {sources?.demo
+              ? "In use: the offline coach."
+              : "In use: the offline coach, so no API key is needed. To use Claude, set LLM_PROVIDER=anthropic and restart."}
+          </Muted>
+        ) : (
+          <>
+            <Muted>
+              {anthropic?.configured
+                ? `Configured — key ${anthropic.maskedKey}`
+                : "Not configured — BYO API key required for coaching replies."}
+            </Muted>
+            <form
+              onSubmit={(e) => void onSaveAnthropic(e)}
+              className="flex flex-col gap-3"
             >
-              Clear
-            </Button>
-          </div>
-          {confirming === "anthropic" ? (
-            <ConfirmClear
-              question="Remove your Anthropic key?"
-              consequence="Coach Cade can’t reply until you add a key again."
-              onConfirm={() => void onClearAnthropic()}
-              onCancel={() => setConfirming(null)}
-            />
-          ) : null}
-        </form>
+              <Field label="API key">
+                <Input
+                  type="password"
+                  value={anthropicKey}
+                  onChange={(e) => setAnthropicKey(e.target.value)}
+                  placeholder={
+                    anthropic?.configured ? "Enter new key to rotate" : "sk-ant-…"
+                  }
+                  required
+                  autoComplete="off"
+                />
+              </Field>
+              <div className="flex flex-wrap gap-3">
+                <Button type="submit" variant="primary" disabled={busy}>
+                  Save Anthropic
+                </Button>
+                <Button
+                  disabled={busy || !anthropic?.configured}
+                  onClick={() => setConfirming("anthropic")}
+                >
+                  Clear
+                </Button>
+              </div>
+              {confirming === "anthropic" ? (
+                <ConfirmClear
+                  question="Remove your Anthropic key?"
+                  consequence="Coach Cade can’t reply until you add a key again."
+                  onConfirm={() => void onClearAnthropic()}
+                  onCancel={() => setConfirming(null)}
+                />
+              ) : null}
+            </form>
+          </>
+        )}
       </section>
 
-      <section className="mt-3 flex flex-col gap-3" aria-label="Appearance">
+      <section className="flex flex-col gap-3" aria-label="Appearance">
         <SectionTitle>Appearance</SectionTitle>
         <div role="radiogroup" aria-label="Appearance" className="flex flex-wrap gap-2">
           {APPEARANCE_CHOICES.map((choice) => {
@@ -302,7 +338,7 @@ export default function SettingsPage() {
         <Muted>System follows your computer’s light or dark setting.</Muted>
       </section>
 
-      <section className="mt-3 flex flex-col gap-2" aria-label="Privacy">
+      <section className="flex flex-col gap-2" aria-label="Privacy">
         <SectionTitle>Privacy</SectionTitle>
         <Muted>
           What Coach Cade reads, what is sent to Anthropic, and what was sent last.
@@ -317,7 +353,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {status && <p className="m-0 text-hr-zone-1">{status}</p>}
+      {status && <p className="m-0 text-ok">{status}</p>}
       <ErrorNote error={error} />
 
       <Muted>

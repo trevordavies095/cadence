@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Clock } from "../clock/clock.js";
 import { resolveLoopStatus } from "../loop/status.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
+import type { RuntimeSources } from "../settings/sources.js";
 
 /**
  * Single read for the This week dashboard state machine (#46).
@@ -10,6 +11,7 @@ import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 export function createLoopStatusRoutes(
   clock: Clock,
   athleteTimezone: string,
+  sources: RuntimeSources,
 ): Hono {
   const routes = new Hono();
 
@@ -18,7 +20,7 @@ export function createLoopStatusRoutes(
   routes.get("/loop-status", async (c) => {
     const timezone = c.req.query("timezone")?.trim() || athleteTimezone;
     try {
-      const status = await resolveLoopStatus(clock, timezone);
+      const status = await resolveLoopStatus(clock, timezone, sources);
       return c.json(status);
     } catch (err) {
       const message = err instanceof Error ? err.message : "invalid_timezone";

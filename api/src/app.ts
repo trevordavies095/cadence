@@ -27,7 +27,7 @@ import { createRecapSubjectiveRoutes } from "./routes/recapSubjective.js";
 import { createSettingsRoutes } from "./routes/settings.js";
 import { createTempoRoutes } from "./routes/tempo.js";
 import { createMidWeekChatRoutes } from "./routes/midWeekChat.js";
-import { threadRoutes } from "./routes/thread.js";
+import { createThreadRoutes } from "./routes/thread.js";
 import { createLoopStatusRoutes } from "./routes/loopStatus.js";
 import { createWeekRoutes } from "./routes/week.js";
 import { createReplyRunRoutes } from "./routes/replyRun.js";
@@ -39,6 +39,7 @@ import {
   createExportTempoPort,
   resolveTempoExportPath,
 } from "./tempo/exportZip.js";
+import { resolveLlmProvider, type RuntimeSources } from "./settings/sources.js";
 import { createLiveTempoPort } from "./tempo/liveHttp.js";
 import type { TempoPort } from "./tempo/port.js";
 
@@ -68,6 +69,11 @@ export type CreateAppOptions = {
   llmFetch?: typeof globalThis.fetch;
   /** LLM call log sink (tests inject a failing one). Defaults to Postgres. */
   llmCallRecorder?: LlmCallRecorder;
+  /**
+   * Override the sources Home and Settings report (tests). Defaults to what the app
+   * wired: injected ports count as saved connections.
+   */
+  sources?: RuntimeSources;
 };
 
 export function createApp(options?: CreateAppOptions): Hono {
@@ -109,6 +115,13 @@ export function createApp(options?: CreateAppOptions): Hono {
       recorder: llmCallRecorder,
     });
 
+  // An export or the stub model needs no saved connection (#6).
+  const sources: RuntimeSources = options?.sources ?? {
+    tempo: exportPath ? "export" : "connection",
+    model: options?.llmPort ? "anthropic" : resolveLlmProvider(),
+    demo: process.env.CADENCE_DEMO === "1",
+  };
+
   const replyRunner = createReplyRunner({
     llmPort,
     tempoPort,
@@ -129,21 +142,21 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/", healthRoutes);
   app.route("/", disclaimerRoutes);
   app.route("/", privacyRoutes);
-  app.route("/", createSettingsRoutes({ dataProtectionKey: options?.dataProtectionKey }));
+  app.route("/", createSettingsRoutes({ dataProtectionKey: options?.dataProtectionKey, sources }));
   app.route("/", createTempoRoutes({ tempoPort }));
-  app.route("/", threadRoutes);
+  app.route("/", createThreadRoutes({ clock }));
   app.route("/", createLlmCallLogRoutes({ recorder: llmCallRecorder }));
-  app.route("/", createDossierCorrectionRoutes({ llmPort }));
+  app.route("/", createDossierCorrectionRoutes({ llmPort, clock }));
   app.route("/", createDossierAuditRoutes({ llmPort, clock }));
   app.route("/", createDossierRoutes({ clock }));
-  app.route("/", createOnboardingRoutes({ tempoPort, llmPort }));
+  app.route("/", createOnboardingRoutes({ tempoPort, llmPort, clock }));
   app.route("/", createWeekRoutes(clock, athleteTimezone, tempoPort));
-  app.route("/", createLoopStatusRoutes(clock, athleteTimezone));
-  app.route("/", createHomeRoutes({ clock, athleteTimezone, tempoPort }));
+  app.route("/", createLoopStatusRoutes(clock, athleteTimezone, sources));
+  app.route("/", createHomeRoutes({ clock, athleteTimezone, tempoPort, sources }));
   app.route("/", createPrescribedRoutes({ tempoPort, clock }));
   app.route("/", createRecapRoutes({ tempoPort }));
   app.route("/", createRecapDepthRoutes({ tempoPort }));
-  app.route("/", createRecapSubjectiveRoutes({ tempoPort, runner: replyRunner }));
+  app.route("/", createRecapSubjectiveRoutes({ tempoPort, runner: replyRunner, clock }));
   app.route("/", createPacketRoutes({ tempoPort, clock, athleteTimezone }));
   app.route("/", createWeeklyReplyRoutes({
       llmPort,
@@ -153,7 +166,7 @@ export function createApp(options?: CreateAppOptions): Hono {
       llmCallRecorder,
       runner: replyRunner,
     }));
-  app.route("/", createReplyRunRoutes({ runner: replyRunner }));
+  app.route("/", createReplyRunRoutes({ runner: replyRunner, clock }));
   app.route("/", createMidWeekChatRoutes({ llmPort, tempoPort, clock, llmCallRecorder }));
 
   return app;

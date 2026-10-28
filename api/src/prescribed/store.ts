@@ -1,5 +1,5 @@
 import { pool } from "../db.js";
-import type { PrescribedWeek, SafetyCallout } from "../llm/types.js";
+import type { PrescribedWeek, ReadSections, SafetyCallout } from "../llm/types.js";
 
 /** Persisted prescribed week for a week session (issue #30 / #32). */
 export type PrescribedWeekRecord = {
@@ -8,6 +8,8 @@ export type PrescribedWeekRecord = {
   analysis: string;
   settingsProposalBullets: string[] | null;
   safetyCallouts: SafetyCallout[] | null;
+  /** Headline (and later flags and answers); null on plans made before they existed. */
+  readSections: ReadSections | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -18,6 +20,7 @@ type Row = {
   analysis: string;
   settings_proposal_bullets: string[] | null;
   safety_callouts: SafetyCallout[] | string | null;
+  read_sections: ReadSections | string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -42,6 +45,8 @@ function toRecord(row: Row): PrescribedWeekRecord {
     analysis: row.analysis,
     settingsProposalBullets: row.settings_proposal_bullets,
     safetyCallouts,
+    readSections:
+      row.read_sections == null ? null : parseJsonField(row.read_sections),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -57,6 +62,8 @@ export async function savePrescribedWeek(input: {
   analysis: string;
   settingsProposalBullets?: string[] | null;
   safetyCallouts?: SafetyCallout[] | null;
+  readSections?: ReadSections | null;
+  at: Date;
 }): Promise<PrescribedWeekRecord> {
   const bullets = input.settingsProposalBullets ?? null;
   const callouts =
@@ -66,21 +73,24 @@ export async function savePrescribedWeek(input: {
   const result = await pool.query<Row>(
     `
     INSERT INTO prescribed_weeks (
-      week_session_id, plan, analysis, settings_proposal_bullets, safety_callouts
+      week_session_id, plan, analysis, settings_proposal_bullets, safety_callouts,
+      read_sections, created_at, updated_at
     )
-    VALUES ($1, $2::jsonb, $3, $4, $5::jsonb)
+    VALUES ($1, $2::jsonb, $3, $4, $5::jsonb, $7::jsonb, $6, $6)
     ON CONFLICT (week_session_id) DO UPDATE SET
       plan = EXCLUDED.plan,
       analysis = EXCLUDED.analysis,
       settings_proposal_bullets = EXCLUDED.settings_proposal_bullets,
       safety_callouts = EXCLUDED.safety_callouts,
-      updated_at = NOW()
+      read_sections = EXCLUDED.read_sections,
+      updated_at = EXCLUDED.updated_at
     RETURNING
       week_session_id::text,
       plan,
       analysis,
       settings_proposal_bullets,
       safety_callouts,
+      read_sections,
       created_at,
       updated_at
     `,
@@ -90,6 +100,8 @@ export async function savePrescribedWeek(input: {
       input.analysis,
       bullets,
       callouts ? JSON.stringify(callouts) : null,
+      input.at,
+      input.readSections ? JSON.stringify(input.readSections) : null,
     ],
   );
   return toRecord(result.rows[0]!);
@@ -106,6 +118,7 @@ export async function getPrescribedWeekBySessionId(
       analysis,
       settings_proposal_bullets,
       safety_callouts,
+      read_sections,
       created_at,
       updated_at
     FROM prescribed_weeks

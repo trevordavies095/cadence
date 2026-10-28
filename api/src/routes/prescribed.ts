@@ -35,6 +35,7 @@ export function createPrescribedRoutes(options: {
     }
     const next = nextIsoWeekBounds(session.isoWeek, session.timezone);
     const { session: weekSession } = await ensureWeekSession(
+      clock.now(),
       next.isoWeek,
       session.timezone,
     );

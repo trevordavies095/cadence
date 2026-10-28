@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
+import type { Clock } from "../clock/clock.js";
 import { createDossierProposal } from "../dossier/proposals.js";
 import { getCurrentDossier } from "../dossier/store.js";
 import {
@@ -13,6 +14,7 @@ import { resolveOnboardingGate } from "../onboarding/gate.js";
 import { parseOnboardingAnswers } from "../onboarding/questionnaire.js";
 import { saveOnboardingAnswers } from "../onboarding/store.js";
 import { getAnthropicConnection } from "../settings/anthropicStore.js";
+import { resolveLlmProvider } from "../settings/sources.js";
 import type { TempoPort } from "../tempo/port.js";
 import { createCoachMessage } from "../thread/store.js";
 import { getWeekSessionById } from "../week/store.js";
@@ -20,11 +22,12 @@ import { getWeekSessionById } from "../week/store.js";
 export type OnboardingRouteOptions = {
   tempoPort: TempoPort;
   llmPort: LlmPort;
+  clock: Clock;
 };
 
 export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
   const routes = new Hono();
-  const { tempoPort, llmPort } = options;
+  const { tempoPort, llmPort, clock } = options;
 
   routes.use("/onboarding", requireDisclaimer);
   routes.use("/onboarding/*", requireDisclaimer);
@@ -95,7 +98,7 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
       }
     }
 
-    const stored = await saveOnboardingAnswers(parsed.answers);
+    const stored = await saveOnboardingAnswers(clock.now(), parsed.answers);
     const prefills = await buildOnboardingPrefills(tempoPort);
     const anthropic = await getAnthropicConnection();
 
@@ -120,9 +123,11 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
       summaryBullets: draft.summaryBullets,
       proposedBody: draft.proposedBody,
       kind: "onboarding",
+      at: clock.now(),
     });
 
     const coachMessage = await createCoachMessage(
+      clock.now(),
       formatDossierProposalThreadBody(draft),
       weekSessionId,
       callId,
@@ -141,10 +146,7 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
         proposal,
         coachMessage,
         llm: {
-          mode:
-            (process.env.LLM_PROVIDER ?? "stub").trim().toLowerCase() === "anthropic"
-              ? ("anthropic" as const)
-              : ("stub" as const),
+          mode: resolveLlmProvider(),
           anthropicConfigured: anthropic.configured,
           systemStance: "coach_running_no_diagnose" as const,
         },

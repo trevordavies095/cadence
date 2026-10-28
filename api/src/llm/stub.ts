@@ -5,6 +5,7 @@ import type {
 } from "../llmCallLog/types.js";
 import { nextIsoWeekBounds } from "../clock/isoWeek.js";
 import {
+  formatDayShort,
   formatIsoWeekRangeShort,
   formatWeekRangeShort,
 } from "../clock/weekRangeShort.js";
@@ -34,6 +35,8 @@ import type {
   MidWeekChatReply,
   PrescribedDay,
   PrescribedWeek,
+  ReadAnswer,
+  ReadFlag,
   WeeklyReply,
 } from "./types.js";
 
@@ -181,41 +184,75 @@ function buildStubDays(weekStartMonday: string): PrescribedDay[] {
   });
 }
 
-function buildStubAnalysis(packet: ModelPacket): string {
+/** The stub's headline: the same sentence its read opens with. */
+function buildStubHeadline(packet: ModelPacket): string {
   const hasRecap = Boolean(packet.recapMarkdown?.trim());
-  const hasDossier = Boolean(packet.dossier?.body?.trim());
-  const attachmentCount = packet.attachments?.length ?? 0;
   const planRange = packet.planWeek
     ? formatWeekRangeShort(packet.planWeek.startDate, packet.planWeek.endDate)
     : null;
   const weekLabel = planRange ? `Next week (${planRange})` : "Next week";
+  return hasRecap
+    ? `${weekLabel} looks workable. Protect easy days and land the long run.`
+    : `I don't have much to go on for ${weekLabel.toLowerCase()}, so this is a conservative base week.`;
+}
 
-  const headline = hasRecap
-    ? `Headline: ${weekLabel} looks workable. Protect easy days and land the long run.`
-    : `Headline: I don't have much to go on for ${weekLabel.toLowerCase()}, so this is a conservative base week.`;
-
-  const concerns: string[] = [];
+/** What the stub watches: the same concerns its read used to list. */
+function buildStubFlags(packet: ModelPacket): ReadFlag[] {
+  const hasRecap = Boolean(packet.recapMarkdown?.trim());
+  const hasDossier = Boolean(packet.dossier?.body?.trim());
+  const attachmentCount = packet.attachments?.length ?? 0;
+  const flags: ReadFlag[] = [];
   if (hasDossier && /achilles|niggle|pain|sore/i.test(packet.dossier!.body)) {
-    concerns.push(
-      "Flag: your profile mentions a soft-tissue concern. Cap quality and keep volume honest.",
-    );
+    flags.push({
+      title: "Soft-tissue concern",
+      detail: "Your profile mentions one. Cap quality and keep volume honest.",
+    });
   }
   if (!hasRecap) {
-    concerns.push("Flag: there is no weekly report for this week, so the plan follows a standard template.");
+    flags.push({
+      title: "No weekly report",
+      detail: "There is no report for this week, so the plan follows a standard template.",
+    });
   }
   if (attachmentCount === 0) {
-    concerns.push("Flag: no runs were attached, so I am working from your profile and weekly report only.");
+    flags.push({
+      title: "No runs attached",
+      detail: "I am working from your profile and weekly report only.",
+    });
   }
-  if (concerns.length === 0) {
-    concerns.push("Flag: nothing major to flag. Watch heart rate drift on easy days.");
+  if (flags.length === 0) {
+    flags.push({ title: "Heart rate drift", detail: "Nothing major. Watch drift on easy days." });
   }
+  return flags;
+}
 
-  const answers =
-    "Answers: Keep quality to one session, shoes as listed, and treat rest days as real rest.";
+/** The athlete's check-in questions, as they wrote them, from the weekly report. */
+function stubQuestions(packet: ModelPacket): string[] {
+  const md = packet.recapMarkdown ?? "";
+  const section = /^## Questions for coach\s*$([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(md);
+  if (!section) return [];
+  return section[1]!
+    .split("\n")
+    .map((line) => /^\s*\d+\.\s+(.*\S)\s*$/.exec(line)?.[1] ?? null)
+    .filter((q): q is string => q !== null);
+}
 
-  return ["## Headline", headline, "", "## Concerns", ...concerns, "", "## Answers", answers].join(
-    "\n",
-  );
+/** One plain answer per question the athlete asked; none when they asked nothing. */
+function buildStubAnswers(packet: ModelPacket): ReadAnswer[] {
+  return stubQuestions(packet)
+    .slice(0, 8)
+    .map((question) => ({
+      question,
+      answer: "Keep quality to one session and treat rest days as real rest. Ask me again during the week if it still feels off.",
+    }));
+}
+
+/** The stub's reasoning; the headline, flags and answers are shown above it. */
+function buildStubAnalysis(): string {
+  return [
+    "## Why this plan",
+    "Keep quality to one session, shoes as listed, and treat rest days as real rest.",
+  ].join("\n");
 }
 
 function buildStubSettingsBullets(packet: ModelPacket): string[] | undefined {
@@ -237,7 +274,10 @@ export function buildStubWeeklyReply(packet: ModelPacket): WeeklyReply {
     days: buildStubDays(weekStartMonday),
   };
   const reply: WeeklyReply = {
-    analysis: buildStubAnalysis(packet),
+    headline: buildStubHeadline(packet),
+    flags: buildStubFlags(packet),
+    answers: buildStubAnswers(packet),
+    analysis: buildStubAnalysis(),
     prescribedWeek,
   };
   const bullets = buildStubSettingsBullets(packet);
@@ -245,12 +285,6 @@ export function buildStubWeeklyReply(packet: ModelPacket): WeeklyReply {
   const callouts = buildStubSafetyCallouts(packet);
   if (callouts.length > 0) reply.safetyCallouts = callouts;
   return reply;
-}
-
-function truncateForReply(text: string, max = 120): string {
-  const trimmed = text.trim().replace(/\s+/g, " ");
-  if (trimmed.length <= max) return trimmed;
-  return `${trimmed.slice(0, max - 1)}…`;
 }
 
 function formatPaceMinPerKm(avgPaceS: number): string {
@@ -321,11 +355,26 @@ function buildStubMidWeekSettingsBullets(
   const lastAthlete = [...packet.thread]
     .reverse()
     .find((m) => m.role === "athlete");
-  const note = lastAthlete?.body?.trim();
+  const note = lastAthlete?.body?.trim().replace(/\s+/g, " ");
   if (!note || !STUB_MIDWEEK_MEMORY_RE.test(note)) return undefined;
-  return [
-    `This week you reported "${truncateForReply(note, 80)}". Add it to what Coach Cade knows about you.`,
-  ];
+  // The line lands in About you, so it keeps the athlete's words, whole
+  // sentences only and never cut off with an ellipsis (#9).
+  const prefix = "You told me: ";
+  return [`${prefix}${wholeSentencesUpTo(note, MAX_BULLET_LENGTH - prefix.length)}`];
+}
+
+/** Leading sentences of `text` that fit in `max` characters; else whole words. */
+function wholeSentencesUpTo(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const sentences = text.match(/[^.!?]+[.!?]+(\s|$)/g) ?? [];
+  let kept = "";
+  for (const s of sentences) {
+    if ((kept + s).trimEnd().length > max) break;
+    kept += s;
+  }
+  if (kept.trim()) return kept.trimEnd();
+  const words = text.slice(0, max + 1).split(" ");
+  return words.slice(0, -1).join(" ") || text.slice(0, max);
 }
 
 const PLAN_CHANGE_RE =
@@ -370,9 +419,10 @@ export function buildStubMidWeekChatReply(packet: ModelPacket): MidWeekChatReply
   const lastAthlete = [...packet.thread]
     .reverse()
     .find((m) => m.role === "athlete");
+  // Acknowledge the note without quoting it back (#9).
   const heard = lastAthlete?.body?.trim()
-    ? `Heard: "${truncateForReply(lastAthlete.body)}".`
-    : "Got your note.";
+    ? "Got your note."
+    : "Nothing new from you yet.";
   const dossierNote = packet.dossier?.body?.trim()
     ? "I'll keep what I know about you in mind."
     : "I don't have much on file about you yet, so keep easy days honest.";
@@ -382,7 +432,7 @@ export function buildStubMidWeekChatReply(packet: ModelPacket): MidWeekChatReply
     "No run attached. Say more if something needs to change.";
   const patches = buildStubPrescribedDayPatches(packet);
   const patchNote = patches?.length
-    ? `Updated the plan for ${patches.map((p) => p.date).join(", ")}. Only the days still to come change.`
+    ? `Updated the plan for ${patches.map((p) => formatDayShort(p.date)).join(", ")}. Only the days still to come change.`
     : null;
   const reply: MidWeekChatReply = {
     body: [
@@ -410,11 +460,14 @@ function formatDistanceHint(
   return `${(meters / 1000).toFixed(1)} km`;
 }
 
-/** Soft-gate summary line — keep ≤ MAX_BULLET_LENGTH; full text lives in proposedBody. */
+/**
+ * Soft-gate summary line, at most MAX_BULLET_LENGTH. Long answers keep their
+ * leading whole sentences, never an ellipsis (#9); the full text lives in proposedBody.
+ */
 function dossierSummaryBullet(label: string, value: string): string {
   const prefix = `${label}: `;
-  const maxValue = Math.max(24, MAX_BULLET_LENGTH - prefix.length);
-  return `${prefix}${truncateForReply(value, maxValue)}`;
+  const text = value.trim().replace(/\s+/g, " ");
+  return `${prefix}${wholeSentencesUpTo(text, MAX_BULLET_LENGTH - prefix.length)}`;
 }
 
 /** Pure builder for onboarding → dossier v1 (issue #17). */
@@ -438,20 +491,12 @@ export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
     const z2 = prefills.heartRateZones?.zones.find((z) => z.zoneNumber === 2);
     if (z2) {
       summaryBullets.push(
-        truncateForReply(
-          `Easy heart rate zone about ${z2.minBpm}–${z2.maxBpm} bpm (from your running log)`,
-          MAX_BULLET_LENGTH,
-        ),
+        `Easy heart rate zone about ${z2.minBpm}–${z2.maxBpm} bpm (from your running log)`,
       );
     }
     const shoe = prefills.shoes?.[0];
     if (shoe) {
-      summaryBullets.push(
-        truncateForReply(
-          `Main shoe: ${shoe.brand} ${shoe.model}`,
-          MAX_BULLET_LENGTH,
-        ),
-      );
+      summaryBullets.push(`Main shoe: ${shoe.brand} ${shoe.model}`);
     }
   } else {
     summaryBullets.push("Your running log was not available, so this comes from your answers only");
@@ -491,7 +536,7 @@ export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
   }
 
   const proposedBody = [
-    "# About you (v1)",
+    "# About you",
     "",
     "## Stance",
     COACH_STANCE_SUMMARY,
@@ -513,40 +558,34 @@ export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
     ...tempoLines,
     "",
     "## Coaching notes",
-    "Protect easy days. Cap quality when constraints are present. Revisit this brief after week one.",
+    "Protect easy days. Cap quality when constraints are present. Revisit this after week one.",
   ].join("\n");
 
   return { summaryBullets, proposedBody };
 }
 
 /** Athlete-facing coach thread summary for a pending dossier soft-gate. */
-export function formatDossierProposalThreadBody(draft: {
+export function formatDossierProposalThreadBody(_draft: {
   summaryBullets: string[];
 }): string {
-  const bullets = draft.summaryBullets.map((b) => `• ${b}`).join("\n");
+  // The note card under this message lists the bullets and holds the actions (#19).
   return [
-    "Here is what I understood from your answers, and from your running log where I could see it.",
-    "",
-    "Summary:",
-    bullets,
-    "",
-    "Accept to save it, or Reject to start over. The full text is under About you.",
-  ].join("\n");
+    "Here's what I understood from your answers, and from your running log where I could see it.",
+    "If it looks right, say so below. If something's off, tell me what to fix.",
+    "The full text is under About you.",
+  ].join(" ");
 }
 
 /** Athlete-facing coach thread summary for a pending correction rewrite (#18). */
-export function formatDossierCorrectionThreadBody(draft: {
+export function formatDossierCorrectionThreadBody(_draft: {
   summaryBullets: string[];
 }): string {
-  const bullets = draft.summaryBullets.map((b) => `• ${b}`).join("\n");
+  // The note card under this message lists the bullets and holds the actions (#19).
   return [
     "I've updated what I know about you, based on your correction.",
-    "",
-    "Summary:",
-    bullets,
-    "",
-    "If that isn't right, you can undo it. The full text is under About you.",
-  ].join("\n");
+    "If that isn't right, you can undo it.",
+    "The full text is under About you.",
+  ].join(" ");
 }
 
 /**
@@ -562,7 +601,7 @@ export function buildStubDossierCorrection(
     : "this week";
   const base = input.currentDossier.body.trimEnd();
   const summaryBullets = [
-    `Your correction (${weekLabel}): ${truncateForReply(note, 160)}`,
+    dossierSummaryBullet(`Your correction (${weekLabel})`, note),
     "Saved to what I know about you.",
   ];
   const proposedBody = [
@@ -638,6 +677,8 @@ export function buildStubDossierAudit(
   const updatedYmd = ymdFromIso(input.nowIso);
   const intervalWeeks = input.intervalWeeks ?? 5;
   const nextDueYmd = addWeeksYmd(updatedYmd, intervalWeeks);
+  const updatedDay = formatDayShort(updatedYmd);
+  const nextDueDay = formatDayShort(nextDueYmd);
 
   const { preface, sections } = splitMarkdownSections(
     input.currentDossier.body,
@@ -657,7 +698,7 @@ export function buildStubDossierAudit(
 
   const statusIdx = kept.findIndex((s) => /^current status\b/i.test(s.title));
   const statusLines = [
-    `**Tidied ${updatedYmd} (${weekLabel}).** Older update lines are folded into this status.`,
+    `**Tidied ${updatedDay} (${weekLabel}).** Older update lines are folded into this status.`,
     "",
   ];
   if (consolidatedBullets.length > 0) {
@@ -674,26 +715,25 @@ export function buildStubDossierAudit(
       statusLines.push(prior);
     }
     kept[statusIdx] = {
-      title: `Current Status (updated ${updatedYmd})`,
+      title: "Current Status",
       body: statusLines.join("\n").trimEnd(),
     };
   } else {
     kept.unshift({
-      title: `Current Status (updated ${updatedYmd})`,
+      title: "Current Status",
       body: statusLines.join("\n").trimEnd(),
     });
   }
 
-  // Drop a prior Settings audit meta section; we rewrite it below.
+  // Drop a prior tidy-up section (or its old "Settings audit" name); we rewrite it below.
   const withoutAuditMeta = kept.filter(
-    (s) => !/^settings audit\b/i.test(s.title),
+    (s) => !/^(settings audit|tidy-ups)\b/i.test(s.title),
   );
   withoutAuditMeta.push({
-    title: "Settings audit",
+    title: "Tidy-ups",
     body: [
-      `- Last audit: ${updatedYmd}`,
-      `- Next due: ${nextDueYmd} (~${intervalWeeks} weeks)`,
-      "- Focus: trim/consolidate Current Status; remove superseded coach-update sludge.",
+      `- Last tidy-up: ${updatedDay}`,
+      `- Next one around ${nextDueDay} (every ${intervalWeeks} weeks)`,
     ].join("\n"),
   });
 
@@ -706,29 +746,26 @@ export function buildStubDossierAudit(
 
   const removed = coachUpdates.length;
   const summaryBullets = [
-    `Tidy-up (${weekLabel}): rewrite Current Status (updated ${updatedYmd}).`,
+    `Rewrite Current Status (${weekLabel}).`,
     removed > 0
       ? `Fold ${removed} older update section(s) into Current Status and remove superseded log entries.`
       : "No older update sections to fold in. Current Status is rewritten.",
-    `Next tidy-up around ${nextDueYmd} (every ${intervalWeeks} weeks). Accept to apply.`,
+    `Next tidy-up around ${nextDueDay} (every ${intervalWeeks} weeks). Accept to apply.`,
   ];
 
   return { summaryBullets, proposedBody };
 }
 
 /** Athlete-facing coach thread summary for a pending dossier audit (#40). */
-export function formatDossierAuditThreadBody(draft: {
+export function formatDossierAuditThreadBody(_draft: {
   summaryBullets: string[];
 }): string {
-  const bullets = draft.summaryBullets.map((b) => `• ${b}`).join("\n");
+  // The note card under this message lists the bullets and holds the actions (#19).
   return [
-    "I've drafted a tidy-up of what I know about you. Nothing changes until you Accept.",
-    "",
-    "Summary:",
-    bullets,
-    "",
-    "Accept to save the tidy-up, or Reject to discard it. The full text is under About you.",
-  ].join("\n");
+    "I've drafted a tidy-up of what I know about you. Nothing changes until you say it looks right.",
+    "If something's off, tell me what to fix.",
+    "The full text is under About you.",
+  ].join(" ");
 }
 
 /**

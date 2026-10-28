@@ -4,7 +4,51 @@ import type { SafetyCallout, SafetyCalloutSeverity } from "./types.js";
 
 export const MAX_SAFETY_CALLOUTS = 5;
 export const MAX_SAFETY_CALLOUT_TITLE = 120;
+/** Target the model is asked for; a longer body is kept and logged. */
 export const MAX_SAFETY_CALLOUT_BODY = 600;
+/** Ceiling a stored body is cut to (#4). */
+export const MAX_SAFETY_CALLOUT_BODY_HARD = 1200;
+
+/** Added when cutting a body drops its pointer to a professional. */
+export const SAFETY_ESCALATION_LINE =
+  "If it gets worse or does not settle, see a qualified clinician.";
+
+const ESCALATION_RE =
+  /\b(clinician|doctor|physio|physiotherapist|physical therapist|professional|GP|urgent care|emergency|ER|911)\b/i;
+
+const SENTENCE_END_RE = /[.!?](?=\s|$)/g;
+
+/** Cut at the last word that fits in `max` characters, ending in an ellipsis. */
+export function cutAtWord(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const head = text.slice(0, max);
+  const space = head.lastIndexOf(" ", max - 1);
+  const kept = (space > 0 ? head.slice(0, space) : head.slice(0, max - 1)).trimEnd();
+  return `${kept}…`;
+}
+
+/**
+ * Cut an over-long callout body to at most `max` characters at the last
+ * sentence that fits, and keep an escalation line in it.
+ */
+export function fitSafetyCalloutBody(body: string, max: number): string {
+  const text = body.trim();
+  if (text.length <= max) return text;
+  const full = cutAtSentence(text, max);
+  if (ESCALATION_RE.test(full)) return full;
+  const kept = cutAtSentence(text, max - SAFETY_ESCALATION_LINE.length - 1);
+  return `${kept} ${SAFETY_ESCALATION_LINE}`;
+}
+
+/** Cut at the last sentence that ends within `max` characters, or at a word when none does. */
+export function cutAtSentence(text: string, max: number): string {
+  const head = text.slice(0, max + 1);
+  let end = -1;
+  for (const match of head.matchAll(SENTENCE_END_RE)) {
+    if (match.index < max) end = match.index;
+  }
+  return end >= 0 ? head.slice(0, end + 1) : cutAtWord(text, max);
+}
 
 const SEVERITIES = new Set<SafetyCalloutSeverity>([
   "info",
@@ -28,13 +72,27 @@ export const SAFETY_CALLOUT_PROMPT = [
 
 /** How the model names things when it speaks to the athlete. */
 export const ATHLETE_VOCABULARY_PROMPT =
-  "Speak to the athlete in plain running language. Never use internal terms such as dossier, proposal, soft-gate, packet, recap, subjective or artifact. Say \"what I know about you\", \"your weekly report\", \"your check-in\" or \"the plan\" instead, and never tell the athlete to open a page by name. " +
+  "Speak to the athlete in plain running language. Never use internal terms such as dossier, proposal, soft-gate, packet, recap, subjective, artifact, RPE, mid-week or prescribed. Say \"what I know about you\", \"your weekly report\", \"your check-in\", \"the plan\", \"how hard it felt\" (or \"effort 7/10\"), \"during the week\" and \"planned\" instead, and never tell the athlete to open a page by name. " +
   "Week ids such as 2026-W43 are internal: never write them or a short form such as W43 or W43's. Name a week the way the athlete reads it: \"this week\", \"next week\", \"the week of Oct 19\", \"Oct 19 – 25\" or \"4 weeks out from the race\".";
+
+/**
+ * How the athlete's text is shaped, so it can be scanned without losing substance:
+ * the point first, short paragraphs, facts in tables. Shared by every call the
+ * athlete reads, About you included.
+ */
+export const ATHLETE_SHAPE_RULES = [
+  "Lead with the conclusion: the first sentence says what matters most.",
+  "Give each paragraph one idea and state it in the paragraph's first sentence.",
+  "Keep paragraphs to at most three sentences, and sentences under 25 words.",
+  "When you give more than three numbers that belong together, such as splits, paces or heart rates, put them in a Markdown table instead of a sentence.",
+  "Keep your reasoning as sentences: say why, not just what.",
+].join(" ");
 
 /** Writing rules for anything the athlete reads (see CONTEXT.md, "Writing rules"). */
 export const ATHLETE_WRITING_PROMPT =
   "Write plain sentences. No exclamation marks, no sentences that open with \"Let's\", and no emoji or decorative symbols. " +
-  "Write dates as \"Mon Oct 19\" and ranges as \"Oct 19 – 25\", never as 2026-10-19.";
+  "Write dates as \"Mon Oct 19\" and ranges as \"Oct 19 – 25\", never as 2026-10-19. " +
+  ATHLETE_SHAPE_RULES;
 
 /** The About you document the model writes for onboarding, corrections and tidy-ups. */
 const ABOUT_YOU_FORMAT_PROMPT = [
@@ -77,11 +135,33 @@ export const DOSSIER_AUDIT_SYSTEM_PROMPT = [
   "summaryBullets say in plain words what you changed. The last one says when the next tidy-up is due, using the date you are given.",
 ].join(" ");
 
+/** How a chat reply is shaped: the answer first, no preamble, the length the question needs. */
+export const MIDWEEK_REPLY_SHAPE_PROMPT = [
+  "Your first sentence is the answer to what the athlete asked.",
+  "Do not announce what the reply is about to cover, such as \"quick numbers first, then shoes\"; just cover it.",
+  "The athlete sees an attached run's distance, time, pace and heart rate on its card. Do not recite those figures; say what they mean.",
+  "With no run attached and no change to the plan, aim for 150 to 250 words. A run to review or a change to the week can take the length it needs.",
+  "You may end with one short closing line in your own voice, such as an instruction to report back. No sign-off.",
+].join(" ");
+
+/** How the weekly read is split into parts the pages lay out. */
+export const WEEKLY_READ_SHAPE_PROMPT = [
+  "The headline is the sentence you would say if you could say only one thing about the week and the plan: one or two plain sentences, no label.",
+  "Flags are what you are watching, not a summary of the week: at most five, each a few-word title and one line of detail.",
+  "Choose flags by what the athlete needs to act on. A correction comes first: when the athlete ran a session differently from the plan, flag it, and explain in the analysis what happened and why it matters.",
+  "Answers are one per question the athlete asked in the weekly check-in or the conversation, with the question quoted exactly as they wrote it. When they asked nothing, leave answers empty.",
+  "Put the reason for each session in that day's notes: one or two sentences on why this session, this week, under 200 characters. The athlete sees them beside the session.",
+  "The athlete reads the headline, then the flags, then the answers, then the analysis, and the analysis may be folded away. Make each flag and answer stand on its own: never point to something \"above\" or \"below\", or to a table in another part.",
+  "The analysis holds your reasoning. Do not restate the headline, flags or answers in it, and never repeat an answer's table or list there. Do not list the days or describe each session in it, as a list or as a table; the day rows already show them.",
+].join(" ");
+
 /** System prompt for weekly plan generation (live Anthropic + docs). */
 export const WEEKLY_SYSTEM_PROMPT = [
   "You are Coach Cade, a running coach producing a weekly training plan.",
   COACH_SYSTEM_STANCE,
   ATHLETE_VOCABULARY_PROMPT,
+  ATHLETE_WRITING_PROMPT,
+  WEEKLY_READ_SHAPE_PROMPT,
   SAFETY_CALLOUT_PROMPT,
   "Think it through first, then call the submit_weekly_reply tool exactly once with your full answer. Do not write the answer as plain text.",
 ].join(" ");
@@ -91,9 +171,12 @@ export const MIDWEEK_SYSTEM_PROMPT = [
   "You are Coach Cade, a running coach answering a mid-week check-in.",
   COACH_SYSTEM_STANCE,
   ATHLETE_VOCABULARY_PROMPT,
+  ATHLETE_WRITING_PROMPT,
+  MIDWEEK_REPLY_SHAPE_PROMPT,
   SAFETY_CALLOUT_PROMPT,
   "When workout attachments are present, give concrete coaching feedback on those runs using metrics and splits only (no GPS or route geometry).",
   "When the athlete asks to change remaining plan days, emit prescribedDayPatches with full day objects for those dates only (do not rewrite past days unless allowPastDayPatches is true).",
+  "The athlete sees each changed day as a card under your reply, showing its distance, structure, effort, shoes and notes. Put the structure, paces and rules in those day fields, with the reason for the session in its notes. In the reply, say only why you changed the week; do not repeat what the cards show.",
   "Do not rewrite the full week plan unless asked.",
   "For significant memory updates, emit settingsProposalBullets (soft-gate); never silent-apply dossier changes.",
   "Think it through first, then call the submit_mid_week_chat_reply tool exactly once with your full answer. Do not write the answer as plain text.",
@@ -132,27 +215,16 @@ export function safetyCalloutsJsonSchema(): Record<string, unknown> {
   };
 }
 
-function packetSafetyCorpus(packet: ModelPacket): string {
-  const parts: string[] = [];
-  if (packet.dossier?.body) parts.push(packet.dossier.body);
-  if (packet.recapMarkdown) parts.push(packet.recapMarkdown);
-  for (const m of packet.thread ?? []) {
-    if (m.body) parts.push(m.body);
-  }
-  for (const week of packet.recentHistory ?? []) {
-    if (week.recapMarkdown) parts.push(week.recapMarkdown);
-    if (week.analysis) parts.push(week.analysis);
-  }
-  return parts.join("\n");
-}
-
 /**
- * Deterministic stub callouts when packet text mentions soft red flags.
- * Empty when nothing matches — keeps happy-path replies clean.
+ * Deterministic stub callout when the athlete's latest message mentions a soft
+ * red flag. About you and older messages are ignored, so one injury does not
+ * put a notice on every later reply (#9).
  */
 export function buildStubSafetyCallouts(packet: ModelPacket): SafetyCallout[] {
-  const corpus = packetSafetyCorpus(packet);
-  if (!corpus.trim() || !STUB_RED_FLAG_RE.test(corpus)) {
+  const latest = [...(packet.thread ?? [])]
+    .reverse()
+    .find((m) => m.role === "athlete");
+  if (!latest?.body || !STUB_RED_FLAG_RE.test(latest.body)) {
     return [];
   }
   return [

@@ -36,6 +36,9 @@ const BARE_CADE = /(?<!Coach )\bCade\b/;
 /** Week ids, full (2026-W43) or short (W43, W43's, W42–W43): weeks are shown as dates. */
 const WEEK_LABEL = /(?<![\w-])(?:\d{4}-)?W\d{1,2}(?![\d])/;
 
+/** Raw calendar dates (2026-10-19): dates are shown as "Mon Oct 19". */
+const RAW_DATE = /(?<![\w-])\d{4}-\d{2}-\d{2}(?![\w-])/;
+
 export function bannedTermsIn(text: string): string[] {
   const found: string[] = ATHLETE_BANNED_TERMS.filter((term) => {
     const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -43,5 +46,6 @@ export function bannedTermsIn(text: string): string[] {
   });
   if (BARE_CADE.test(text)) found.push("Cade");
   if (WEEK_LABEL.test(text)) found.push("week label");
+  if (RAW_DATE.test(text)) found.push("raw date");
   return found;
 }

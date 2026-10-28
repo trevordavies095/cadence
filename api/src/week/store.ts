@@ -73,18 +73,19 @@ export async function findWeekSession(
  * Idempotent — already-archived rows keep their original archived_at.
  */
 export async function archivePriorWeekSessions(
+  at: Date,
   timezone: string,
   currentWeekStart: Date,
 ): Promise<number> {
   const result = await pool.query(
     `
     UPDATE week_sessions
-    SET archived_at = COALESCE(archived_at, NOW())
+    SET archived_at = COALESCE(archived_at, $3)
     WHERE timezone = $1
       AND start_at < $2
       AND archived_at IS NULL
     `,
-    [timezone, currentWeekStart],
+    [timezone, currentWeekStart, at],
   );
   return result.rowCount ?? 0;
 }
@@ -98,16 +99,17 @@ export async function getOrCreateCurrentWeekSession(
   clock: Clock,
   timezone = "UTC",
 ): Promise<{ session: WeekSession; created: boolean }> {
+  const now = clock.now();
   const bounds = resolveIsoWeek(clock, timezone);
 
   const inserted = await pool.query<Row>(
     `
-    INSERT INTO week_sessions (iso_week, timezone, start_at, end_at)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO week_sessions (iso_week, timezone, start_at, end_at, created_at)
+    VALUES ($1, $2, $3, $4, $5)
     ON CONFLICT (iso_week, timezone) DO NOTHING
     RETURNING ${SESSION_COLUMNS}
     `,
-    [bounds.isoWeek, bounds.timezone, bounds.start, bounds.end],
+    [bounds.isoWeek, bounds.timezone, bounds.start, bounds.end, now],
   );
 
   let session: WeekSession;
@@ -137,7 +139,7 @@ export async function getOrCreateCurrentWeekSession(
     session = toSession(cleared.rows[0]!);
   }
 
-  await archivePriorWeekSessions(bounds.timezone, new Date(bounds.start));
+  await archivePriorWeekSessions(now, bounds.timezone, new Date(bounds.start));
   return { session, created };
 }
 
@@ -150,6 +152,7 @@ export async function getOrCreateCurrentWeekSession(
  * If the row already exists, return it unchanged (including archived_at).
  */
 export async function ensureWeekSession(
+  at: Date,
   isoWeek: string,
   timezone = "UTC",
 ): Promise<{ session: WeekSession; created: boolean }> {
@@ -157,12 +160,12 @@ export async function ensureWeekSession(
 
   const inserted = await pool.query<Row>(
     `
-    INSERT INTO week_sessions (iso_week, timezone, start_at, end_at)
-    VALUES ($1, $2, $3, $4)
+    INSERT INTO week_sessions (iso_week, timezone, start_at, end_at, created_at)
+    VALUES ($1, $2, $3, $4, $5)
     ON CONFLICT (iso_week, timezone) DO NOTHING
     RETURNING ${SESSION_COLUMNS}
     `,
-    [bounds.isoWeek, bounds.timezone, bounds.start, bounds.end],
+    [bounds.isoWeek, bounds.timezone, bounds.start, bounds.end, at],
   );
 
   if (inserted.rows[0]) {

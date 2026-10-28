@@ -102,6 +102,34 @@ describe("Coach Cade persona in system prompts", () => {
   });
 });
 
+describe("Coach Cade's writing shape", () => {
+  const SHAPE = [
+    /Lead with the conclusion/,
+    /one idea and state it in the paragraph's first sentence/,
+    /at most three sentences, and sentences under 25 words/,
+    /more than three numbers .* Markdown table/,
+  ];
+
+  it("every call the athlete reads carries the shape rules", () => {
+    for (const prompt of [
+      WEEKLY_SYSTEM_PROMPT,
+      MIDWEEK_SYSTEM_PROMPT,
+      DOSSIER_V1_SYSTEM_PROMPT,
+    ]) {
+      for (const rule of SHAPE) expect(prompt).toMatch(rule);
+    }
+  });
+
+  it("chat replies answer first, skip the preamble and the card's figures, and size to the question", () => {
+    expect(MIDWEEK_SYSTEM_PROMPT).toMatch(/first sentence is the answer/);
+    expect(MIDWEEK_SYSTEM_PROMPT).toMatch(/Do not announce what the reply is about to cover/);
+    expect(MIDWEEK_SYSTEM_PROMPT).toMatch(/Do not recite those figures/);
+    expect(MIDWEEK_SYSTEM_PROMPT).toMatch(/150 to 250 words/);
+    expect(MIDWEEK_SYSTEM_PROMPT).toMatch(/one short closing line/);
+    expect(WEEKLY_SYSTEM_PROMPT).not.toMatch(/150 to 250 words/);
+  });
+});
+
 describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
   it("posts Messages API with stored key and returns validated weekly reply", async () => {
     const packet = samplePacket();
@@ -399,7 +427,7 @@ describe("resolveDefaultLlmPort + createApp LLM_PROVIDER", () => {
   it("defaults to stub (CI)", async () => {
     const port = resolveDefaultLlmPort({ env: {} });
     const reply = await port.generateWeeklyReply(samplePacket());
-    expect(reply.analysis).toContain("Headline");
+    expect(reply.headline).toMatch(/Next week/);
   });
 
   it("selects anthropic when LLM_PROVIDER=anthropic", async () => {

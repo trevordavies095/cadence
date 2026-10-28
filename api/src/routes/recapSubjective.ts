@@ -21,6 +21,7 @@ import {
 import { resolveCheckInStatus } from "../recap/checkInStatus.js";
 import { hasPendingRun } from "../replyRun/store.js";
 import { getWeekSessionById } from "../week/store.js";
+import type { Clock } from "../clock/clock.js";
 import type { ReplyRunner } from "./weeklyReply.js";
 
 type WeeklyRecapArtifact = {
@@ -36,6 +37,7 @@ export type RecapSubjectiveRouteOptions = {
   tempoPort: TempoPort;
   /** Starts the weekly reply when the check-in is finished or skipped. */
   runner: ReplyRunner;
+  clock: Clock;
 };
 
 const REPLY_RUN_PENDING = {
@@ -98,12 +100,14 @@ function toWeeklyRecapArtifact(record: WeekRecapRecord): WeeklyRecapArtifact {
 
 /** Persist report markdown as the week's recap thread artifact (replace on regen). */
 async function publishRecapArtifact(
+  at: Date,
   report: DataOnlyRecapResult,
 ): Promise<WeeklyRecapArtifact> {
   const record = await saveWeekRecap({
     weekSessionId: report.weekSessionId,
     markdown: report.reportMarkdown,
     subjective: report.subjective,
+    at,
   });
   return toWeeklyRecapArtifact(record);
 }
@@ -115,7 +119,7 @@ async function publishRecapArtifact(
 export function createRecapSubjectiveRoutes(
   options: RecapSubjectiveRouteOptions,
 ): Hono {
-  const { tempoPort, runner } = options;
+  const { tempoPort, runner, clock } = options;
   const routes = new Hono();
 
   routes.use("/weeks/*/recap", requireDisclaimer);
@@ -155,7 +159,7 @@ export function createRecapSubjectiveRoutes(
         refreshSubjective: parseTruthyQuery(c.req.query("refresh_subjective")),
       });
       if (result.status === "report") {
-        const threadArtifact = await publishRecapArtifact(result);
+        const threadArtifact = await publishRecapArtifact(clock.now(), result);
         if (skipStartsRun) await runner.startInBackground(session.id);
         return c.json({ ...result, threadArtifact });
       }
@@ -204,14 +208,14 @@ export function createRecapSubjectiveRoutes(
         tempoPort,
       });
       const answers = applyApiRpeDefaults(parsed.answers, gateRuns);
-      const stored = await saveSubjectiveAnswers(weekSessionId, answers);
+      const stored = await saveSubjectiveAnswers(clock.now(), weekSessionId, answers);
 
       const gate = await resolveRecapGate({
         session,
         tempoPort,
       });
       if (gate.status === "report") {
-        const threadArtifact = await publishRecapArtifact(gate);
+        const threadArtifact = await publishRecapArtifact(clock.now(), gate);
         await runner.startInBackground(session.id);
         return c.json(
           {

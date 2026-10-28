@@ -208,6 +208,9 @@ function failureText(outcome: Outcome): string {
   return `Reply failed (${outcome.status})`;
 }
 
+/** A weekly reply refused for its shape is asked for once more (reading-flow replay). */
+const WEEKLY_REPLY_ATTEMPTS = 2;
+
 export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner {
   const { llmPort, tempoPort, clock, athleteTimezone, llmCallRecorder } =
     options;
@@ -273,24 +276,40 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       await rememberLastOutboundPacket(packet);
     }
 
-    const callId = randomUUID();
+    let callId = randomUUID();
     try {
-      const reply = await llmPort.generateWeeklyReply(packet, {
-        callId,
-        weekSessionId: focusSession.id,
-      });
+      // A reply refused for its shape is asked for once more before the athlete
+      // sees a failed read. Each attempt keeps its own call log row.
       const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
-      const checked = validateWeeklyReply(reply, weekStartMonday);
-      if (!checked.ok) {
+      let checked: ReturnType<typeof validateWeeklyReply> | null = null;
+      for (let attempt = 1; attempt <= WEEKLY_REPLY_ATTEMPTS; attempt++) {
+        if (attempt > 1) callId = randomUUID();
+        let reply: Awaited<ReturnType<typeof llmPort.generateWeeklyReply>>;
+        try {
+          reply = await llmPort.generateWeeklyReply(packet, {
+            callId,
+            weekSessionId: focusSession.id,
+          });
+        } catch (err) {
+          if (err instanceof LlmSchemaError && attempt < WEEKLY_REPLY_ATTEMPTS) continue;
+          throw err;
+        }
+        checked = validateWeeklyReply(reply, weekStartMonday);
+        if (checked.ok) break;
         await recordRouteRejection(llmCallRecorder, {
           parentCallId: callId,
           operation: "weekly_reply",
           weekSessionId: focusSession.id,
           errorMessage: checked.error,
         });
+      }
+      if (!checked || !checked.ok) {
         return {
           status: 502,
-          body: { error: "llm_schema_invalid", message: checked.error },
+          body: {
+            error: "llm_schema_invalid",
+            message: checked && !checked.ok ? checked.error : "weekly reply refused",
+          },
           callId,
         };
       }
@@ -306,6 +325,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         settingsProposalBullets: checked.value.settingsProposalBullets,
         isoWeek:
           checked.value.prescribedWeek.week || packet.week?.isoWeek || null,
+        at: clock.now(),
       });
 
       let prescribed = null;
@@ -316,6 +336,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
           const planIso =
             packet.planWeek?.isoWeek ?? toPacketPlanWeek(reviewed).isoWeek;
           const { session: planSession } = await ensureWeekSession(
+            clock.now(),
             planIso,
             reviewed.timezone,
           );
@@ -326,13 +347,22 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
             settingsProposalBullets:
               checked.value.settingsProposalBullets ?? null,
             safetyCallouts: checked.value.safetyCallouts ?? null,
+            readSections: {
+              headline: checked.value.headline,
+              flags: checked.value.flags ?? [],
+              answers: checked.value.answers ?? [],
+            },
+            at: clock.now(),
           });
+          // The headline and a link; the full read is on the plan, not repeated here.
           coachMessage = await createCoachMessage(
-            checked.value.analysis,
+            clock.now(),
+            checked.value.headline,
             reviewedSessionId,
             callId,
             checked.value.safetyCallouts,
             dossierProposal?.id ?? null,
+            "weekly_read",
           );
         }
       }
@@ -385,6 +415,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       await finishRun(run.id, {
         status: "failed",
         errorMessage: err instanceof Error ? err.message : String(err),
+        at: clock.now(),
       }).catch(() => undefined);
       throw err;
     }
@@ -395,6 +426,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         outcome.status >= 200 && outcome.status < 300
           ? null
           : failureText(outcome),
+      at: clock.now(),
     });
     return outcome;
   }
@@ -403,7 +435,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
     prepare,
 
     async runNow(body, session) {
-      const run = await createPendingRun(session.id);
+      const run = await createPendingRun(clock.now(), session.id);
       if (!run) {
         return {
           status: 409,
@@ -420,7 +452,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
     async startInBackground(weekSessionId) {
       const session = await getWeekSessionById(weekSessionId);
       if (!session) return { ok: false, reason: "not_found" };
-      const run = await createPendingRun(session.id);
+      const run = await createPendingRun(clock.now(), session.id);
       if (!run) return { ok: false, reason: "pending" };
 
       // Not awaited: the caller answers the athlete immediately. Every failure

@@ -197,7 +197,8 @@ test.describe("the plan page", () => {
     const next = page.getByRole("region", { name: "Next week plan" });
     const monday = next.getByRole("listitem").first();
     await expect(monday).toContainText("3.0 mi");
-    await expect(monday).toContainText("Shoes · ASICS Nimbus 28");
+    await expect(monday.getByRole("term")).toHaveText(["Effort", "Shoes"]);
+    await expect(monday.getByRole("definition")).toHaveText(["HR under 155", "ASICS Nimbus 28"]);
     await expect(monday).toContainText("Easy run");
     // "None" and "n/a" mean nothing to show.
     await expect(monday).not.toContainText("Strength");
@@ -206,7 +207,7 @@ test.describe("the plan page", () => {
 
     const text = await next.innerText();
     expect(text).not.toMatch(/\bkm\b/);
-    expect(text).not.toContain("Strength · Rest");
+    expect(text).not.toContain("Strength");
   });
 
   test("distances follow a metric preference", async ({ page }) => {
@@ -228,7 +229,8 @@ test.describe("the plan page", () => {
     await expect(today).toContainText("Sun, Oct 25");
     await expect(today).toContainText("Today");
     await expect(today).toContainText("5.0 mi");
-    await expect(today).toContainText("Shoes · Cushioned long-run shoe");
+    await expect(today.getByRole("term")).toHaveText(["Shoes"]);
+    await expect(today.getByRole("definition")).toHaveText(["Cushioned long-run shoe"]);
   });
 
   test("opens on next week on Sunday and on this week otherwise", async ({

@@ -36,14 +36,17 @@ export async function getCurrentDossier(): Promise<DossierVersion | null> {
   return row ? toVersion(row) : null;
 }
 
-export async function createDossierVersion(body: string): Promise<DossierVersion> {
+export async function createDossierVersion(
+  at: Date,
+  body: string,
+): Promise<DossierVersion> {
   const result = await pool.query<Row>(
     `
-    INSERT INTO dossier_versions (body)
-    VALUES ($1)
+    INSERT INTO dossier_versions (body, created_at)
+    VALUES ($1, $2)
     RETURNING id, body, created_at
     `,
-    [body],
+    [body, at],
   );
   return toVersion(result.rows[0]!);
 }

@@ -87,12 +87,12 @@ export async function recordAuditAccepted(
   const result = await db.query<Row>(
     `
     INSERT INTO dossier_audit_meta (id, last_audit_at, next_audit_due_at, interval_weeks, updated_at)
-    VALUES (1, $1, $2, $3, NOW())
+    VALUES (1, $1, $2, $3, $1)
     ON CONFLICT (id) DO UPDATE SET
       last_audit_at = EXCLUDED.last_audit_at,
       next_audit_due_at = EXCLUDED.next_audit_due_at,
       interval_weeks = EXCLUDED.interval_weeks,
-      updated_at = NOW()
+      updated_at = EXCLUDED.updated_at
     RETURNING last_audit_at, next_audit_due_at, interval_weeks
     `,
     [acceptedAt, nextDue, intervalWeeks],

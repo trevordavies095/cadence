@@ -73,6 +73,7 @@ describe("GET /weeks summaries (#109)", () => {
     const { app, thisWeekId, nextWeekId } = await setup();
     // The coach's analysis is stored with the plan it came with, so 2026-W44's plan owns it.
     await savePrescribedWeek({
+      at: new Date(),
       weekSessionId: nextWeekId,
       plan: PLAN as never,
       analysis: "## Headline\n\nSolid week. **Two good runs** and an easy finish.\n\n## Concerns\n\nNone.",
@@ -95,11 +96,13 @@ describe("GET /weeks summaries (#109)", () => {
   it("a week that has its own plan shows that plan's headline, not the next week's", async () => {
     const { app, thisWeekId, nextWeekId } = await setup();
     await savePrescribedWeek({
+      at: new Date(),
       weekSessionId: thisWeekId,
       plan: { ...PLAN, week: "2026-W43" } as never,
       analysis: "Easy week to settle in.\n\nMore detail.",
     });
     await savePrescribedWeek({
+      at: new Date(),
       weekSessionId: nextWeekId,
       plan: PLAN as never,
       analysis: "Build begins.\n\nYour last week went well.",

@@ -1,6 +1,6 @@
 import type { PrescribedDay, UnitPreference } from "@/lib/api";
 import { formatDistance, meaningful, weekdayLabel } from "./PlanDayRow";
-import { ButtonLink, Card, Muted } from "./ui";
+import { ButtonLink, Card, LabelValueList, Muted } from "./ui";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
   easy: "Easy run",
@@ -65,9 +65,13 @@ export function TodayCard({
       </div>
 
       {structure ? <p className="m-0">{structure}</p> : null}
-      {target ? <p className="m-0">Effort · {target}</p> : null}
-      {shoes ? <p className="m-0">Shoes · {shoes}</p> : null}
-      {strength ? <p className="m-0">Strength · {strength}</p> : null}
+      <LabelValueList
+        items={[
+          ["Effort", target],
+          ["Shoes", shoes],
+          ["Strength", strength],
+        ]}
+      />
       {note ? <p className="m-0 text-muted">{note}</p> : null}
 
       <div>

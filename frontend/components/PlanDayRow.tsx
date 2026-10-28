@@ -1,4 +1,5 @@
 import type { PrescribedDay, UnitPreference } from "@/lib/api";
+import { LabelValueList } from "./ui";
 
 export function formatDistance(meters: number, unit: UnitPreference): string {
   if (unit === "metric") return `${(meters / 1000).toFixed(1)} km`;
@@ -44,12 +45,13 @@ export function PlanDayRow({
   const strength = meaningful(day.strength);
   const notes = meaningful(day.notes);
   const shoes = meaningful(run?.shoes);
+  const target = meaningful(run?.paceOrHr);
   return (
     <li
       aria-current={isToday ? "date" : undefined}
       className={
         isToday
-          ? "flex flex-col gap-1 border-b border-border border-l-4 border-l-ink bg-raised py-3 pl-4 pr-3"
+          ? "flex flex-col gap-1 border-b border-border border-l-4 border-l-accent bg-raised py-3 pl-4 pr-3"
           : "flex flex-col gap-1 border-b border-border pb-3"
       }
     >
@@ -57,7 +59,7 @@ export function PlanDayRow({
         <strong>
           {weekdayLabel(day.date)}
           {isToday ? (
-            <span className="ml-2 rounded-md border border-ink px-2 py-0.5 text-sm font-semibold">
+            <span className="ml-2 rounded-md border border-accent px-2 py-0.5 text-sm font-semibold text-accent">
               Today
             </span>
           ) : null}
@@ -70,13 +72,17 @@ export function PlanDayRow({
         <p className="m-0">
           {formatDistance(run.distanceM, unit)}
           {meaningful(run.structure) ? ` · ${run.structure}` : ""}
-          {meaningful(run.paceOrHr) ? ` · ${run.paceOrHr}` : ""}
         </p>
       ) : (
         <p className="m-0 text-muted">No run</p>
       )}
-      {shoes ? <p className="m-0">Shoes · {shoes}</p> : null}
-      {strength ? <p className="m-0">Strength · {strength}</p> : null}
+      <LabelValueList
+        items={[
+          ["Effort", target],
+          ["Shoes", shoes],
+          ["Strength", strength],
+        ]}
+      />
       {notes ? <p className="m-0 text-muted">{notes}</p> : null}
     </li>
   );

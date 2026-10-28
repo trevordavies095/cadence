@@ -117,11 +117,59 @@ test.describe("Coach", () => {
     await expect(card).toContainText(/\d+\.\d mi/);
     await expect(card).toContainText(/\d+ min/);
     await expect(card).toContainText(/\d+:\d{2}\/mi/);
+    await expect(card).toContainText(/\d+ bpm max/);
     // The coach sees a summary of the run, never its route.
     await expect(card.locator("img, svg, canvas, iframe")).toHaveCount(0);
     expect(label).toMatch(/Easy run/);
     // The chip is spent once the message is sent.
     await expect(page.getByRole("button", { name: "Remove the attached run" })).toHaveCount(0);
+
+    // The splits are the athlete's to open, so the reply can say what they mean.
+    const splits = card.getByRole("table", { name: "Splits" });
+    await expect(splits).toBeHidden();
+    await card.getByText("Splits", { exact: true }).click();
+    await expect(splits).toBeVisible();
+    await expect(splits.getByRole("columnheader")).toHaveText(["Split", "Distance", "Pace", "Heart rate"]);
+    const firstSplit = splits.locator("tbody tr").first();
+    await expect(firstSplit.getByRole("cell")).toHaveText(["1", /^\d+\.\d mi$/, /^\d+:\d{2}\/mi$/, /^\d+ bpm$/]);
+  });
+
+  test("a run with no splits shows no Splits toggle", async ({ page, request }) => {
+    const week = await currentWeek(request);
+    const sent = await request.post(`${API_URL}/weeks/${week.id}/chat`, {
+      data: { body: "And the week before?", attachmentWorkoutId: "33333333-3333-4333-8333-333333333333" },
+    });
+    expect(sent.ok()).toBeTruthy();
+    await page.goto("/chat");
+    const card = page
+      .getByRole("log", { name: "Conversation" })
+      .getByLabel("Attached run")
+      .filter({ hasText: "Prior week" })
+      .last();
+    await expect(card).toBeVisible();
+    await expect(card.getByText("Splits", { exact: true })).toHaveCount(0);
+  });
+
+  test("a send the coach can't answer puts the message and its run back, and leaves nothing behind (#5)", async ({
+    page,
+  }) => {
+    await page.route(/\/api\/weeks\/[^/]+\/chat$/, (route) =>
+      route.fulfill({
+        status: 502,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "llm_schema_invalid", message: "bad" }),
+      }),
+    );
+    await page.goto("/chat");
+    await page.getByRole("button", { name: "Add a run" }).click();
+    await page.getByRole("dialog", { name: "Add a run" }).getByRole("button").first().click();
+    await page.getByLabel("Message to Coach Cade").fill("This reply will fail.");
+    await page.getByRole("button", { name: "Send", exact: true }).click();
+
+    await expect(page.getByLabel("Message to Coach Cade")).toHaveValue("This reply will fail.");
+    await expect(page.getByRole("button", { name: "Remove the attached run" })).toBeVisible();
+    const log = page.getByRole("log", { name: "Conversation" });
+    await expect(log.getByText("This reply will fail.", { exact: true })).toHaveCount(0);
   });
 
   test("a past week can be read but not added to, with a way back to this week", async ({ page, request }) => {

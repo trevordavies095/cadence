@@ -46,7 +46,7 @@ export function createDossierRoutes(options: DossierRouteOptions): Hono {
     if (!text.trim()) {
       return c.json({ error: "body_required" }, 400);
     }
-    const version = await createDossierVersion(text);
+    const version = await createDossierVersion(clock.now(), text);
     return c.json(version, 201);
   });
 
@@ -125,6 +125,7 @@ export function createDossierRoutes(options: DossierRouteOptions): Hono {
       summaryBullets,
       proposedBody,
       kind,
+      at: clock.now(),
     });
     return c.json(proposal, 201);
   });
@@ -185,7 +186,7 @@ export function createDossierRoutes(options: DossierRouteOptions): Hono {
     if (!Number.isInteger(id) || id < 1) {
       return c.json({ error: "invalid_id" }, 400);
     }
-    const result = await undoDossierProposal(id);
+    const result = await undoDossierProposal(clock.now(), id);
     if (!result.ok) {
       if (result.reason === "not_found") {
         return c.json({ error: "not_found" }, 404);
@@ -210,7 +211,7 @@ export function createDossierRoutes(options: DossierRouteOptions): Hono {
     if (!Number.isInteger(id) || id < 1) {
       return c.json({ error: "invalid_id" }, 400);
     }
-    const result = await rejectDossierProposal(id);
+    const result = await rejectDossierProposal(clock.now(), id);
     if (!result.ok) {
       if (result.reason === "not_found") {
         return c.json({ error: "not_found" }, 404);

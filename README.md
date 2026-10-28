@@ -50,6 +50,16 @@ Ports are offset from Tempo's defaults (3000 / 5001 / 5432) so both can run side
 
 To run it on a home server, use `docker-compose.homelab.yml` with `.env.homelab.example` (copy it to `.env.homelab`): `docker compose -f docker-compose.homelab.yml --env-file .env.homelab up -d --build`. It keeps Postgres and the API on the internal network and exposes only the web page.
 
+## What it costs
+
+Cadence is free. The live coach uses your own Anthropic API key, so you pay Anthropic per call. Rough figures on the defaults (Opus 4.7, effort `xhigh`):
+
+| Usage | Per week |
+|-------|----------|
+| Weekly reply only | ~$0.30 |
+| Reply + a few chat messages | ~$1 |
+| Chatting most days | ~$2 |
+
 ## How it works
 
 Each week follows the same loop. Coach Cade builds the recap from your Tempo data, you add a short check-in, and the coach replies with an analysis and next week's plan. During the week you can chat and attach a run. Anything worth remembering is proposed as a change to "About you", and nothing is saved until you accept it.
@@ -80,13 +90,13 @@ stateDiagram-v2
 
 ![Your week: mileage, heart rate zones and runs for Oct 5 – 11](docs/images/dark/your-week.png)
 
-**The plan.** Coach Cade's read of the week and next week's plan, with the reasons behind each session.
+**The plan.** Coach Cade's read opens with its headline and what it is watching, with the answers to your questions and the full read a click away. Each day carries the reason for its session.
 
-![Plan: Coach Cade's read of the week and the questions it answers](docs/images/dark/plan.png)
+![Plan: Coach Cade's headline and what it is watching, above this week's days](docs/images/dark/plan.png)
 
-**Coach Cade.** Chat during the week and attach a run. The coach reads the splits and heart rate, and changes the rest of the week if needed.
+**Coach Cade.** Chat during the week and attach a run. The run card shows its numbers and splits, and Coach Cade says what they mean. When the week changes, the changed days appear under the reply.
 
-![Coach Cade: a run attached to a message and the coach's split-by-split reply](docs/images/dark/coach-chat.png)
+![Coach Cade: a run attached to a message, with its splits a click away, and Coach Cade's reply](docs/images/dark/coach-chat.png)
 
 **About you.** What Coach Cade knows about you. Changes it suggests wait for **Looks right**, and you can fix anything in your own words.
 
@@ -207,7 +217,7 @@ Set `E2E_DATABASE_URL` to use a different server and `E2E_CLOCK_NOW` to pin anot
 | Frontend → API | `API_SERVICE_URL` | Used by Next rewrites inside Compose (`http://api:5001`) |
 | Secret wrapping key | `DATA_PROTECTION_SECRET_KEY` | HKDF → AES-256-GCM for Tempo + Anthropic keys at rest |
 | Dev clock | `DEV_CLOCK_NOW` | ISO instant; fixes “now” when not `NODE_ENV=production`, or in production when `CADENCE_DEMO=1`. Read once at startup |
-| Demo mode | `CADENCE_DEMO` | `1` for the demo instance only: honours `DEV_CLOCK_NOW` in the production image, hides export runs after that clock, and counts the export and the stub as connected. Set by `scripts/demo.sh` |
+| Demo mode | `CADENCE_DEMO` | `1` for the demo instance only: honours `DEV_CLOCK_NOW` in the production image, hides export runs after that clock, and labels Settings as sample data. Set by `scripts/demo.sh` |
 | Host ports | `POSTGRES_HOST_PORT`, `API_HOST_PORT`, `FRONTEND_HOST_PORT` | Compose host ports, default `5433` / `5002` / `3001` |
 | Athlete timezone | `ATHLETE_TIMEZONE` | IANA name (e.g. `America/New_York`), default `UTC`. One timezone for every route and page: current week, week boundaries, loop status. An explicit `?timezone=` still overrides. An invalid name stops the API at startup. |
 | LLM provider | `LLM_PROVIDER` | `stub` (default; offline, CI) or `anthropic` (live, uses the encrypted Anthropic key) |

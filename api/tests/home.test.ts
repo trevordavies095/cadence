@@ -98,6 +98,7 @@ describe("GET /home (#100)", () => {
 
   async function withPlan(id: string) {
     await savePrescribedWeek({
+      at: new Date(),
       weekSessionId: id,
       plan: THIS_WEEK_PLAN as never,
       analysis: "Fixture plan.",
@@ -325,6 +326,7 @@ describe("GET /home (#100)", () => {
     it("a rest day with a run in Tempo is done, not rest", async () => {
       const { app, id } = await ready(SAT);
       await savePrescribedWeek({
+        at: new Date(),
         weekSessionId: id,
         plan: {
           ...THIS_WEEK_PLAN,
