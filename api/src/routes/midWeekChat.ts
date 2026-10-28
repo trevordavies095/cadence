@@ -341,6 +341,20 @@ export function createMidWeekChatRoutes(
           isoWeek: session.isoWeek,
           at: clock.now(),
         });
+        // Work out which days actually change (past days stay put) before the
+        // message is written, so it can carry them as a card.
+        const patches = reply.prescribedDayPatches ?? [];
+        const applied =
+          patches.length > 0 && existingPrescribed
+            ? applyPrescribedDayPatches(existingPrescribed.plan, patches, {
+                todayYmd: todayYmdForSession(clock, session.timezone),
+                allowPastDayPatches: reply.allowPastDayPatches === true,
+              })
+            : null;
+        const changedDays = applied
+          ? applied.plan.days.filter((d) => applied.appliedDates.includes(d.date))
+          : [];
+
         const coachMessage = await createCoachMessage(
           clock.now(),
           coachBody,
@@ -348,6 +362,8 @@ export function createMidWeekChatRoutes(
           callId,
           reply.safetyCallouts,
           dossierProposal?.id ?? null,
+          "chat",
+          changedDays,
         );
         answered = true;
 
@@ -355,16 +371,7 @@ export function createMidWeekChatRoutes(
         let threadArtifact: PrescribedWeekArtifact | null = existingPrescribed
           ? toPrescribedArtifact(existingPrescribed)
           : null;
-        const patches = reply.prescribedDayPatches ?? [];
-        if (patches.length > 0 && existingPrescribed) {
-          const applied = applyPrescribedDayPatches(
-            existingPrescribed.plan,
-            patches,
-            {
-              todayYmd: todayYmdForSession(clock, session.timezone),
-              allowPastDayPatches: reply.allowPastDayPatches === true,
-            },
-          );
+        if (applied && existingPrescribed) {
           if (applied.appliedDates.length > 0) {
             prescribed = await savePrescribedWeek({
               weekSessionId: session.id,

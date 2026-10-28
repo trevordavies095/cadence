@@ -26,7 +26,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | weekly_read message | the Sunday message, with **Open the plan** | The headline posted into the reviewed week's conversation instead of the whole read. Its link opens the plan, or that week's Your week page once the planned week is over. |
 | reply run | "Coach Cade is reading your week" | One server-side execution of the weekly reply, with status pending, ok or failed. |
 | prescribed week, prescribed day | **plan**, **next week's plan**, **today's session** | The seven-day plan stored on a week session. |
-| day patch | (not shown; the plan just changes) | A mid-week change to remaining days made by the coach from chat. |
+| day patch | a card under the reply: **Coach Cade changed Thu and Sun** | A change to the remaining days made by the coach from chat. The reply keeps a snapshot of the days as they were changed then, so a later change never rewrites an old card. |
 | mid-week chat, thread | **Coach Cade** (the page), "the conversation" | The current week's conversation with the coach. |
 | athlete / coach (roles) | **You** / **Coach Cade** | Message labels. |
 | coach, the coach | **Coach Cade** | The coach persona. Always written in full: never "Coach" or "Cade" alone, and never "your coach" in conversational copy. Legal and privacy text keeps the role wording "your coach". Code, routes and tables keep "coach". |

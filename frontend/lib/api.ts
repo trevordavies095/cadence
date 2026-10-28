@@ -86,6 +86,8 @@ export type ThreadMessage = {
   llmCallId?: string | null;
   /** The note this reply produced, as it stands now; null when it produced none. */
   dossierProposal?: ThreadNote | null;
+  /** The plan days this reply changed, as they were then; null when it changed none. */
+  planChanges?: PrescribedDay[] | null;
 };
 
 /** What a thread message shows of the note it produced. */

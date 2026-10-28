@@ -1,5 +1,5 @@
 import { pool } from "../db.js";
-import type { SafetyCallout } from "../llm/types.js";
+import type { PrescribedDay, SafetyCallout } from "../llm/types.js";
 import type {
   DossierProposalKind,
   DossierProposalStatus,
@@ -24,6 +24,8 @@ export type ThreadMessage = {
   safetyCallouts: SafetyCallout[];
   /** The note this reply produced, as it stands now; null when it produced none. */
   dossierProposal: ThreadNote | null;
+  /** The plan days this reply changed, as they were then; null when it changed none. */
+  planChanges: PrescribedDay[] | null;
 };
 
 /** What a thread message shows of the note it produced. */
@@ -47,6 +49,7 @@ type Row = {
   attachment: ModelPacketAttachment | null;
   llm_call_id: string | null;
   safety_callouts: SafetyCallout[] | null;
+  plan_changes: PrescribedDay[] | null;
   p_id: string | number | null;
   p_kind: DossierProposalKind | null;
   p_status: DossierProposalStatus | null;
@@ -58,7 +61,7 @@ type Row = {
 
 const SELECT_MESSAGE = `
   SELECT m.id::text AS id, m.role, m.kind, m.body, m.created_at, m.week_session_id::text AS week_session_id,
-         m.attachment, m.llm_call_id::text AS llm_call_id, m.safety_callouts,
+         m.attachment, m.llm_call_id::text AS llm_call_id, m.safety_callouts, m.plan_changes,
          p.id AS p_id, p.kind AS p_kind, p.status AS p_status,
          p.summary_bullets AS p_bullets, p.applied_version_id AS p_applied,
          p.previous_version_id AS p_previous, p.created_at AS p_created
@@ -76,6 +79,7 @@ function toMessage(row: Row): ThreadMessage {
     attachment: row.attachment ?? null,
     llmCallId: row.llm_call_id ?? null,
     safetyCallouts: row.safety_callouts ?? [],
+    planChanges: row.plan_changes && row.plan_changes.length > 0 ? row.plan_changes : null,
     dossierProposal:
       row.p_id == null
         ? null
@@ -152,12 +156,13 @@ export async function createCoachMessage(
   safetyCallouts?: SafetyCallout[] | null,
   dossierProposalId?: number | null,
   kind: ThreadMessageKind = "chat",
+  planChanges?: PrescribedDay[] | null,
 ): Promise<ThreadMessage> {
   const result = await pool.query<{ id: string }>(
     `
     INSERT INTO thread_messages
-      (role, body, week_session_id, attachment, llm_call_id, safety_callouts, dossier_proposal_id, created_at, kind)
-    VALUES ('coach', $1, $2, NULL, $3, $4::jsonb, $5, $6, $7)
+      (role, body, week_session_id, attachment, llm_call_id, safety_callouts, dossier_proposal_id, created_at, kind, plan_changes)
+    VALUES ('coach', $1, $2, NULL, $3, $4::jsonb, $5, $6, $7, $8::jsonb)
     RETURNING id::text AS id
     `,
     [
@@ -170,6 +175,7 @@ export async function createCoachMessage(
       dossierProposalId ?? null,
       at,
       kind,
+      planChanges && planChanges.length > 0 ? JSON.stringify(planChanges) : null,
     ],
   );
   return getMessage(result.rows[0]!.id);

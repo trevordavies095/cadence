@@ -2,8 +2,9 @@
 
 import { CoachText } from "@/components/CoachText";
 import { NoteCard } from "@/components/NoteCard";
+import { PlanDayRow } from "@/components/PlanDayRow";
 import { ButtonLink, CoachSurface, Notice, cx } from "@/components/ui";
-import type { ThreadMessage, UnitPreference, WorkoutAttachment } from "@/lib/api";
+import type { PrescribedDay, ThreadMessage, UnitPreference, WorkoutAttachment } from "@/lib/api";
 import { dayLabel, runTypeLabel } from "@/lib/checkIn";
 import { relativeWhen } from "@/lib/time";
 import { distanceLabel, durationLabel, localYmd, paceLabel } from "@/lib/units";
@@ -96,6 +97,33 @@ function SplitsTable({
   );
 }
 
+/** "Thu", "Thu and Sun", "Tue, Thu and Sun". */
+function dayNames(days: PrescribedDay[]): string {
+  const names = days.map((d) =>
+    new Date(`${d.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" }),
+  );
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+/** The days Coach Cade changed in this reply, as they were changed then. */
+export function PlanChangeCard({ days, unit }: { days: PrescribedDay[]; unit: UnitPreference }) {
+  const heading = `Coach Cade changed ${dayNames(days)}`;
+  return (
+    <section
+      aria-label={heading}
+      className="mt-2 flex flex-col gap-2 rounded-tempo border border-border bg-raised px-4 py-3"
+    >
+      <p className="m-0 font-semibold">{heading}</p>
+      <ol className="m-0 flex list-none flex-col gap-3 p-0 [&>li:last-child]:border-b-0 [&>li:last-child]:pb-0">
+        {days.map((day) => (
+          <PlanDayRow key={day.date} day={day} unit={unit} isToday={false} />
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 /** One message in the conversation, the same wherever the conversation is shown. */
 export function ConversationMessage({
   message,
@@ -144,6 +172,9 @@ export function ConversationMessage({
           {c.body}
         </Notice>
       ))}
+      {message.planChanges && message.planChanges.length > 0 ? (
+        <PlanChangeCard days={message.planChanges} unit={unit} />
+      ) : null}
       {message.attachment ? (
         <RunCard attachment={message.attachment} unit={unit} timeZone={timeZone} />
       ) : null}

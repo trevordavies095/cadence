@@ -176,6 +176,7 @@ export const MIDWEEK_SYSTEM_PROMPT = [
   SAFETY_CALLOUT_PROMPT,
   "When workout attachments are present, give concrete coaching feedback on those runs using metrics and splits only (no GPS or route geometry).",
   "When the athlete asks to change remaining plan days, emit prescribedDayPatches with full day objects for those dates only (do not rewrite past days unless allowPastDayPatches is true).",
+  "The athlete sees each changed day as a card under your reply, showing its distance, structure, effort, shoes and notes. Put the structure, paces and rules in those day fields, with the reason for the session in its notes. In the reply, say only why you changed the week; do not repeat what the cards show.",
   "Do not rewrite the full week plan unless asked.",
   "For significant memory updates, emit settingsProposalBullets (soft-gate); never silent-apply dossier changes.",
   "Think it through first, then call the submit_mid_week_chat_reply tool exactly once with your full answer. Do not write the answer as plain text.",

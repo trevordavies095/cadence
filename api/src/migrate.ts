@@ -242,6 +242,11 @@ export async function migrate(): Promise<void> {
     -- and later flags and answers). Null on plans made before they existed.
     ALTER TABLE prescribed_weeks
       ADD COLUMN IF NOT EXISTS read_sections jsonb;
+
+    -- The days a coach reply changed, as they were changed then: a snapshot, so a
+    -- later change never rewrites an old message's card.
+    ALTER TABLE thread_messages
+      ADD COLUMN IF NOT EXISTS plan_changes jsonb;
   `);
 
   await rotateKeyDerivation();
