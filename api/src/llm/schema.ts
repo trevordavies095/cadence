@@ -375,7 +375,21 @@ export function validateWeeklyReply(
     };
   }
 
-  const prescribed = validatePrescribedWeek(raw.prescribedWeek, weekStartMonday);
+  // The model sometimes sends the whole plan as a string of JSON. When that string
+  // parses to an object, take it and note the repair; when it does not, refuse.
+  let prescribedRaw = raw.prescribedWeek;
+  if (typeof prescribedRaw === "string") {
+    try {
+      const parsed: unknown = JSON.parse(prescribedRaw);
+      if (isPlainObject(parsed)) {
+        prescribedRaw = parsed;
+        repairs.push("prescribedWeek arrived as a string of JSON and was parsed");
+      }
+    } catch {
+      // Malformed: fall through and fail closed below.
+    }
+  }
+  const prescribed = validatePrescribedWeek(prescribedRaw, weekStartMonday);
   if (!prescribed.ok) return prescribed;
 
   const bullets = parseSettingsProposalBullets(raw.settingsProposalBullets);

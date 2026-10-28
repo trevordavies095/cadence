@@ -208,6 +208,9 @@ function failureText(outcome: Outcome): string {
   return `Reply failed (${outcome.status})`;
 }
 
+/** A weekly reply refused for its shape is asked for once more (reading-flow replay). */
+const WEEKLY_REPLY_ATTEMPTS = 2;
+
 export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner {
   const { llmPort, tempoPort, clock, athleteTimezone, llmCallRecorder } =
     options;
@@ -273,24 +276,40 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       await rememberLastOutboundPacket(packet);
     }
 
-    const callId = randomUUID();
+    let callId = randomUUID();
     try {
-      const reply = await llmPort.generateWeeklyReply(packet, {
-        callId,
-        weekSessionId: focusSession.id,
-      });
+      // A reply refused for its shape is asked for once more before the athlete
+      // sees a failed read. Each attempt keeps its own call log row.
       const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
-      const checked = validateWeeklyReply(reply, weekStartMonday);
-      if (!checked.ok) {
+      let checked: ReturnType<typeof validateWeeklyReply> | null = null;
+      for (let attempt = 1; attempt <= WEEKLY_REPLY_ATTEMPTS; attempt++) {
+        if (attempt > 1) callId = randomUUID();
+        let reply: Awaited<ReturnType<typeof llmPort.generateWeeklyReply>>;
+        try {
+          reply = await llmPort.generateWeeklyReply(packet, {
+            callId,
+            weekSessionId: focusSession.id,
+          });
+        } catch (err) {
+          if (err instanceof LlmSchemaError && attempt < WEEKLY_REPLY_ATTEMPTS) continue;
+          throw err;
+        }
+        checked = validateWeeklyReply(reply, weekStartMonday);
+        if (checked.ok) break;
         await recordRouteRejection(llmCallRecorder, {
           parentCallId: callId,
           operation: "weekly_reply",
           weekSessionId: focusSession.id,
           errorMessage: checked.error,
         });
+      }
+      if (!checked || !checked.ok) {
         return {
           status: 502,
-          body: { error: "llm_schema_invalid", message: checked.error },
+          body: {
+            error: "llm_schema_invalid",
+            message: checked && !checked.ok ? checked.error : "weekly reply refused",
+          },
           callId,
         };
       }

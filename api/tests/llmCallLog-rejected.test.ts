@@ -118,10 +118,15 @@ describe("LLM call log: route rejections (#70)", () => {
     seenCallIds: string[],
     operation: string,
     weekSessionId: string,
+    attempts = 1,
   ) {
-    expect(seenCallIds).toHaveLength(1);
-    const callId = seenCallIds[0]!;
-    const childRecord = captured.find((r) => r.outcome === "rejected_by_route");
+    // A weekly reply the route refuses is asked for once more: one parent and one
+    // rejected child per attempt. The last pair is checked in full.
+    expect(seenCallIds).toHaveLength(attempts);
+    const children = captured.filter((r) => r.outcome === "rejected_by_route");
+    expect(children.map((c) => c.parentCallId)).toEqual(seenCallIds);
+    const callId = seenCallIds.at(-1)!;
+    const childRecord = children.at(-1);
     expect(childRecord).toBeDefined();
 
     const child = await json(
@@ -183,6 +188,7 @@ describe("LLM call log: route rejections (#70)", () => {
       seenCallIds,
       "weekly_reply",
       weekSessionId,
+      2,
     );
     expect(child.errorMessage).toBe(body.message);
     expect(await coachCount(app, weekSessionId)).toBe(0);
