@@ -1,5 +1,5 @@
 import { CoachText } from "@/components/CoachText";
-import { CoachSurface, Muted, Notice } from "@/components/ui";
+import { CoachSurface, Muted, Notice, cx } from "@/components/ui";
 import type { PrescribedWeekRecord } from "@/lib/api";
 
 /** A label inside Coach Cade's read: small, uppercase and quiet, one register below the app's. */
@@ -42,7 +42,13 @@ export function CoachRead({
         </Notice>
       ))}
       {headline || analysis ? (
-        <CoachSurface className={sections ? "flex flex-col gap-4" : undefined}>
+        <CoachSurface
+          className={cx(
+            sections && "flex flex-col gap-4",
+            // A safety notice above gets room, so the two boxes do not read as one.
+            (record.safetyCallouts ?? []).length > 0 && "mt-3",
+          )}
+        >
           {headline ? (
             <p className={`m-0 font-semibold ${MEASURE}`} data-part="headline">
               {headline}
@@ -65,7 +71,7 @@ export function CoachRead({
               <h3 className={EYEBROW}>Your questions</h3>
               {answers.map((a, i) => (
                 <div key={`${a.question}-${i}`} className="flex flex-col gap-1">
-                  <p className={`m-0 text-sm font-semibold text-muted ${MEASURE}`} data-part="question">
+                  <p className={`m-0 font-semibold ${MEASURE}`} data-part="question">
                     {a.question}
                   </p>
                   <CoachText>{a.answer}</CoachText>
@@ -76,10 +82,10 @@ export function CoachRead({
           {analysis && sections ? (
             // Keyed on the default so switching weeks resets it rather than keeping the last toggle.
             <details key={String(fullReadOpen)} open={fullReadOpen} data-part="full-read">
-              <summary className="cursor-pointer text-sm font-semibold text-muted">
-                The full read
-              </summary>
-              <CoachText className="mt-3">{analysis}</CoachText>
+              <summary className={`cursor-pointer ${EYEBROW}`}>The full read</summary>
+              <CoachText className="mt-3" quietHeadings>
+                {analysis}
+              </CoachText>
             </details>
           ) : analysis ? (
             <CoachText>{analysis}</CoachText>

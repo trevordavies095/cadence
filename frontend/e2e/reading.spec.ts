@@ -402,3 +402,51 @@ test.describe("The full read", () => {
     await expect(week.locator('[data-part="full-read"]')).toHaveCount(0);
   });
 });
+
+test.describe("Coach Cade's read keeps its labels in order", () => {
+  test("the full read's headings and its label are as quiet as Watching", async ({ page }) => {
+    await serveNextPlan(page, {
+      analysis: "## About Thursday last week\nThe fast miles were closer to 10K effort.",
+      readSections: {
+        headline: "Big week.",
+        flags: [{ title: "Sleep", detail: "Down to 6.8 hours." }],
+        answers: [{ question: "Is 3:30 still sensible?", answer: "Yes, with one caveat." }],
+      },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+
+    const size = (loc: import("@playwright/test").Locator) =>
+      loc.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    const watching = await size(next.getByRole("heading", { name: "Watching" }));
+    expect(await size(next.getByRole("heading", { name: "About Thursday last week" }))).toBe(watching);
+    expect(await size(next.locator("summary", { hasText: "The full read" }))).toBe(watching);
+
+    // The athlete's question reads as strongly as the answer, not fainter.
+    const question = next.locator('[data-part="question"]');
+    const answer = next.getByText("Yes, with one caveat.");
+    expect(await size(question)).toBe(await size(answer));
+    await expect(question).toHaveCSS("font-weight", "600");
+    const color = (loc: import("@playwright/test").Locator) =>
+      loc.evaluate((el) => getComputedStyle(el).color);
+    expect(await color(question)).toBe(await color(answer));
+  });
+
+  test("a safety notice has room before Coach Cade's read", async ({ page }) => {
+    await serveNextPlan(page, {
+      safetyCallouts: [{ title: "Achilles", body: "If it gets worse, see a physiotherapist.", severity: "caution" }],
+      readSections: { headline: "Big week.", flags: [], answers: [] },
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "Next week" }).click();
+    const next = page.getByRole("region", { name: "Next week plan" });
+    const noticeBottom = await next.getByText("Achilles", { exact: true }).locator("xpath=..").evaluate(
+      (el) => el.getBoundingClientRect().bottom,
+    );
+    const readTop = await next.locator('[data-part="headline"]').locator("xpath=..").evaluate(
+      (el) => el.getBoundingClientRect().top,
+    );
+    expect(readTop - noticeBottom).toBeGreaterThanOrEqual(20);
+  });
+});

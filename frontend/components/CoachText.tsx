@@ -99,6 +99,16 @@ const components: ComponentProps<typeof ReactMarkdown>["components"] = {
   td: (p) => <td className="border-b border-border px-3 py-2" {...strip(p)} />,
 };
 
+/**
+ * Inside a read that already has its own labels, every heading is a quiet label
+ * too, so nothing in the read outranks the headline or "Watching".
+ */
+const quietComponents: typeof components = {
+  ...components,
+  h1: (p) => <h4 className={EYEBROW} {...strip(p)} />,
+  h2: (p) => <h4 className={EYEBROW} {...strip(p)} />,
+};
+
 /** react-markdown passes the parsed node as a prop; keep it off the DOM. */
 function strip<T extends object>(props: T): Omit<T, "node"> {
   const { node: _node, ...rest } = props as T & { node?: unknown };
@@ -110,9 +120,12 @@ function strip<T extends object>(props: T): Omit<T, "node"> {
 export function CoachText({
   children,
   className,
+  quietHeadings = false,
 }: {
   children: string;
   className?: string;
+  /** Set every heading as a small label, for a read that has its own labels above. */
+  quietHeadings?: boolean;
 }) {
   return (
     <div className={cx("flex flex-col gap-3", className)}>
@@ -120,7 +133,7 @@ export function CoachText({
         remarkPlugins={[remarkGfm]}
         allowedElements={ALLOWED}
         unwrapDisallowed
-        components={components}
+        components={quietHeadings ? quietComponents : components}
       >
         {children}
       </ReactMarkdown>
