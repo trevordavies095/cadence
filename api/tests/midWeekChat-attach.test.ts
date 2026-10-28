@@ -88,6 +88,14 @@ describe("mid-week chat workout attach (#36)", () => {
     expect(stored.workoutId).toBe(W1);
     expect(stored.distanceM).toBe(10000);
     expect(stored).not.toHaveProperty("routeGeoJson");
+    // The run card shows the splits from the stored attachment, so they must be kept.
+    const splits = stored.splits as Array<Record<string, unknown>>;
+    expect(splits.length).toBeGreaterThan(0);
+    expect(splits[0]).toMatchObject({
+      distanceM: expect.any(Number),
+      paceS: expect.any(Number),
+      avgHeartRateBpm: expect.any(Number),
+    });
     // Coach feedback is visible in the thread listing (UI reads this).
     expect(String(messages[1]!.body)).toContain("Attached run feedback");
     expect(String(messages[1]!.body)).toContain("10.0 km");

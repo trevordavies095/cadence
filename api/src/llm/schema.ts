@@ -1,4 +1,5 @@
 import {
+  cutAtSentence,
   cutAtWord,
   fitSafetyCalloutBody,
   isSafetyCalloutSeverity,
@@ -17,12 +18,24 @@ import type {
   PrescribedDay,
   PrescribedRun,
   PrescribedWeek,
+  ReadAnswer,
+  ReadFlag,
   RunType,
   SafetyCallout,
   WeeklyReply,
 } from "./types.js";
 
 export const MAX_ANALYSIS_LENGTH = 4000;
+/** The headline is cut at a word past this, never refused (see the reading-flow spec). */
+export const MAX_HEADLINE_LENGTH = 280;
+/** Flags and answers: the counts fail closed; flag text is cut at a word and logged. */
+export const MAX_READ_FLAGS = 5;
+export const MAX_READ_ANSWERS = 8;
+export const MAX_FLAG_TITLE_LENGTH = 80;
+export const MAX_FLAG_DETAIL_LENGTH = 280;
+/** Day notes carry the reason for a session: asked for 200, kept to 400 at a sentence. */
+export const DAY_NOTES_TARGET = 200;
+export const MAX_DAY_NOTES_LENGTH = 400;
 export const MAX_SETTINGS_PROPOSAL_BULLETS = 8;
 export const MAX_BULLET_LENGTH = 280;
 export const MAX_DOSSIER_SUMMARY_BULLETS = 8;
@@ -137,6 +150,7 @@ function parseDay(
   value: unknown,
   index: number,
   expectedDate: string,
+  repairs: string[],
 ): SchemaResult<PrescribedDay> {
   const path = `prescribedWeek.days[${index}]`;
   if (!isPlainObject(value)) {
@@ -185,8 +199,30 @@ function parseDay(
   const day: PrescribedDay = { date, dayType };
   if (runResult.value !== undefined) day.run = runResult.value;
   if (strength.value !== undefined) day.strength = strength.value;
-  if (notes.value !== undefined) day.notes = notes.value;
+  if (notes.value !== undefined) day.notes = fitDayNotes(notes.value, `${path}.notes`, repairs);
   return { ok: true, value: day };
+}
+
+/**
+ * Day notes hold the reason for a session, shown beside it. Past the ceiling they
+ * are cut at a sentence; past the target they are kept. Either way it is noted.
+ */
+function fitDayNotes(
+  notes: string | null,
+  path: string,
+  repairs: string[],
+): string | null {
+  if (notes == null) return notes;
+  const text = notes.trim();
+  if (text.length > MAX_DAY_NOTES_LENGTH) {
+    const cut = cutAtSentence(text, MAX_DAY_NOTES_LENGTH);
+    repairs.push(`${path} cut from ${text.length} to ${cut.length} chars`);
+    return cut;
+  }
+  if (text.length > DAY_NOTES_TARGET) {
+    repairs.push(`${path} over target: ${text.length} chars kept`);
+  }
+  return notes;
 }
 
 /**
@@ -224,14 +260,15 @@ export function validatePrescribedWeek(
   }
 
   const days: PrescribedDay[] = [];
+  const repairs: string[] = [];
   for (let i = 0; i < 7; i++) {
     const expected = addDaysYmd(weekStartMonday, i);
-    const parsed = parseDay(daysRaw[i], i, expected);
+    const parsed = parseDay(daysRaw[i], i, expected, repairs);
     if (!parsed.ok) return parsed;
     days.push(parsed.value);
   }
 
-  return { ok: true, value: { week, days } };
+  return withRepairs({ week, days }, repairs.length > 0 ? repairs : undefined);
 }
 
 /**
@@ -315,6 +352,18 @@ export function validateWeeklyReply(
     return { ok: false, error: "weekly reply must be an object" };
   }
 
+  const headlineRaw = raw.headline;
+  if (typeof headlineRaw !== "string" || headlineRaw.trim().length === 0) {
+    return { ok: false, error: "headline is required and must be non-empty" };
+  }
+  const repairs: string[] = [];
+  let headline = headlineRaw.trim();
+  if (headline.length > MAX_HEADLINE_LENGTH) {
+    const cut = cutAtWord(headline, MAX_HEADLINE_LENGTH);
+    repairs.push(`headline cut from ${headline.length} to ${cut.length} chars`);
+    headline = cut;
+  }
+
   const analysis = raw.analysis;
   if (typeof analysis !== "string" || analysis.trim().length === 0) {
     return { ok: false, error: "analysis is required and must be non-empty" };
@@ -326,7 +375,21 @@ export function validateWeeklyReply(
     };
   }
 
-  const prescribed = validatePrescribedWeek(raw.prescribedWeek, weekStartMonday);
+  // The model sometimes sends the whole plan as a string of JSON. When that string
+  // parses to an object, take it and note the repair; when it does not, refuse.
+  let prescribedRaw = raw.prescribedWeek;
+  if (typeof prescribedRaw === "string") {
+    try {
+      const parsed: unknown = JSON.parse(prescribedRaw);
+      if (isPlainObject(parsed)) {
+        prescribedRaw = parsed;
+        repairs.push("prescribedWeek arrived as a string of JSON and was parsed");
+      }
+    } catch {
+      // Malformed: fall through and fail closed below.
+    }
+  }
+  const prescribed = validatePrescribedWeek(prescribedRaw, weekStartMonday);
   if (!prescribed.ok) return prescribed;
 
   const bullets = parseSettingsProposalBullets(raw.settingsProposalBullets);
@@ -335,7 +398,15 @@ export function validateWeeklyReply(
   const callouts = validateSafetyCallouts(raw.safetyCallouts);
   if (!callouts.ok) return callouts;
 
+  const flags = parseReadFlags(raw.flags, repairs);
+  if (!flags.ok) return flags;
+  const answers = parseReadAnswers(raw.answers);
+  if (!answers.ok) return answers;
+
   const reply: WeeklyReply = {
+    headline,
+    flags: flags.value,
+    answers: answers.value,
     analysis: analysis.trim(),
     prescribedWeek: prescribed.value,
   };
@@ -345,7 +416,63 @@ export function validateWeeklyReply(
   if (callouts.value !== undefined && callouts.value.length > 0) {
     reply.safetyCallouts = callouts.value;
   }
-  return withRepairs(reply, callouts.repairs);
+  repairs.push(...(prescribed.repairs ?? []), ...(callouts.repairs ?? []));
+  return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+}
+
+/** A text field cut at a word past `max`, with the cut noted in `repairs`. */
+function fitText(text: string, max: number, path: string, repairs: string[]): string {
+  if (text.length <= max) return text;
+  const cut = cutAtWord(text, max);
+  repairs.push(`${path} cut from ${text.length} to ${cut.length} chars`);
+  return cut;
+}
+
+function nonEmptyString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+/** What Coach Cade is watching. Count and shape fail closed; long text is cut and noted. */
+function parseReadFlags(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[]> {
+  if (raw === undefined || raw === null) return { ok: true, value: [] };
+  if (!Array.isArray(raw)) return { ok: false, error: "flags must be an array" };
+  if (raw.length > MAX_READ_FLAGS) {
+    return { ok: false, error: `flags must have at most ${MAX_READ_FLAGS} items` };
+  }
+  const flags: ReadFlag[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const item = raw[i];
+    const title = isPlainObject(item) ? nonEmptyString(item.title) : null;
+    const detail = isPlainObject(item) ? nonEmptyString(item.detail) : null;
+    if (!title || !detail) {
+      return { ok: false, error: `flags[${i}] needs a non-empty title and detail` };
+    }
+    flags.push({
+      title: fitText(title, MAX_FLAG_TITLE_LENGTH, `flags[${i}].title`, repairs),
+      detail: fitText(detail, MAX_FLAG_DETAIL_LENGTH, `flags[${i}].detail`, repairs),
+    });
+  }
+  return { ok: true, value: flags };
+}
+
+/** Answers to the athlete's questions. Count and shape fail closed; length is free. */
+function parseReadAnswers(raw: unknown): SchemaResult<ReadAnswer[]> {
+  if (raw === undefined || raw === null) return { ok: true, value: [] };
+  if (!Array.isArray(raw)) return { ok: false, error: "answers must be an array" };
+  if (raw.length > MAX_READ_ANSWERS) {
+    return { ok: false, error: `answers must have at most ${MAX_READ_ANSWERS} items` };
+  }
+  const answers: ReadAnswer[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const item = raw[i];
+    const question = isPlainObject(item) ? nonEmptyString(item.question) : null;
+    const answer = isPlainObject(item) ? nonEmptyString(item.answer) : null;
+    if (!question || !answer) {
+      return { ok: false, error: `answers[${i}] needs a non-empty question and answer` };
+    }
+    answers.push({ question, answer });
+  }
+  return { ok: true, value: answers };
 }
 
 function parseSettingsProposalBullets(
@@ -416,6 +543,7 @@ export function validatePrescribedDayPatches(
   const expectedIndex = new Map(expected.map((d, i) => [d, i]));
   const seen = new Set<string>();
   const patches: PrescribedDay[] = [];
+  const repairs: string[] = [];
   for (let i = 0; i < raw.length; i++) {
     const dateRaw =
       isPlainObject(raw[i]) && typeof raw[i].date === "string"
@@ -441,7 +569,8 @@ export function validatePrescribedDayPatches(
       };
     }
     seen.add(dateRaw);
-    const parsed = parseDay(raw[i], dayIndex, dateRaw);
+    const dayRepairs: string[] = [];
+    const parsed = parseDay(raw[i], dayIndex, dateRaw, dayRepairs);
     if (!parsed.ok) {
       return {
         ok: false,
@@ -452,8 +581,13 @@ export function validatePrescribedDayPatches(
       };
     }
     patches.push(parsed.value);
+    repairs.push(
+      ...dayRepairs.map((r) =>
+        r.replace(`prescribedWeek.days[${dayIndex}]`, `prescribedDayPatches[${i}]`),
+      ),
+    );
   }
-  return { ok: true, value: patches };
+  return withRepairs(patches, repairs.length > 0 ? repairs : undefined);
 }
 
 /**
@@ -485,6 +619,7 @@ export function validateMidWeekChatReply(
   if (!callouts.ok) return callouts;
 
   let patches: PrescribedDay[] | undefined;
+  let patchRepairs: string[] | undefined;
   if (raw.prescribedDayPatches !== undefined) {
     if (!weekStartMonday) {
       return {
@@ -498,6 +633,7 @@ export function validateMidWeekChatReply(
     );
     if (!checked.ok) return checked;
     patches = checked.value;
+    patchRepairs = checked.repairs;
   }
 
   if (
@@ -520,7 +656,8 @@ export function validateMidWeekChatReply(
   if (raw.allowPastDayPatches === true) {
     reply.allowPastDayPatches = true;
   }
-  return withRepairs(reply, callouts.repairs);
+  const repairs = [...(patchRepairs ?? []), ...(callouts.repairs ?? [])];
+  return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
 }
 
 function validateDossierSoftGateDraft(

@@ -168,6 +168,35 @@ describe("LLM call log (#68 tracer)", () => {
     expect(JSON.stringify(row)).not.toContain(API_KEY);
   });
 
+  it("cuts an over-long headline at a word and logs the cut as a repair", async () => {
+    const long = `${"Big week, steady legs, and the goal is still live. ".repeat(8)}End.`;
+    const fetchImpl = vi.fn(async () =>
+      anthropicResponse("submit_weekly_reply", {
+        ...buildStubWeeklyReply(samplePacket()),
+        headline: long,
+      }),
+    ) as unknown as typeof globalThis.fetch;
+    const { app, weekSessionId } = await liveApp(fetchImpl);
+    await unlockPlanCheckIn(app, weekSessionId);
+
+    const res = await app.request("/week/reply", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ weekSessionId, packet: samplePacket() }),
+    });
+    expect(res.status).toBe(200);
+    const body = await json(res);
+    const stored = (body.prescribed as { readSections: { headline: string } }).readSections;
+    expect(stored.headline.length).toBeLessThanOrEqual(280);
+    expect(stored.headline.endsWith("…")).toBe(true);
+    expect(long.startsWith(stored.headline.slice(0, -1))).toBe(true);
+
+    const [coach] = await coachMessages(app, weekSessionId);
+    const row = await json(await app.request(`/llm-calls/${coach!.llmCallId as string}`));
+    expect(row.outcome).toBe("repaired");
+    expect(row.errorMessage).toMatch(/headline cut from \d+ to \d+ chars/);
+  });
+
   it("records a successful mid-week chat and links the coach message", async () => {
     const reply: MidWeekChatReply = { body: "Good week. Keep Thursday easy." };
     const fetchImpl = vi.fn(async () =>

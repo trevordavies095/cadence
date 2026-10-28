@@ -151,12 +151,17 @@ describe("LLM call log: failed calls (#69)", () => {
     });
   }
 
+  /**
+   * The last call's row. A weekly reply refused for its shape is asked for once
+   * more, so those flows log two calls; everything else logs one.
+   */
   async function fetchRow(
     app: ReturnType<typeof createApp>,
     ids: string[],
+    attempts = 1,
   ) {
-    expect(ids).toHaveLength(1);
-    const res = await app.request(`/llm-calls/${ids[0]}`);
+    expect(ids).toHaveLength(attempts);
+    const res = await app.request(`/llm-calls/${ids.at(-1)}`);
     expect(res.status).toBe(200);
     const row = await json(res);
     expect(JSON.stringify(row)).not.toContain(API_KEY);
@@ -232,7 +237,7 @@ describe("LLM call log: failed calls (#69)", () => {
         const res = await trigger(flow, app, weekSessionId);
         expect(res.status).toBe(502);
 
-        const row = await fetchRow(app, ids);
+        const row = await fetchRow(app, ids, flow === "weekly" ? 2 : 1);
         expectCommon(row, weekSessionId);
         expect(row).toMatchObject({
           outcome: "schema_invalid",
@@ -256,7 +261,7 @@ describe("LLM call log: failed calls (#69)", () => {
         const res = await trigger(flow, app, weekSessionId);
         expect(res.status).toBe(502);
 
-        const row = await fetchRow(app, ids);
+        const row = await fetchRow(app, ids, flow === "weekly" ? 2 : 1);
         expectCommon(row, weekSessionId);
         expect(row).toMatchObject({
           outcome: "schema_invalid",
@@ -290,7 +295,7 @@ describe("LLM call log: failed calls (#69)", () => {
         const res = await trigger(flow, app, weekSessionId);
         expect(res.status).toBe(502);
 
-        const row = await fetchRow(app, ids);
+        const row = await fetchRow(app, ids, flow === "weekly" ? 2 : 1);
         expectCommon(row, weekSessionId);
         expect(row).toMatchObject({
           outcome: "schema_invalid",

@@ -90,7 +90,9 @@ export async function composeWeekSummaries(
     let coachHeadline: string | null = null;
     try {
       const plan = await getPrescribedWeekBySessionId(session.id);
-      coachHeadline = plan ? headlineFromAnalysis(plan.analysis) : null;
+      coachHeadline = plan
+        ? (plan.readSections?.headline ?? headlineFromAnalysis(plan.analysis))
+        : null;
     } catch {
       coachHeadline = null;
     }
