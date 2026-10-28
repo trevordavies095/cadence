@@ -6,9 +6,7 @@ import {
   Banner,
   Button,
   ButtonLink,
-  CoachSurface,
   Muted,
-  Notice,
   Page,
   PageHead,
   PageTitle,
@@ -16,7 +14,7 @@ import {
   WaitingState,
   ErrorNote,
 } from "@/components/ui";
-import { CoachText } from "@/components/CoachText";
+import { CoachRead } from "@/components/CoachRead";
 import { PlanDayRow } from "@/components/PlanDayRow";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
 import {
@@ -206,20 +204,7 @@ export default function PlanPage() {
 
         {selected ? (
           <>
-            {(selected.safetyCallouts ?? []).map((c) => (
-              <Notice
-                key={`${c.title}:${c.body}`}
-                title={c.title}
-                severity={c.severity ?? "info"}
-              >
-                {c.body}
-              </Notice>
-            ))}
-            {selected.analysis?.trim() ? (
-              <CoachSurface>
-                <CoachText>{selected.analysis}</CoachText>
-              </CoachSurface>
-            ) : null}
+            <CoachRead record={selected} />
             <ol className="m-0 flex list-none flex-col gap-3 p-0">
               {selected.plan.days.map((day) => (
                 <PlanDayRow

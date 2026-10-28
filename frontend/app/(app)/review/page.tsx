@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CoachText } from "@/components/CoachText";
+import { CoachRead } from "@/components/CoachRead";
 import { NoteCard } from "@/components/NoteCard";
 import { PlanDayRow } from "@/components/PlanDayRow";
 import { ReadOnlyConversation } from "@/components/ReadOnlyConversation";
@@ -11,10 +11,8 @@ import {
   Banner,
   Button,
   ButtonLink,
-  CoachSurface,
   ErrorNote,
   Muted,
-  Notice,
   Page,
   PageHead,
   PageTitle,
@@ -245,18 +243,7 @@ function ReviewInner() {
         <>
           <section className="flex flex-col gap-3" aria-label="Coach Cade’s read">
             <SectionTitle>Coach Cade’s read</SectionTitle>
-            {(plan.safetyCallouts ?? []).map((c) => (
-              <Notice key={`${c.title}:${c.body}`} title={c.title} severity={c.severity ?? "info"}>
-                {c.body}
-              </Notice>
-            ))}
-            {plan.analysis?.trim() ? (
-              <CoachSurface>
-                <CoachText>{plan.analysis}</CoachText>
-              </CoachSurface>
-            ) : (
-              <Muted>Coach Cade had nothing to add.</Muted>
-            )}
+            <CoachRead record={plan} emptyText="Coach Cade had nothing to add." />
           </section>
 
           <section className="flex flex-col gap-3" aria-label="Next week">
