@@ -90,13 +90,13 @@ stateDiagram-v2
 
 ![Your week: mileage, heart rate zones and runs for Oct 5 – 11](docs/images/dark/your-week.png)
 
-**The plan.** Coach Cade's read of the week and next week's plan, with the reasons behind each session.
+**The plan.** Coach Cade's read opens with its headline and what it is watching, with the answers to your questions and the full read a click away. Each day carries the reason for its session.
 
-![Plan: Coach Cade's read of the week and the questions it answers](docs/images/dark/plan.png)
+![Plan: Coach Cade's headline and what it is watching, above this week's days](docs/images/dark/plan.png)
 
-**Coach Cade.** Chat during the week and attach a run. The coach reads the splits and heart rate, and changes the rest of the week if needed.
+**Coach Cade.** Chat during the week and attach a run. The run card shows its numbers and splits, and Coach Cade says what they mean. When the week changes, the changed days appear under the reply.
 
-![Coach Cade: a run attached to a message and the coach's split-by-split reply](docs/images/dark/coach-chat.png)
+![Coach Cade: a run attached to a message, with its splits a click away, and Coach Cade's reply](docs/images/dark/coach-chat.png)
 
 **About you.** What Coach Cade knows about you. Changes it suggests wait for **Looks right**, and you can fix anything in your own words.
 
