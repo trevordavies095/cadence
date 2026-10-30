@@ -43,6 +43,39 @@ export function formatSubjectiveRunLine(
   return parts.length > 0 ? parts.join("  ·  ") : undefined;
 }
 
+/**
+ * "Strength, rehab or cross-training: 2 sessions", or "2 of 3 planned" when a
+ * planned count was given, with any notes. Any one part is enough for a line.
+ */
+function formatStrengthLine(
+  ss: SubjectiveWeeklyMeta["strength_sessions"],
+): string | undefined {
+  if (!ss) return undefined;
+  const c = ss.completed;
+  const p = ss.planned;
+  const notes = ss.notes?.trim();
+  const count =
+    c !== undefined && p !== undefined
+      ? `${c} of ${p} planned`
+      : c !== undefined
+        ? `${c} ${c === 1 ? "session" : "sessions"}`
+        : p !== undefined
+          ? `${p} planned`
+          : undefined;
+  let body: string;
+  if (count && notes) {
+    // Notes already wrapped in parentheses ("(None planned.)") are not wrapped again.
+    body = /^\(.*\)$/s.test(notes) ? `${count} ${notes}` : `${count} (${notes})`;
+  } else if (count) {
+    body = count;
+  } else if (notes) {
+    body = notes;
+  } else {
+    return undefined;
+  }
+  return `Strength, rehab or cross-training: ${body}`;
+}
+
 export function buildSubjectiveRecapMarkdown(
   weekly: SubjectiveWeeklyMeta | undefined,
 ): string {
@@ -66,20 +99,10 @@ export function buildSubjectiveRecapMarkdown(
     lines.push("");
   }
 
-  const ss = weekly.strength_sessions;
-  if (ss !== undefined) {
-    const c = ss.completed;
-    const p = ss.planned;
-    if (c !== undefined && p !== undefined) {
-      let s = `Strength sessions completed: ${c} of ${p}`;
-      const notes = ss.notes?.trim();
-      if (notes) {
-        // Notes already wrapped in parentheses ("(None planned.)") are not wrapped again.
-        s += /^\(.*\)$/s.test(notes) ? ` ${notes}` : ` (${notes})`;
-      }
-      lines.push(s);
-      lines.push("");
-    }
+  const strength = formatStrengthLine(weekly.strength_sessions);
+  if (strength) {
+    lines.push(strength);
+    lines.push("");
   }
 
   if (weekly.stress_level?.trim()) {

@@ -38,7 +38,7 @@ export const SUBJECTIVE_QUESTIONNAIRE: SubjectiveQuestionnaire = {
     sleep_avg_hrs: "Optional average sleep hours this week.",
     sleep_range_hrs: "Optional [low, high] sleep hours.",
     strength_sessions:
-      "Optional { completed, planned, notes } for strength work.",
+      "Optional { completed, planned, notes } for strength, rehab or cross-training sessions (swimming, cycling, physio exercises).",
     stress_level: "Optional free-text stress level.",
     body_check: "Optional free-text body check.",
     feeling_into_next_week: "Optional free-text outlook.",

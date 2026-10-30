@@ -64,7 +64,7 @@ describe("buildSubjectiveRecapMarkdown sleep + strength notes (#85)", () => {
     const md = buildSubjectiveRecapMarkdown({
       strength_sessions: { completed: 0, planned: 0, notes: "(None planned.)" },
     });
-    expect(md).toContain("Strength sessions completed: 0 of 0 (None planned.)");
+    expect(md).toContain("Strength, rehab or cross-training: 0 of 0 planned (None planned.)");
     expect(md).not.toContain("((");
   });
 });
@@ -150,7 +150,7 @@ describe("POST /weeks/:id/recap/subjective sleep (#85)", () => {
     });
     expect(res.status).toBe(201);
     const md = await storedMarkdown(app, id);
-    expect(md).toContain("Strength sessions completed: 0 of 0 (None planned.)");
+    expect(md).toContain("Strength, rehab or cross-training: 0 of 0 planned (None planned.)");
     expect(md).not.toContain("((");
   });
 });

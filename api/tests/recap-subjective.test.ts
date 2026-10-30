@@ -280,6 +280,30 @@ describe("weekly recap subjective gate + merge (#23/#24)", () => {
     expect(fromStore!.answers.runs[0]!.felt).toBe(8);
   });
 
+  it("a strength answer with only the number done reaches the report", async () => {
+    const { app, weekSessionId } = await openWeek();
+    await app.request(`/weeks/${weekSessionId}/recap`);
+
+    // The check-in page's shape when the athlete gives only the count.
+    const saveRes = await app.request(
+      `/weeks/${weekSessionId}/recap/subjective`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          runs: [],
+          weekly: { strength_sessions: { completed: 2 } },
+        }),
+      },
+    );
+    expect(saveRes.status).toBe(201);
+    const saved = await json(saveRes);
+    const report = saved.gate as { reportMarkdown?: string };
+    expect(report.reportMarkdown).toContain(
+      "Strength, rehab or cross-training: 2 sessions",
+    );
+  });
+
   it("prefers Tempo apiRpe when athlete omits RPE", async () => {
     await acceptAndReady();
     const base = createExportTempoPort({ exportPath: FIXTURE_ZIP });
