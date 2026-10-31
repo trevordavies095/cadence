@@ -68,7 +68,7 @@ function runSeconds(w: TempoWorkoutSummary): number {
 }
 
 /** Z4 + Z5 seconds for one column of the weekly recap; undefined when a bucket is null. */
-function hardSeconds(
+export function hardSeconds(
   stats: TempoWeeklyRecapStats | null,
   column: "current" | "previous",
 ): number | undefined {
@@ -90,6 +90,11 @@ export function buildSummaryGoalLines(args: {
    * Undefined when no threshold is set in the running log: no line.
    */
   thresholdSeconds?: number;
+  /**
+   * Z4 + Z5 seconds from each run's HR series (buildSummary.ts), used where
+   * the weekly recap has no zone buckets: export mode, or a null bucket.
+   */
+  hardSecondsFromSeries?: { current?: number; previous?: number };
 }): SummaryGoalLine[] {
   const { thresholds: k, workouts, stats, unit, timezone } = args;
   const headline = new Set(k.headline);
@@ -126,12 +131,14 @@ export function buildSummaryGoalLines(args: {
   }
 
   if (k.hardMinutes.shown) {
-    const current = hardSeconds(stats, "current");
+    const fromSeries = args.hardSecondsFromSeries;
+    const current = hardSeconds(stats, "current") ?? fromSeries?.current;
     let value = "not available (no heart-rate data)";
     if (current !== undefined) {
       const minutes = Math.round(current / 60);
       value = `${minutes} min`;
-      const previous = hardSeconds(stats, "previous");
+      const previous =
+        hardSeconds(stats, "previous") ?? fromSeries?.previous;
       if (previous !== undefined) {
         const delta = minutes - Math.round(previous / 60);
         value +=

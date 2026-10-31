@@ -7,7 +7,11 @@ import { appendGoal } from "../src/goal/store.js";
 import type { TrainingGoal } from "../src/goal/types.js";
 import { migrate } from "../src/migrate.js";
 import { createExportTempoPort } from "../src/tempo/exportZip.js";
-import type { TempoPort, TempoWeeklyRecapStats } from "../src/tempo/port.js";
+import type {
+  TempoHeartRateZone,
+  TempoPort,
+  TempoWeeklyRecapStats,
+} from "../src/tempo/port.js";
 import {
   acceptAndReady,
   json,
@@ -42,10 +46,43 @@ const RETYPE: Record<string, string> = {
   "22222222-2222-4222-8222-222222222222": "Race",
 };
 
-function port(stats: TempoWeeklyRecapStats | null): TempoPort {
+/** Zones low enough that all of the fixture's heart rate (120 to 150 bpm) is zone 5. */
+const LOW_ZONES: TempoHeartRateZone[] = [
+  { zoneNumber: 1, minBpm: 50, maxBpm: 60 },
+  { zoneNumber: 2, minBpm: 60, maxBpm: 70 },
+  { zoneNumber: 3, minBpm: 70, maxBpm: 80 },
+  { zoneNumber: 4, minBpm: 80, maxBpm: 90 },
+  { zoneNumber: 5, minBpm: 90, maxBpm: 201 },
+];
+
+type PortOptions = {
+  /** Replace the athlete's zones in settings. */
+  zones?: TempoHeartRateZone[];
+  /** Runs carry no heart-rate series. */
+  noSeries?: boolean;
+};
+
+function port(
+  stats: TempoWeeklyRecapStats | null,
+  options: PortOptions = {},
+): TempoPort {
   const base = createExportTempoPort({ exportPath: FIXTURE_ZIP });
   return {
     ...base,
+    async getSettings() {
+      const settings = await base.getSettings();
+      return options.zones
+        ? {
+            ...settings,
+            heartRateZones: { ...settings.heartRateZones, zones: options.zones },
+          }
+        : settings;
+    },
+    async getWorkout(id) {
+      const w = await base.getWorkout(id);
+      return w && options.noSeries ? { ...w, timeSeries: [] } : w;
+    },
+    ...(options.noSeries ? { getWorkoutTimeSeries: async () => [] } : {}),
     async listWorkouts(q) {
       const res = await base.listWorkouts(q);
       return {
@@ -69,12 +106,13 @@ type Summary = { goalLines: GoalLine[]; markdown: string };
 async function summaryFor(
   goal: TrainingGoal | null,
   stats: TempoWeeklyRecapStats | null = STATS,
+  options: PortOptions = {},
 ): Promise<Summary> {
   if (goal) await appendGoal(new Date("2026-10-01T12:00:00Z"), goal, "settings");
   const app = createApp({
     dataProtectionKey: TEST_DATA_PROTECTION_KEY,
     clock: new FixedClock(new Date("2026-10-21T15:00:00.000Z")),
-    tempoPort: port(stats),
+    tempoPort: port(stats, options),
   });
   const week = await json(await app.request("/weeks/current", { method: "POST" }));
   expect(week.isoWeek).toBe("2026-W43");
@@ -157,9 +195,25 @@ describe("summary goal lines (#13)", () => {
     expect(s.goalLines[3]!.flag).toBe(true);
   });
 
-  it("null zone buckets: not available", async () => {
-    const { zoneSecondsZ4: _z4, zoneSecondsZ5: _z5, ...noHr } = STATS;
-    const s = await summaryFor({ kind: "return" }, noHr);
+  it("null zone buckets: hard minutes from the runs' heart-rate series", async () => {
+    const { zoneSecondsZ4: _z4, zoneSecondsZ5: _z5, ...noBuckets } = STATS;
+    // The fixture's heart rate stays below zone 4 (176 bpm).
+    const s = await summaryFor({ kind: "return" }, noBuckets);
+    expect(texts(s)).toContain("Hard minutes (zones 4 and 5): 0 min");
+    expect(texts(s)).not.toContain("Hard minutes above zero this week");
+  });
+
+  it("null zone buckets, time in zone 5: the series count and the return flag", async () => {
+    const { zoneSecondsZ4: _z4, zoneSecondsZ5: _z5, ...noBuckets } = STATS;
+    const s = await summaryFor({ kind: "return" }, noBuckets, { zones: LOW_ZONES });
+    // Both runs' 90 minutes of heart rate; no runs the week before, so no delta.
+    expect(texts(s)).toContain("Hard minutes (zones 4 and 5): 90 min");
+    expect(texts(s)).toContain("Hard minutes above zero this week");
+  });
+
+  it("null zone buckets and no heart-rate series: not available", async () => {
+    const { zoneSecondsZ4: _z4, zoneSecondsZ5: _z5, ...noBuckets } = STATS;
+    const s = await summaryFor({ kind: "return" }, noBuckets, { noSeries: true });
     expect(texts(s)).toContain(
       "Hard minutes (zones 4 and 5): not available (no heart-rate data)",
     );
@@ -174,12 +228,12 @@ describe("summary goal lines (#13)", () => {
     expect(texts(s)).toEqual(["Hard minutes (zones 4 and 5): 22 min"]);
   });
 
-  it("without the weekly recap: run time and longest run from the runs", async () => {
+  it("without the weekly recap: run time, longest run and hard minutes from the runs", async () => {
     const s = await summaryFor({ kind: "return" }, null);
     expect(texts(s)).toEqual([
       "Run time: 1 h 30 min moving",
       "Longest run: 1 h",
-      "Hard minutes (zones 4 and 5): not available (no heart-rate data)",
+      "Hard minutes (zones 4 and 5): 0 min",
     ]);
   });
 

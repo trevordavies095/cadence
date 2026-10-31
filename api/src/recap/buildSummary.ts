@@ -1,6 +1,7 @@
 import { listAllWorkoutsInWindow } from "./listWindow.js";
 import type {
   TempoAthleteSettings,
+  TempoHeartRateZone,
   TempoPort,
   TempoUnitPreference,
   TempoWorkoutSummary,
@@ -25,6 +26,7 @@ import {
 import {
   buildSummaryGoalLines,
   buildSummaryGoalLinesMarkdown,
+  hardSeconds,
   type SummaryGoalLine,
 } from "./summaryGoalLines.js";
 import {
@@ -34,6 +36,7 @@ import {
 } from "./thresholdMinutes.js";
 import { loadRecapWorkoutDetails } from "./workoutDetails.js";
 import { priorWeekWindows, type WeekWindow } from "./weekWindows.js";
+import { computeWeekZoneDistribution } from "./zones.js";
 
 export type RecapSummaryResult = {
   weekSessionId: string;
@@ -125,6 +128,31 @@ async function weekThresholdSeconds(
   );
 }
 
+/**
+ * The week's Z4 + Z5 seconds from each run's HR series, as the zones section
+ * falls back to (buildZones.ts). Undefined unless five zones are set and the
+ * week holds some heart rate; a failed fetch is undefined too, never an error.
+ */
+async function seriesHardSeconds(
+  port: TempoPort,
+  zones: readonly TempoHeartRateZone[],
+  workouts: readonly TempoWorkoutSummary[],
+): Promise<number | undefined> {
+  if (zones.length !== 5 || workouts.length === 0) return undefined;
+  let details: Awaited<ReturnType<typeof loadRecapWorkoutDetails>>;
+  try {
+    details = await loadRecapWorkoutDetails(port, workouts);
+  } catch {
+    return undefined;
+  }
+  const distribution = computeWeekZoneDistribution({
+    zones,
+    workouts: details.map((d, i) => d ?? { ...workouts[i]!, splits: [] }),
+  });
+  if (distribution.totalHrSeconds === 0) return undefined;
+  return distribution.zoneSeconds[3]! + distribution.zoneSeconds[4]!;
+}
+
 /** Build Summary section for a persisted week session via TempoPort. */
 export async function buildRecapSummary(args: {
   session: WeekSession;
@@ -158,17 +186,19 @@ export async function buildRecapSummary(args: {
 
   let comparison: SummaryComparison;
   let comparisonSource: "weekly-recap" | "windows";
+  let prevItems: TempoWorkoutSummary[] | undefined;
   if (stats) {
     comparison = buildSummaryComparisonFromStats({ thisWeek, stats });
     comparisonSource = "weekly-recap";
   } else {
-    const [prevItems, ...trailingItemSets] = await Promise.all([
+    const [prevWindowItems, ...trailingItemSets] = await Promise.all([
       listAllWorkoutsInWindow(tempoPort, prev),
       ...trailing.map((w) => listAllWorkoutsInWindow(tempoPort, w)),
     ]);
+    prevItems = prevWindowItems;
     comparison = buildSummaryComparison({
       thisWeek,
-      prevWeek: aggregateWorkouts(prevItems),
+      prevWeek: aggregateWorkouts(prevWindowItems),
       trailingWeeks: trailingItemSets.map((items) => aggregateWorkouts(items)),
     });
     comparisonSource = "windows";
@@ -178,6 +208,24 @@ export async function buildRecapSummary(args: {
   const thresholdSeconds = wantsThresholds
     ? await weekThresholdSeconds(tempoPort, settings, thisItems)
     : undefined;
+  // Without the log's zone buckets (export mode, or a null bucket), hard
+  // minutes come from the runs' series rather than reading "not available".
+  let hardSecondsFromSeries: { current?: number; previous?: number } | undefined;
+  if (
+    args.knobs?.thresholds.hardMinutes.shown &&
+    hardSeconds(stats, "current") === undefined
+  ) {
+    const zones =
+      (settings ?? (await readSettings(tempoPort)))?.heartRateZones.zones ?? [];
+    const [current, previous] = await Promise.all([
+      seriesHardSeconds(tempoPort, zones, thisItems),
+      // The delta only where the previous week's runs are already listed.
+      hardSeconds(stats, "previous") === undefined && prevItems
+        ? seriesHardSeconds(tempoPort, zones, prevItems)
+        : undefined,
+    ]);
+    hardSecondsFromSeries = { current, previous };
+  }
   const goalLines = args.knobs
     ? buildSummaryGoalLines({
         thresholds: args.knobs.thresholds,
@@ -186,6 +234,7 @@ export async function buildRecapSummary(args: {
         unit,
         timezone: session.timezone,
         thresholdSeconds,
+        hardSecondsFromSeries,
       })
     : [];
   const markdown = buildSummaryMarkdown(
