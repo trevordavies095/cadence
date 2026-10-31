@@ -1,5 +1,6 @@
 export {
   assembleLeanLiveContext,
+  packetCoaching,
   resolveFocusWeekSession,
   toPacketPlanWeek,
 } from "./assemble.js";
@@ -35,6 +36,7 @@ export type {
   IdentityHints,
   ModelPacket,
   ModelPacketAttachment,
+  ModelPacketCoaching,
   ModelPacketPlanWeek,
   ModelPacketRecentWeek,
   ModelPacketRole,

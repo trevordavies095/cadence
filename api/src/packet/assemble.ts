@@ -14,9 +14,13 @@ import {
   resolveRecentHistoryLimit,
 } from "./lean.js";
 import { loadRecentWeekSummaries } from "./recentHistory.js";
-import { nextIsoWeekBounds } from "../clock/isoWeek.js";
+import { isoWeekMondayDate, nextIsoWeekBounds } from "../clock/isoWeek.js";
+import { resolveGoalContext } from "../goal/context.js";
+import { getCurrentGoal } from "../goal/store.js";
+import type { TrainingGoal } from "../goal/types.js";
 import type {
   IdentityHints,
+  ModelPacketCoaching,
   ModelPacketPlanWeek,
   ModelPacket,
   ModelPacketWeek,
@@ -51,6 +55,22 @@ function toPacketWeek(session: WeekSession): ModelPacketWeek {
 }
 
 /**
+ * The packet's coaching block for the week starting `weekMonday`, or null with
+ * no goal stored. Thresholds and max heart rate are left unset here.
+ */
+export function packetCoaching(
+  goal: TrainingGoal | null,
+  weekMonday: string,
+): ModelPacketCoaching | null {
+  if (!goal) return null;
+  const context = resolveGoalContext(goal, weekMonday);
+  const coaching: ModelPacketCoaching = { phase: context.phase };
+  if (context.weeksToRace !== null) coaching.weeksToRace = context.weeksToRace;
+  if (context.racePassed) coaching.racePassed = true;
+  return coaching;
+}
+
+/**
  * Assemble a lean live ModelPacket for LlmPort (#34).
  *
  * Enforces: dossier + last N prior week summaries/plans + focus week thread only.
@@ -62,11 +82,18 @@ export async function assembleLeanLiveContext(
   const limit = resolveRecentHistoryLimit(input.recentHistoryLimit);
   const focusId = input.focusSession.id;
 
-  const [dossier, recentHistory, threadMessages] = await Promise.all([
-    getCurrentDossier(),
-    loadRecentWeekSummaries({ focusWeekSessionId: focusId, limit }),
-    listThreadMessages(focusId),
-  ]);
+  const [dossier, recentHistory, threadMessages, currentGoal] =
+    await Promise.all([
+      getCurrentDossier(),
+      loadRecentWeekSummaries({ focusWeekSessionId: focusId, limit }),
+      listThreadMessages(focusId),
+      getCurrentGoal(),
+    ]);
+  const goal = currentGoal?.goal ?? null;
+  const coaching = packetCoaching(
+    goal,
+    isoWeekMondayDate(input.focusSession.isoWeek),
+  );
 
   // Defense in depth: even if listThreadMessages were widened, drop other weeks.
   const leanThread = filterThreadToFocusWeek(threadMessages, focusId);
@@ -98,6 +125,8 @@ export async function assembleLeanLiveContext(
     recentHistory,
     recentHistoryLimit: limit,
     identityHints: input.identityHints,
+    goal,
+    coaching,
   });
 }
 

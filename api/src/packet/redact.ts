@@ -158,9 +158,17 @@ export function assertPacketHasNoPiiOrGps(
     identityHints?: IdentityHints;
   },
 ): void {
-  walkKeys(packet);
+  // A packet's `goal` is the athlete's own training goal (kind, distance, race
+  // name and date, free-text target): passed through untouched and never
+  // treated as identity, so a race name that shares a word with the athlete's
+  // name does not fail the send.
+  const checked =
+    isPlainObject(packet) && "goal" in packet
+      ? { ...packet, goal: null }
+      : packet;
+  walkKeys(checked);
 
-  const json = packetToJson(packet);
+  const json = packetToJson(checked);
   // Fresh regex — avoid lastIndex sticky state on the module-level /g pattern.
   if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(json)) {
     throw new Error("pii_leaked:email_pattern");

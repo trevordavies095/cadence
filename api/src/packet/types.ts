@@ -3,7 +3,9 @@
  * This is the structured payload LlmPort receives — identity PII and GPS omitted.
  */
 
+import type { TrainingGoal } from "../goal/types.js";
 import type { PrescribedWeek } from "../llm/types.js";
+import type { RecapPhase } from "../recap/phase.js";
 
 export type ModelPacketRole = "athlete" | "coach" | "system";
 
@@ -77,6 +79,23 @@ export type ModelPacketRecentWeek = {
 };
 
 /**
+ * Where the athlete is in training, resolved from the goal for the focus week's
+ * Monday. Optional fields are absent when they do not apply or are not known yet.
+ */
+export type ModelPacketCoaching = {
+  phase: RecapPhase;
+  /** Whole weeks from the focus week's Monday to the race; absent with no date or after the race. */
+  weeksToRace?: number;
+  /** Present (true) only once the race date is before the focus week's Monday. */
+  racePassed?: boolean;
+  /** Threshold pace, seconds per km. */
+  thresholdPaceS?: number;
+  thresholdHeartRateBpm?: number;
+  maxHeartRateBpm?: number;
+  observedMaxHeartRateBpm?: number;
+};
+
+/**
  * Structured context for the LLM.
  * Athlete-volunteered coaching constraints in `dossier.body` remain available
  * after identity/GPS scrubbing.
@@ -104,6 +123,13 @@ export type ModelPacket = {
   recentHistory: ModelPacketRecentWeek[];
   /** Resolved N for this packet (see PACKET_RECENT_HISTORY_LIMIT). */
   recentHistoryLimit: number;
+  /**
+   * The current training goal as stored, or null with none. Not identity: it
+   * passes through redaction untouched (a race name is the athlete's own goal).
+   */
+  goal: TrainingGoal | null;
+  /** Coaching context for the focus week; null when no goal is stored. */
+  coaching: ModelPacketCoaching | null;
 };
 
 /** Known identity strings used to scrub free text (optional). */
@@ -136,4 +162,8 @@ export type BuildModelPacketInput = {
   /** Window size N; defaults applied by lean assembly when omitted. */
   recentHistoryLimit?: number;
   identityHints?: IdentityHints;
+  /** Current training goal; null or omitted when none. */
+  goal?: TrainingGoal | null;
+  /** Coaching context for the focus week; null or omitted when no goal. */
+  coaching?: ModelPacketCoaching | null;
 };

@@ -236,6 +236,10 @@ export function buildModelPacket(input: BuildModelPacketInput): ModelPacket {
     week: input.week ?? null,
     recentHistory,
     recentHistoryLimit,
+    // The goal and its coaching context are structured athlete data, not
+    // identity: copied through without scrubbing.
+    goal: input.goal ? { ...input.goal } : null,
+    coaching: input.coaching ? { ...input.coaching } : null,
   };
   if (input.planWeek !== undefined) {
     packet.planWeek = input.planWeek;
