@@ -15,6 +15,7 @@ import { disclaimerRoutes } from "./routes/disclaimer.js";
 import { createDossierAuditRoutes } from "./routes/dossierAudit.js";
 import { createDossierCorrectionRoutes } from "./routes/dossierCorrection.js";
 import { createDossierRoutes } from "./routes/dossier.js";
+import { createGoalRoutes } from "./routes/goal.js";
 import { healthRoutes } from "./routes/health.js";
 import { createHomeRoutes } from "./routes/home.js";
 import { createOnboardingRoutes } from "./routes/onboarding.js";
@@ -150,6 +151,7 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/", createDossierAuditRoutes({ llmPort, clock }));
   app.route("/", createDossierRoutes({ clock }));
   app.route("/", createOnboardingRoutes({ tempoPort, llmPort, clock }));
+  app.route("/", createGoalRoutes({ clock }));
   app.route("/", createWeekRoutes(clock, athleteTimezone, tempoPort));
   app.route("/", createLoopStatusRoutes(clock, athleteTimezone, sources));
   app.route("/", createHomeRoutes({ clock, athleteTimezone, tempoPort, sources }));

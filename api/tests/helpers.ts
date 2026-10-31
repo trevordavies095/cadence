@@ -32,6 +32,7 @@ export async function resetAppTables(): Promise<void> {
     DELETE FROM dossier_proposals;
     DELETE FROM dossier_audit_meta;
     DELETE FROM onboarding_answers;
+    DELETE FROM training_goals;
     DELETE FROM last_outbound_packet;
     DELETE FROM llm_call_log;
     DELETE FROM key_derivation_rotation;
