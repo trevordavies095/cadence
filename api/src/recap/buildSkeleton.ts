@@ -89,6 +89,7 @@ export async function buildRecapSkeleton(args: {
         tempoPort,
         unit: args.unit,
         weeklyStats,
+        knobs,
       }),
       buildRecapZones({
         session,

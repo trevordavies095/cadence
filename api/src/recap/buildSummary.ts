@@ -20,6 +20,11 @@ import {
   fetchWeeklyRecapStats,
   type SharedWeeklyRecapStats,
 } from "./fetchWeeklyRecapStats.js";
+import {
+  buildSummaryGoalLines,
+  buildSummaryGoalLinesMarkdown,
+  type SummaryGoalLine,
+} from "./summaryGoalLines.js";
 import { priorWeekWindows, type WeekWindow } from "./weekWindows.js";
 
 export type RecapSummaryResult = {
@@ -33,6 +38,8 @@ export type RecapSummaryResult = {
   /** Where prev / 3-wk columns came from: Tempo stats or the week windows. */
   comparisonSource: "weekly-recap" | "windows";
   rows: RecapSummaryTableRow[];
+  /** The goal's lines (hard minutes, quality sessions, run time, longest run); [] without knobs. */
+  goalLines: SummaryGoalLine[];
   markdown: string;
 };
 
@@ -118,7 +125,19 @@ export async function buildRecapSummary(args: {
     comparisonSource = "windows";
   }
   const rows = buildSummaryTableRows({ thisWeek, comparison, unit });
-  const markdown = buildSummaryMarkdown(rows);
+  const goalLines = args.knobs
+    ? buildSummaryGoalLines({
+        thresholds: args.knobs.thresholds,
+        workouts: thisItems,
+        stats,
+        unit,
+        timezone: session.timezone,
+      })
+    : [];
+  const markdown = buildSummaryMarkdown(
+    rows,
+    buildSummaryGoalLinesMarkdown(goalLines),
+  );
 
   return {
     weekSessionId: session.id,
@@ -130,6 +149,7 @@ export async function buildRecapSummary(args: {
     comparison,
     comparisonSource,
     rows,
+    goalLines,
     markdown,
   };
 }

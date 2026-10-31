@@ -87,10 +87,12 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
     }
 
     try {
+      const { knobs } = await loadWeekGoalContext(session);
       const summary = await buildRecapSummary({
         session,
         tempoPort,
         unit: unitParsed,
+        knobs,
       });
 
       if (formatRaw === "markdown") {
@@ -109,6 +111,7 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
         comparison: summary.comparison,
         comparisonSource: summary.comparisonSource,
         rows: summary.rows,
+        goalLines: summary.goalLines,
         markdown: summary.markdown,
       });
     } catch (err) {
