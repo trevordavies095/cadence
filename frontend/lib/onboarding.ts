@@ -122,6 +122,28 @@ export function draftGoal(d: GoalDraft): TrainingGoal | null {
   return null;
 }
 
+/**
+ * The stored goal as fields, so Settings can open it for a change. The reverse of
+ * `draftGoal`: what goes in comes back out unchanged.
+ */
+export function goalDraft(goal: TrainingGoal): GoalDraft {
+  const d: GoalDraft = { ...EMPTY_GOAL_DRAFT, goalKind: goal.kind };
+  if (goal.kind === "race") {
+    d.raceDistance = goal.distance ?? null;
+    d.raceName = goal.raceName ?? "";
+    d.raceDate = goal.raceDate ?? "";
+    d.raceTarget = goal.target ?? "";
+  } else if (goal.kind === "speed") {
+    d.speedDistance = goal.distance === "5k" || goal.distance === "10k" ? goal.distance : null;
+    d.speedTarget = goal.target ?? "";
+    d.nextRaceDate = goal.raceDate ?? "";
+  } else if (goal.kind === "return") {
+    d.startingPoint = goal.startingPoint ?? "";
+    d.since = goal.since ?? "";
+  }
+  return d;
+}
+
 /** Plain words when the goal is not complete yet; null when it is fine to go on. */
 export function goalProblem(d: GoalDraft): string | null {
   if (d.goalKind === null) return "Choose one to continue.";

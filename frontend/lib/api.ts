@@ -947,3 +947,42 @@ export async function fetchGoalKind(): Promise<GoalKind | null> {
   const body = await readJson<{ goal: { kind: GoalKind } }>(res);
   return body.goal.kind;
 }
+
+/** The current goal as stored, with the sentence Settings shows (null when it cannot be worded). */
+export type StoredGoal = {
+  id: number;
+  goal: TrainingGoal;
+  source: "onboarding" | "settings";
+  createdAt: string;
+  sentence: string | null;
+};
+
+/** The current goal, or null when none is stored yet (before the first answers). */
+export async function fetchGoal(): Promise<StoredGoal | null> {
+  const res = await fetch("/api/goal");
+  if (res.status === 404) return null;
+  return readJson<StoredGoal>(res);
+}
+
+/**
+ * Store a new goal. Once About you exists, the API also tells Coach Cade "My goal is now …"
+ * through Fix something in the same request and returns that note; null before then.
+ */
+export async function saveGoal(goal: TrainingGoal): Promise<
+  StoredGoal & {
+    correction: {
+      athleteMessage: ThreadMessage;
+      coachMessage: ThreadMessage;
+      dossierProposal: DossierProposal;
+      dossierVersionId: number;
+    } | null;
+  }
+> {
+  return readJson(
+    await fetch("/api/goal", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ goal }),
+    }),
+  );
+}

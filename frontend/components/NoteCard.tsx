@@ -11,7 +11,7 @@ import {
 import { describeError, type UiError } from "@/lib/errors";
 import { Button, Card, ErrorNote, Field, Textarea } from "./ui";
 
-function toNote(p: DossierProposal): ThreadNote {
+export function toNote(p: DossierProposal): ThreadNote {
   return {
     id: p.id,
     kind: p.kind ?? "correction",
