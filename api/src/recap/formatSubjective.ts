@@ -9,12 +9,15 @@ import type {
   SubjectiveWeeklyMeta,
 } from "./subjectiveQuestionnaire.js";
 import type { NeedsSubjectiveRun } from "./subjectiveRuns.js";
+import { formatDayShort } from "../clock/weekRangeShort.js";
 
 export type SubjectiveRunFields = {
   rpe?: number;
   felt?: number;
   pain?: string;
   pain_score?: number;
+  /** A Race run's result against the athlete's target. */
+  result?: string;
 };
 
 /** Last row wins when duplicate dates appear. */
@@ -28,6 +31,7 @@ export function subjectiveRunsToDateMap(
     if (r.felt !== undefined) bits.felt = r.felt;
     if (r.pain !== undefined) bits.pain = r.pain;
     if (r.pain_score !== undefined) bits.pain_score = r.pain_score;
+    if (r.result !== undefined) bits.result = r.result;
     m.set(r.date, bits);
   }
   return m;
@@ -39,6 +43,9 @@ export function formatSubjectiveRunLine(
   const parts: string[] = [];
   if (fields.rpe !== undefined) parts.push(`RPE: ${fields.rpe}/10`);
   if (fields.felt !== undefined) parts.push(`Felt: ${fields.felt}/10`);
+  if (fields.result !== undefined && fields.result.trim()) {
+    parts.push(`Result: ${fields.result.trim()}`);
+  }
   const painText = fields.pain?.trim();
   if (fields.pain_score !== undefined) {
     parts.push(
@@ -112,19 +119,30 @@ export function formatPainHighLine(
   return `Pain: highest ${highest}/10 (${days.join(", ")})`;
 }
 
+/**
+ * The check-in section: the week's highest pain score, then each race result
+ * (with its day), then the weekly answers. Empty when there is none.
+ */
 export function buildSubjectiveRecapMarkdown(
-  weekly: SubjectiveWeeklyMeta | undefined,
+  weeklyIn: SubjectiveWeeklyMeta | undefined,
   runs: readonly SubjectiveRunRow[] = [],
 ): string {
+  const results = runs.filter((r) => r.result?.trim());
   const painHigh = formatPainHighLine(runs);
-  if (!weekly && !painHigh) return "";
-  weekly ??= {};
+  if (!weeklyIn && results.length === 0 && !painHigh) return "";
+  const weekly = weeklyIn ?? {};
   const lines: string[] = [];
   lines.push("## Subjective recap");
   lines.push("");
 
   if (painHigh) {
     lines.push(painHigh);
+    lines.push("");
+  }
+
+  for (const r of results) {
+    const day = formatDayShort(r.date) || r.date;
+    lines.push(`Race result (${day}): ${r.result!.trim()}`);
     lines.push("");
   }
 

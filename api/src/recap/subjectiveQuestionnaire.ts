@@ -11,6 +11,7 @@ export type SubjectiveQuestionnaire = {
     felt: string;
     pain: string;
     pain_score: string;
+    result: string;
   };
   weekly: {
     sleep_avg_hrs: string;
@@ -36,6 +37,8 @@ export const SUBJECTIVE_QUESTIONNAIRE: SubjectiveQuestionnaire = {
     pain: "Optional free-text niggles / pain (or omit).",
     pain_score:
       "Optional integer 0–10 (0 is no pain). Asked when the goal is a return to running, beside the free text.",
+    result:
+      "Optional free text, only for a run typed Race: how it went against the athlete's target (asked instead of felt).",
   },
   weekly: {
     sleep_avg_hrs: "Optional average sleep hours this week.",
@@ -57,6 +60,8 @@ export type SubjectiveRunRow = {
   pain?: string;
   /** 0 to 10; 0 means no pain. Asked when the goal is a return to running. */
   pain_score?: number;
+  /** A Race run's answer to "How did it go against your target?". */
+  result?: string;
 };
 
 export type SubjectiveStrengthSessions = {
@@ -130,6 +135,14 @@ function parseRunRow(
     const score = Math.round(o.pain_score);
     if (score < 0 || score > 10) return { ok: false, error: "invalid_pain_score" };
     row.pain_score = score;
+  }
+
+  if (o.result !== undefined && o.result !== null) {
+    if (typeof o.result !== "string") {
+      return { ok: false, error: "invalid_result" };
+    }
+    const result = o.result.trim();
+    if (result) row.result = result;
   }
 
   return { ok: true, row };

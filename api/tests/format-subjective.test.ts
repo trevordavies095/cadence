@@ -119,3 +119,42 @@ describe("formatSubjective", () => {
     expect(out.runs[0]!.rpe).toBe(3);
   });
 });
+
+describe("race result", () => {
+  it("prints the result on the run-by-run line", () => {
+    expect(
+      formatSubjectiveRunLine({
+        rpe: 9,
+        result: "3:28, two minutes under",
+        pain: "none",
+      }),
+    ).toBe("RPE: 9/10  ·  Result: 3:28, two minutes under  ·  Pain: none");
+    expect(formatSubjectiveRunLine({ result: "  Missed by 40 s  " })).toBe(
+      "Result: Missed by 40 s",
+    );
+  });
+
+  it("prints the race result in the check-in section, with its day", () => {
+    const md = buildSubjectiveRecapMarkdown(undefined, [
+      { date: "2026-10-20", felt: 7 },
+      { date: "2026-10-24", rpe: 9, result: "3:28, two minutes under" },
+    ]);
+    expect(md).toContain("## Subjective recap");
+    expect(md).toContain("Race result (Sat Oct 24): 3:28, two minutes under");
+    expect(md).not.toContain("Tue Oct 20");
+  });
+
+  it("puts the race result before the weekly answers", () => {
+    const md = buildSubjectiveRecapMarkdown({ stress_level: "low" }, [
+      { date: "2026-10-24", result: "PB" },
+    ]);
+    expect(md.indexOf("Race result (Sat Oct 24): PB")).toBeGreaterThan(-1);
+    expect(md.indexOf("Race result")).toBeLessThan(md.indexOf("Stress level"));
+  });
+
+  it("leaves the check-in section empty with no result and no weekly answers", () => {
+    expect(
+      buildSubjectiveRecapMarkdown(undefined, [{ date: "2026-10-20", felt: 7 }]),
+    ).toBe("");
+  });
+});
