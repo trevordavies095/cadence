@@ -23,6 +23,11 @@ export type RecapThresholdKnobs = {
   column: GoalColumn;
   /** Percent of time with HR in Z1+Z2. Null: show the share, no target and no verdict. */
   easyShareTarget: number | null;
+  /**
+   * The share is judged against the target ("meets" / "below"). False: the
+   * target is shown as a reference only, with no verdict and no tick on the bar.
+   */
+  easyShareVerdict: boolean;
   /** HR drift (first vs last quarter) above which a run is labelled high. Null: never labelled. */
   driftCapBpm: { easy: number; long: number | null };
   longRun: {
@@ -65,6 +70,19 @@ export type RecapThresholdKnobs = {
  */
 export const EASY_SHARE_TARGET_ENDURANCE = 80;
 export const EASY_SHARE_TARGET_SPEED = 75;
+
+/**
+ * Easy-share verdicts.
+ * Endurance: judged against 80%.
+ * Speed: 75% is a reference only, never a "below" verdict. Seiler's 80/20 is
+ * counted by session goal (easy sessions vs quality sessions), while this share
+ * is heart-rate time in Z1+Z2. On a week with two quality sessions, warm-ups,
+ * cool-downs and jog recoveries drift into Z3 and heart rate lags pace, so time
+ * in zones runs well under the session count: a normal 10k block reads 56-69%
+ * (issue #34), and a verdict would fire every week.
+ */
+export const EASY_SHARE_VERDICT_ENDURANCE = true;
+export const EASY_SHARE_VERDICT_SPEED = false;
 
 /** Drift caps in bpm (coaching convention for aerobic decoupling on easy and long runs). */
 export const DRIFT_CAP_EASY_BPM = 10;
@@ -117,6 +135,7 @@ export function resolveRecapThresholds(args: {
           phase === "base" || phase === "build"
             ? EASY_SHARE_TARGET_ENDURANCE
             : null,
+        easyShareVerdict: EASY_SHARE_VERDICT_ENDURANCE,
         driftCapBpm: { easy: DRIFT_CAP_EASY_BPM, long: DRIFT_CAP_LONG_BPM },
         longRun: {
           section: true,
@@ -142,6 +161,7 @@ export function resolveRecapThresholds(args: {
       return {
         column,
         easyShareTarget: EASY_SHARE_TARGET_SPEED,
+        easyShareVerdict: EASY_SHARE_VERDICT_SPEED,
         driftCapBpm: { easy: DRIFT_CAP_EASY_BPM, long: DRIFT_CAP_LONG_BPM },
         longRun: {
           section: tenK,
@@ -165,6 +185,7 @@ export function resolveRecapThresholds(args: {
       return {
         column,
         easyShareTarget: null,
+        easyShareVerdict: false,
         driftCapBpm: { easy: DRIFT_CAP_EASY_BPM, long: null },
         longRun: {
           section: false,
@@ -187,6 +208,7 @@ export function resolveRecapThresholds(args: {
       return {
         column,
         easyShareTarget: null,
+        easyShareVerdict: false,
         driftCapBpm: { easy: DRIFT_CAP_EASY_BPM, long: null },
         longRun: {
           section: false,

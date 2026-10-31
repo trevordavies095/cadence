@@ -125,18 +125,24 @@ test.describe("Your week: the report", () => {
   test("the zone bar draws the goal's easy-share target, and none without one", async ({
     page,
   }) => {
-    const zonesWith = async (target: number | null, met: boolean | null) => {
+    const zonesWith = async (
+      target: number | null,
+      met: boolean | null,
+      verdict = target !== null,
+    ) => {
       await page.unroute(/\/api\/weeks\/[^/]+\/recap\/zones$/);
       await page.route(/\/api\/weeks\/[^/]+\/recap\/zones$/, (route) =>
         route.fulfill({
           contentType: "application/json",
           body: JSON.stringify({
             easyShareTarget: target,
+            easyShareVerdict: verdict,
             distribution: {
               zonePct: { z1: 40, z2: 37, z3: 18, z4: 5, z5: 0 },
               z1z2Pct: 77,
               ...(met === null ? {} : { z1z2TargetMet: met }),
               easyShareTarget: target,
+              easyShareVerdict: verdict,
               noHrTimeSeriesInWeek: false,
             },
           }),
@@ -146,18 +152,26 @@ test.describe("Your week: the report", () => {
       return page.getByRole("region", { name: "Your week", exact: true });
     };
 
-    // A 10k block: 75%, met.
-    let week = await zonesWith(75, true);
+    // A half in build: 80%, met, with the tick.
+    let week = await zonesWith(80, true);
     await expect(week).toContainText("77% of your time was in the two easiest zones.");
-    await expect(week).toContainText("That meets the 75% target.");
+    await expect(week).toContainText("That meets the 80% target.");
     await expect(week.locator("[data-easy-share-target]")).toHaveAttribute(
       "data-easy-share-target",
-      "75",
+      "80",
     );
 
     // A half in build: 80%, below.
     week = await zonesWith(80, false);
     await expect(week).toContainText("The target is 80% or more.");
+
+    // A 10k block: 75% is a reference for Coach Cade only, so no tick and no target line.
+    week = await zonesWith(75, null, false);
+    await expect(week).toContainText("77% of your time was in the two easiest zones.");
+    await expect(week.locator("[data-easy-share-target]")).toHaveCount(0);
+    await expect(week.getByText(/of your time was in the two easiest zones/)).not.toContainText(
+      /target/i,
+    );
 
     // Staying fit: the bar with no tick and no verdict.
     week = await zonesWith(null, null);

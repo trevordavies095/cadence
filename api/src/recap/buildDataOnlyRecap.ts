@@ -87,6 +87,7 @@ export async function buildDataOnlyRecap(args: {
         tempoPort,
         weeklyStats,
         easyShareTarget: knobs.thresholds.easyShareTarget,
+        easyShareVerdict: knobs.thresholds.easyShareVerdict,
       }),
       buildRecapRunByRun({ session, tempoPort, unit, knobs }),
       optional(() =>

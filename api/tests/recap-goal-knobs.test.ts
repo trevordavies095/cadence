@@ -8,6 +8,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
       expect(build.thresholds).toEqual({
         column: "endurance",
         easyShareTarget: 80,
+        easyShareVerdict: true,
         driftCapBpm: { easy: 10, long: 20 },
         longRun: {
           section: true,
@@ -45,6 +46,8 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
     expect(fiveK).toEqual({
       column: "speed",
       easyShareTarget: 75,
+      // #34: a reference only; HR time runs under 75% on two-quality-session weeks.
+      easyShareVerdict: false,
       driftCapBpm: { easy: 10, long: 20 },
       longRun: {
         section: false,
@@ -68,6 +71,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
     expect(tenK).toMatchObject({
       column: "speed",
       easyShareTarget: 75,
+      easyShareVerdict: false,
       longRun: { section: true, distanceTrendVerdict: false },
       fastFinish: false,
     });
@@ -80,6 +84,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
     expect(speed).toMatchObject({
       column: "speed",
       easyShareTarget: 75,
+      easyShareVerdict: false,
       longRun: { section: false },
       hardMinutes: { qualitySessionCount: true },
     });
@@ -93,6 +98,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
     expect(resolveRecapDepthKnobs({ phase: "base", goal: "general" }).thresholds).toEqual({
       column: "fitness",
       easyShareTarget: null,
+      easyShareVerdict: false,
       driftCapBpm: { easy: 10, long: null },
       longRun: {
         section: false,
@@ -126,6 +132,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
     ).toEqual({
       column: "return",
       easyShareTarget: null,
+      easyShareVerdict: false,
       driftCapBpm: { easy: 10, long: null },
       longRun: {
         section: false,

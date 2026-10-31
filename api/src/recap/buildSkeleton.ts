@@ -96,6 +96,7 @@ export async function buildRecapSkeleton(args: {
         tempoPort,
         weeklyStats,
         easyShareTarget: knobs.thresholds.easyShareTarget,
+        easyShareVerdict: knobs.thresholds.easyShareVerdict,
       }),
       buildRecapRunByRun({
         session,

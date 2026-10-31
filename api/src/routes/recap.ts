@@ -146,6 +146,7 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
         session,
         tempoPort,
         easyShareTarget: goalContext.knobs.thresholds.easyShareTarget,
+        easyShareVerdict: goalContext.knobs.thresholds.easyShareVerdict,
       });
 
       if (formatRaw === "markdown") {
@@ -162,6 +163,7 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
         zones: zones.zones,
         zoneSource: zones.zoneSource,
         easyShareTarget: zones.easyShareTarget,
+        easyShareVerdict: zones.easyShareVerdict,
         distribution: zones.distribution,
         markdown: zones.markdown,
       });

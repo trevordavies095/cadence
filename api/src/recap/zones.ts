@@ -15,10 +15,12 @@ export type ZoneWeekDistribution = {
   zoneSeconds: number[];
   zonePct?: Record<string, number>;
   z1z2Pct?: number;
-  /** Set only when there is a target: z1z2Pct at or above easyShareTarget. */
+  /** Set only when there is a target and a verdict: z1z2Pct at or above easyShareTarget. */
   z1z2TargetMet?: boolean;
   /** The goal's easy-share target in percent; null shows the share with no target. */
   easyShareTarget: number | null;
+  /** False: the target is a reference only, with no verdict (the speed column). */
+  easyShareVerdict: boolean;
   noHrTimeSeriesInWeek: boolean;
   note?: string;
 };
@@ -126,15 +128,19 @@ export function computeWeekZoneDistribution(args: {
   workouts: readonly TempoWorkoutDetail[];
   /** The goal's easy-share target; null or omitted: no met flag. */
   easyShareTarget?: number | null;
+  /** The goal judges the share against its target; omitted: true. */
+  easyShareVerdict?: boolean;
 }): ZoneWeekDistribution {
   const zonesSorted = sortZones(args.zones);
   const easyShareTarget = args.easyShareTarget ?? null;
+  const easyShareVerdict = args.easyShareVerdict ?? true;
 
   if (zonesSorted.length === 0) {
     return {
       totalHrSeconds: 0,
       zoneSeconds: [],
       easyShareTarget,
+      easyShareVerdict,
       noHrTimeSeriesInWeek: true,
       note: "No HR zones configured in Tempo settings.",
     };
@@ -147,6 +153,7 @@ export function computeWeekZoneDistribution(args: {
       totalHrSeconds: 0,
       zoneSeconds: weekSeconds,
       easyShareTarget,
+      easyShareVerdict,
       noHrTimeSeriesInWeek: true,
       note: "No workouts in recap window.",
     };
@@ -171,7 +178,11 @@ export function computeWeekZoneDistribution(args: {
     }
   }
 
-  return zoneDistributionFromSeconds(weekSeconds, easyShareTarget);
+  return zoneDistributionFromSeconds(
+    weekSeconds,
+    easyShareTarget,
+    easyShareVerdict,
+  );
 }
 
 /**
@@ -182,6 +193,8 @@ export function zoneDistributionFromSeconds(
   weekSeconds: readonly number[],
   /** The goal's easy-share target; null or omitted: no met flag. */
   easyShareTarget: number | null = null,
+  /** The goal judges the share against its target; false: reference only. */
+  easyShareVerdict = true,
 ): ZoneWeekDistribution {
   const totalHrSeconds = weekSeconds.reduce((a, b) => a + b, 0);
   if (totalHrSeconds === 0) {
@@ -189,6 +202,7 @@ export function zoneDistributionFromSeconds(
       totalHrSeconds: 0,
       zoneSeconds: [...weekSeconds],
       easyShareTarget,
+      easyShareVerdict,
       noHrTimeSeriesInWeek: true,
       note: "No usable HR samples for workouts this week. Zone totals need time-series heart rate.",
     };
@@ -204,10 +218,11 @@ export function zoneDistributionFromSeconds(
     zoneSeconds: [...weekSeconds],
     zonePct,
     z1z2Pct,
-    ...(easyShareTarget !== null
+    ...(easyShareTarget !== null && easyShareVerdict
       ? { z1z2TargetMet: z1z2Pct >= easyShareTarget }
       : {}),
     easyShareTarget,
+    easyShareVerdict,
     noHrTimeSeriesInWeek: false,
   };
 }

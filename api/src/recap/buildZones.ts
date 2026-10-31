@@ -33,6 +33,8 @@ export type RecapZonesResult = {
   zoneSource: "weekly-recap" | "time-series";
   /** The goal's easy-share target in percent; null: the share with no target. */
   easyShareTarget: number | null;
+  /** False: the target is a reference only, no verdict and no tick on the bar. */
+  easyShareVerdict: boolean;
   distribution: ZoneWeekDistribution;
   markdown: string;
 };
@@ -71,6 +73,7 @@ async function perSecondDistribution(
   window: WeekWindow,
   zones: readonly TempoHeartRateZone[],
   easyShareTarget: number | null,
+  easyShareVerdict: boolean,
 ): Promise<ZoneWeekDistribution> {
   const summaries = await listAllWorkoutsInWindow(tempoPort, window);
   const workouts = await loadWorkoutDetails(tempoPort, summaries);
@@ -78,6 +81,7 @@ async function perSecondDistribution(
     zones,
     workouts,
     easyShareTarget,
+    easyShareVerdict,
   });
   const failed = workouts.filter((w) => w.timeSeriesUnavailableReason);
   if (distribution.noHrTimeSeriesInWeek && failed.length > 0) {
@@ -101,8 +105,10 @@ export async function buildRecapZones(args: {
   weeklyStats?: SharedWeeklyRecapStats;
   /** From the goal's knobs (thresholds.easyShareTarget); null: no target, no verdict. */
   easyShareTarget: number | null;
+  /** From the goal's knobs (thresholds.easyShareVerdict); false: reference only. */
+  easyShareVerdict: boolean;
 }): Promise<RecapZonesResult> {
-  const { session, tempoPort, easyShareTarget } = args;
+  const { session, tempoPort, easyShareTarget, easyShareVerdict } = args;
   const window: WeekWindow = { start: session.start, end: session.end };
 
   const [settings, stats] = await Promise.all([
@@ -114,8 +120,14 @@ export async function buildRecapZones(args: {
   const fromLog = aggregateZoneSeconds(stats, zones.length);
   const zoneSource = fromLog ? "weekly-recap" : "time-series";
   const distribution = fromLog
-    ? zoneDistributionFromSeconds(fromLog, easyShareTarget)
-    : await perSecondDistribution(tempoPort, window, zones, easyShareTarget);
+    ? zoneDistributionFromSeconds(fromLog, easyShareTarget, easyShareVerdict)
+    : await perSecondDistribution(
+        tempoPort,
+        window,
+        zones,
+        easyShareTarget,
+        easyShareVerdict,
+      );
   const markdown = buildZonesMarkdown(distribution);
 
   return {
@@ -126,6 +138,7 @@ export async function buildRecapZones(args: {
     zones: [...zones].sort((a, b) => a.zoneNumber - b.zoneNumber),
     zoneSource,
     easyShareTarget,
+    easyShareVerdict,
     distribution,
     markdown,
   };

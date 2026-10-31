@@ -50,7 +50,12 @@ export function buildZonesMarkdown(dist: ZoneWeekDistribution): string {
       `Easy-running share: ${dist.z1z2Pct}% (zones 1 and 2 of time with heart rate).`,
     );
     // Target and verdict only when the goal sets one; never a goal it is not.
-    if (dist.easyShareTarget !== null) {
+    if (dist.easyShareTarget !== null && !dist.easyShareVerdict) {
+      // Speed column: a reference, never a verdict (goalKnobs, EASY_SHARE_VERDICT_SPEED).
+      lines.push(
+        `Reference for this block: about ${dist.easyShareTarget}%, counted by session. Not judged here: heart-rate time runs lower on weeks with two quality sessions.`,
+      );
+    } else if (dist.easyShareTarget !== null) {
       const verdict =
         dist.z1z2TargetMet === true
           ? " This week meets the target."

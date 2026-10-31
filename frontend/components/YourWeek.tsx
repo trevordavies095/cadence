@@ -40,6 +40,12 @@ type Zones = {
   };
   /** The goal's easy-share target in percent; null when the goal sets none. */
   easyShareTarget?: number | null;
+  /**
+   * False: the target is a reference for Coach Cade only (5k, 10k, speed).
+   * The bar then draws no tick and no target line: on a week with two quality
+   * sessions heart-rate time sits under it, and a tick would read as a miss.
+   */
+  easyShareVerdict?: boolean;
 };
 type RunRow = {
   workoutId: string;
@@ -318,7 +324,11 @@ export function YourWeek({
           <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">Heart rate zones</h3>
           <ZoneBar
             zones={zones.distribution}
-            target={zones.easyShareTarget ?? null}
+            target={
+              zones.easyShareVerdict === false
+                ? null
+                : (zones.easyShareTarget ?? null)
+            }
           />
         </div>
       ) : null}

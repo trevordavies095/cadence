@@ -33,21 +33,35 @@ const STATS: TempoWeeklyRecapStats = {
   zoneSecondsZ5: { current: 0 },
 };
 
-function port(): TempoPort {
+/**
+ * A normal 10k-block week (#34): one threshold and one interval session, with
+ * warm-ups and recoveries in Z3, so 62% easy. Below 75%, and below 80%.
+ */
+const SPEED_BLOCK_STATS: TempoWeeklyRecapStats = {
+  ...STATS,
+  zoneSecondsZ1: { current: 1400 },
+  zoneSecondsZ2: { current: 1948 },
+  zoneSecondsZ3: { current: 1452 },
+  zoneSecondsZ4: { current: 600 },
+  zoneSecondsZ5: { current: 0 },
+};
+
+function port(stats: TempoWeeklyRecapStats): TempoPort {
   const base = createExportTempoPort({ exportPath: FIXTURE_ZIP });
-  return { ...base, getWeeklyRecapStats: async () => STATS };
+  return { ...base, getWeeklyRecapStats: async () => stats };
 }
 
-function makeApp() {
+function makeApp(stats: TempoWeeklyRecapStats) {
   return createApp({
     dataProtectionKey: TEST_DATA_PROTECTION_KEY,
     clock: new FixedClock(new Date("2026-10-21T15:00:00.000Z")),
-    tempoPort: port(),
+    tempoPort: port(stats),
   });
 }
 
 type Zones = {
   easyShareTarget: number | null;
+  easyShareVerdict: boolean;
   distribution: {
     z1z2Pct: number;
     z1z2TargetMet?: boolean | null;
@@ -56,24 +70,30 @@ type Zones = {
   markdown: string;
 };
 
-async function setup(goal: TrainingGoal | null) {
+async function setup(goal: TrainingGoal | null, stats: TempoWeeklyRecapStats) {
   if (goal) await appendGoal(new Date("2026-10-01T12:00:00Z"), goal, "settings");
-  const app = makeApp();
+  const app = makeApp(stats);
   const res = await app.request("/weeks/current", { method: "POST" });
   const week = await json(res);
   expect(week.isoWeek).toBe("2026-W43");
   return { app, id: week.id as string };
 }
 
-async function zonesFor(goal: TrainingGoal | null): Promise<Zones> {
-  const { app, id } = await setup(goal);
+async function zonesFor(
+  goal: TrainingGoal | null,
+  stats: TempoWeeklyRecapStats = STATS,
+): Promise<Zones> {
+  const { app, id } = await setup(goal, stats);
   const res = await app.request(`/weeks/${id}/recap/zones`);
   expect(res.status).toBe(200);
   return (await json(res)) as unknown as Zones;
 }
 
-async function reportFor(goal: TrainingGoal | null) {
-  const { app, id } = await setup(goal);
+async function reportFor(
+  goal: TrainingGoal | null,
+  stats: TempoWeeklyRecapStats = STATS,
+) {
+  const { app, id } = await setup(goal, stats);
   const res = await app.request(`/weeks/${id}/recap?skip_subjective=true`);
   expect(res.status).toBe(200);
   const body = await json(res);
@@ -124,13 +144,59 @@ describe("the report resolves the goal for the easy-running share (#07)", () => 
     expect(zones.markdown).not.toContain("Target for this block");
   });
 
-  it("10k: 75% target, met", async () => {
-    const zones = await zonesFor({ kind: "race", distance: "10k" });
-    expect(zones.easyShareTarget).toBe(75);
-    expect(zones.distribution.z1z2TargetMet).toBe(true);
-    expect(zones.markdown).toContain("Target for this block: 75% or more.");
-    expect(zones.markdown).toContain("meets the target");
-    expect(zones.markdown).not.toMatch(/marathon/i);
+  it("half in build, a two-quality-session week: still below the 80% target", async () => {
+    const zones = await zonesFor(
+      { kind: "race", distance: "half", raceDate: "2026-12-14" },
+      SPEED_BLOCK_STATS,
+    );
+    expect(zones.easyShareVerdict).toBe(true);
+    expect(zones.distribution.z1z2Pct).toBe(62);
+    expect(zones.distribution.z1z2TargetMet).toBe(false);
+    expect(zones.markdown).toContain("Target for this block: 80% or more.");
+    expect(zones.markdown).toContain("This week is below the target.");
+  });
+
+  // #34: the speed column keeps 75% as a reference, with no verdict either way.
+  const SPEED_GOALS: Array<[string, TrainingGoal]> = [
+    ["5k", { kind: "race", distance: "5k" }],
+    ["10k", { kind: "race", distance: "10k" }],
+    ["speed kind", { kind: "speed" }],
+  ];
+  for (const [name, goal] of SPEED_GOALS) {
+    it(`${name}: 75% as a reference, no verdict below it`, async () => {
+      const zones = await zonesFor(goal, SPEED_BLOCK_STATS);
+      expect(zones.easyShareTarget).toBe(75);
+      expect(zones.easyShareVerdict).toBe(false);
+      expect(zones.distribution.easyShareTarget).toBe(75);
+      expect(zones.distribution.easyShareVerdict).toBe(false);
+      expect(zones.distribution.z1z2Pct).toBe(62);
+      expect(zones.distribution.z1z2TargetMet).toBeUndefined();
+      expect(zones.markdown).toContain("Easy-running share: 62%");
+      expect(zones.markdown).toContain("Reference for this block: about 75%");
+      expect(zones.markdown).not.toMatch(/below|meets|Target for this block/i);
+    });
+
+    it(`${name}: 75% as a reference, no verdict above it either`, async () => {
+      const zones = await zonesFor(goal);
+      expect(zones.distribution.z1z2TargetMet).toBeUndefined();
+      expect(zones.markdown).toContain(SHARE_LINE);
+      expect(zones.markdown).toContain("Reference for this block: about 75%");
+      expect(zones.markdown).not.toMatch(/below|meets|Target for this block/i);
+      expect(zones.markdown).not.toMatch(/marathon/i);
+    });
+  }
+
+  it("10k: the full report carries the share and the reference, never 'below the target'", async () => {
+    const report = await reportFor({ kind: "race", distance: "10k" }, SPEED_BLOCK_STATS);
+    expect(report.goal).toBe("10k");
+    expect(report.goalContext.knobs.thresholds).toMatchObject({
+      column: "speed",
+      easyShareTarget: 75,
+      easyShareVerdict: false,
+    });
+    expect(report.sections.zones).toContain("Easy-running share: 62%");
+    expect(report.sections.zones).toContain("Reference for this block: about 75%");
+    expect(report.reportMarkdown as string).not.toMatch(/below the target/i);
   });
 
   it("fitness: the share only, no target and no verdict, never marathon", async () => {
