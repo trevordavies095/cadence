@@ -183,6 +183,39 @@ describe("onboarding → stub LLM dossier v1 proposal + Accept", () => {
     expect(coachMessage.weekSessionId).toBe(week.id);
   });
 
+  it("a returning athlete's first draft says where they are now under Running history", async () => {
+    await acceptAndReady();
+    const app = createApp({
+      dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+      tempoPort: createExportTempoPort({ exportPath: FIXTURE_ZIP }),
+      llmPort: createStubLlmPort(),
+    });
+    const created = await app.request("/onboarding/answers", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        answers: { schedule: "Free to run on Tue, Thu, Sat." },
+        goal: {
+          kind: "return",
+          startingPoint: "off for six weeks, cleared by my physio, running 15 minutes three times a week",
+          since: "2026-09-28",
+        },
+      }),
+    });
+    expect(created.status).toBe(201);
+    const body = (await json(created)).proposal as { proposedBody: string };
+    const section = body.proposedBody.split("## Running history\n")[1]?.split("\n## ")[0] ?? "";
+    expect(section).toContain(
+      "off for six weeks, cleared by my physio, running 15 minutes three times a week",
+    );
+    expect(section).toContain("Mon Sep 28 2026");
+  });
+
+  it("other goals get no Running history section from the stub", async () => {
+    const draft = buildStubDossierV1(sampleInput({ goal: { kind: "fitness" } }));
+    expect(draft.proposedBody).not.toContain("## Running history");
+  });
+
   it("accept installs dossier v1; current dossier readable", async () => {
     await acceptAndReady();
     const app = createApp({

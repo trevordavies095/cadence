@@ -36,14 +36,26 @@ function speedSentence(goal: TrainingGoal): string {
 }
 
 /**
+ * "Getting back to running since Mon Sep 28 2026: off for six weeks, cleared by my physio."
+ * The athlete's words are kept as typed; a full stop is added only when they end without one.
+ */
+function returnSentence(goal: TrainingGoal): string {
+  const since = goal.since ? ` since ${goalDateLabel(goal.since)}` : "";
+  const words = goal.startingPoint?.trim() ?? "";
+  if (!words) return `Getting back to running${since}.`;
+  const end = /[.!?]$/.test(words) ? "" : ".";
+  return `Getting back to running${since}: ${words}${end}`;
+}
+
+/**
  * One sentence per kind. Every kind needs an entry, so a new kind cannot be added
- * without deciding its words. Return is a placeholder until its onboarding step exists.
+ * without deciding its words.
  */
 const SENTENCES: Record<GoalKind, (goal: TrainingGoal) => string> = {
   race: raceSentence,
   fitness: () => "General fitness, no race planned.",
   speed: speedSentence,
-  return: () => "Getting back to running.",
+  return: returnSentence,
 };
 
 /** An error code when the goal is a valid record but cannot be put in a sentence; null when fine. */

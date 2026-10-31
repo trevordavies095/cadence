@@ -116,6 +116,7 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
     try {
       draft = await llmPort.generateDossierV1(
         {
+          goal: parsed.goal,
           answers: stored.answers,
           prefills,
         },

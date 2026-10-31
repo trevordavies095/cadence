@@ -9,7 +9,8 @@ import {
   formatIsoWeekRangeShort,
   formatWeekRangeShort,
 } from "../clock/weekRangeShort.js";
-import type { GoalKind } from "../goal/types.js";
+import { goalDateLabel } from "../goal/sentence.js";
+import type { GoalKind, TrainingGoal } from "../goal/types.js";
 import type { ModelPacket } from "../packet/types.js";
 import { LlmSchemaError, type LlmCallOptions, type LlmPort } from "./port.js";
 import {
@@ -708,6 +709,25 @@ function dossierSummaryBullet(label: string, value: string): string {
   return `${prefix}${wholeSentencesUpTo(text, MAX_BULLET_LENGTH - prefix.length)}`;
 }
 
+/**
+ * A returning runner's own account of where they are now, which the running log cannot
+ * tell: kept word for word under Running history. Nothing for other goals.
+ */
+function returnHistoryLines(goal: TrainingGoal | undefined): string[] {
+  if (goal?.kind !== "return") return [];
+  const words = goal.startingPoint?.trim();
+  if (!words && !goal.since) return [];
+  const lines = ["## Running history"];
+  lines.push(
+    goal.since
+      ? `You are getting back to running, since ${goalDateLabel(goal.since)}.`
+      : "You are getting back to running.",
+  );
+  if (words) lines.push(`Where you are now, in your words: ${words}`);
+  lines.push("");
+  return lines;
+}
+
 /** Pure builder for onboarding → dossier v1 (issue #17). */
 export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
   const { answers, prefills } = input;
@@ -785,6 +805,7 @@ export function buildStubDossierV1(input: DossierV1Input): DossierV1Draft {
     "## Schedule",
     answers.schedule,
     "",
+    ...returnHistoryLines(input.goal),
     "## Constraints",
     answers.injuries_constraints?.trim() ||
       "_None volunteered — ask again if niggles appear._",

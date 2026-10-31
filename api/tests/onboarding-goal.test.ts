@@ -148,6 +148,29 @@ describe("onboarding stores the structured goal", () => {
       row: { kind: "return", distance: null, race_name: null, race_date: null },
     },
     {
+      name: "getting back to running, with where they are now and since when",
+      goal: {
+        kind: "return",
+        startingPoint: " off for six weeks, cleared by my physio ",
+        since: "2026-09-28",
+      },
+      sentence:
+        "Getting back to running since Mon Sep 28 2026: off for six weeks, cleared by my physio.",
+      row: { kind: "return", distance: null, race_name: null, race_date: null },
+    },
+    {
+      name: "getting back to running, in their own words with no date",
+      goal: { kind: "return", startingPoint: "Running 15 minutes three times a week!", since: "" },
+      sentence: "Getting back to running: Running 15 minutes three times a week!",
+      row: { kind: "return", distance: null, race_name: null, race_date: null },
+    },
+    {
+      name: "getting back to running, a date and no words",
+      goal: { kind: "return", since: "2026-09-28" },
+      sentence: "Getting back to running since Mon Sep 28 2026.",
+      row: { kind: "return", distance: null, race_name: null, race_date: null },
+    },
+    {
       name: "general fitness",
       goal: { kind: "fitness" },
       sentence: "General fitness, no race planned.",
@@ -181,6 +204,20 @@ describe("onboarding stores the structured goal", () => {
       expect((current.goal as { kind: string }).kind).toBe(c.goal.kind);
     });
   }
+
+  it("keeps the return answer on the goal record", async () => {
+    const res = await postAnswers({
+      answers: { schedule: SCHEDULE },
+      goal: { kind: "return", startingPoint: "off for six weeks", since: "2026-09-28" },
+    });
+    expect(res.status).toBe(201);
+    const current = await json(await app().request("/goal"));
+    expect(current.goal).toEqual({
+      kind: "return",
+      startingPoint: "off for six weeks",
+      since: "2026-09-28",
+    });
+  });
 
   it("ignores a text goal in the answers: the sentence comes from the record", async () => {
     const res = await postAnswers({

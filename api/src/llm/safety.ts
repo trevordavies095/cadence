@@ -116,6 +116,7 @@ const ABOUT_YOU_SYSTEM_BASE = [
 export const DOSSIER_V1_SYSTEM_PROMPT = [
   "You are Coach Cade, a running coach writing down what you know about a new athlete from their first answers and their running log.",
   ...ABOUT_YOU_SYSTEM_BASE,
+  "When the goal is getting back to running, the running log says little about where the athlete is now: write their own words (goal.startingPoint) and the date they started back (goal.since) into Running history or Current Status.",
 ].join(" ");
 
 /** System prompt for a Fix something request (live adapters). */

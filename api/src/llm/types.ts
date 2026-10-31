@@ -6,10 +6,14 @@
  * separate LlmPort calls (soft-gated via dossier proposals).
  */
 
+import type { TrainingGoal } from "../goal/types.js";
+
 export type DayType = "rest" | "easy" | "quality" | "long" | "race" | "other";
 
 /** Onboarding answers + Tempo hints for dossier v1 generation. */
 export type DossierV1Input = {
+  /** The goal record the answers' goal sentence was written from. */
+  goal?: TrainingGoal;
   answers: {
     goal: string;
     schedule: string;
