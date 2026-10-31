@@ -149,6 +149,18 @@ describe("Coach Cade's method by goal (coaching-bias 26)", () => {
     expect(system).toMatch(/longest continuous run by no more than 2 to 3 minutes at a time/);
   });
 
+  it("race and speed: 80/20 counts sessions, and a share in the 60s is expected on a two-quality week", async () => {
+    for (const goal of [
+      { kind: "race", distance: "10k", raceName: "Riverside 10K" },
+      { kind: "speed", distance: "5k" },
+    ] as TrainingGoal[]) {
+      const system = await capture().weekly(packetFor(goal));
+      expect(system).toMatch(/about 80 percent of the week's sessions easy/);
+      expect(system).toMatch(/a share in the 60s on such a week is expected, not a problem/);
+      expect(system).not.toMatch(/80 percent of the week's running time/);
+    }
+  });
+
   it("fitness: the longest run is a longer easy run, not a key session", async () => {
     const system = await capture().weekly(packetFor({ kind: "fitness" }));
     expect(system).toMatch(/longest run is a longer easy run, not a key session/);

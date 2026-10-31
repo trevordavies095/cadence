@@ -9,12 +9,15 @@
 import type { GoalDistance, GoalKind, TrainingGoal } from "../goal/types.js";
 import { VOLUME_WARNING_PCT_RETURN } from "../recap/goalKnobs.js";
 
-// Sources: Seiler (polarized intensity distribution, ~80/20 by time),
+// Sources: Seiler (polarized intensity distribution, ~80/20 counted by session
+// goal; heart-rate time in zone reads lower because of warm-ups, recoveries and
+// heart-rate lag),
 // Fitzgerald (80/20 Running), Daniels (Daniels' Running Formula: phases I–IV,
 // base, threshold/race-specific, sharpening, taper), Pfitzinger (cutback weeks
 // every three to four weeks).
 const RACE_BLOCK = [
-  "Coaching method for a race goal: keep about 80 percent of the week's running time easy, and put the hard work in one or two quality sessions that never fall on consecutive days.",
+  "Coaching method for a race goal: make about 80 percent of the week's sessions easy, and put the hard work in one or two quality sessions that never fall on consecutive days.",
+  "Heart-rate time in zones 1 and 2 runs lower than that on a week with two quality sessions, because their warm-ups, cool-downs and recoveries count as harder time; a share in the 60s on such a week is expected, not a problem.",
   "Follow the training phase: base builds easy volume with strides, build adds threshold work, peak adds work at and around race pace, and taper cuts volume while keeping some faster running.",
   "Grow volume gradually and plan a lighter week every three or four weeks.",
 ].join(" ");
@@ -39,7 +42,8 @@ const RACE_DISTANCE_LINE: Partial<Record<GoalDistance, string>> = {
 // Daniels (threshold, interval and repetition paces from current fitness, not
 // goal time; long run at most about a quarter of weekly volume).
 const SPEED_BLOCK = [
-  "Coaching method for getting faster: keep about 80 percent of the week's running time easy so the one or two quality sessions can be run well.",
+  "Coaching method for getting faster: make about 80 percent of the week's sessions easy so the one or two quality sessions can be run well.",
+  "Heart-rate time in zones 1 and 2 runs lower than that on a week with two quality sessions, because their warm-ups, cool-downs and recoveries count as harder time; a share in the 60s on such a week is expected, not a problem.",
   "Work in blocks of a few weeks: threshold running to raise the pace the athlete can hold, then intervals near 5K pace, with short fast repetitions or strides for speed and form.",
   "Set paces from current fitness, such as a recent race or the threshold pace, not from the target, and move them only after a race or a test shows the athlete is faster.",
   "Keep the long run easy and no more than about a quarter of the week's running.",
