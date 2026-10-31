@@ -280,6 +280,30 @@ describe("weekly recap subjective gate + merge (#23/#24)", () => {
     expect(fromStore!.answers.runs[0]!.felt).toBe(8);
   });
 
+  it("a strength answer with only the number done reaches the report", async () => {
+    const { app, weekSessionId } = await openWeek();
+    await app.request(`/weeks/${weekSessionId}/recap`);
+
+    // The check-in page's shape when the athlete gives only the count.
+    const saveRes = await app.request(
+      `/weeks/${weekSessionId}/recap/subjective`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          runs: [],
+          weekly: { strength_sessions: { completed: 2 } },
+        }),
+      },
+    );
+    expect(saveRes.status).toBe(201);
+    const saved = await json(saveRes);
+    const report = saved.gate as { reportMarkdown?: string };
+    expect(report.reportMarkdown).toContain(
+      "Strength, rehab or cross-training: 2 sessions",
+    );
+  });
+
   it("prefers Tempo apiRpe when athlete omits RPE", async () => {
     await acceptAndReady();
     const base = createExportTempoPort({ exportPath: FIXTURE_ZIP });
@@ -326,6 +350,87 @@ describe("weekly recap subjective gate + merge (#23/#24)", () => {
     const report = saved.gate as { reportMarkdown?: string };
     expect(report.reportMarkdown).toContain("RPE: 6/10");
     expect(report.reportMarkdown).toContain("Felt: 7/10");
+  });
+
+  it("a race result is stored on the run row and printed in the report", async () => {
+    await acceptAndReady();
+    const base = createExportTempoPort({ exportPath: FIXTURE_ZIP });
+    // The Thursday run is typed Race in the running log.
+    const tempoPort = {
+      ...base,
+      async listWorkouts(query: Parameters<typeof base.listWorkouts>[0]) {
+        const page = await base.listWorkouts(query);
+        return {
+          ...page,
+          items: page.items.map((w) =>
+            w.id === "22222222-2222-4222-8222-222222222222"
+              ? { ...w, runType: "Race" }
+              : w,
+          ),
+        };
+      },
+    };
+    const app = createApp({
+      dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+      clock: new FixedClock(new Date("2026-10-21T15:00:00.000Z")),
+      tempoPort,
+    });
+    const week = await json(
+      await app.request("/weeks/current", { method: "POST" }),
+    );
+    const weekSessionId = week.id as string;
+
+    const gate = await json(await app.request(`/weeks/${weekSessionId}/recap`));
+    expect((gate.runs as Array<{ runType: string }>)[1]!.runType).toBe("Race");
+    expect((gate.questionnaire as { per_run: { result: string } }).per_run.result)
+      .toMatch(/Race/);
+
+    // A result must be text.
+    const bad = await app.request(`/weeks/${weekSessionId}/recap/subjective`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ runs: [{ date: "2026-10-22", result: 5 }] }),
+    });
+    expect(bad.status).toBe(400);
+    expect((await json(bad)).error).toBe("invalid_result");
+
+    const saveRes = await app.request(
+      `/weeks/${weekSessionId}/recap/subjective`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          runs: [
+            { date: "2026-10-20", rpe: 3, felt: 7 },
+            { date: "2026-10-22", rpe: 9, result: "  19:58, under my 20 min target  " },
+          ],
+        }),
+      },
+    );
+    expect(saveRes.status).toBe(201);
+    const saved = await json(saveRes);
+    expect(saved.answers).toMatchObject({
+      runs: [
+        { date: "2026-10-20", rpe: 3, felt: 7 },
+        { date: "2026-10-22", rpe: 9, result: "19:58, under my 20 min target" },
+      ],
+    });
+    const report = saved.gate as {
+      reportMarkdown: string;
+      sections: { runByRun: string; subjective: string };
+    };
+    expect(report.sections.runByRun).toContain(
+      "RPE: 9/10  ·  Result: 19:58, under my 20 min target",
+    );
+    expect(report.sections.subjective).toContain(
+      "Race result (Thu Oct 22): 19:58, under my 20 min target",
+    );
+    expect(report.reportMarkdown).toContain("## Subjective recap");
+
+    const fromStore = await getSubjectiveAnswers(weekSessionId);
+    expect(fromStore!.answers.runs[1]!.result).toBe(
+      "19:58, under my 20 min target",
+    );
   });
 
   it("accepts nested { answers } body shape", async () => {

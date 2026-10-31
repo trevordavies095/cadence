@@ -247,6 +247,22 @@ export async function migrate(): Promise<void> {
     -- later change never rewrites an old message's card.
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS plan_changes jsonb;
+
+    -- What the athlete is training for, as data. Append-only like About you's
+    -- versions: the latest row is current and rows are never updated.
+    CREATE TABLE IF NOT EXISTS training_goals (
+      id bigserial PRIMARY KEY,
+      kind text NOT NULL CHECK (kind IN ('race', 'speed', 'fitness', 'return')),
+      distance text CHECK (distance IN ('5k', '10k', 'half', 'marathon', 'other')),
+      race_name text,
+      race_date date,
+      target text,
+      starting_point text,
+      since date,
+      source text NOT NULL CHECK (source IN ('onboarding', 'settings')),
+      created_at timestamptz NOT NULL DEFAULT NOW(),
+      CHECK (kind <> 'race' OR distance IS NOT NULL)
+    );
   `);
 
   await rotateKeyDerivation();

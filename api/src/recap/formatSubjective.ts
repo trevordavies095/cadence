@@ -9,11 +9,15 @@ import type {
   SubjectiveWeeklyMeta,
 } from "./subjectiveQuestionnaire.js";
 import type { NeedsSubjectiveRun } from "./subjectiveRuns.js";
+import { formatDayShort } from "../clock/weekRangeShort.js";
 
 export type SubjectiveRunFields = {
   rpe?: number;
   felt?: number;
   pain?: string;
+  pain_score?: number;
+  /** A Race run's result against the athlete's target. */
+  result?: string;
 };
 
 /** Last row wins when duplicate dates appear. */
@@ -26,6 +30,8 @@ export function subjectiveRunsToDateMap(
     if (r.rpe !== undefined) bits.rpe = r.rpe;
     if (r.felt !== undefined) bits.felt = r.felt;
     if (r.pain !== undefined) bits.pain = r.pain;
+    if (r.pain_score !== undefined) bits.pain_score = r.pain_score;
+    if (r.result !== undefined) bits.result = r.result;
     m.set(r.date, bits);
   }
   return m;
@@ -37,19 +43,108 @@ export function formatSubjectiveRunLine(
   const parts: string[] = [];
   if (fields.rpe !== undefined) parts.push(`RPE: ${fields.rpe}/10`);
   if (fields.felt !== undefined) parts.push(`Felt: ${fields.felt}/10`);
-  if (fields.pain !== undefined && fields.pain.trim()) {
-    parts.push(`Pain: ${fields.pain.trim()}`);
+  if (fields.result !== undefined && fields.result.trim()) {
+    parts.push(`Result: ${fields.result.trim()}`);
+  }
+  const painText = fields.pain?.trim();
+  if (fields.pain_score !== undefined) {
+    parts.push(
+      `Pain: ${fields.pain_score}/10${painText ? ` (${painText})` : ""}`,
+    );
+  } else if (painText) {
+    parts.push(`Pain: ${painText}`);
   }
   return parts.length > 0 ? parts.join("  ·  ") : undefined;
 }
 
+/**
+ * "Strength, rehab or cross-training: 2 sessions", or "2 of 3 planned" when a
+ * planned count was given, with any notes. Any one part is enough for a line.
+ */
+function formatStrengthLine(
+  ss: SubjectiveWeeklyMeta["strength_sessions"],
+): string | undefined {
+  if (!ss) return undefined;
+  const c = ss.completed;
+  const p = ss.planned;
+  const notes = ss.notes?.trim();
+  const count =
+    c !== undefined && p !== undefined
+      ? `${c} of ${p} planned`
+      : c !== undefined
+        ? `${c} ${c === 1 ? "session" : "sessions"}`
+        : p !== undefined
+          ? `${p} planned`
+          : undefined;
+  let body: string;
+  if (count && notes) {
+    // Notes already wrapped in parentheses ("(None planned.)") are not wrapped again.
+    body = /^\(.*\)$/s.test(notes) ? `${count} ${notes}` : `${count} (${notes})`;
+  } else if (count) {
+    body = count;
+  } else if (notes) {
+    body = notes;
+  } else {
+    return undefined;
+  }
+  return `Strength, rehab or cross-training: ${body}`;
+}
+
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** "Thu" from YYYY-MM-DD; calendar arithmetic only, so no time zone moves it. */
+function weekdayOf(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return WEEKDAYS[new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay()]!;
+}
+
+/**
+ * "Pain: highest 3/10 (Thu)": the week's highest pain score and every day that
+ * reached it. Undefined when no run has a score.
+ */
+export function formatPainHighLine(
+  runs: readonly SubjectiveRunRow[],
+): string | undefined {
+  const scored = runs.filter(
+    (r): r is SubjectiveRunRow & { pain_score: number } =>
+      r.pain_score !== undefined,
+  );
+  if (scored.length === 0) return undefined;
+  const highest = Math.max(...scored.map((r) => r.pain_score));
+  const days = scored
+    .filter((r) => r.pain_score === highest)
+    .map((r) => r.date)
+    .sort()
+    .map(weekdayOf);
+  return `Pain: highest ${highest}/10 (${days.join(", ")})`;
+}
+
+/**
+ * The check-in section: the week's highest pain score, then each race result
+ * (with its day), then the weekly answers. Empty when there is none.
+ */
 export function buildSubjectiveRecapMarkdown(
-  weekly: SubjectiveWeeklyMeta | undefined,
+  weeklyIn: SubjectiveWeeklyMeta | undefined,
+  runs: readonly SubjectiveRunRow[] = [],
 ): string {
-  if (!weekly) return "";
+  const results = runs.filter((r) => r.result?.trim());
+  const painHigh = formatPainHighLine(runs);
+  if (!weeklyIn && results.length === 0 && !painHigh) return "";
+  const weekly = weeklyIn ?? {};
   const lines: string[] = [];
   lines.push("## Subjective recap");
   lines.push("");
+
+  if (painHigh) {
+    lines.push(painHigh);
+    lines.push("");
+  }
+
+  for (const r of results) {
+    const day = formatDayShort(r.date) || r.date;
+    lines.push(`Race result (${day}): ${r.result!.trim()}`);
+    lines.push("");
+  }
 
   const range =
     weekly.sleep_range_hrs !== undefined && weekly.sleep_range_hrs.length >= 2
@@ -66,20 +161,10 @@ export function buildSubjectiveRecapMarkdown(
     lines.push("");
   }
 
-  const ss = weekly.strength_sessions;
-  if (ss !== undefined) {
-    const c = ss.completed;
-    const p = ss.planned;
-    if (c !== undefined && p !== undefined) {
-      let s = `Strength sessions completed: ${c} of ${p}`;
-      const notes = ss.notes?.trim();
-      if (notes) {
-        // Notes already wrapped in parentheses ("(None planned.)") are not wrapped again.
-        s += /^\(.*\)$/s.test(notes) ? ` ${notes}` : ` (${notes})`;
-      }
-      lines.push(s);
-      lines.push("");
-    }
+  const strength = formatStrengthLine(weekly.strength_sessions);
+  if (strength) {
+    lines.push(strength);
+    lines.push("");
   }
 
   if (weekly.stress_level?.trim()) {

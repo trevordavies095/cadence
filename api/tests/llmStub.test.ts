@@ -138,7 +138,9 @@ describe("prescribed-week schema validation", () => {
 describe("createStubLlmPort", () => {
   it("returns a valid prescribed-week schema for tests", async () => {
     const port = createStubLlmPort();
-    const reply = await port.generateWeeklyReply(samplePacket());
+    const reply = await port.generateWeeklyReply(
+      samplePacket({ goal: { kind: "race", distance: "marathon" } }),
+    );
 
     expect(reply.analysis.length).toBeGreaterThan(0);
     expect(reply.headline.trim().length).toBeGreaterThan(0);
@@ -198,6 +200,13 @@ describe("POST /week/reply week-loop (export TempoPort + LlmPort stub)", () => {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ body: COACHING_NOTE }),
+    });
+
+    // A race goal keeps the week with a quality session and a Sunday long run.
+    await app.request("/goal", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "race", distance: "marathon", raceName: "Lakeshore Marathon" }),
     });
 
     const week = await json(

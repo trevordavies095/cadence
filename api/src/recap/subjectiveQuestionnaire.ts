@@ -10,6 +10,8 @@ export type SubjectiveQuestionnaire = {
     rpe: string;
     felt: string;
     pain: string;
+    pain_score: string;
+    result: string;
   };
   weekly: {
     sleep_avg_hrs: string;
@@ -33,12 +35,16 @@ export const SUBJECTIVE_QUESTIONNAIRE: SubjectiveQuestionnaire = {
     rpe: "Optional integer 1–10. If apiRpe is set on the run, prefer that value and do not re-ask unless the athlete corrects it.",
     felt: "Optional integer 1–10 (how the run felt).",
     pain: "Optional free-text niggles / pain (or omit).",
+    pain_score:
+      "Optional integer 0–10 (0 is no pain). Asked when the goal is a return to running, beside the free text.",
+    result:
+      "Optional free text, only for a run typed Race: how it went against the athlete's target (asked instead of felt).",
   },
   weekly: {
     sleep_avg_hrs: "Optional average sleep hours this week.",
     sleep_range_hrs: "Optional [low, high] sleep hours.",
     strength_sessions:
-      "Optional { completed, planned, notes } for strength work.",
+      "Optional { completed, planned, notes } for strength, rehab or cross-training sessions (swimming, cycling, physio exercises).",
     stress_level: "Optional free-text stress level.",
     body_check: "Optional free-text body check.",
     feeling_into_next_week: "Optional free-text outlook.",
@@ -52,6 +58,10 @@ export type SubjectiveRunRow = {
   rpe?: number;
   felt?: number;
   pain?: string;
+  /** 0 to 10; 0 means no pain. Asked when the goal is a return to running. */
+  pain_score?: number;
+  /** A Race run's answer to "How did it go against your target?". */
+  result?: string;
 };
 
 export type SubjectiveStrengthSessions = {
@@ -116,6 +126,23 @@ function parseRunRow(
     if (typeof o.pain !== "string") return { ok: false, error: "invalid_pain" };
     const pain = o.pain.trim();
     if (pain) row.pain = pain;
+  }
+
+  if (o.pain_score !== undefined && o.pain_score !== null) {
+    if (typeof o.pain_score !== "number" || !Number.isFinite(o.pain_score)) {
+      return { ok: false, error: "invalid_pain_score" };
+    }
+    const score = Math.round(o.pain_score);
+    if (score < 0 || score > 10) return { ok: false, error: "invalid_pain_score" };
+    row.pain_score = score;
+  }
+
+  if (o.result !== undefined && o.result !== null) {
+    if (typeof o.result !== "string") {
+      return { ok: false, error: "invalid_result" };
+    }
+    const result = o.result.trim();
+    if (result) row.result = result;
   }
 
   return { ok: true, row };

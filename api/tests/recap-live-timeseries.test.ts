@@ -218,7 +218,7 @@ describe("live Tempo time-series in the recap (#84)", () => {
     expect(md).toContain(`Z3 ${"█".repeat(18)}${"░".repeat(17)}  50%   (0m)`);
     expect(md).toContain(`Z4 ${"█".repeat(18)}${"░".repeat(17)}  50%   (0m)`);
     expect(md).toContain(`Z1 ${"░".repeat(35)}  0%   (0m)`);
-    expect(md).toContain("This week: **0%**");
+    expect(md).toContain("Easy-running share: 0% (zones 1 and 2");
 
     // Run line: summary avg HR shown, % max from series average (148/200).
     expect(md).toContain(

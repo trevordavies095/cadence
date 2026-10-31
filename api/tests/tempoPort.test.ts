@@ -318,6 +318,26 @@ describe("TempoPort live HTTP + API seam", () => {
           },
         ],
       },
+      "http://tempo.test/stats/best-efforts?since=2026-10-19": {
+        distances: [
+          {
+            distance: "5K",
+            distanceM: 5000,
+            timeS: 1300,
+            workoutId: WORKOUT_ID,
+            workoutDate: "2026-10-24T12:00:00.000Z",
+            previousTimeS: 1325,
+          },
+          {
+            distance: "10K",
+            distanceM: 10000,
+            timeS: 2770,
+            workoutId: WORKOUT_ID,
+            workoutDate: "2026-10-24T12:00:00.000Z",
+            previousTimeS: null,
+          },
+        ],
+      },
     };
 
     const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -359,6 +379,12 @@ describe("TempoPort live HTTP + API seam", () => {
     expect(efforts.distances).toHaveLength(1);
     expect(efforts.distances[0]!.distance).toBe("5K");
     expect(efforts.distances[0]!.timeS).toBe(1500);
+
+    const newBests = await port.getBestEfforts({ since: "2026-10-19" });
+    expect(newBests.distances).toEqual([
+      expect.objectContaining({ distance: "5K", timeS: 1300, previousTimeS: 1325 }),
+      expect.objectContaining({ distance: "10K", timeS: 2770, previousTimeS: null }),
+    ]);
   });
 
   it("returns tempo_not_configured when settings missing", async () => {

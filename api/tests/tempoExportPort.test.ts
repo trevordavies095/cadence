@@ -1,3 +1,6 @@
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -15,6 +18,30 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP = path.join(__dirname, "fixtures", "tempo-export-mini.zip");
+
+const FIXTURE_DIR = path.join(__dirname, "fixtures", "tempo-export-mini");
+
+/** The mini export with one 5K best, zipped to a temp file. */
+function exportZipWithBestEffort(): string {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "tempo-export-be-"));
+  const dir = path.join(tmp, "pack");
+  fs.cpSync(FIXTURE_DIR, dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "data", "best-efforts.json"),
+    JSON.stringify([
+      {
+        distance: "5K",
+        distanceM: 5000,
+        timeS: 1500,
+        workoutId: "22222222-2222-4222-8222-222222222222",
+        workoutDate: "2026-10-19T12:00:00Z",
+      },
+    ]),
+  );
+  const zipPath = path.join(tmp, "export.zip");
+  execFileSync("zip", ["-q", "-r", zipPath, "."], { cwd: dir });
+  return zipPath;
+}
 
 const W1 = "11111111-1111-4111-8111-111111111111";
 const W2 = "22222222-2222-4222-8222-222222222222";
@@ -114,6 +141,15 @@ describe("TempoPort export zip", () => {
 
     const efforts = await port.getBestEfforts();
     expect(efforts).toEqual({ distances: [] });
+  });
+
+  it("export mode reports no new bests for a since call", async () => {
+    const port = createExportTempoPort({ exportPath: exportZipWithBestEffort() });
+    const all = await port.getBestEfforts();
+    expect(all.distances.map((d) => d.distance)).toEqual(["5K"]);
+    expect(await port.getBestEfforts({ since: "2026-10-19" })).toEqual({
+      distances: [],
+    });
   });
 
   it("GET /tempo/settings|shoes|best-efforts serve export TempoPort", async () => {

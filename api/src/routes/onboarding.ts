@@ -73,7 +73,12 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
         ? (body as { answers: unknown }).answers
         : body;
 
-    const parsed = parseOnboardingAnswers(rawAnswers);
+    // The goal record sits beside the answers (or among them, when the body is the answers).
+    const rawGoal =
+      body !== null && typeof body === "object" && !Array.isArray(body)
+        ? (body as { goal?: unknown }).goal
+        : undefined;
+    const parsed = parseOnboardingAnswers(rawAnswers, rawGoal);
     if (!parsed.ok) {
       return c.json({ error: parsed.error }, 400);
     }
@@ -98,7 +103,11 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
       }
     }
 
-    const stored = await saveOnboardingAnswers(clock.now(), parsed.answers);
+    const stored = await saveOnboardingAnswers(
+      clock.now(),
+      parsed.answers,
+      parsed.goal,
+    );
     const prefills = await buildOnboardingPrefills(tempoPort);
     const anthropic = await getAnthropicConnection();
 
@@ -107,6 +116,7 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
     try {
       draft = await llmPort.generateDossierV1(
         {
+          goal: parsed.goal,
           answers: stored.answers,
           prefills,
         },

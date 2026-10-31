@@ -38,10 +38,25 @@ function parseBlock(raw: unknown): TempoWeeklyRecapMetric | undefined {
       "ThreeWeekAverage",
     ]),
   );
+  const deltaVsPrevious = finite(
+    pickFirst(raw, ["deltaVsPrevious", "DeltaVsPrevious"]),
+  );
   if (current !== undefined) block.current = current;
   if (previous !== undefined) block.previous = previous;
   if (trailingAvg !== undefined) block.trailingAvg = trailingAvg;
+  if (deltaVsPrevious !== undefined) block.deltaVsPrevious = deltaVsPrevious;
   return Object.keys(block).length > 0 ? block : undefined;
+}
+
+/** `runsByType`: keys kept verbatim (incl. `Unspecified`), counts must be whole and ≥ 0. */
+function parseRunsByType(raw: unknown): Record<string, number> | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  const out: Record<string, number> = {};
+  for (const [type, count] of Object.entries(raw)) {
+    const n = finite(count);
+    if (n !== undefined && Number.isInteger(n) && n >= 0) out[type] = n;
+  }
+  return out;
 }
 
 function metricsObject(
@@ -74,7 +89,8 @@ export function parseWeeklyRecapStats(
   const metrics = metricsObject(parsed);
   if (!metrics) return undefined;
   const out: TempoWeeklyRecapStats = {};
-  const set = (key: keyof TempoWeeklyRecapStats, names: readonly string[]) => {
+  type MetricKey = Exclude<keyof TempoWeeklyRecapStats, "runsByType">;
+  const set = (key: MetricKey, names: readonly string[]) => {
     const b = parseBlock(pickFirst(metrics, names));
     if (b) out[key] = b;
   };
@@ -113,5 +129,15 @@ export function parseWeeklyRecapStats(
     "easyRunHeartRateBpm",
     "EasyRunHeartRateBpm",
   ]);
+  set("movingTimeS", ["movingTimeS", "MovingTimeS"]);
+  set("longestRunDistanceM", ["longestRunDistanceM", "LongestRunDistanceM"]);
+  set("longestRunDurationS", ["longestRunDurationS", "LongestRunDurationS"]);
+  for (const z of [1, 2, 3, 4, 5] as const) {
+    set(`zoneSecondsZ${z}`, [`zoneSecondsZ${z}`, `ZoneSecondsZ${z}`]);
+  }
+  const runsByType = parseRunsByType(
+    pickFirst(metrics, ["runsByType", "RunsByType"]),
+  );
+  if (runsByType && Object.keys(out).length > 0) out.runsByType = runsByType;
   return Object.keys(out).length > 0 ? out : undefined;
 }

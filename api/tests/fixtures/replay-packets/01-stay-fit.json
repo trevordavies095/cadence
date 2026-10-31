@@ -1,0 +1,23 @@
+{
+  "dossier": {
+    "versionId": 1,
+    "body": "You run four days a week to stay fit, 30 to 35 km. No races planned."
+  },
+  "recapMarkdown": "## Summary\n\n| Metric | This week | 3-wk avg |\n|---|---|---|\n| Mileage | 32.00 km | 31.50 km |\n\nFour easy runs.",
+  "thread": [],
+  "attachments": [],
+  "week": {
+    "isoWeek": "2026-W43",
+    "start": "2026-10-19T00:00:00.000Z",
+    "end": "2026-10-25T23:59:59.999Z",
+    "weekSessionId": "00000000-0000-4000-8000-000000000241"
+  },
+  "recentHistory": [],
+  "recentHistoryLimit": 4,
+  "goal": {
+    "kind": "fitness"
+  },
+  "coaching": {
+    "phase": "base"
+  }
+}

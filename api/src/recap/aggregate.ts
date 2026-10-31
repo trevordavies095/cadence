@@ -1,4 +1,5 @@
 import type { TempoWorkoutSummary } from "../tempo/port.js";
+import { isEasyFamily } from "./runTypes.js";
 
 /** Raw totals for one week window (tempo-cli Summary “This week” shape). */
 export type WeekAggregate = {
@@ -11,17 +12,9 @@ export type WeekAggregate = {
   hasElevation: boolean;
   /** True when at least one workout had relativeEffort. */
   hasRelativeEffort: boolean;
-  /** Mean avg HR on easy/recovery runs (excludes long); undefined if none. */
+  /** Mean avg HR on easy-family runs; undefined if none. */
   easyRunAvgHr?: number;
 };
-
-/** Easy-typed runs for Summary avg HR — not long/tempo/etc. */
-export function isEasyRunTypeForSummary(runType: unknown): boolean {
-  if (typeof runType !== "string") return false;
-  const t = runType.trim().toLowerCase();
-  if (t.includes("long")) return false;
-  return t.includes("easy") || t.includes("recovery");
-}
 
 export function aggregateWorkouts(
   workouts: readonly TempoWorkoutSummary[],
@@ -49,7 +42,7 @@ export function aggregateWorkouts(
       hasRelativeEffort = true;
     }
     if (
-      isEasyRunTypeForSummary(w.runType) &&
+      isEasyFamily(w.runType) &&
       typeof w.avgHeartRateBpm === "number" &&
       Number.isFinite(w.avgHeartRateBpm)
     ) {

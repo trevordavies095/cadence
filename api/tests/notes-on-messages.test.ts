@@ -130,7 +130,8 @@ describe("a reply carries the note it produced (#103)", () => {
   it("the onboarding draft and the tidy-up show as notes still waiting", async () => {
     const { app, id } = await open();
     const saved = await post(app, "/onboarding/answers", {
-      answers: { goal: "Half marathon in January", schedule: "Tue Thu Sat" },
+      answers: { schedule: "Tue Thu Sat" },
+      goal: { kind: "race", distance: "half", raceName: "Half marathon in January" },
       weekSessionId: id,
     });
     expect(saved.status).toBe(201);
@@ -178,7 +179,8 @@ describe("fixing something replaces what was waiting (#103)", () => {
   it("a correction to the first draft installs the corrected draft as the profile", async () => {
     const app = await open();
     await post(app, "/onboarding/answers", {
-      answers: { goal: "Half marathon in January", schedule: "Tue Thu Sat" },
+      answers: { schedule: "Tue Thu Sat" },
+      goal: { kind: "race", distance: "half", raceName: "Half marathon in January" },
     });
     expect(
       ((await json(await app.request("/dossier"))).current as unknown),

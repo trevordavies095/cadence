@@ -3,6 +3,7 @@ import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import { buildRecapRunByRun } from "../recap/buildRunByRun.js";
 import { buildRecapSummary } from "../recap/buildSummary.js";
 import { buildRecapZones } from "../recap/buildZones.js";
+import { loadWeekGoalContext } from "../recap/weekGoalContext.js";
 import {
   TempoExportError,
   TempoHttpError,
@@ -86,10 +87,12 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
     }
 
     try {
+      const { knobs } = await loadWeekGoalContext(session);
       const summary = await buildRecapSummary({
         session,
         tempoPort,
         unit: unitParsed,
+        knobs,
       });
 
       if (formatRaw === "markdown") {
@@ -108,6 +111,7 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
         comparison: summary.comparison,
         comparisonSource: summary.comparisonSource,
         rows: summary.rows,
+        goalLines: summary.goalLines,
         markdown: summary.markdown,
       });
     } catch (err) {
@@ -137,7 +141,13 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
     }
 
     try {
-      const zones = await buildRecapZones({ session, tempoPort });
+      const goalContext = await loadWeekGoalContext(session);
+      const zones = await buildRecapZones({
+        session,
+        tempoPort,
+        easyShareTarget: goalContext.knobs.thresholds.easyShareTarget,
+        easyShareVerdict: goalContext.knobs.thresholds.easyShareVerdict,
+      });
 
       if (formatRaw === "markdown") {
         return c.text(zones.markdown, 200, {
@@ -151,6 +161,9 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
         timezone: zones.timezone,
         range: zones.range,
         zones: zones.zones,
+        zoneSource: zones.zoneSource,
+        easyShareTarget: zones.easyShareTarget,
+        easyShareVerdict: zones.easyShareVerdict,
         distribution: zones.distribution,
         markdown: zones.markdown,
       });
@@ -186,10 +199,12 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
     }
 
     try {
+      const goalContext = await loadWeekGoalContext(session);
       const section = await buildRecapRunByRun({
         session,
         tempoPort,
         unit: unitParsed,
+        knobs: goalContext.knobs,
       });
 
       if (formatRaw === "markdown") {

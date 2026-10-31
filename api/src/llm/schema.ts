@@ -91,7 +91,12 @@ function addDaysYmd(ymd: string, delta: number): string {
 }
 
 function isRestRun(run: PrescribedRun): boolean {
-  return run.distanceM <= 0 && !run.structure && !run.paceOrHr;
+  return (
+    run.distanceM <= 0 &&
+    !(run.durationS != null && run.durationS > 0) &&
+    !run.structure &&
+    !run.paceOrHr
+  );
 }
 
 function parseOptionalString(
@@ -124,7 +129,18 @@ function parseRun(
     };
   }
 
-  const distanceM = value.distanceM;
+  const durationS = value.durationS;
+  if (
+    durationS !== undefined &&
+    durationS !== null &&
+    (typeof durationS !== "number" || !Number.isFinite(durationS) || durationS <= 0)
+  ) {
+    return { ok: false, error: `${path}.durationS must be a number > 0 or null` };
+  }
+  const timed = typeof durationS === "number";
+
+  // A run prescribed by duration may leave distance out; it is stored as 0.
+  const distanceM = value.distanceM === undefined && timed ? 0 : value.distanceM;
   if (typeof distanceM !== "number" || !Number.isFinite(distanceM) || distanceM < 0) {
     return { ok: false, error: `${path}.distanceM must be a number >= 0` };
   }
@@ -140,6 +156,7 @@ function parseRun(
     type: typeRaw as RunType,
     distanceM,
   };
+  if (timed) run.durationS = durationS;
   if (structure.value !== undefined) run.structure = structure.value;
   if (paceOrHr.value !== undefined) run.paceOrHr = paceOrHr.value;
   if (shoes.value !== undefined) run.shoes = shoes.value;
@@ -193,7 +210,14 @@ function parseDay(
       };
     }
   } else if (runResult.value == null) {
-    return { ok: false, error: `${path} (${dayType}) requires a run object` };
+    // An other day may be strength, cross-training or a walk: no run, with the
+    // notes saying what the day is. Missing notes are noted, not refused (ADR 0002).
+    if (dayType !== "other") {
+      return { ok: false, error: `${path} (${dayType}) requires a run object` };
+    }
+    if (!notes.value?.trim()) {
+      repairs.push(`${path} (other) with no run has no notes saying what the day is`);
+    }
   }
 
   const day: PrescribedDay = { date, dayType };

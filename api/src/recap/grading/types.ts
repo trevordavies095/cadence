@@ -7,6 +7,8 @@ export type QualitySessionGrade = {
   dayType: "quality" | "race";
   description: string;
   prescribedDistanceM: number;
+  /** Planned duration in seconds, when the day was prescribed by time. */
+  prescribedDurationS?: number;
   prescribedPaceOrHr: string | null;
   prescribedStructure: string | null;
   matched: boolean;
@@ -23,6 +25,8 @@ export type LongRunGrade = {
   date: string;
   description: string;
   prescribedDistanceM: number;
+  /** Planned duration in seconds, when the day was prescribed by time. */
+  prescribedDurationS?: number;
   prescribedPaceOrHr: string | null;
   matched: boolean;
   workoutId?: string;

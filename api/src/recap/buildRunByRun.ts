@@ -8,6 +8,7 @@ import type {
   TempoWorkoutSummary,
 } from "../tempo/port.js";
 import { resolveRecapUnit } from "./buildSummary.js";
+import { shoeDistanceM } from "./shoeDistance.js";
 import {
   buildRunByRunMarkdown,
   cadenceRpmToSpm,
@@ -15,11 +16,19 @@ import {
   formatTitleDate,
 } from "./runByRunFormat.js";
 import { percentMaxHr, resolveConfiguredMaxHr } from "./maxHr.js";
-import { computeRunHrMetrics, driftSeverityLabel } from "./runByRunHr.js";
+import { resolveRecapDepthKnobs, type RecapDepthKnobs } from "./phase.js";
+import {
+  computeRunHrMetrics,
+  driftCapForRun,
+  driftSeverityLabel,
+  type DriftCaps,
+} from "./runByRunHr.js";
 import {
   formatSimilarRouteText,
   formatWeather,
 } from "./similarRouteLine.js";
+import { formatRepSummary, summarizeReps } from "./repSummary.js";
+import { isQualityFamily, isRace } from "./runTypes.js";
 import { loadRecapWorkoutDetails } from "./workoutDetails.js";
 import type {
   RecapRunByRunResult,
@@ -29,34 +38,13 @@ import type {
 } from "./runByRunTypes.js";
 import type { WeekWindow } from "./weekWindows.js";
 
-const METERS_PER_MILE = 1609.344;
-
 type ShoeLookup = Map<string, RunByRunShoe>;
-
-function shoeMileageMi(shoe: TempoShoe): number | undefined {
-  if (
-    typeof shoe.totalMileage === "number" &&
-    Number.isFinite(shoe.totalMileage) &&
-    shoe.totalMileage >= 0
-  ) {
-    if (shoe.totalMileage > 500) return shoe.totalMileage / METERS_PER_MILE;
-    return shoe.totalMileage;
-  }
-  if (
-    typeof shoe.initialMileageM === "number" &&
-    Number.isFinite(shoe.initialMileageM) &&
-    shoe.initialMileageM > 0
-  ) {
-    return shoe.initialMileageM / METERS_PER_MILE;
-  }
-  return undefined;
-}
 
 function shoeFromPort(shoe: TempoShoe): RunByRunShoe {
   const label = `${shoe.brand} ${shoe.model}`.trim() || shoe.id.slice(0, 8);
   const out: RunByRunShoe = { id: shoe.id, label };
-  const mi = shoeMileageMi(shoe);
-  if (mi !== undefined) out.mileageMi = mi;
+  const distanceM = shoeDistanceM(shoe);
+  if (distanceM !== undefined) out.distanceM = distanceM;
   return out;
 }
 
@@ -69,19 +57,8 @@ function shoeFromNested(raw: unknown): RunByRunShoe | undefined {
   const model = typeof o.model === "string" ? o.model.trim() : "";
   const label = `${brand} ${model}`.trim() || id.slice(0, 8);
   const out: RunByRunShoe = { id, label };
-  const total =
-    typeof o.totalMileage === "number" && Number.isFinite(o.totalMileage)
-      ? o.totalMileage
-      : undefined;
-  if (total !== undefined && total >= 0) {
-    out.mileageMi = total > 500 ? total / METERS_PER_MILE : total;
-  } else if (
-    typeof o.initialMileageM === "number" &&
-    Number.isFinite(o.initialMileageM) &&
-    o.initialMileageM > 0
-  ) {
-    out.mileageMi = o.initialMileageM / METERS_PER_MILE;
-  }
+  const distanceM = shoeDistanceM(o);
+  if (distanceM !== undefined) out.distanceM = distanceM;
   return out;
 }
 
@@ -97,10 +74,14 @@ function mapSplits(detail: TempoWorkoutDetail): RunByRunSplit[] {
   return detail.splits.map((s) => {
     const split: RunByRunSplit = {};
     if (s.idx !== undefined) split.idx = s.idx;
+    if (s.kind !== undefined) split.kind = s.kind;
     if (s.paceS !== undefined) split.paceS = s.paceS;
     if (s.distanceM !== undefined) split.distanceM = s.distanceM;
     if (s.durationS !== undefined) split.durationS = s.durationS;
     if (s.avgHeartRateBpm !== undefined) split.avgHeartRateBpm = s.avgHeartRateBpm;
+    if (s.intensity !== undefined) split.intensity = s.intensity;
+    if (s.trigger !== undefined) split.trigger = s.trigger;
+    if (s.stepIndex !== undefined) split.stepIndex = s.stepIndex;
     return split;
   });
 }
@@ -112,6 +93,7 @@ function buildEntry(args: {
   zones: readonly { zoneNumber: number; minBpm: number; maxBpm: number }[];
   shoes: ShoeLookup;
   maxHr?: number;
+  driftCaps: DriftCaps;
 }): RunByRunEntry {
   const { detail, unit, timeZone, zones, shoes, maxHr } = args;
   const hr = computeRunHrMetrics({
@@ -140,6 +122,7 @@ function buildEntry(args: {
     durationS: detail.durationS,
     avgPaceS: detail.avgPaceS,
     splits,
+    driftCapBpm: driftCapForRun(detail.runType, args.driftCaps),
   };
 
   if (detail.name !== undefined) entry.name = detail.name;
@@ -191,9 +174,13 @@ function buildEntry(args: {
   if (detail.notes !== undefined) entry.notes = detail.notes;
   if (detail.shoeId !== undefined) entry.shoeId = detail.shoeId;
   if (splitPacesFormatted) entry.splitPacesFormatted = splitPacesFormatted;
+  if (isQualityFamily(runType) || isRace(runType)) {
+    const reps = summarizeReps(splits, detail.avgPaceS);
+    if (reps) entry.repSummary = formatRepSummary(reps, unit);
+  }
   if (hr.drift) {
     entry.drift = hr.drift;
-    const severity = driftSeverityLabel(hr.drift.driftBpm, detail.runType);
+    const severity = driftSeverityLabel(hr.drift.driftBpm, entry.driftCapBpm);
     if (severity) entry.driftSeverity = severity;
   }
   if (hr.zonePct) entry.zonePct = hr.zonePct;
@@ -219,8 +206,12 @@ export async function buildRecapRunByRun(args: {
   session: WeekSession;
   tempoPort: TempoPort;
   unit?: TempoUnitPreference;
+  /** The week's resolved knobs; the drift caps come from its thresholds. No knobs: the no-goal column. */
+  knobs?: RecapDepthKnobs;
 }): Promise<RecapRunByRunResult> {
   const { session, tempoPort } = args;
+  const driftCaps = (args.knobs ?? resolveRecapDepthKnobs()).thresholds
+    .driftCapBpm;
   const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
   const window: WeekWindow = { start: session.start, end: session.end };
 
@@ -250,6 +241,7 @@ export async function buildRecapRunByRun(args: {
         zones,
         shoes: shoeLookup,
         maxHr,
+        driftCaps,
       }),
     );
   }

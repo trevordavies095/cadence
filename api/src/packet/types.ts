@@ -3,7 +3,10 @@
  * This is the structured payload LlmPort receives — identity PII and GPS omitted.
  */
 
+import type { TrainingGoal } from "../goal/types.js";
 import type { PrescribedWeek } from "../llm/types.js";
+import type { RecapPhase } from "../recap/phase.js";
+import type { TempoUnitPreference } from "../tempo/port.js";
 
 export type ModelPacketRole = "athlete" | "coach" | "system";
 
@@ -39,6 +42,10 @@ export type ModelPacketAttachment = {
     durationS?: number | null;
     paceS?: number | null;
     avgHeartRateBpm?: number | null;
+    /** Device-lap intensity (active, rest, interval, …); null when not sent. */
+    intensity?: string | null;
+    trigger?: string | null;
+    stepIndex?: number | null;
   }>;
 };
 
@@ -77,6 +84,47 @@ export type ModelPacketRecentWeek = {
 };
 
 /**
+ * Where the athlete is in training, resolved from the goal for the focus week's
+ * Monday. Optional fields are absent when they do not apply or are not known yet.
+ */
+export type ModelPacketCoaching = {
+  phase: RecapPhase;
+  /** Whole weeks from the focus week's Monday to the race; absent with no date or after the race. */
+  weeksToRace?: number;
+  /** Present (true) only once the race date is before the focus week's Monday. */
+  racePassed?: boolean;
+  /**
+   * The athlete's distance unit from the running log; the prompt prints
+   * threshold paces in it. Present whenever the settings were read.
+   */
+  unitPreference?: TempoUnitPreference;
+  /** Athlete-set threshold pace from the running log, seconds per km. */
+  thresholdPaceS?: number;
+  /** Athlete-set threshold heart rate from the running log. */
+  thresholdHeartRateBpm?: number;
+  /**
+   * Threshold pace the running log suggests from a recent 5K or 10K best,
+   * seconds per km. Present whether or not the athlete set one.
+   */
+  suggestedThresholdPaceS?: number;
+  /** The best effort behind `suggestedThresholdPaceS`; present with it. */
+  suggestedThresholdFrom?: ModelPacketThresholdSource;
+  /** Max heart rate as the running log resolves it for the zone method. */
+  maxHeartRateBpm?: number;
+  /** Highest workout max heart rate in the last 12 months. */
+  observedMaxHeartRateBpm?: number;
+};
+
+/** The best effort a suggested threshold pace comes from. */
+export type ModelPacketThresholdSource = {
+  /** "5K" or "10K". */
+  distance: string;
+  timeS: number;
+  /** UTC date of the workout, yyyy-MM-dd. */
+  workoutDate: string;
+};
+
+/**
  * Structured context for the LLM.
  * Athlete-volunteered coaching constraints in `dossier.body` remain available
  * after identity/GPS scrubbing.
@@ -104,6 +152,13 @@ export type ModelPacket = {
   recentHistory: ModelPacketRecentWeek[];
   /** Resolved N for this packet (see PACKET_RECENT_HISTORY_LIMIT). */
   recentHistoryLimit: number;
+  /**
+   * The current training goal as stored, or null with none. Not identity: it
+   * passes through redaction untouched (a race name is the athlete's own goal).
+   */
+  goal: TrainingGoal | null;
+  /** Coaching context for the focus week; null when no goal is stored. */
+  coaching: ModelPacketCoaching | null;
 };
 
 /** Known identity strings used to scrub free text (optional). */
@@ -136,4 +191,8 @@ export type BuildModelPacketInput = {
   /** Window size N; defaults applied by lean assembly when omitted. */
   recentHistoryLimit?: number;
   identityHints?: IdentityHints;
+  /** Current training goal; null or omitted when none. */
+  goal?: TrainingGoal | null;
+  /** Coaching context for the focus week; null or omitted when no goal. */
+  coaching?: ModelPacketCoaching | null;
 };

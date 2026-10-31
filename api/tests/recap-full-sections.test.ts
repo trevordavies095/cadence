@@ -3,6 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
+import { appendGoal } from "../src/goal/store.js";
 import { buildStubWeeklyReply } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket } from "../src/packet/index.js";
@@ -30,6 +31,7 @@ type Fixture = {
   avgPaceS: number;
   durationS: number;
   avgHeartRateBpm: number;
+  shoeId?: string;
 };
 
 const id = (n: number) =>
@@ -79,21 +81,58 @@ const W43_LONG: Fixture = {
   avgHeartRateBpm: 145,
 };
 
+/** Mon Oct 19 06:00 in Brisbane (UTC+10) is Sun Oct 18 20:00 UTC. */
+const BNE_EARLY_MONDAY: Fixture = {
+  id: id(5),
+  startedAt: "2026-10-18T20:00:00.000Z",
+  runType: "Easy Run",
+  distanceM: 8047,
+  avgPaceS: 400,
+  durationS: 3200,
+  avgHeartRateBpm: 135,
+};
+
 const TREND_PACE =
   "- **Easy pace (≤Z2, list/detail approx.)**: 12:52/mi → — → 11:16/mi → 12:04/mi ▁▁█▅";
 const TREND_HR = "- **Avg easy HR**: 130 → — → 138 → 135 █▁▁▃";
+// Pace and HR read together: faster at a higher HR earns no verdict.
+const TREND_EASY =
+  "- **Easy runs**: 12:04/mi at 135 bpm, from 12:52/mi at 130 bpm three weeks ago";
 const TREND_LONG =
   "- **Long-run distance** (max long-typed, else max run in week): 2.00 mi → — → 5.00 mi → 10.00 mi ▁▁▃█ (improving)";
-const NOTABLE_PR =
-  "- Best-effort PRs: no prior-week snapshot yet (next recap will compare against this run).";
+const NOTABLE_PR = [
+  "- New best: 5K 21:40 (was 22:05)",
+  "- New best: Half-Marathon 1:41:05 (was 1:43:20)",
+].join("\n");
 
 type Behavior = {
   workouts: Fixture[];
-  bestEfforts?: "ok" | "empty" | "500";
+  /**
+   * What Tempo's `since` call returns: "pr" (default) a 5K and a half
+   * marathon that beat earlier bests, "first" a first-ever 10K, "later" a
+   * best set by a run after this week, "early-monday" a 5K by the Brisbane
+   * run (returned only when since is on or before its UTC date, as Tempo
+   * compares), "sunday-best" a 5K that beats a best set the Sunday before
+   * the week, "empty" none, "500" a failure.
+   */
+  bestEfforts?:
+    | "pr"
+    | "first"
+    | "later"
+    | "early-monday"
+    | "sunday-best"
+    | "empty"
+    | "500";
+  /** Records the `since` query of each best-efforts call. */
+  bestEffortsSince?: (string | null)[];
   /** Make only the Notable builder's shoe lookup throw (Run-by-run keeps working). */
   notableThrows?: boolean;
   /** Fail the multi-week Trends window (spans before and into this week). */
   failOlderWorkouts?: boolean;
+  /** Tempo's unit preference (default imperial). */
+  unit?: "imperial" | "metric";
+  /** What `GET /shoes` returns (default none). */
+  shoes?: unknown[];
 };
 
 function buildTempo(b: Behavior) {
@@ -112,6 +151,7 @@ function buildTempo(b: Behavior) {
       avgHeartRateBpm: f.avgHeartRateBpm,
       maxHeartRateBpm: 160,
       splits: [],
+      ...(f.shoeId ? { shoeId: f.shoeId } : {}),
     });
     if (p === "/workouts") {
       const start = url.searchParams.get("startDate");
@@ -146,7 +186,7 @@ function buildTempo(b: Behavior) {
       return w ? ok(full(w)) : new Response("", { status: 404 });
     }
     if (p === "/settings/unit-preference") {
-      return ok({ unitPreference: "imperial" });
+      return ok({ unitPreference: b.unit ?? "imperial" });
     }
     if (p === "/settings/heart-rate-zones") {
       return ok({
@@ -162,19 +202,73 @@ function buildTempo(b: Behavior) {
       });
     }
     if (p === "/settings/default-shoe") return ok({ defaultShoeId: null });
-    if (p === "/shoes") return ok([]);
+    if (p === "/shoes") return ok(b.shoes ?? []);
     if (p === "/stats/best-efforts") {
+      const since = url.searchParams.get("since");
+      b.bestEffortsSince?.push(since);
       if (b.bestEfforts === "500") return new Response("boom", { status: 500 });
+      // Without since Tempo returns all-time bests; Notable must not use them.
+      if (!since) {
+        return ok({
+          distances: [
+            {
+              distance: "5K",
+              distanceM: 5000,
+              timeS: 1200,
+              workoutId: W40_EASY.id,
+              workoutDate: "2026-09-29",
+              previousTimeS: null,
+            },
+          ],
+        });
+      }
       if (b.bestEfforts === "empty") return ok({ distances: [] });
+      const row = (
+        distance: string,
+        distanceM: number,
+        timeS: number,
+        previousTimeS: number | null,
+        workoutId = W43_LONG.id,
+      ) => ({
+        distance,
+        distanceM,
+        timeS,
+        workoutId,
+        workoutDate: "2026-10-24",
+        previousTimeS,
+      });
+      if (b.bestEfforts === "early-monday") {
+        // Tempo compares since with the run's UTC start date (2026-10-18).
+        const utcDate = BNE_EARLY_MONDAY.startedAt.slice(0, 10);
+        return ok({
+          distances:
+            since <= utcDate
+              ? [
+                  {
+                    ...row("5K", 5000, 1300, 1325, BNE_EARLY_MONDAY.id),
+                    workoutDate: utcDate,
+                  },
+                ]
+              : [],
+        });
+      }
+      if (b.bestEfforts === "sunday-best") {
+        // 22:05 before the Sunday, 21:50 on it, 21:40 this week. Only a call
+        // from Monday on sees the Sunday's 21:50 as the best before.
+        return ok({
+          distances: [row("5K", 5000, 1300, since >= "2026-10-19" ? 1310 : 1325)],
+        });
+      }
+      if (b.bestEfforts === "first") {
+        return ok({ distances: [row("10K", 10000, 2770, null)] });
+      }
+      if (b.bestEfforts === "later") {
+        return ok({ distances: [row("5K", 5000, 1290, 1325, id(9))] });
+      }
       return ok({
         distances: [
-          {
-            distance: "5K",
-            distanceM: 5000,
-            timeS: 1500,
-            workoutId: W43_EASY.id,
-            workoutDate: "2026-10-19",
-          },
+          row("Half-Marathon", 21097.5, 6065, 6200),
+          row("5K", 5000, 1300, 1325),
         ],
       });
     }
@@ -234,6 +328,15 @@ async function saveSubjective(
 
 const FULL: Behavior = { workouts: [W40_EASY, W42_EASY, W43_EASY, W43_LONG] };
 
+/** A marathon with no race date: base, so the report has the long-run section. */
+async function storeMarathonGoal() {
+  await appendGoal(
+    new Date("2026-10-01T12:00:00Z"),
+    { kind: "race", distance: "marathon" },
+    "settings",
+  );
+}
+
 describe("full recap sections in tempo-cli order (#88)", () => {
   beforeAll(async () => {
     process.env.DATA_PROTECTION_SECRET_KEY = TEST_DATA_PROTECTION_KEY;
@@ -244,6 +347,7 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     await resetAppTables();
     delete process.env.TEMPO_EXPORT_PATH;
     await acceptAndReady();
+    await storeMarathonGoal();
   });
 
   it("stored recap and thread artifact contain Long run, Trends, Notable in order", async () => {
@@ -275,16 +379,16 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     // Trends lines as tempo-cli prints them for the hand-computed data.
     const trends = md.slice(md.indexOf("## Trends"), md.indexOf("## Notable"));
     expect(trends).toBe(
-      ["## Trends", "", TREND_PACE, "", TREND_HR, "", TREND_LONG, "", ""].join(
+      ["## Trends", "", TREND_PACE, "", TREND_HR, "", TREND_EASY, "", TREND_LONG, "", ""].join(
         "\n",
       ),
     );
     expect(md).not.toContain("Weeks:");
 
-    // Notable as tempo-cli prints it with no prior-week snapshot.
+    // Notable names each new best of the week, shortest distance first.
     expect(md).toContain(`## Notable\n\n${NOTABLE_PR}\n`);
 
-    // Long run: tempo-cli text (no section heading, marathon-pace wording).
+    // Long run: tempo-cli shape (no section heading).
     const longRun = md.slice(
       md.indexOf("### Long run — "),
       md.indexOf("## Trends"),
@@ -294,10 +398,8 @@ describe("full recap sections in tempo-cli order (#88)", () => {
       "Avg pace: 10:44/mi  ·  Avg HR 145  ·  Drift: n/a",
     );
     expect(longRun).toContain("Splits: n/a");
-    // No splits in the fixture, so the last-window line is n/a (as in tempo-cli).
-    expect(longRun).toContain(
-      "Last 3 mi at marathon-pace effort? n/a (pace data incomplete)",
-    );
+    // No splits in the fixture, so the fast-finish line cannot tell.
+    expect(longRun).toContain("Fast finish? n/a (no split paces)");
     expect(md).not.toMatch(/^## Long run/m);
 
     // Per-section routes keep returning what they did.
@@ -308,7 +410,7 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     expect(await routeTrends.text()).toContain("## Trends");
   });
 
-  it("omits Long run without a typed long run, Notable when empty", async () => {
+  it("without a typed long run the longest run stands in; Notable omitted when empty", async () => {
     const app = makeApp({
       workouts: [W42_EASY, W43_EASY],
       bestEfforts: "empty",
@@ -317,13 +419,16 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
     const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
       .reportMarkdown as string;
-    expect(md).not.toContain("Long run —");
+    expect(md).not.toContain("### Long run —");
+    expect(md).toContain("### Longest run — ");
+    expect(md).toContain("No run was typed Long Run this week.");
     expect(md).toContain("## Trends");
-    // Long-run trend falls back to the longest run, as in tempo-cli.
+    // Long-run trend falls back to the longest run, as in tempo-cli (marathon base: verdict).
     expect(md).toContain(
       "- **Long-run distance** (max long-typed, else max run in week): — → — → 5.00 mi → 3.00 mi ▁▁█▁ (declining)",
     );
     expect(md).not.toContain("## Notable");
+    expect(md).not.toContain("New best");
     expect(md.indexOf("## Run-by-run")).toBeLessThan(md.indexOf("## Trends"));
     expect(md.indexOf("## Trends")).toBeLessThan(
       md.indexOf("## Subjective recap"),
@@ -367,7 +472,119 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     expect(md).toContain("## Subjective recap");
   });
 
-  it("a failing best-efforts fetch drops only the PR line", async () => {
+  it("asks Tempo for bests set since this week's Monday, and since the Sunday before", async () => {
+    const since: (string | null)[] = [];
+    const app = makeApp({ ...FULL, bestEffortsSince: since });
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    expect(since.length).toBeGreaterThan(0);
+    // The Sunday before the local Monday, as Tempo compares UTC dates, and
+    // the Monday, for a "was" that counts a best set on that Sunday.
+    expect(new Set(since)).toEqual(new Set(["2026-10-18", "2026-10-19"]));
+  });
+
+  it("a best that beats one set the Sunday before says what it beat", async () => {
+    const app = makeApp({ ...FULL, bestEfforts: "sunday-best" });
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+      .reportMarkdown as string;
+    expect(md).toContain("- New best: 5K 21:40 (was 21:50)");
+  });
+
+  it("a best from an early Monday run east of UTC is still named", async () => {
+    const app = makeApp(
+      { workouts: [BNE_EARLY_MONDAY], bestEfforts: "early-monday" },
+      { athleteTimezone: "Australia/Brisbane" },
+    );
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+      .reportMarkdown as string;
+    expect(md).toContain("- New best: 5K 21:40 (was 22:05)");
+  });
+
+  it("a first effort at a distance says so", async () => {
+    const app = makeApp({ ...FULL, bestEfforts: "first" });
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+      .reportMarkdown as string;
+    expect(md).toContain(
+      "## Notable\n\n- New best: 10K 46:10 (first time at this distance)\n",
+    );
+  });
+
+  it("a best set after this week stays out of this week's Notable", async () => {
+    const app = makeApp({
+      workouts: [W42_EASY, W43_EASY],
+      bestEfforts: "later",
+    });
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+      .reportMarkdown as string;
+    expect(md).not.toContain("New best");
+    expect(md).not.toContain("## Notable");
+  });
+
+  describe("shoe distance in the athlete's unit (#35)", () => {
+    const SHOE_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    const shoe = (totalMileage: number, unit: "miles" | "km") => ({
+      id: SHOE_ID,
+      brand: "Brooks",
+      model: "Ghost 16",
+      isRetired: false,
+      initialMileageM: 0,
+      totalMileage,
+      unit,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    const shod = (f: Fixture): Fixture => ({ ...f, shoeId: SHOE_ID });
+    const workouts = [W40_EASY, W42_EASY, shod(W43_EASY), shod(W43_LONG)];
+
+    async function reportFor(b: Behavior): Promise<string> {
+      const app = makeApp(b);
+      const weekSessionId = await openWeek(app);
+      expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+      return (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+        .reportMarkdown as string;
+    }
+
+    it("a metric athlete's report has no miles anywhere", async () => {
+      // Tempo states the total in the athlete's unit: 1100 km.
+      const md = await reportFor({
+        workouts,
+        unit: "metric",
+        shoes: [shoe(1100, "km")],
+      });
+      expect(md).toContain("## Summary");
+      expect(md).toContain("## Run-by-run");
+      expect(md).toContain("## Trends");
+      expect(md).toContain("## Notable");
+      expect(md).toMatch(/^\| Distance \|/m);
+      expect(md).toContain("Shoe: Brooks Ghost 16 (1100 km)");
+      expect(md).toContain("- Shoe **Brooks Ghost 16** at 1100 km (>644 km)");
+      expect(md).not.toMatch(/\bmi\b/);
+      expect(md).not.toMatch(/\bmiles?\b/i);
+      expect(md).not.toContain("Mileage");
+    });
+
+    it("a 600-mile shoe reads as 600 mi and the warning fires", async () => {
+      const md = await reportFor({ workouts, shoes: [shoe(600, "miles")] });
+      expect(md).toContain("Shoe: Brooks Ghost 16 (600 mi)");
+      expect(md).toContain("- Shoe **Brooks Ghost 16** at 600 mi (>400 mi)");
+    });
+
+    it("an imperial shoe under the warning distance is shown but not flagged", async () => {
+      const md = await reportFor({ workouts, shoes: [shoe(137, "miles")] });
+      expect(md).toContain("Shoe: Brooks Ghost 16 (137 mi)");
+      expect(md).not.toContain("- Shoe **");
+    });
+  });
+
+  it("a failing best-efforts fetch drops only the new-best lines", async () => {
     const app = makeApp({ ...FULL, bestEfforts: "500" });
     const weekSessionId = await openWeek(app);
     expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
@@ -399,6 +616,7 @@ describe("full recap sections reach the weekly reply (#88)", () => {
 
   it("the logged weekly reply request contains Trends, Notable and Long run", async () => {
     await acceptAndReady();
+    await storeMarathonGoal();
     await putAnthropicConnection(
       "sk-ant-test-key-fixture-xyz",
       new SecretProtector(TEST_DATA_PROTECTION_KEY),
@@ -446,7 +664,7 @@ describe("full recap sections reach the weekly reply (#88)", () => {
       "## Notable",
       "### Long run — ",
       "Long-run distance",
-      "no prior-week snapshot yet",
+      "New best: 5K 21:40 (was 22:05)",
     ]) {
       expect(sent).toContain(needle);
     }

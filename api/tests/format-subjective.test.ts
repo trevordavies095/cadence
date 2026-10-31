@@ -25,13 +25,62 @@ describe("formatSubjective", () => {
     });
     expect(md).toContain("## Subjective recap");
     expect(md).toContain("Sleep avg this week: 7.2 hrs (range 6.5–8)");
-    expect(md).toContain("Strength sessions completed: 2 of 3 (easy)");
+    expect(md).toContain("Strength, rehab or cross-training: 2 of 3 planned (easy)");
     expect(md).toContain("Stress level: low");
 
     const coach = buildCoachQuestionsMarkdown(["First?", "Second?"]);
     expect(coach).toContain("## Questions for coach");
     expect(coach).toContain("1. First?");
     expect(coach).toContain("2. Second?");
+  });
+
+  describe("strength, rehab or cross-training line", () => {
+    const line = (strength_sessions: {
+      completed?: number;
+      planned?: number;
+      notes?: string;
+    }) =>
+      buildSubjectiveRecapMarkdown({ strength_sessions })
+        .split("\n")
+        .find((l) => l.startsWith("Strength, rehab or cross-training:"));
+
+    it("prints the count when only the number done is given", () => {
+      expect(line({ completed: 2 })).toBe(
+        "Strength, rehab or cross-training: 2 sessions",
+      );
+      expect(line({ completed: 1 })).toBe(
+        "Strength, rehab or cross-training: 1 session",
+      );
+      expect(line({ completed: 0 })).toBe(
+        "Strength, rehab or cross-training: 0 sessions",
+      );
+    });
+
+    it("prints done of planned when both are given", () => {
+      expect(line({ completed: 2, planned: 3 })).toBe(
+        "Strength, rehab or cross-training: 2 of 3 planned",
+      );
+    });
+
+    it("prints the notes when they are all that was given", () => {
+      expect(line({ notes: "Swam twice, physio exercises daily" })).toBe(
+        "Strength, rehab or cross-training: Swam twice, physio exercises daily",
+      );
+    });
+
+    it("adds notes after the count", () => {
+      expect(line({ completed: 2, notes: "one swim, one gym" })).toBe(
+        "Strength, rehab or cross-training: 2 sessions (one swim, one gym)",
+      );
+      expect(line({ completed: 0, planned: 0, notes: "(None planned.)" })).toBe(
+        "Strength, rehab or cross-training: 0 of 0 planned (None planned.)",
+      );
+    });
+
+    it("prints nothing when the answer is empty", () => {
+      expect(line({})).toBeUndefined();
+      expect(line({ notes: "  " })).toBeUndefined();
+    });
   });
 
   it("applyApiRpeDefaults fills omitted RPE from Tempo", () => {
@@ -68,5 +117,44 @@ describe("formatSubjective", () => {
       },
     ]);
     expect(out.runs[0]!.rpe).toBe(3);
+  });
+});
+
+describe("race result", () => {
+  it("prints the result on the run-by-run line", () => {
+    expect(
+      formatSubjectiveRunLine({
+        rpe: 9,
+        result: "3:28, two minutes under",
+        pain: "none",
+      }),
+    ).toBe("RPE: 9/10  ·  Result: 3:28, two minutes under  ·  Pain: none");
+    expect(formatSubjectiveRunLine({ result: "  Missed by 40 s  " })).toBe(
+      "Result: Missed by 40 s",
+    );
+  });
+
+  it("prints the race result in the check-in section, with its day", () => {
+    const md = buildSubjectiveRecapMarkdown(undefined, [
+      { date: "2026-10-20", felt: 7 },
+      { date: "2026-10-24", rpe: 9, result: "3:28, two minutes under" },
+    ]);
+    expect(md).toContain("## Subjective recap");
+    expect(md).toContain("Race result (Sat Oct 24): 3:28, two minutes under");
+    expect(md).not.toContain("Tue Oct 20");
+  });
+
+  it("puts the race result before the weekly answers", () => {
+    const md = buildSubjectiveRecapMarkdown({ stress_level: "low" }, [
+      { date: "2026-10-24", result: "PB" },
+    ]);
+    expect(md.indexOf("Race result (Sat Oct 24): PB")).toBeGreaterThan(-1);
+    expect(md.indexOf("Race result")).toBeLessThan(md.indexOf("Stress level"));
+  });
+
+  it("leaves the check-in section empty with no result and no weekly answers", () => {
+    expect(
+      buildSubjectiveRecapMarkdown(undefined, [{ date: "2026-10-20", felt: 7 }]),
+    ).toBe("");
   });
 });

@@ -24,13 +24,27 @@ import { cx } from "@/components/ui";
 import {
   deleteAnthropicConnection,
   deleteTempoConnection,
+  fetchGoal,
+  fetchOnboarding,
   fetchSettings,
   putAnthropicConnection,
   putTempoConnection,
+  saveGoal,
   type AnthropicConnection,
   type SettingsSources,
+  type StoredGoal,
   type TempoConnection,
+  type ThreadNote,
 } from "@/lib/api";
+import { GoalFields } from "@/components/GoalFields";
+import { NoteCard, toNote } from "@/components/NoteCard";
+import {
+  draftGoal,
+  EMPTY_GOAL_DRAFT,
+  goalDraft,
+  goalProblem,
+  type GoalDraft,
+} from "@/lib/onboarding";
 
 type GateState = "loading" | "open";
 
@@ -65,11 +79,112 @@ function ConfirmClear({
   );
 }
 
+/**
+ * What the athlete is training for, with Change. After the first answers this is the only
+ * way to change the goal: saving stores it and tells Coach Cade, who notes it in About you.
+ * An athlete who onboarded before goals were stored has none yet, and sets one here.
+ */
+function TrainingGoalSection({ initial }: { initial: StoredGoal | null }) {
+  const [stored, setStored] = useState(initial);
+  const [draft, setDraft] = useState<GoalDraft | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [note, setNote] = useState<ThreadNote | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function startChange() {
+    setDraft(stored ? goalDraft(stored.goal) : { ...EMPTY_GOAL_DRAFT });
+    setProblem(null);
+    setError(null);
+    setNote(null);
+  }
+
+  async function onSave(e: FormEvent) {
+    e.preventDefault();
+    if (!draft) return;
+    const missing = goalProblem(draft);
+    const goal = draftGoal(draft);
+    if (missing || !goal) {
+      setProblem(missing ?? "Choose one to continue.");
+      return;
+    }
+    setSaving(true);
+    setProblem(null);
+    setError(null);
+    try {
+      const saved = await saveGoal(goal);
+      setStored(saved);
+      setNote(saved.correction ? toNote(saved.correction.dossierProposal) : null);
+      setDraft(null);
+    } catch (err) {
+      setError(describeError(err, "Couldn’t save that. Try again."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="flex flex-col gap-3" aria-label="What you’re training for">
+      <SectionTitle>What you’re training for</SectionTitle>
+      {draft ? (
+        <form onSubmit={(e) => void onSave(e)} className="flex flex-col gap-3">
+          <GoalFields
+            draft={draft}
+            onChange={(patch) => {
+              setDraft((d) => (d ? { ...d, ...patch } : d));
+              setProblem(null);
+            }}
+          />
+          {problem ? <p className="m-0 text-muted">{problem}</p> : null}
+          <div className="flex flex-wrap gap-3">
+            <Button type="submit" variant="primary" disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+            <Button variant="quiet" disabled={saving} onClick={() => setDraft(null)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <>
+          {stored ? (
+            <>
+              {stored.sentence ? <p className="m-0">{stored.sentence}</p> : null}
+              <Muted>Coach Cade plans every week around this.</Muted>
+            </>
+          ) : (
+            <Muted>
+              No goal set yet. Until you set one, Coach Cade reads your weeks as training to stay
+              fit.
+            </Muted>
+          )}
+          <div>
+            <Button onClick={startChange}>{stored ? "Change" : "Set your goal"}</Button>
+          </div>
+        </>
+      )}
+      <ErrorNote error={error} />
+      {note ? (
+        <div className="flex flex-col gap-2">
+          <NoteCard key={note.id} note={note} />
+          <Muted>
+            <ButtonLink href="/dossier" variant="quiet">
+              See it in About you
+            </ButtonLink>
+          </Muted>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 export default function SettingsPage() {
   const [gate, setGate] = useState<GateState>("loading");
   const [tempo, setTempo] = useState<TempoConnection | null>(null);
   const [anthropic, setAnthropic] = useState<AnthropicConnection | null>(null);
   const [sources, setSources] = useState<SettingsSources | null>(null);
+  const [goal, setGoal] = useState<StoredGoal | null>(null);
+  const [onboarded, setOnboarded] = useState(false);
   const [appearance, setAppearance] = useState<AppearancePreference>("dark");
   const [confirming, setConfirming] = useState<"tempo" | "anthropic" | null>(null);
   const [tempoBaseUrl, setTempoBaseUrl] = useState("http://localhost:5001");
@@ -83,8 +198,15 @@ export default function SettingsPage() {
     let cancelled = false;
     async function check() {
       try {
-        const settings = await fetchSettings();
+        const [settings, storedGoal, onboarding] = await Promise.all([
+          fetchSettings(),
+          // The goal section is extra: if it cannot load, the connections still can.
+          fetchGoal().catch(() => null),
+          fetchOnboarding().catch(() => null),
+        ]);
         if (cancelled) return;
+        setGoal(storedGoal);
+        setOnboarded(onboarding != null && onboarding.status !== "needs_onboarding");
         setTempo(settings.tempo);
         setAnthropic(settings.anthropic);
         setSources({
@@ -199,6 +321,9 @@ export default function SettingsPage() {
         <PageTitle>Settings</PageTitle>
         <Muted>{intro}</Muted>
       </PageHead>
+
+      {/* No goal before the first answers: onboarding asks for it. */}
+      {goal || onboarded ? <TrainingGoalSection initial={goal} /> : null}
 
       <section className="flex flex-col gap-3" aria-label="Tempo connection">
         <SectionTitle>Tempo</SectionTitle>

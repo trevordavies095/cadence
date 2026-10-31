@@ -105,7 +105,10 @@ export type UnitPreference = "metric" | "imperial";
 
 export type PrescribedRun = {
   type: string;
+  /** 0 when the run is prescribed by duration only. */
   distanceM: number;
+  /** Planned seconds, when the run is prescribed by time. */
+  durationS?: number | null;
   structure?: string | null;
   paceOrHr?: string | null;
   shoes?: string | null;
@@ -239,6 +242,24 @@ export type OnboardingAnswers = {
   preferences?: string;
 };
 
+/** What the athlete is training for, as the API stores it. */
+export type TrainingGoal = {
+  kind: "race" | "speed" | "fitness" | "return";
+  distance?: "5k" | "10k" | "half" | "marathon" | "other";
+  raceName?: string;
+  /** YYYY-MM-DD. */
+  raceDate?: string;
+  target?: string;
+  startingPoint?: string;
+  since?: string;
+};
+
+/** The answers the page sends: the goal goes as a record and the API writes its sentence. */
+export type OnboardingSubmission = {
+  answers: Omit<OnboardingAnswers, "goal">;
+  goal: TrainingGoal;
+};
+
 export type OnboardingQuestionnaire = {
   order: OnboardingFieldKey[];
   fields: Record<OnboardingFieldKey, string>;
@@ -288,6 +309,13 @@ export type OnboardingGate =
       updatedAt: string;
     }
   | {
+      /** About you exists: the first answers are done. */
+      status: "complete";
+      note: string;
+      answers: OnboardingAnswers | null;
+      dossierVersionId: number;
+    }
+  | {
       status: "complete";
       note: string;
       answers: OnboardingAnswers | null;
@@ -307,10 +335,44 @@ export type LastOutboundPacketSummary = {
   recentHistoryLimit?: number;
 };
 
+/** The training goal as it went to Coach Cade (API `TrainingGoal`). */
+export type SentGoal = {
+  kind: "race" | "speed" | "fitness" | "return";
+  distance?: "5k" | "10k" | "half" | "marathon" | "other";
+  raceName?: string;
+  /** YYYY-MM-DD. */
+  raceDate?: string;
+  target?: string;
+  startingPoint?: string;
+  /** YYYY-MM-DD. */
+  since?: string;
+};
+
+/** Where the athlete is in training for the week that was sent (API `ModelPacketCoaching`). */
+export type SentCoaching = {
+  phase: "recovery" | "base" | "build" | "peak" | "taper";
+  weeksToRace?: number;
+  racePassed?: boolean;
+  /** The running log's distance unit; threshold paces print in it. */
+  unitPreference?: UnitPreference;
+  /** Seconds per km, athlete-set. */
+  thresholdPaceS?: number;
+  thresholdHeartRateBpm?: number;
+  /** Seconds per km, suggested by the running log from a recent best. */
+  suggestedThresholdPaceS?: number;
+  maxHeartRateBpm?: number;
+  observedMaxHeartRateBpm?: number;
+};
+
 export type LastOutboundPacket = {
   savedAt: string;
   summary: LastOutboundPacketSummary;
-  packet: unknown;
+  /** Full redacted packet; older packets may lack goal and coaching. */
+  packet: {
+    goal?: SentGoal | null;
+    coaching?: SentCoaching | null;
+    [key: string]: unknown;
+  };
 };
 
 /** Plan hard-gate: check-in must be finished or skipped (#52). */
@@ -607,7 +669,7 @@ export async function fetchOnboarding(): Promise<OnboardingGate> {
 
 
 export async function saveOnboardingAnswers(
-  answers: OnboardingAnswers,
+  submission: OnboardingSubmission,
   weekSessionId?: string,
 ): Promise<{
   status: "ready";
@@ -628,7 +690,7 @@ export async function saveOnboardingAnswers(
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        weekSessionId ? { answers, weekSessionId } : { answers },
+        weekSessionId ? { ...submission, weekSessionId } : submission,
       ),
     }),
   );
@@ -654,7 +716,7 @@ export type NeedsSubjectiveRun = {
 
 export type SubjectiveQuestionnaire = {
   order: string[];
-  per_run: { rpe: string; felt: string; pain: string };
+  per_run: { rpe: string; felt: string; pain: string; pain_score?: string };
   weekly: {
     sleep_avg_hrs: string;
     sleep_range_hrs: string;
@@ -672,6 +734,10 @@ export type SubjectiveRunRow = {
   rpe?: number;
   felt?: number;
   pain?: string;
+  /** 0 to 10; 0 means no pain. Asked when the goal is a return to running. */
+  pain_score?: number;
+  /** A Race run's answer to "How did it go against your target?". */
+  result?: string;
 };
 
 export type SubjectiveAnswers = {
@@ -828,6 +894,8 @@ export type HomeWeekDay = {
   date: string;
   dayType: PrescribedDay["dayType"] | null;
   plannedDistanceM: number | null;
+  /** Planned seconds, when the day's run is prescribed by time. */
+  plannedDurationS?: number | null;
   actualDistanceM: number | null;
   state: HomeDayState;
   isToday: boolean;
@@ -839,7 +907,12 @@ export type HomeRead = {
   banner: HomeBanner | null;
   today: PrescribedDay | null;
   week: HomeWeekDay[];
-  totals: { actualDistanceM: number; plannedDistanceM: number };
+  totals: {
+    actualDistanceM: number;
+    plannedDistanceM: number;
+    /** Planned seconds on days with a duration and no distance. */
+    plannedDurationS?: number;
+  };
   units: UnitPreference;
   tempoUnavailable: boolean;
 };
@@ -874,4 +947,54 @@ export async function fetchDossierChanges(): Promise<{
   changes: DossierProposal[];
 }> {
   return readJson(await fetch("/api/dossier/changes"));
+}
+
+/** What the athlete is training for; "return" is getting back to running. */
+export type GoalKind = "race" | "speed" | "fitness" | "return";
+
+/** The current goal's kind, or null when no goal is stored. */
+export async function fetchGoalKind(): Promise<GoalKind | null> {
+  const res = await fetch("/api/goal");
+  if (res.status === 404) return null;
+  const body = await readJson<{ goal: { kind: GoalKind } }>(res);
+  return body.goal.kind;
+}
+
+/** The current goal as stored, with the sentence Settings shows (null when it cannot be worded). */
+export type StoredGoal = {
+  id: number;
+  goal: TrainingGoal;
+  source: "onboarding" | "settings";
+  createdAt: string;
+  sentence: string | null;
+};
+
+/** The current goal, or null when none is stored yet (before the first answers). */
+export async function fetchGoal(): Promise<StoredGoal | null> {
+  const res = await fetch("/api/goal");
+  if (res.status === 404) return null;
+  return readJson<StoredGoal>(res);
+}
+
+/**
+ * Store a new goal. Once About you exists, the API also tells Coach Cade "My goal is now …"
+ * through Fix something in the same request and returns that note; null before then.
+ */
+export async function saveGoal(goal: TrainingGoal): Promise<
+  StoredGoal & {
+    correction: {
+      athleteMessage: ThreadMessage;
+      coachMessage: ThreadMessage;
+      dossierProposal: DossierProposal;
+      dossierVersionId: number;
+    } | null;
+  }
+> {
+  return readJson(
+    await fetch("/api/goal", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ goal }),
+    }),
+  );
 }

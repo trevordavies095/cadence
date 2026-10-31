@@ -3,34 +3,32 @@
 import { describeError, type UiError } from "@/lib/errors";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { GoalFields } from "@/components/GoalFields";
 import { DayChips, DayChoice } from "@/components/OnboardingControls";
 import { Stepper } from "@/components/CheckInControls";
 import {
   Button,
   ErrorNote,
-  Field,
-  Input,
   Muted,
   Page,
   PageTitle,
   Textarea,
   WaitingState,
-  cx,
 } from "@/components/ui";
 import {
   ensureCurrentWeek,
   fetchOnboarding,
   saveOnboardingAnswers,
-  type OnboardingAnswers,
+  type OnboardingSubmission,
   type OnboardingGate,
   type WeekSession,
 } from "@/lib/api";
 import {
   EMPTY_DRAFT,
   ONBOARDING_STEPS,
+  longRunName,
   serializeAnswers,
   stepProblem,
-  type GoalKind,
   type OnboardingDraft,
 } from "@/lib/onboarding";
 
@@ -92,12 +90,12 @@ export default function OnboardingPage() {
     setDraft((d) => ({ ...d, ...patch }));
   }
 
-  async function finishInterview(answers: OnboardingAnswers) {
+  async function finishInterview(submission: OnboardingSubmission) {
     if (!week) return;
     setBusy(true);
     setError(null);
     try {
-      await saveOnboardingAnswers(answers, week.id);
+      await saveOnboardingAnswers(submission, week.id);
       // The coach has written down what it understood; the next stop is the card that asks
       // whether that looks right.
       router.replace("/dossier");
@@ -119,12 +117,12 @@ export default function OnboardingPage() {
       setStep(step + 1);
       return;
     }
-    const answers = serializeAnswers(draft);
-    if (!answers) {
-      setProblem("Your goal and run days are needed before Coach Cade can start.");
+    const submission = serializeAnswers(draft);
+    if (!submission) {
+      setProblem("What you’re training for and your run days are needed before Coach Cade can start.");
       return;
     }
-    void finishInterview(answers);
+    void finishInterview(submission);
   }
 
   if (gate !== "open") {
@@ -157,7 +155,7 @@ export default function OnboardingPage() {
           first weeks of your plan.
         </p>
         <ul className="m-0 flex flex-col gap-1.5 pl-5">
-          <li>What you’re training for</li>
+          <li>What you’re training for: a race, getting faster, staying fit or getting back to running</li>
           <li>Which days you’re free to run</li>
           <li>How much time you have</li>
           <li>Any injuries or limits</li>
@@ -182,6 +180,8 @@ export default function OnboardingPage() {
   const name = ONBOARDING_STEPS[step]!;
   const isLast = step + 1 >= ONBOARDING_STEPS.length;
   const required = name === "goal" || name === "days";
+  // Getting back to running is not asked about a long run day.
+  const longRun = longRunName(draft);
 
   return (
     <Page flow>
@@ -194,49 +194,7 @@ export default function OnboardingPage() {
         {name === "goal" ? (
           <section className="flex flex-col gap-3">
             <p className="m-0 text-lg font-medium">What are you training for?</p>
-            <div role="radiogroup" aria-label="Your goal" className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["race", "A race"],
-                  ["fitness", "General fitness"],
-                ] as [GoalKind, string][]
-              ).map(([kind, label]) => (
-                <button
-                  key={kind}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.goalKind === kind}
-                  onClick={() => change({ goalKind: kind })}
-                  className={cx(
-                    "rounded-tempo border px-4 py-2.5 text-base font-semibold",
-                    draft.goalKind === kind
-                      ? "border-ink bg-raised text-ink"
-                      : "border-border text-muted hover:text-ink",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {draft.goalKind === "race" ? (
-              <div className="flex flex-col gap-3">
-                <Field label="Which race?">
-                  <Input
-                    value={draft.raceName}
-                    onChange={(e) => change({ raceName: e.target.value })}
-                    placeholder="For example, a half marathon"
-                    autoFocus
-                  />
-                </Field>
-                <Field label="Race date" hint="Leave blank if you haven’t picked one yet.">
-                  <Input
-                    type="date"
-                    value={draft.raceDate}
-                    onChange={(e) => change({ raceDate: e.target.value })}
-                  />
-                </Field>
-              </div>
-            ) : null}
+            <GoalFields draft={draft} onChange={change} />
           </section>
         ) : name === "days" ? (
           <section className="flex flex-col gap-4">
@@ -255,19 +213,21 @@ export default function OnboardingPage() {
                 })
               }
             />
-            <div className="flex flex-col gap-2">
-              <p className="m-0 font-medium">Which day suits a long run best?</p>
-              {draft.runDays.length > 0 ? (
-                <DayChoice
-                  label="Long run day"
-                  options={draft.runDays}
-                  value={draft.longRunDay}
-                  onChange={(day) => change({ longRunDay: day })}
-                />
-              ) : (
-                <Muted>Pick your free days first.</Muted>
-              )}
-            </div>
+            {longRun ? (
+              <div className="flex flex-col gap-2">
+                <p className="m-0 font-medium">Which day suits a {longRun}?</p>
+                {draft.runDays.length > 0 ? (
+                  <DayChoice
+                    label={longRun === "long run" ? "Long run day" : "Longer run day"}
+                    options={draft.runDays}
+                    value={draft.longRunDay}
+                    onChange={(day) => change({ longRunDay: day })}
+                  />
+                ) : (
+                  <Muted>Pick your free days first.</Muted>
+                )}
+              </div>
+            ) : null}
           </section>
         ) : name === "hours" ? (
           <section className="flex flex-col gap-3">

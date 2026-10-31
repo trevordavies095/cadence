@@ -5,6 +5,7 @@ import {
   type SubjectiveRunFields,
 } from "./formatSubjective.js";
 import type { RunByRunEntry } from "./runByRunTypes.js";
+import { formatShoeDistance } from "./shoeDistance.js";
 import { workoutLocalDate } from "./subjectiveRuns.js";
 
 const METERS_PER_MILE = 1609.344;
@@ -17,8 +18,10 @@ export function formatPaceFromSecondsPerKm(
   if (!Number.isFinite(secPerKm) || secPerKm <= 0) return "n/a";
   const secPerUnit =
     unit === "imperial" ? secPerKm * (METERS_PER_MILE / 1000) : secPerKm;
-  const m = Math.floor(secPerUnit / 60);
-  const s = Math.round(secPerUnit % 60);
+  // Round the whole pace first, so 5:59.6 becomes 6:00, never 5:60.
+  const total = Math.round(secPerUnit);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   const suf = unit === "imperial" ? "/mi" : "/km";
   return `${m}:${String(s).padStart(2, "0")}${suf}`;
 }
@@ -124,6 +127,11 @@ function formatOneRunMarkdown(
   lines.push(`Splits: ${run.splitPacesFormatted ?? "n/a"}`);
   lines.push("");
 
+  if (run.repSummary) {
+    lines.push(`Reps: ${run.repSummary}`);
+    lines.push("");
+  }
+
   if (run.drift) {
     const sign = run.drift.driftBpm >= 0 ? "+" : "";
     const severity = run.driftSeverity ? ` ${run.driftSeverity}` : "";
@@ -152,11 +160,11 @@ function formatOneRunMarkdown(
   }
 
   if (run.shoe) {
-    const mi =
-      run.shoe.mileageMi !== undefined
-        ? ` (${run.shoe.mileageMi.toFixed(0)} mi)`
+    const dist =
+      run.shoe.distanceM !== undefined
+        ? ` (${formatShoeDistance(run.shoe.distanceM, unit)})`
         : "";
-    lines.push(`Shoe: ${run.shoe.label}${mi}`);
+    lines.push(`Shoe: ${run.shoe.label}${dist}`);
     lines.push("");
   } else if (run.shoeId) {
     lines.push(`Shoe: n/a (id ${run.shoeId})`);

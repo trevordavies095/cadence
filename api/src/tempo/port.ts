@@ -56,6 +56,16 @@ export type TempoWorkoutSplit = {
   startElapsedS?: number | null;
   endElapsedS?: number | null;
   startDistanceM?: number | null;
+  /**
+   * Device-lap intensity, snake_case (active, rest, warmup, cooldown,
+   * recovery, interval, other). Null for distance splits and for sources
+   * without it (HealthKit, Strava CSV, GPX).
+   */
+  intensity?: string | null;
+  /** Device-lap trigger, snake_case (manual, time, distance, session_end, …). */
+  trigger?: string | null;
+  /** Structured-workout step this lap belongs to. */
+  stepIndex?: number | null;
 };
 
 /** Sparse time-series sample for recap HR analytics (no GPS). */
@@ -131,7 +141,33 @@ export type TempoHeartRateZones = {
   age?: number | null;
   restingHeartRateBpm?: number | null;
   maxHeartRateBpm?: number | null;
+  /**
+   * Highest workout max HR in the last 12 months (readings above 230 ignored);
+   * null without HR data. Informational: never feeds the resolved max.
+   */
+  observedMaxHeartRateBpm?: number | null;
   zones: TempoHeartRateZone[];
+};
+
+/** The best effort Tempo derived the suggested threshold pace from. */
+export type TempoThresholdSuggestionSource = {
+  /** Best-effort distance label: "5K" or "10K". */
+  distance: string;
+  timeS: number;
+  /** UTC date the workout started (yyyy-MM-dd). */
+  workoutDate: string;
+  workoutId: string;
+};
+
+/** Tempo GET /settings/thresholds. Paces are seconds per km. */
+export type TempoThresholds = {
+  /** Athlete-set threshold pace, or null when not set. */
+  thresholdPaceS: number | null;
+  /** Athlete-set threshold heart rate, or null when not set. */
+  thresholdHeartRateBpm: number | null;
+  /** Daniels VDOT from the best 5K/10K in the last 90 days; null when none qualifies. */
+  suggestedThresholdPaceS: number | null;
+  suggestedFrom: TempoThresholdSuggestionSource | null;
 };
 
 /**
@@ -142,6 +178,11 @@ export type TempoAthleteSettings = {
   unitPreference: TempoUnitPreference;
   defaultShoeId?: string | null;
   heartRateZones: TempoHeartRateZones;
+  /**
+   * Threshold pace and heart rate from the running log. Undefined in export
+   * mode and against an older Tempo without the endpoint.
+   */
+  thresholds?: TempoThresholds;
 };
 
 export type ListShoesQuery = {
@@ -168,6 +209,11 @@ export type TempoBestEffort = {
   timeS: number;
   workoutId: string;
   workoutDate: string;
+  /**
+   * With `since`: the best before that date, null for a first effort at the
+   * distance. Always null without `since`.
+   */
+  previousTimeS?: number | null;
 };
 
 /** Body of Tempo GET /stats/best-efforts (export array normalized to same shape). */
@@ -175,21 +221,61 @@ export type TempoBestEfforts = {
   distances: TempoBestEffort[];
 };
 
-/** One metric of GET /stats/weekly-recap: current week, previous week, 3-week trailing mean. */
+/** Query for GET /stats/best-efforts. */
+export type BestEffortsQuery = {
+  /**
+   * yyyy-MM-dd (Tempo compares it with the workout's UTC start date): return
+   * only the distances whose best was set on or after it, with previousTimeS.
+   */
+  since?: string;
+};
+
+/**
+ * One metric of GET /stats/weekly-recap: current week, previous week, 3-week
+ * trailing mean, and current − previous. A field Tempo sends as null (or
+ * omits) is absent here; a block with no numbers at all is absent on the stats.
+ */
 export type TempoWeeklyRecapMetric = {
   current?: number;
   previous?: number;
   trailingAvg?: number;
+  deltaVsPrevious?: number;
 };
 
-/** Parsed `metrics` of GET /stats/weekly-recap (distance m, duration s, elevation m). */
+/**
+ * Parsed `metrics` of GET /stats/weekly-recap (distance m, duration s,
+ * elevation m). Field names mirror Tempo's wire names.
+ */
 export type TempoWeeklyRecapStats = {
   runs?: TempoWeeklyRecapMetric;
   distanceM?: TempoWeeklyRecapMetric;
+  /** Elapsed time summed per run. */
   durationS?: TempoWeeklyRecapMetric;
   elevationGainM?: TempoWeeklyRecapMetric;
   relativeEffortSum?: TempoWeeklyRecapMetric;
+  /** Null-bucket weeks (no Easy Run / Recovery) leave `current` etc. absent. */
   easyRunAvgHeartRateBpm?: TempoWeeklyRecapMetric;
+  /** Moving time summed per run, falling back to elapsed when a run has none. */
+  movingTimeS?: TempoWeeklyRecapMetric;
+  /** Longest single run by distance; 0 for a week with no runs. */
+  longestRunDistanceM?: TempoWeeklyRecapMetric;
+  /** Longest single run by moving (else elapsed) time; may be a different run. */
+  longestRunDurationS?: TempoWeeklyRecapMetric;
+  /**
+   * Current week only: run counts keyed by exact run type (zero counts
+   * omitted, untyped runs under `Unspecified`). `{}` for a week with no runs.
+   */
+  runsByType?: Record<string, number>;
+  /**
+   * Seconds in HR zone 1..5, summed from each run's stored zone seconds (the
+   * values the log shows on a workout). Null buckets — a week with no HR
+   * series — leave the field absent, so `current` absent means "unknown".
+   */
+  zoneSecondsZ1?: TempoWeeklyRecapMetric;
+  zoneSecondsZ2?: TempoWeeklyRecapMetric;
+  zoneSecondsZ3?: TempoWeeklyRecapMetric;
+  zoneSecondsZ4?: TempoWeeklyRecapMetric;
+  zoneSecondsZ5?: TempoWeeklyRecapMetric;
 };
 
 /** Query for GET /stats/weekly-recap (tempo-cli params). */
@@ -204,10 +290,15 @@ export type TempoPort = {
   listWorkouts(query?: ListWorkoutsQuery): Promise<ListWorkoutsResult>;
   /** Returns null when Tempo responds 404. */
   getWorkout(id: string): Promise<TempoWorkoutDetail | null>;
-  /** Unit preference, HR zones, and default shoe id. */
+  /** Unit preference, HR zones, default shoe id and thresholds. */
   getSettings(): Promise<TempoAthleteSettings>;
   listShoes(query?: ListShoesQuery): Promise<TempoShoe[]>;
-  getBestEfforts(): Promise<TempoBestEfforts>;
+  /**
+   * All-time bests per distance, or with `since` only the new bests set on
+   * or after that date. Export mode has no history and returns none for a
+   * `since` call.
+   */
+  getBestEfforts(query?: BestEffortsQuery): Promise<TempoBestEfforts>;
   /**
    * Sparse per-sample series (no GPS) for one workout. Live port only; export
    * mode attaches `timeSeries` on getWorkout instead. Returns [] on 404 and

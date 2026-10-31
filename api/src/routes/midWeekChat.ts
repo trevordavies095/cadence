@@ -295,6 +295,7 @@ export function createMidWeekChatRoutes(
         recapMarkdown: null,
         attachments,
         prescribedWeek: existingPrescribed?.plan ?? null,
+        tempoPort,
       });
       assertPacketHasNoPiiOrGps(packet, {
         forbiddenSubstrings: ["LineString", "rawGpxData", "rawFitData"],

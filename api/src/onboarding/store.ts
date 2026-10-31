@@ -1,4 +1,6 @@
 import { pool } from "../db.js";
+import { appendGoal } from "../goal/store.js";
+import type { TrainingGoal } from "../goal/types.js";
 import type { OnboardingAnswers } from "./questionnaire.js";
 
 export type StoredOnboardingAnswers = {
@@ -33,21 +35,36 @@ export async function getOnboardingAnswers(): Promise<StoredOnboardingAnswers | 
   return row ? toStored(row) : null;
 }
 
-/** Upsert single-athlete onboarding answers (visible to later dossier generation). */
+/**
+ * Upsert single-athlete onboarding answers (visible to later dossier generation) and
+ * append the goal they were written from, source `onboarding`, in one transaction.
+ */
 export async function saveOnboardingAnswers(
   at: Date,
   answers: OnboardingAnswers,
+  goal: TrainingGoal,
 ): Promise<StoredOnboardingAnswers> {
-  const result = await pool.query<Row>(
-    `
-    INSERT INTO onboarding_answers (id, answers, created_at, updated_at)
-    VALUES (1, $1::jsonb, $2, $2)
-    ON CONFLICT (id) DO UPDATE
-      SET answers = EXCLUDED.answers,
-          updated_at = EXCLUDED.updated_at
-    RETURNING answers, created_at, updated_at
-    `,
-    [JSON.stringify(answers), at],
-  );
-  return toStored(result.rows[0]!);
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await client.query<Row>(
+      `
+      INSERT INTO onboarding_answers (id, answers, created_at, updated_at)
+      VALUES (1, $1::jsonb, $2, $2)
+      ON CONFLICT (id) DO UPDATE
+        SET answers = EXCLUDED.answers,
+            updated_at = EXCLUDED.updated_at
+      RETURNING answers, created_at, updated_at
+      `,
+      [JSON.stringify(answers), at],
+    );
+    await appendGoal(at, goal, "onboarding", client);
+    await client.query("COMMIT");
+    return toStored(result.rows[0]!);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 }

@@ -287,3 +287,10 @@ export function nextIsoWeekBounds(
     endDate: ymdString(sunday),
   };
 }
+
+/** Calendar Monday (YYYY-MM-DD) of an ISO week label such as 2026-W43. */
+export function isoWeekMondayDate(isoWeek: string): string {
+  const match = /^(\d{4})-W(\d{2})$/.exec(isoWeek);
+  if (!match) throw new Error(`Invalid ISO week label: ${isoWeek}`);
+  return ymdString(mondayOfIsoWeek(Number(match[1]), Number(match[2])));
+}

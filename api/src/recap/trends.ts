@@ -4,19 +4,35 @@
  */
 
 import type {
-  TempoHeartRateZone,
   TempoUnitPreference,
   TempoWorkoutSummary,
 } from "../tempo/port.js";
 import { formatDistanceM } from "./format.js";
 import type { SectionDepth } from "./phase.js";
 import { formatPaceFromSecondsPerKm } from "./runByRunFormat.js";
-import { isLongRunType } from "./longRunFormat.js";
+import { isEasyFamily, isLongRun } from "./runTypes.js";
 import type { WeekWindow } from "./weekWindows.js";
 import { priorWeekWindows, shiftWeekWindow } from "./weekWindows.js";
 
 const EM_DASH = "—";
 const SPARK_CHARS = ["▁", "▃", "▅", "█"] as const;
+
+/** One week's easy-run pace and heart rate, counted back from this week. */
+export type EasyRunPoint = {
+  /** 0 = this week, 3 = the oldest week in the window. */
+  weeksAgo: number;
+  paceSecPerKm: number;
+  avgHr: number;
+};
+
+export type EasyRunVerdict = "improving" | "declining";
+
+/** Newest vs oldest week with both easy pace and easy HR. */
+export type EasyRunTrend = {
+  current: EasyRunPoint;
+  earlier: EasyRunPoint;
+  verdict?: EasyRunVerdict;
+};
 
 export type RecapTrendsSnapshot = {
   included: boolean;
@@ -30,47 +46,88 @@ export type RecapTrendsSnapshot = {
     avgEasyHr: string;
     longRunDistance: string;
   };
+  /** Easy pace paired with easy HR; absent with fewer than two such weeks. */
+  easyRunTrend?: EasyRunTrend;
+  /**
+   * The athlete-facing easy-run line in their unit, e.g.
+   * "Easy runs: 9:12/mi at 141 bpm, from 9:20/mi at 145 bpm three weeks ago (improving)."
+   */
+  easyRunLine?: string;
   verdicts?: {
-    easyPace?: string;
-    avgEasyHr?: string;
     longRunDistance?: string;
   };
 };
 
-function isEasyOrUntypedNonLong(runType: unknown): boolean {
-  if (runType === undefined || runType === null) return true;
-  const s = String(runType).trim();
-  if (s === "") return true;
-  const t = s.toLowerCase();
-  if (t.includes("long")) return false;
-  return t.includes("easy") || t.includes("recovery");
+/** Pace within this many seconds per km (about 5 s/mi) counts as held. */
+export const EASY_PACE_HELD_S_PER_KM = 3;
+
+/**
+ * Improving only when pace held or got faster at a lower heart rate;
+ * declining only when heart rate rose and pace held or got slower.
+ * Heart rate and pace moving the same way (both lower, or both higher) earn
+ * no verdict: a returning runner's heart rate rises as pace comes back.
+ */
+export function easyRunVerdict(
+  current: Pick<EasyRunPoint, "paceSecPerKm" | "avgHr">,
+  earlier: Pick<EasyRunPoint, "paceSecPerKm" | "avgHr">,
+): EasyRunVerdict | undefined {
+  // Positive = slower now.
+  const paceDelta = current.paceSecPerKm - earlier.paceSecPerKm;
+  const paceHeldOrFaster = paceDelta <= EASY_PACE_HELD_S_PER_KM;
+  const paceHeldOrSlower = paceDelta >= -EASY_PACE_HELD_S_PER_KM;
+  if (current.avgHr < earlier.avgHr && paceHeldOrFaster) return "improving";
+  if (current.avgHr > earlier.avgHr && paceHeldOrSlower) return "declining";
+  return undefined;
 }
 
-function z2MaxBpm(zones: readonly TempoHeartRateZone[]): number | undefined {
-  const z2 = [...zones]
-    .sort((a, b) => a.zoneNumber - b.zoneNumber)
-    .find((z) => z.zoneNumber === 2);
-  return z2 !== undefined && z2.maxBpm > 0 ? z2.maxBpm : undefined;
+/** Oldest and newest weeks (W-3...W0 order) that have both easy pace and easy HR. */
+export function computeEasyRunTrend(
+  paceSeries: readonly (number | null)[],
+  hrSeries: readonly (number | null)[],
+): EasyRunTrend | undefined {
+  const last = paceSeries.length - 1;
+  const points: EasyRunPoint[] = [];
+  paceSeries.forEach((pace, i) => {
+    const hr = hrSeries[i];
+    if (
+      pace !== null &&
+      Number.isFinite(pace) &&
+      hr !== null &&
+      hr !== undefined &&
+      Number.isFinite(hr)
+    ) {
+      points.push({ weeksAgo: last - i, paceSecPerKm: pace, avgHr: hr });
+    }
+  });
+  if (points.length < 2) return undefined;
+  const earlier = points[0]!;
+  const current = points[points.length - 1]!;
+  const verdict = easyRunVerdict(current, earlier);
+  return verdict ? { current, earlier, verdict } : { current, earlier };
 }
 
-function qualifiesEasyAvgHr(
-  runType: string | null | undefined,
-  avgHr: number | null | undefined,
-  z2Max: number | undefined,
-): boolean {
-  if (avgHr === undefined || avgHr === null || !Number.isFinite(avgHr)) {
-    return false;
-  }
-  const blank =
-    runType === undefined ||
-    runType === null ||
-    (typeof runType === "string" && runType.trim() === "");
-  if (blank) {
-    return z2Max !== undefined && avgHr <= z2Max;
-  }
-  const t = String(runType).trim().toLowerCase();
-  if (t.includes("long")) return false;
-  return t.includes("easy") || t.includes("recovery");
+const WEEKS_AGO = ["this week", "last week", "two weeks ago", "three weeks ago"];
+
+function weeksAgoText(n: number): string {
+  return WEEKS_AGO[n] ?? `${n} weeks ago`;
+}
+
+/** "Easy runs: 9:12/mi at 141 bpm, from 9:20/mi at 145 bpm three weeks ago (improving)." */
+export function formatEasyRunTrendLine(
+  trend: EasyRunTrend,
+  unit: TempoUnitPreference,
+  opts?: { verdict?: boolean; sentence?: boolean },
+): string {
+  const point = (p: EasyRunPoint) =>
+    `${formatPaceFromSecondsPerKm(p.paceSecPerKm, unit)} at ${Math.round(p.avgHr)} bpm`;
+  const now =
+    trend.current.weeksAgo === 0
+      ? point(trend.current)
+      : `${point(trend.current)} ${weeksAgoText(trend.current.weeksAgo)}`;
+  const verdict =
+    opts?.verdict !== false && trend.verdict ? ` (${trend.verdict})` : "";
+  const end = opts?.sentence === false ? "" : ".";
+  return `Easy runs: ${now}, from ${point(trend.earlier)} ${weeksAgoText(trend.earlier.weeksAgo)}${verdict}${end}`;
 }
 
 type WeekAgg = {
@@ -113,36 +170,28 @@ function finalizeWeekAgg(a: WeekAgg): {
   return { paceSecPerKm, avgEasyHr, longRunM };
 }
 
-function accumulate(
-  agg: WeekAgg,
-  w: TempoWorkoutSummary,
-  z2Max: number | undefined,
-): void {
+function accumulate(agg: WeekAgg, w: TempoWorkoutSummary): void {
   const dist = w.distanceM;
   if (Number.isFinite(dist) && dist > agg.maxDistanceM) agg.maxDistanceM = dist;
 
-  if (isLongRunType(w.runType) && Number.isFinite(dist) && dist > 0) {
+  if (isLongRun(w.runType) && Number.isFinite(dist) && dist > 0) {
     agg.longDistances.push(dist);
   }
 
-  if (!isEasyOrUntypedNonLong(w.runType)) return;
+  // Labels are trusted as set: no heart-rate gate on the easy family.
+  if (!isEasyFamily(w.runType)) return;
 
   const hr = w.avgHeartRateBpm;
-  if (qualifiesEasyAvgHr(w.runType, hr, z2Max) && typeof hr === "number") {
+  if (typeof hr === "number" && Number.isFinite(hr)) {
     agg.easyHrSum += hr;
     agg.easyHrCount += 1;
   }
 
   if (
-    z2Max !== undefined &&
-    typeof hr === "number" &&
-    Number.isFinite(hr) &&
-    hr <= z2Max &&
     Number.isFinite(w.avgPaceS) &&
     w.avgPaceS > 0 &&
     Number.isFinite(w.durationS) &&
-    w.durationS > 0 &&
-    isEasyOrUntypedNonLong(w.runType)
+    w.durationS > 0
   ) {
     agg.paceWeightedSum += w.avgPaceS * w.durationS;
     agg.paceWeight += w.durationS;
@@ -250,13 +299,13 @@ function workoutsInWindow(
 export function computeRecapTrendsSnapshot(args: {
   isoWeek: string;
   thisWeek: WeekWindow;
-  zones: readonly TempoHeartRateZone[];
   /** Workouts spanning W−3…W0. */
   workouts: readonly TempoWorkoutSummary[];
+  /** When given, the snapshot carries the athlete-facing easy-run line. */
+  unit?: TempoUnitPreference;
 }): RecapTrendsSnapshot {
   const weekLabels = buildTrendWeekLabels(args.isoWeek);
   const windows = trendWeekWindows(args.thisWeek);
-  const z2Max = z2MaxBpm(args.zones);
   const paceSeries: (number | null)[] = [];
   const hrSeries: (number | null)[] = [];
   const longSeries: (number | null)[] = [];
@@ -264,7 +313,7 @@ export function computeRecapTrendsSnapshot(args: {
   for (const win of windows) {
     const agg = emptyAgg();
     for (const w of workoutsInWindow(args.workouts, win)) {
-      accumulate(agg, w, z2Max);
+      accumulate(agg, w);
     }
     const f = finalizeWeekAgg(agg);
     paceSeries.push(f.paceSecPerKm);
@@ -287,20 +336,24 @@ export function computeRecapTrendsSnapshot(args: {
     };
   }
 
+  const easyRunTrend = computeEasyRunTrend(paceSeries, hrSeries);
+
   return {
     included: true,
     weekLabels,
     easyPaceSecPerKm: paceSeries,
     avgEasyHr: hrSeries,
     longRunDistanceM: longSeries,
+    ...(easyRunTrend ? { easyRunTrend } : {}),
+    ...(easyRunTrend && args.unit
+      ? { easyRunLine: formatEasyRunTrendLine(easyRunTrend, args.unit) }
+      : {}),
     sparklines: {
       easyPace: sparklineForSeries(paceSeries, true),
       avgEasyHr: sparklineForSeries(hrSeries, true),
       longRunDistance: sparklineForSeries(longSeries, false),
     },
     verdicts: {
-      easyPace: strictlyMonotonicVerdict(paceSeries, true),
-      avgEasyHr: strictlyMonotonicVerdict(hrSeries, true),
       longRunDistance: strictlyMonotonicVerdict(longSeries, false),
     },
   };
@@ -318,9 +371,17 @@ export function buildTrendsMarkdown(
   snapshot: RecapTrendsSnapshot,
   unit: TempoUnitPreference,
   depth: SectionDepth,
-  opts?: { tempoParity?: boolean },
+  opts?: {
+    tempoParity?: boolean;
+    /**
+     * False for goals with no long-run section (5K, speed, fitness, return):
+     * the distance row is the week's longest run, not a long run.
+     */
+    longRunSection?: boolean;
+  },
 ): string {
   const parity = opts?.tempoParity === true;
+  const longRunSection = opts?.longRunSection !== false;
   const lines: string[] = ["## Trends", ""];
 
   if (!parity && depth === "detailed" && snapshot.weekLabels) {
@@ -352,9 +413,7 @@ export function buildTrendsMarkdown(
       v === null ? EM_DASH : formatPaceFromSecondsPerKm(v, unit),
     );
     const sp = snapshot.sparklines?.easyPace ?? "";
-    const vd = (parity || depth === "detailed") ? snapshot.verdicts?.easyPace : undefined;
-    const tail =
-      [sp && ` ${sp}`, vd && ` (${vd})`].filter(Boolean).join("") || "";
+    const tail = sp ? ` ${sp}` : "";
     lines.push(
       `- **Easy pace (≤Z2, list/detail approx.)**: ${chain}${tail}`,
     );
@@ -366,10 +425,18 @@ export function buildTrendsMarkdown(
       v === null ? EM_DASH : String(Math.round(v)),
     );
     const sp = snapshot.sparklines?.avgEasyHr ?? "";
-    const vd = (parity || depth === "detailed") ? snapshot.verdicts?.avgEasyHr : undefined;
-    const tail =
-      [sp && ` ${sp}`, vd && ` (${vd})`].filter(Boolean).join("") || "";
+    const tail = sp ? ` ${sp}` : "";
     lines.push(`- **Avg easy HR**: ${chain}${tail}`);
+    lines.push("");
+  }
+
+  // Pace and HR read together: the only easy-run verdict.
+  if (includePaceHr && snapshot.easyRunTrend) {
+    const line = formatEasyRunTrendLine(snapshot.easyRunTrend, unit, {
+      verdict: parity || depth === "detailed",
+      sentence: false,
+    });
+    lines.push(`- **Easy runs**: ${line.replace(/^Easy runs: /, "")}`);
     lines.push("");
   }
 
@@ -383,7 +450,9 @@ export function buildTrendsMarkdown(
     const tail =
       [sp && ` ${sp}`, vd && ` (${vd})`].filter(Boolean).join("") || "";
     lines.push(
-      `- **Long-run distance** (max long-typed, else max run in week): ${chain}${tail}`,
+      longRunSection
+        ? `- **Long-run distance** (max long-typed, else max run in week): ${chain}${tail}`
+        : `- **Longest run**: ${chain}${tail}`,
     );
     lines.push("");
   }

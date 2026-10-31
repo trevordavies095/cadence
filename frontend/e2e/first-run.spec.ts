@@ -31,13 +31,17 @@ test.describe("first run", () => {
     await page.getByRole("radio", { name: "A race" }).click();
     // The raw hints from your running log are not dumped on the questions.
     await expect(page.getByText(/HR Z2|from Tempo|Recent training|Tempo hints/)).toHaveCount(0);
-    await page.getByLabel("Which race?").fill("Half marathon");
+    await page.getByRole("radio", { name: "Half", exact: true }).click();
+    await page.getByLabel("Which race?").fill("Lakeshore Half");
     await page.getByLabel("Race date").fill("2027-01-16");
+    await page.getByLabel("Target").fill("under 2 hours");
     await page.getByRole("button", { name: "Next", exact: true }).click();
     for (const day of ["Tue", "Thu", "Sat"]) {
       await page.getByRole("checkbox", { name: day }).click();
     }
-    await page.getByRole("radio", { name: "Sat" }).click();
+    // A half has a long run; shorter goals are asked about a longer run.
+    await expect(page.getByText("Which day suits a long run?")).toBeVisible();
+    await page.getByRole("radiogroup", { name: "Long run day" }).getByRole("radio", { name: "Sat" }).click();
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: "More hours" }).click();
     await page.getByRole("button", { name: "More hours" }).click();
@@ -45,13 +49,26 @@ test.describe("first run", () => {
     await page.getByLabel("Injuries and limits").fill("Tight left calf.");
     await page.getByRole("button", { name: "Next", exact: true }).click();
 
-    // The fields reach the coach as the same four answers as before.
-    const saving = page.waitForRequest((r) => r.url().endsWith("/api/onboarding/answers"));
+    // The goal goes as a record; the API writes the sentence the coach reads, so the coach
+    // still gets the same four answers as before.
+    const schedule =
+      "Free to run on Tue, Thu, Sat. These are the days that work, not a target: the plan decides how many runs to schedule and which of these days to use. Prefers the long run on Sat. Up to about 5 hours a week for training.";
+    const saving = page.waitForResponse((r) => r.url().endsWith("/api/onboarding/answers"));
     await page.getByRole("button", { name: "Finish" }).click();
-    expect((await saving).postDataJSON().answers).toEqual({
-      goal: "Race: Half marathon on Sat Jan 16 2027.",
-      schedule:
-        "Free to run on Tue, Thu, Sat. These are the days that work, not a target: the plan decides how many runs to schedule and which of these days to use. Prefers the long run on Sat. Up to about 5 hours a week for training.",
+    const saved = await saving;
+    const sent = saved.request().postDataJSON();
+    expect(sent.answers).toEqual({ schedule, injuries_constraints: "Tight left calf." });
+    expect(sent.goal).toEqual({
+      kind: "race",
+      distance: "half",
+      raceName: "Lakeshore Half",
+      raceDate: "2027-01-16",
+      target: "under 2 hours",
+    });
+    const goalSentence = "Race: Lakeshore Half on Sat Jan 16 2027, target under 2 hours.";
+    expect((await saved.json()).answers).toEqual({
+      goal: goalSentence,
+      schedule,
       injuries_constraints: "Tight left calf.",
     });
 
@@ -60,7 +77,7 @@ test.describe("first run", () => {
     await expect(page.getByText("Answers saved")).toHaveCount(0);
     await expect(
       page.locator('[aria-label="Here’s what Coach Cade understood"]'),
-    ).toContainText("Half marathon");
+    ).toContainText(goalSentence);
     // Nothing is written into the conversation in the athlete's name.
     const thread = await (await page.request.get("/api/thread")).json();
     expect(thread.messages.filter((m: { role: string }) => m.role === "athlete")).toEqual([]);
@@ -79,7 +96,7 @@ test.describe("first run", () => {
     await expect(page.getByRole("heading", { name: "About you", level: 1 })).toBeVisible();
     const card = page.getByRole("region", { name: "Here’s what Coach Cade understood" })
       .or(page.locator('[aria-label="Here’s what Coach Cade understood"]'));
-    await expect(card).toContainText("Half marathon");
+    await expect(card).toContainText(goalSentence);
     await expect(card.getByRole("button", { name: "Looks right" })).toBeVisible();
     await expect(card.getByRole("button", { name: "Fix something" })).toBeVisible();
     await expect(page.getByText("Proposed notes")).toHaveCount(0);
@@ -107,7 +124,7 @@ test.describe("first run", () => {
     await expect(page.getByRole("region", { name: "Changes" })).toContainText("Your first answers");
     await page.reload();
     await expect(page.getByRole("region", { name: "What Coach Cade knows" })).toBeVisible();
-    await expect(page.getByText("Half marathon").first()).toBeVisible();
+    await expect(page.getByText("Lakeshore Half").first()).toBeVisible();
 
     await page.goto("/");
     await expect(page.getByText("Here’s what Coach Cade understood")).toHaveCount(0);

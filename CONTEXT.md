@@ -10,6 +10,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | dossier proposal, settings proposal | "Coach Cade noted…" (a **note card**) | A set of changes to About you produced by a coach call. `settings` and `correction` kinds apply immediately; `onboarding` and `audit` kinds wait for **Looks right**. |
 | accept / reject | **Looks right** / **Fix something** / **Undo** | Accept installs a pending proposal. Undo restores the version before an applied one. Fix sends a sentence that becomes a correction. |
 | correction | **Fix something** | An athlete sentence that rewrites part of About you. |
+| training goal, goal version | **What you’re training for** (the question in onboarding and the section in Settings) | What the athlete is training for, stored as a record and appended, never edited. Onboarding sets the first one; after that only Settings changes it, and saving there also tells Coach Cade "My goal is now …" through **Fix something**. Chat never changes it. |
 | audit | "Coach Cade tidied what it knows about you" | The periodic trim of About you. |
 | week session | **week**, **this week**, **past week** | The Monday to Sunday unit in the athlete timezone. |
 | ISO week (2026-W43) | "Oct 19 – 25" | Never show the ISO label. |
@@ -44,7 +45,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 
 ## Never on screen
 
-dossier · proposal · soft-gate · dirty · artifact · packet · prescribed · recap · subjective · ISO · week session · archived · stub · installed · phase · stepper · mid-week · interview · prompt · RPE · data-only · regenerate · 409 · any raw error code or JSON. · AI Coach · "Cade" on its own
+dossier · proposal · soft-gate · dirty · artifact · packet · prescribed · recap · subjective · ISO · week session · archived · stub · installed · phase (on the home banner; Coach Cade may say "base phase") · stepper · mid-week · interview · prompt · RPE · data-only · regenerate · 409 · any raw error code or JSON. · AI Coach · "Cade" on its own
 
 ## Writing rules
 

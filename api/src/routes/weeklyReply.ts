@@ -11,6 +11,7 @@ import {
   resolveWeeklyPlanWeek,
   validateWeeklyReply,
 } from "../llm/index.js";
+import { askOnceMore } from "../llm/askOnceMore.js";
 import { recordRouteRejection, type LlmCallRecorder } from "../llmCallLog/index.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import {
@@ -148,6 +149,7 @@ async function assemblePacket(
     includePlanWeek: true,
     attachments,
     identityHints: body.identityHints,
+    tempoPort,
   });
 
   assertPacketHasNoPiiOrGps(packet, {
@@ -207,9 +209,6 @@ function failureText(outcome: Outcome): string {
   if (typeof error === "string" && error) return error;
   return `Reply failed (${outcome.status})`;
 }
-
-/** A weekly reply refused for its shape is asked for once more (reading-flow replay). */
-const WEEKLY_REPLY_ATTEMPTS = 2;
 
 export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner {
   const { llmPort, tempoPort, clock, athleteTimezone, llmCallRecorder } =
@@ -281,34 +280,29 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       // A reply refused for its shape is asked for once more before the athlete
       // sees a failed read. Each attempt keeps its own call log row.
       const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
-      let checked: ReturnType<typeof validateWeeklyReply> | null = null;
-      for (let attempt = 1; attempt <= WEEKLY_REPLY_ATTEMPTS; attempt++) {
+      const checked = await askOnceMore(async (attempt) => {
         if (attempt > 1) callId = randomUUID();
-        let reply: Awaited<ReturnType<typeof llmPort.generateWeeklyReply>>;
-        try {
-          reply = await llmPort.generateWeeklyReply(packet, {
-            callId,
-            weekSessionId: focusSession.id,
-          });
-        } catch (err) {
-          if (err instanceof LlmSchemaError && attempt < WEEKLY_REPLY_ATTEMPTS) continue;
-          throw err;
-        }
-        checked = validateWeeklyReply(reply, weekStartMonday);
-        if (checked.ok) break;
-        await recordRouteRejection(llmCallRecorder, {
-          parentCallId: callId,
-          operation: "weekly_reply",
+        const reply = await llmPort.generateWeeklyReply(packet, {
+          callId,
           weekSessionId: focusSession.id,
-          errorMessage: checked.error,
         });
-      }
-      if (!checked || !checked.ok) {
+        const validated = validateWeeklyReply(reply, weekStartMonday);
+        if (!validated.ok) {
+          await recordRouteRejection(llmCallRecorder, {
+            parentCallId: callId,
+            operation: "weekly_reply",
+            weekSessionId: focusSession.id,
+            errorMessage: validated.error,
+          });
+        }
+        return validated;
+      });
+      if (!checked.ok) {
         return {
           status: 502,
           body: {
             error: "llm_schema_invalid",
-            message: checked && !checked.ok ? checked.error : "weekly reply refused",
+            message: checked.error,
           },
           callId,
         };

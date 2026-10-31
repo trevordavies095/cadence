@@ -1,0 +1,108 @@
+{
+  "_readme": "Replay season (coaching-bias 25). Fictional athlete. Regenerate with `npx tsx scripts/regenerate-replay-seasons.ts` from api/ (see tests/fixtures/README.md).",
+  "id": "stay-fit",
+  "seed": 250101,
+  "athlete": {
+    "name": "Harriet Vale",
+    "timezone": "America/Chicago",
+    "utcOffsetHours": -5,
+    "story": "Runs four days a week to stay fit, 30 to 35 km, no races. Sunday's run is a little longer."
+  },
+  "weekOneMonday": "2026-09-07",
+  "exportDate": "2026-10-19T03:00:00Z",
+  "unitPreference": "metric",
+  "zones": [[98, 122], [122, 140], [140, 153], [153, 165], [165, 180]],
+  "shoes": [{ "key": "daily", "brand": "Brooks", "model": "Ghost 16", "initialKm": 220 }],
+  "tempC": [24, 22, 20, 18, 15, 13],
+  "goal": { "kind": "fitness" },
+  "aboutYou": "# About you\n\nYou run four days a week to stay fit and keep your head clear: Tuesday and Thursday before work, Saturday, and a slightly longer run on Sunday. About 30 to 35 km a week, all easy, and no races planned. You have run like this for three years without injury and want to keep it that way. Tuesday and Thursday are capped at about 50 minutes by work.",
+  "weeks": [
+    {
+      "runs": [
+        { "day": "Tue", "at": "06:10", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 7, "pace": "6:05", "hr": 137, "driftBpm": 3 }], "stopsS": 20 },
+        { "day": "Thu", "at": "06:10", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 8, "pace": "6:00", "hr": 138, "driftBpm": 3 }], "stopsS": 15 },
+        { "day": "Sat", "at": "08:00", "name": "Saturday easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "6:10", "hr": 135, "driftBpm": 2 }], "stopsS": 30 },
+        { "day": "Sun", "at": "08:30", "name": "Sunday longer run", "type": "Long Run", "parts": [{ "km": 10, "pace": "6:10", "hr": 139, "driftBpm": 5 }], "stopsS": 45 }
+      ],
+      "checkIn": {
+        "runs": { "Tue": { "rpe": 3, "felt": 7 }, "Thu": { "rpe": 3, "felt": 7 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 4, "felt": 7 } },
+        "weekly": { "sleep_avg_hrs": 7.5, "stress_level": "Normal", "body_check": "All good", "feeling_into_next_week": "Same again" }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Tue", "at": "06:10", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 7, "pace": "6:00", "hr": 137, "driftBpm": 3 }], "stopsS": 10 },
+        { "day": "Thu", "at": "06:15", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 8, "pace": "6:00", "hr": 137, "driftBpm": 3 }], "stopsS": 20 },
+        { "day": "Sat", "at": "08:10", "name": "Saturday easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "6:05", "hr": 134, "driftBpm": 2 }], "stopsS": 25 },
+        { "day": "Sun", "at": "08:30", "name": "Sunday longer run", "type": "Long Run", "parts": [{ "km": 11, "pace": "6:10", "hr": 139, "driftBpm": 5 }], "stopsS": 40 }
+      ],
+      "checkIn": {
+        "runs": { "Tue": { "rpe": 3, "felt": 7 }, "Thu": { "rpe": 3, "felt": 8 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 4, "felt": 7 } },
+        "weekly": {
+          "sleep_avg_hrs": 7,
+          "stress_level": "A busy week at work",
+          "body_check": "Fine",
+          "questions_for_coach": ["When it rains on Thursday, is a 45 minute bike ride on the trainer a fair swap?"]
+        }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Tue", "at": "06:05", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 8, "pace": "6:00", "hr": 138, "driftBpm": 3 }], "stopsS": 15 },
+        { "day": "Thu", "at": "06:10", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 8, "pace": "5:55", "hr": 138, "driftBpm": 3 }], "stopsS": 10 },
+        { "day": "Sat", "at": "08:00", "name": "Saturday easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "6:05", "hr": 134, "driftBpm": 2 }], "stopsS": 35 },
+        { "day": "Sun", "at": "08:20", "name": "Sunday longer run", "type": "Long Run", "parts": [{ "km": 11, "pace": "6:05", "hr": 139, "driftBpm": 5 }], "stopsS": 50 }
+      ],
+      "checkIn": {
+        "runs": { "Tue": { "rpe": 3, "felt": 7 }, "Thu": { "rpe": 3, "felt": 7 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 4, "felt": 8 } },
+        "weekly": { "sleep_avg_hrs": 7.5, "stress_level": "Low", "body_check": "Legs fresh", "feeling_into_next_week": "Happy to keep going like this" }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Tue", "at": "06:10", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 7, "pace": "6:00", "hr": 137, "driftBpm": 3 }], "stopsS": 20 },
+        { "day": "Thu", "at": "06:05", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 9, "pace": "5:55", "hr": 139, "driftBpm": 3 }], "stopsS": 15 },
+        { "day": "Sat", "at": "08:15", "name": "Saturday easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "6:05", "hr": 134, "driftBpm": 2 }], "stopsS": 30 },
+        { "day": "Sun", "at": "08:30", "name": "Sunday longer run", "type": "Long Run", "parts": [{ "km": 12, "pace": "6:05", "hr": 140, "driftBpm": 6 }], "stopsS": 55 }
+      ],
+      "checkIn": {
+        "runs": { "Tue": { "rpe": 3, "felt": 7 }, "Thu": { "rpe": 4, "felt": 7 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 4, "felt": 7 } },
+        "weekly": {
+          "sleep_avg_hrs": 7,
+          "stress_level": "Normal",
+          "body_check": "Slightly tight hamstrings after Sunday, gone by Monday",
+          "questions_for_coach": ["Should I add anything faster, or is all easy fine for what I want?"]
+        }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Tue", "at": "06:10", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 8, "pace": "5:55", "hr": 137, "driftBpm": 3 }], "stopsS": 15 },
+        { "day": "Thu", "at": "06:10", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 8, "pace": "5:55", "hr": 137, "driftBpm": 3 }], "stopsS": 10 },
+        { "day": "Sat", "at": "08:00", "name": "Saturday easy", "type": "Easy Run", "parts": [{ "km": 7, "pace": "6:00", "hr": 134, "driftBpm": 2 }], "stopsS": 25 },
+        { "day": "Sun", "at": "08:30", "name": "Sunday longer run", "type": "Long Run", "parts": [{ "km": 12, "pace": "6:00", "hr": 139, "driftBpm": 5 }], "stopsS": 40 }
+      ],
+      "checkIn": {
+        "runs": { "Tue": { "rpe": 3, "felt": 8 }, "Thu": { "rpe": 3, "felt": 8 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 4, "felt": 8 } },
+        "weekly": { "sleep_avg_hrs": 7.5, "stress_level": "Low", "body_check": "All good", "feeling_into_next_week": "A family visit next weekend, so Sunday may be short" }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Tue", "at": "06:10", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 7, "pace": "5:55", "hr": 136, "driftBpm": 3 }], "stopsS": 15 },
+        { "day": "Thu", "at": "06:15", "name": "Morning run", "type": "Easy Run", "parts": [{ "km": 8, "pace": "5:55", "hr": 137, "driftBpm": 3 }], "stopsS": 20 },
+        { "day": "Sat", "at": "07:45", "name": "Saturday easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "6:00", "hr": 133, "driftBpm": 2 }], "stopsS": 20 },
+        { "day": "Sun", "at": "08:00", "name": "Sunday longer run", "type": "Long Run", "parts": [{ "km": 10, "pace": "6:00", "hr": 138, "driftBpm": 4 }], "stopsS": 35 }
+      ],
+      "checkIn": {
+        "runs": { "Tue": { "rpe": 3, "felt": 8 }, "Thu": { "rpe": 3, "felt": 7 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 3, "felt": 8 } },
+        "weekly": {
+          "sleep_avg_hrs": 6.5,
+          "stress_level": "Family in town",
+          "body_check": "Fine",
+          "questions_for_coach": ["The mornings are getting dark. Is it fine to move Tuesday to a lunchtime run?"]
+        }
+      }
+    }
+  ]
+}

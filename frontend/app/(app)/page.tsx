@@ -13,10 +13,31 @@ import {
   SectionHeader,
   WaitingState,
 } from "@/components/ui";
-import { fetchHome, type HomeRead } from "@/lib/api";
+import { fetchHome, type HomeRead, type UnitPreference } from "@/lib/api";
 import { describeError, type UiError } from "@/lib/errors";
-import { distanceLabel } from "@/lib/units";
+import { distanceLabel, durationLabel } from "@/lib/units";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
+
+/**
+ * The week so far against the plan. Minutes appear beside the distance when
+ * some days are planned by time alone.
+ */
+function weekTotalsLine(t: {
+  actualDistanceM: number;
+  plannedDistanceM: number;
+  plannedDurationS: number;
+  unit: UnitPreference;
+}): string {
+  const actual = distanceLabel(t.actualDistanceM, t.unit);
+  const minutes = t.plannedDurationS > 0 ? durationLabel(t.plannedDurationS) : null;
+  if (t.plannedDistanceM > 0) {
+    const planned = distanceLabel(t.plannedDistanceM, t.unit);
+    return minutes
+      ? `${actual} of ${planned} and ${minutes} planned`
+      : `${actual} of ${planned} planned`;
+  }
+  return minutes ? `${actual} run so far, ${minutes} planned` : `${actual} run so far`;
+}
 
 export default function Home() {
   const [ready, setReady] = useState(false);
@@ -79,6 +100,7 @@ export default function Home() {
   const hasWeek = home.week.length > 0;
   const hasPlan = home.week.some((d) => d.dayType !== null);
   const { actualDistanceM, plannedDistanceM } = home.totals;
+  const plannedDurationS = home.totals.plannedDurationS ?? 0;
 
   return (
     <Page>
@@ -107,10 +129,12 @@ export default function Home() {
             <WeekStrip week={home.week} unit={home.units} />
             {!home.tempoUnavailable ? (
               <p className="m-0 tabular-nums">
-                {distanceLabel(actualDistanceM, home.units)}
-                {plannedDistanceM > 0
-                  ? ` of ${distanceLabel(plannedDistanceM, home.units)} planned`
-                  : " run so far"}
+                {weekTotalsLine({
+                  actualDistanceM,
+                  plannedDistanceM,
+                  plannedDurationS,
+                  unit: home.units,
+                })}
               </p>
             ) : (
               <Muted>

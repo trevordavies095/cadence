@@ -1,0 +1,111 @@
+{
+  "_readme": "Replay season (coaching-bias 25). Fictional athlete. Regenerate with `npx tsx scripts/regenerate-replay-seasons.ts` from api/ (see tests/fixtures/README.md).",
+  "id": "return",
+  "seed": 250103,
+  "athlete": {
+    "name": "Ines Marlow",
+    "timezone": "America/Denver",
+    "utcOffsetHours": -6,
+    "story": "Returning after a shin stress reaction: walk-run from 15 minutes, one pain report in week 3, 30 minutes continuous by week 6."
+  },
+  "weekOneMonday": "2026-09-07",
+  "exportDate": "2026-10-19T02:00:00Z",
+  "unitPreference": "metric",
+  "zones": [[96, 120], [120, 138], [138, 151], [151, 163], [163, 178]],
+  "shoes": [{ "key": "daily", "brand": "Hoka", "model": "Clifton 9", "initialKm": 60 }],
+  "tempC": [26, 24, 21, 18, 14, 11],
+  "goal": { "kind": "return", "startingPoint": "Ten weeks off with a stress reaction in the left shin. My physio cleared me to start walk-run.", "since": "2026-09-07" },
+  "aboutYou": "# About you\n\nYou are coming back from a stress reaction in your left shin after ten weeks off. Your physio cleared you to start walk-run in early September, three days a week (Monday, Wednesday, Saturday), with a rule of stopping if the shin aches during a run. Before the injury you ran 40 km a week. You want to run 30 minutes without walking by mid-October. You do the physio's calf and hip exercises twice a week.",
+  "weeks": [
+    {
+      "runs": [
+        { "day": "Mon", "at": "07:00", "name": "Walk-run 15 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 1, "pace": "6:50", "hr": 138 }, { "min": 2, "pace": "10:30", "hr": 112, "label": "walk" }] }] },
+        { "day": "Wed", "at": "07:00", "name": "Walk-run 15 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 1, "pace": "6:45", "hr": 139 }, { "min": 2, "pace": "10:30", "hr": 112, "label": "walk" }] }] },
+        { "day": "Sat", "at": "08:30", "name": "Walk-run 15 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 1, "pace": "6:45", "hr": 138 }, { "min": 2, "pace": "10:20", "hr": 113, "label": "walk" }] }] }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 8, "pain_score": 0 }, "Wed": { "rpe": 3, "felt": 8, "pain_score": 0 }, "Sat": { "rpe": 3, "felt": 9, "pain_score": 0 } },
+        "weekly": { "sleep_avg_hrs": 7.5, "strength_sessions": { "completed": 2, "planned": 2, "notes": "Physio calf and hip routine" }, "body_check": "Shin quiet", "feeling_into_next_week": "Nervous but happy to be back" }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "07:00", "name": "Walk-run 20 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 2, "pace": "6:45", "hr": 140 }, { "min": 2, "pace": "10:30", "hr": 113, "label": "walk" }] }] },
+        { "day": "Wed", "at": "07:00", "name": "Walk-run 20 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 2, "pace": "6:40", "hr": 141 }, { "min": 2, "pace": "10:30", "hr": 113, "label": "walk" }] }] },
+        { "day": "Sat", "at": "08:30", "name": "Walk-run 20 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 2, "pace": "6:40", "hr": 140 }, { "min": 2, "pace": "10:20", "hr": 113, "label": "walk" }] }] }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 8, "pain_score": 0 }, "Wed": { "rpe": 4, "felt": 8, "pain_score": 0 }, "Sat": { "rpe": 3, "felt": 8, "pain_score": 0 } },
+        "weekly": {
+          "sleep_avg_hrs": 7,
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "body_check": "Fine",
+          "questions_for_coach": ["Can I go straight to three minutes running next week?"]
+        }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "07:00", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{ "repeat": 6, "parts": [{ "min": 3, "pace": "6:40", "hr": 142 }, { "min": 1, "pace": "10:30", "hr": 116, "label": "walk" }] }] },
+        { "day": "Wed", "at": "07:00", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{ "repeat": 6, "parts": [{ "min": 3, "pace": "6:35", "hr": 143 }, { "min": 1, "pace": "10:30", "hr": 116, "label": "walk" }] }], "notes": "Left shin ached for the last ten minutes." },
+        { "day": "Sat", "at": "08:30", "name": "Walk-run 20 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 2, "pace": "6:45", "hr": 139 }, { "min": 2, "pace": "10:30", "hr": 113, "label": "walk" }] }] }
+      ],
+      "checkIn": {
+        "runs": {
+          "Mon": { "rpe": 4, "felt": 7, "pain_score": 0 },
+          "Wed": { "rpe": 5, "felt": 5, "pain_score": 3, "pain": "Left shin ached for the last ten minutes, gone by the next morning" },
+          "Sat": { "rpe": 3, "felt": 7, "pain_score": 0 }
+        },
+        "weekly": {
+          "sleep_avg_hrs": 7,
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "body_check": "Shin fine since Thursday; I dropped back to two-minute runs on Saturday",
+          "questions_for_coach": ["Was dropping back on Saturday the right call, and should I tell my physio?"]
+        }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "07:00", "name": "Walk-run 20 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 2, "pace": "6:45", "hr": 139 }, { "min": 2, "pace": "10:30", "hr": 113, "label": "walk" }] }] },
+        { "day": "Wed", "at": "07:00", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{ "repeat": 6, "parts": [{ "min": 3, "pace": "6:40", "hr": 141 }, { "min": 1, "pace": "10:30", "hr": 115, "label": "walk" }] }] },
+        { "day": "Sat", "at": "08:30", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{ "repeat": 6, "parts": [{ "min": 3, "pace": "6:40", "hr": 141 }, { "min": 1, "pace": "10:20", "hr": 115, "label": "walk" }] }] }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 8, "pain_score": 0 }, "Wed": { "rpe": 4, "felt": 8, "pain_score": 0 }, "Sat": { "rpe": 4, "felt": 8, "pain_score": 0 } },
+        "weekly": { "sleep_avg_hrs": 7.5, "strength_sessions": { "completed": 2, "planned": 2 }, "body_check": "Shin quiet all week", "feeling_into_next_week": "More confident" }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "07:00", "name": "Walk-run 28 min", "type": "Walk-Run", "parts": [{ "repeat": 4, "parts": [{ "min": 6, "pace": "6:40", "hr": 143 }, { "min": 1, "pace": "10:30", "hr": 118, "label": "walk" }] }] },
+        { "day": "Wed", "at": "07:00", "name": "Walk-run 28 min", "type": "Walk-Run", "parts": [{ "repeat": 4, "parts": [{ "min": 6, "pace": "6:35", "hr": 143 }, { "min": 1, "pace": "10:30", "hr": 118, "label": "walk" }] }] },
+        { "day": "Sat", "at": "08:30", "name": "Walk-run 26 min", "type": "Walk-Run", "parts": [{ "repeat": 2, "parts": [{ "min": 12, "pace": "6:40", "hr": 144 }, { "min": 1, "pace": "10:30", "hr": 120, "label": "walk" }] }] }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 4, "felt": 8, "pain_score": 0 }, "Wed": { "rpe": 4, "felt": 8, "pain_score": 0 }, "Sat": { "rpe": 5, "felt": 8, "pain_score": 0 } },
+        "weekly": {
+          "sleep_avg_hrs": 7,
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "body_check": "Good",
+          "questions_for_coach": ["Is 30 minutes without walking realistic next Saturday?"]
+        }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "07:00", "name": "Walk-run 27 min", "type": "Walk-Run", "parts": [{ "repeat": 3, "parts": [{ "min": 8, "pace": "6:40", "hr": 144 }, { "min": 1, "pace": "10:30", "hr": 120, "label": "walk" }] }] },
+        { "day": "Wed", "at": "07:00", "name": "Walk-run 30 min", "type": "Walk-Run", "parts": [{ "repeat": 2, "parts": [{ "min": 14, "pace": "6:40", "hr": 145 }, { "min": 1, "pace": "10:30", "hr": 121, "label": "walk" }] }] },
+        { "day": "Sat", "at": "08:30", "name": "30 minutes, no walking", "type": "Easy Run", "parts": [{ "min": 30, "pace": "6:40", "hr": 146 }], "notes": "First 30 minutes without walking since June." }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 4, "felt": 8, "pain_score": 0 }, "Wed": { "rpe": 4, "felt": 8, "pain_score": 0 }, "Sat": { "rpe": 5, "felt": 9, "pain_score": 0 } },
+        "weekly": {
+          "sleep_avg_hrs": 7.5,
+          "strength_sessions": { "completed": 2, "planned": 2 },
+          "body_check": "Shin quiet",
+          "questions_for_coach": ["What comes after 30 minutes? Do I add a fourth day or make the runs longer?"]
+        }
+      }
+    }
+  ]
+}

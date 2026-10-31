@@ -1,5 +1,6 @@
-import type { PrescribedDay, PrescribedWeek } from "../../llm/types.js";
+import type { PrescribedDay, PrescribedRun, PrescribedWeek } from "../../llm/types.js";
 import type { TempoWorkoutDetail } from "../../tempo/port.js";
+import { isLongRun, isQualityFamily, isRace } from "../runTypes.js";
 import { workoutLocalDate } from "../subjectiveRuns.js";
 
 /** Normalize ISO week id for comparison (e.g. 2026-W9 → 2026-W09). */
@@ -10,14 +11,30 @@ export function normalizeIsoWeekId(raw: string): string {
   return `${m[1]}-W${w}`;
 }
 
+function positive(n: number | null | undefined): n is number {
+  return typeof n === "number" && Number.isFinite(n) && n > 0;
+}
+
+/** A planned run with a distance, a duration, or both. */
+export function isPrescribedRun(run: PrescribedRun): boolean {
+  return positive(run.distanceM) || positive(run.durationS);
+}
+
+/**
+ * A run prescribed by duration alone. It is graded by date: a run on that date
+ * counts, since there is no planned distance to compare against.
+ */
+export function isTimedOnlyRun(run: PrescribedRun): boolean {
+  return !positive(run.distanceM) && positive(run.durationS);
+}
+
 /** Quality / race days with a planned run. */
 export function prescribedQualityDays(plan: PrescribedWeek): PrescribedDay[] {
   return plan.days.filter(
     (d) =>
       (d.dayType === "quality" || d.dayType === "race") &&
       d.run != null &&
-      Number.isFinite(d.run.distanceM) &&
-      d.run.distanceM > 0,
+      isPrescribedRun(d.run),
   );
 }
 
@@ -27,35 +44,14 @@ export function prescribedLongDay(plan: PrescribedWeek): PrescribedDay | null {
     (d) =>
       d.dayType === "long" &&
       d.run != null &&
-      Number.isFinite(d.run.distanceM) &&
-      d.run.distanceM > 0,
+      isPrescribedRun(d.run),
   );
   return day ?? null;
 }
 
-/** Workout / Race style runs preferred for quality matching (tempo-cli shape). */
-export function isQualitySessionRunType(runType: unknown): boolean {
-  if (typeof runType !== "string") return false;
-  const t = runType.trim().toLowerCase();
-  return (
-    t === "workout" ||
-    t === "race" ||
-    /\brace\b/.test(t) ||
-    /\bworkout\b/.test(t) ||
-    t.includes("quality") ||
-    t.includes("tempo") ||
-    t.includes("interval") ||
-    t.includes("threshold")
-  );
-}
-
-export function isLongRunType(runType: unknown): boolean {
-  return typeof runType === "string" && runType.toLowerCase().includes("long");
-}
-
 /**
  * Pick the best workout on a local calendar date.
- * Prefer quality-typed runs when `preferQuality`; prefer long-typed when `preferLong`.
+ * Prefer quality-family or Race runs when `preferQuality`; Long Run when `preferLong`.
  */
 export function matchWorkoutOnDate(args: {
   workouts: readonly TempoWorkoutDetail[];
@@ -72,14 +68,16 @@ export function matchWorkoutOnDate(args: {
   if (onDate.length === 0) return undefined;
 
   if (args.preferQuality) {
-    const typed = onDate.filter((w) => isQualitySessionRunType(w.runType));
+    const typed = onDate.filter(
+      (w) => isQualityFamily(w.runType) || isRace(w.runType),
+    );
     if (typed.length > 0) {
       typed.sort((a, b) => b.distanceM - a.distanceM || a.id.localeCompare(b.id));
       return typed[0];
     }
   }
   if (args.preferLong) {
-    const typed = onDate.filter((w) => isLongRunType(w.runType));
+    const typed = onDate.filter((w) => isLongRun(w.runType));
     if (typed.length > 0) {
       typed.sort((a, b) => b.distanceM - a.distanceM || a.id.localeCompare(b.id));
       return typed[0];

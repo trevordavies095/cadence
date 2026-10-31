@@ -164,7 +164,7 @@ export function buildSummaryTableRows(args: {
 
   return [
     {
-      metric: "Mileage",
+      metric: "Distance",
       thisWeek: formatDistanceM(agg.distanceM, unit),
       prevWeek: cellOrDash(mileagePrev),
       threeWkAvg: cellOrDash(mileage3),
@@ -224,13 +224,17 @@ export function buildSummaryTableRows(args: {
 }
 
 /** Markdown `## Summary` pipe table. */
-export function buildSummaryMarkdown(rows: readonly RecapSummaryTableRow[]): string {
-  const lines = [
-    "## Summary",
-    "",
+export function buildSummaryMarkdown(
+  rows: readonly RecapSummaryTableRow[],
+  /** The goal's lines (summaryGoalLines.ts), printed above the table. */
+  goalLinesMarkdown = "",
+): string {
+  const lines = ["## Summary", ""];
+  if (goalLinesMarkdown.trim()) lines.push(goalLinesMarkdown.trim(), "");
+  lines.push(
     "| Metric | This week | Prev week | 3-wk avg | Δ |",
     "| --- | --- | --- | --- | --- |",
-  ];
+  );
   for (const r of rows) {
     lines.push(
       `| ${r.metric} | ${r.thisWeek} | ${r.prevWeek} | ${r.threeWkAvg} | ${r.delta} |`,

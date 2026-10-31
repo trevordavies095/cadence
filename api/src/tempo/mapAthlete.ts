@@ -5,6 +5,8 @@ import type {
   TempoHeartRateZone,
   TempoHeartRateZones,
   TempoShoe,
+  TempoThresholds,
+  TempoThresholdSuggestionSource,
   TempoUnitPreference,
 } from "./port.js";
 
@@ -106,7 +108,38 @@ export function parseHeartRateZonesLive(raw: unknown): TempoHeartRateZones {
   if (resting !== undefined) zones.restingHeartRateBpm = resting;
   const maxHr = asNumber(raw.maxHeartRateBpm);
   if (maxHr !== undefined) zones.maxHeartRateBpm = maxHr;
+  const observed = asNumber(raw.observedMaxHeartRateBpm);
+  if (observed !== undefined) zones.observedMaxHeartRateBpm = observed;
   return zones;
+}
+
+function positiveOrNull(v: unknown): number | null {
+  const n = asNumber(v);
+  return typeof n === "number" && n > 0 ? n : null;
+}
+
+function parseSuggestionSource(
+  raw: unknown,
+): TempoThresholdSuggestionSource | null {
+  if (!isPlainObject(raw)) return null;
+  const distance = asString(raw.distance);
+  const timeS = asNumber(raw.timeS);
+  const workoutDate = asString(raw.workoutDate);
+  const workoutId = asString(raw.workoutId);
+  if (!distance || !workoutDate || !workoutId) return null;
+  if (typeof timeS !== "number" || timeS <= 0) return null;
+  return { distance, timeS, workoutDate, workoutId };
+}
+
+/** Map Tempo GET /settings/thresholds JSON (ThresholdsDocument). */
+export function parseThresholdsLive(raw: unknown): TempoThresholds {
+  const rec = isPlainObject(raw) ? raw : {};
+  return {
+    thresholdPaceS: positiveOrNull(rec.thresholdPaceS),
+    thresholdHeartRateBpm: positiveOrNull(rec.thresholdHeartRateBpm),
+    suggestedThresholdPaceS: positiveOrNull(rec.suggestedThresholdPaceS),
+    suggestedFrom: parseSuggestionSource(rec.suggestedFrom),
+  };
 }
 
 /** Map export `data/settings.json` (flat zoneNMinBpm fields) to coach settings. */
@@ -179,6 +212,7 @@ function parseBestEffort(raw: unknown): TempoBestEffort | null {
         ? String(workoutIdRaw)
         : undefined;
   const workoutDate = asString(raw.workoutDate);
+  const previousTimeS = asNumber(raw.previousTimeS);
   if (
     !distance ||
     distanceM === undefined ||
@@ -196,6 +230,8 @@ function parseBestEffort(raw: unknown): TempoBestEffort | null {
     timeS: Math.trunc(timeS),
     workoutId,
     workoutDate,
+    previousTimeS:
+      typeof previousTimeS === "number" ? Math.trunc(previousTimeS) : null,
   };
 }
 

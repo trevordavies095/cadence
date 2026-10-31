@@ -4,6 +4,7 @@ import {
   parseBestEfforts,
   parseHeartRateZonesLive,
   parseShoesList,
+  parseThresholdsLive,
   parseUnitPreference,
 } from "./mapAthlete.js";
 import {
@@ -15,6 +16,7 @@ import {
   type ListWorkoutsQuery,
   type ListWorkoutsResult,
   type TempoAthleteSettings,
+  type BestEffortsQuery,
   type TempoBestEfforts,
   type TempoPort,
   type TempoTimeSeriesPoint,
@@ -39,6 +41,7 @@ const WORKOUTS_PATH = "/workouts";
 const UNIT_PREFERENCE_PATH = "/settings/unit-preference";
 const HEART_RATE_ZONES_PATH = "/settings/heart-rate-zones";
 const DEFAULT_SHOE_PATH = "/settings/default-shoe";
+const THRESHOLDS_PATH = "/settings/thresholds";
 const SHOES_PATH = "/shoes";
 const BEST_EFFORTS_PATH = "/stats/best-efforts";
 const WEEKLY_RECAP_PATH = "/stats/weekly-recap";
@@ -139,6 +142,19 @@ export function createLiveTempoPort(options?: LiveTempoPortOptions): TempoPort {
       return text ? JSON.parse(text) : null;
     } catch {
       throw new TempoHttpError(502, `tempo_invalid_json:${path}`);
+    }
+  }
+
+  /**
+   * Like getJson, but resolves undefined when the call fails: a 404 from an
+   * older Tempo without the endpoint, or any error on context that must not
+   * block the settings it rides along with.
+   */
+  async function getJsonOptional(path: string): Promise<unknown> {
+    try {
+      return await getJson(path);
+    } catch {
+      return undefined;
     }
   }
 
@@ -298,10 +314,11 @@ export function createLiveTempoPort(options?: LiveTempoPortOptions): TempoPort {
     },
 
     async getSettings(): Promise<TempoAthleteSettings> {
-      const [unitRaw, zonesRaw, shoeRaw] = await Promise.all([
+      const [unitRaw, zonesRaw, shoeRaw, thresholdsRaw] = await Promise.all([
         getJson(UNIT_PREFERENCE_PATH),
         getJson(HEART_RATE_ZONES_PATH),
         getJson(DEFAULT_SHOE_PATH),
+        getJsonOptional(THRESHOLDS_PATH),
       ]);
       const unitPreference = parseUnitPreference(unitRaw);
       const heartRateZones = parseHeartRateZonesLive(zonesRaw);
@@ -309,6 +326,9 @@ export function createLiveTempoPort(options?: LiveTempoPortOptions): TempoPort {
         unitPreference,
         heartRateZones,
       };
+      if (thresholdsRaw !== undefined) {
+        settings.thresholds = parseThresholdsLive(thresholdsRaw);
+      }
       if (isPlainObject(shoeRaw) && "defaultShoeId" in shoeRaw) {
         const id = shoeRaw.defaultShoeId;
         settings.defaultShoeId =
@@ -328,8 +348,13 @@ export function createLiveTempoPort(options?: LiveTempoPortOptions): TempoPort {
       return parseShoesList(parsed);
     },
 
-    async getBestEfforts(): Promise<TempoBestEfforts> {
-      const parsed = await getJson(BEST_EFFORTS_PATH);
+    async getBestEfforts(
+      query: BestEffortsQuery = {},
+    ): Promise<TempoBestEfforts> {
+      const path = query.since
+        ? `${BEST_EFFORTS_PATH}?since=${encodeURIComponent(query.since)}`
+        : BEST_EFFORTS_PATH;
+      const parsed = await getJson(path);
       return parseBestEfforts(parsed);
     },
   };

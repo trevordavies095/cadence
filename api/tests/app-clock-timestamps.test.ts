@@ -85,11 +85,11 @@ describe("on-screen rows are stamped from the app clock (#7)", () => {
         "/onboarding/answers",
         post({
           answers: {
-            goal: "Half marathon in April",
             schedule: "Tue/Thu/Sat",
             injuries_constraints: "Left calf tight after hills",
             preferences: "Trails",
           },
+          goal: { kind: "race", distance: "half", raceName: "Half marathon in April" },
           weekSessionId,
         }),
       ),

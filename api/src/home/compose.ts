@@ -45,6 +45,8 @@ export type HomeWeekDay = {
   /** Planned day type, or null when the week has no plan. */
   dayType: PrescribedDay["dayType"] | null;
   plannedDistanceM: number | null;
+  /** Planned duration in seconds, when the day's run was prescribed by time. */
+  plannedDurationS: number | null;
   /** Distance Tempo recorded on this local date; null when Tempo could not be read. */
   actualDistanceM: number | null;
   state: HomeDayState;
@@ -57,7 +59,12 @@ export type HomeRead = {
   banner: HomeBanner | null;
   today: PrescribedDay | null;
   week: HomeWeekDay[];
-  totals: { actualDistanceM: number; plannedDistanceM: number };
+  totals: {
+    actualDistanceM: number;
+    plannedDistanceM: number;
+    /** Planned seconds on days prescribed by duration with no distance; 0 when there are none. */
+    plannedDurationS: number;
+  };
   units: TempoUnitPreference;
   /** True when Tempo could not be read; the week then shows the plan only. */
   tempoUnavailable: boolean;
@@ -172,7 +179,7 @@ export async function composeHome(options: {
     banner,
     today: null,
     week: [],
-    totals: { actualDistanceM: 0, plannedDistanceM: 0 },
+    totals: { actualDistanceM: 0, plannedDistanceM: 0, plannedDurationS: 0 },
     units,
     tempoUnavailable: false,
   };
@@ -211,6 +218,9 @@ export async function composeHome(options: {
   const week: HomeWeekDay[] = dates.map((date) => {
     const planned = planByDate.get(date) ?? null;
     const plannedDistanceM = planned?.run?.distanceM ?? null;
+    const durationS = planned?.run?.durationS;
+    const plannedDurationS =
+      typeof durationS === "number" && durationS > 0 ? durationS : null;
     const plannedRun = plannedDistanceM != null;
     const actual = tempoUnavailable ? null : (actualByDate.get(date) ?? 0);
     const isToday = date === todayYmd;
@@ -228,6 +238,7 @@ export async function composeHome(options: {
       date,
       dayType: planned?.dayType ?? null,
       plannedDistanceM,
+      plannedDurationS,
       actualDistanceM: actual,
       state,
       isToday,
@@ -241,6 +252,11 @@ export async function composeHome(options: {
     totals: {
       actualDistanceM: week.reduce((sum, d) => sum + (d.actualDistanceM ?? 0), 0),
       plannedDistanceM: week.reduce((sum, d) => sum + (d.plannedDistanceM ?? 0), 0),
+      plannedDurationS: week.reduce(
+        (sum, d) =>
+          (d.plannedDistanceM ?? 0) > 0 ? sum : sum + (d.plannedDurationS ?? 0),
+        0,
+      ),
     },
     tempoUnavailable,
   };

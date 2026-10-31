@@ -18,6 +18,7 @@ Ports are taken? Set `POSTGRES_HOST_PORT`, `API_HOST_PORT` and `FRONTEND_HOST_PO
 |---|---|
 | `generate-tempo-export.mjs` | Writes `tempo-export.zip`, Johnny's running log: four easy base weeks from Jul 6, then the block from Aug 3 to the morning of Oct 14, with an Achilles setback in weeks 6 to 8. Deterministic: reruns give a byte-identical zip. |
 | `tempo-export.zip` | The generated log, mounted into the API by `docker-compose.demo.yml`. |
+| `generate-season-export.mjs`, `lib/tempoExport.mjs` | The same export machinery for any season script; used for the replay seasons in `api/tests/fixtures/seasons/`. |
 | `athlete-script.json` | Everything Johnny says: onboarding answers, ten weekly check-ins, and the week 11 chat. |
 | `build.mjs`, `lib/` | Plays the script through the real API and writes the snapshot. |
 | `snapshot.sql` | The published season, produced by a live build. |

@@ -80,7 +80,7 @@ export async function playOnboarding(script) {
     const session = await currentWeekSession();
     const { json } = await postToModel(
       "/onboarding/answers",
-      { answers: onboarding.answers, weekSessionId: session.id },
+      { answers: onboarding.answers, goal: onboarding.goal, weekSessionId: session.id },
       "onboarding",
     );
     if (onboarding.acceptOnboardingNoteCard) {

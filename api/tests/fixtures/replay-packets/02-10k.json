@@ -1,0 +1,28 @@
+{
+  "dossier": {
+    "versionId": 1,
+    "body": "You run five days a week: one threshold and one interval session. Training for a 10K."
+  },
+  "recapMarkdown": "## Summary\n\n| Metric | This week | 3-wk avg |\n|---|---|---|\n| Mileage | 40.00 km | 38.00 km |\n\nThreshold Tuesday, intervals Thursday.",
+  "thread": [],
+  "attachments": [],
+  "week": {
+    "isoWeek": "2026-W43",
+    "start": "2026-10-19T00:00:00.000Z",
+    "end": "2026-10-25T23:59:59.999Z",
+    "weekSessionId": "00000000-0000-4000-8000-000000000242"
+  },
+  "recentHistory": [],
+  "recentHistoryLimit": 4,
+  "goal": {
+    "kind": "race",
+    "distance": "10k",
+    "raceName": "Riverside 10K",
+    "raceDate": "2026-12-06",
+    "target": "sub 45"
+  },
+  "coaching": {
+    "phase": "build",
+    "weeksToRace": 5
+  }
+}

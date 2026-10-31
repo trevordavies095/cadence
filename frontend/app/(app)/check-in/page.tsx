@@ -7,6 +7,7 @@ import {
   Button,
   ButtonLink,
   ErrorNote,
+  Field,
   Input,
   Muted,
   Page,
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui";
 import {
   ensureCurrentWeek,
+  fetchGoalKind,
   fetchHome,
   fetchWeekRecap,
   saveSubjectiveAnswers,
@@ -27,11 +29,14 @@ import {
 } from "@/lib/api";
 import {
   finalizeAnswers,
+  isRaceRun,
+  RACE_RESULT_QUESTION,
   runTitle,
   STRESS_WORDS,
   summaryRows,
   dayLabel,
   withRunAnswer,
+  withStrengthAnswer,
   withWeeklyAnswer,
 } from "@/lib/checkIn";
 import { describeError, type UiError } from "@/lib/errors";
@@ -63,6 +68,8 @@ export default function CheckInPage() {
   const [confirmSkipAll, setConfirmSkipAll] = useState(false);
   // True while changing one answer from the summary, so Next goes straight back to it.
   const [fromSummary, setFromSummary] = useState(false);
+  // A return to running asks for pain as a 0 to 10 score beside the words.
+  const [painScale, setPainScale] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +101,13 @@ export default function CheckInPage() {
           if (today && saturday && today < saturday) setOpens(saturday);
         } catch {
           /* open: the server decides whether the check-in can be saved */
+        }
+        try {
+          const kind = await fetchGoalKind();
+          if (cancelled) return;
+          setPainScale(kind === "return");
+        } catch {
+          /* no goal to read: pain stays a line of words */
         }
         setLoaded(true);
       } catch (err) {
@@ -169,7 +183,13 @@ export default function CheckInPage() {
     if (!current || !answers) return;
     let next = answers;
     if (current.kind === "run") {
-      next = withRunAnswer(next, current.run.date, { rpe: undefined, felt: undefined, pain: undefined });
+      next = withRunAnswer(next, current.run.date, {
+        rpe: undefined,
+        felt: undefined,
+        pain: undefined,
+        pain_score: undefined,
+        result: undefined,
+      });
     } else if (current.key === "sleep") {
       next = withWeeklyAnswer(next, { sleep_avg_hrs: undefined });
     } else if (current.key === "stress") {
@@ -299,6 +319,7 @@ export default function CheckInPage() {
             run={current.run}
             unit={unit}
             answers={answers}
+            painScale={painScale}
             onChange={(next) => setAnswers(next)}
           />
         ) : current.key === "sleep" ? (
@@ -327,22 +348,42 @@ export default function CheckInPage() {
             />
           </Question>
         ) : current.key === "strength" ? (
-          <Question text="How many strength sessions did you do?">
+          <Question text="Strength, rehab or cross-training sessions this week?">
+            <p className="m-0 text-sm font-semibold text-muted">How many you did</p>
             <Stepper
-              label="Strength sessions"
+              label="Sessions you did"
               value={weekly.strength_sessions?.completed}
               min={0}
-              max={7}
+              max={14}
               step={1}
               firstUp={1}
               firstDown={0}
               format={sessions}
               lessLabel="Fewer sessions"
               moreLabel="More sessions"
-              onChange={(n) =>
-                setAnswers(withWeeklyAnswer(answers, { strength_sessions: { completed: n } }))
-              }
+              onChange={(n) => setAnswers(withStrengthAnswer(answers, { completed: n }))}
             />
+            <p className="m-0 text-sm font-semibold text-muted">How many you planned, if you had a plan</p>
+            <Stepper
+              label="Sessions you planned"
+              value={weekly.strength_sessions?.planned}
+              min={0}
+              max={14}
+              step={1}
+              firstUp={1}
+              firstDown={0}
+              format={sessions}
+              lessLabel="Fewer planned"
+              moreLabel="More planned"
+              onChange={(n) => setAnswers(withStrengthAnswer(answers, { planned: n }))}
+            />
+            <Field label="What you did, like swimming, cycling or physio exercises">
+              <Textarea
+                rows={2}
+                value={weekly.strength_sessions?.notes ?? ""}
+                onChange={(e) => setAnswers(withStrengthAnswer(answers, { notes: e.target.value }))}
+              />
+            </Field>
           </Question>
         ) : current.key === "body" ? (
           <Question text="How did your body feel? Mention any aches, niggles or tiredness.">
@@ -446,11 +487,13 @@ function RunQuestions({
   run,
   unit,
   answers,
+  painScale,
   onChange,
 }: {
   run: NeedsSubjectiveRun & { date: string };
   unit: UnitPreference;
   answers: SubjectiveAnswers;
+  painScale: boolean;
   onChange: (next: SubjectiveAnswers) => void;
 }) {
   const row = answers.runs.find((r) => r.date === run.date);
@@ -470,13 +513,34 @@ function RunQuestions({
         }
         onChange={(n) => onChange(withRunAnswer(answers, run.date, { rpe: n }))}
       />
-      <ScaleSlider
-        label="How did it go?"
-        low="Rough"
-        high="Great"
-        value={row?.felt}
-        onChange={(n) => onChange(withRunAnswer(answers, run.date, { felt: n }))}
-      />
+      {isRaceRun(run) ? (
+        <label className="flex flex-col gap-1.5">
+          <span className="font-medium">{RACE_RESULT_QUESTION}</span>
+          <Input
+            value={row?.result ?? ""}
+            onChange={(e) => onChange(withRunAnswer(answers, run.date, { result: e.target.value }))}
+            placeholder="Your time and how it compared"
+          />
+        </label>
+      ) : (
+        <ScaleSlider
+          label="How did it go?"
+          low="Rough"
+          high="Great"
+          value={row?.felt}
+          onChange={(n) => onChange(withRunAnswer(answers, run.date, { felt: n }))}
+        />
+      )}
+      {painScale ? (
+        <ScaleSlider
+          label="How much did it hurt?"
+          low="None"
+          high="Worst"
+          min={0}
+          value={row?.pain_score}
+          onChange={(n) => onChange(withRunAnswer(answers, run.date, { pain_score: n }))}
+        />
+      ) : null}
       <label className="flex flex-col gap-1.5">
         <span className="font-medium">Any pain or niggles?</span>
         <Input

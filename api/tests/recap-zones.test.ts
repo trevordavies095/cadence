@@ -136,7 +136,7 @@ describe("weekly recap HR zone distribution (#20)", () => {
       zoneSeconds: number[];
       zonePct: Record<string, number>;
       z1z2Pct: number;
-      z1z2TargetMet: boolean;
+      z1z2TargetMet?: boolean;
       noHrTimeSeriesInWeek: boolean;
     };
     // Two fixture runs (3600s + 1800s) with HR samples forward-filled.
@@ -145,14 +145,19 @@ describe("weekly recap HR zone distribution (#20)", () => {
     expect(dist.zoneSeconds.reduce((a, b) => a + b, 0)).toBe(5400);
     expect(dist.zonePct.z1).toBe(100);
     expect(dist.z1z2Pct).toBe(100);
-    expect(dist.z1z2TargetMet).toBe(true);
+    // No goal stored: the fitness column, so no target and no met flag.
+    expect(dist.z1z2TargetMet).toBeUndefined();
+    expect(body.easyShareTarget).toBeNull();
     expect(dist.noHrTimeSeriesInWeek).toBe(false);
 
     const markdown = body.markdown as string;
     expect(markdown).toContain("## HR zone distribution (week total)");
     expect(markdown).toContain("Z1 ");
     expect(markdown).toContain("100%");
-    expect(markdown).toContain("≥80% in Z1+Z2");
+    expect(markdown).toContain(
+      "Easy-running share: 100% (zones 1 and 2 of time with heart rate).",
+    );
+    expect(markdown).not.toContain("Target");
     expect(markdown).not.toContain("LineString");
     expect(markdown).not.toContain("SHOULD_NOT_LEAK");
     assertNoGpsFields(body);

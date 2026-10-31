@@ -7,6 +7,7 @@ import {
   type SubjectiveAnswers,
   type UnitPreference,
 } from "@/lib/api";
+import { painHighestText, painText, raceResultLines, STRENGTH_LABEL, strengthText } from "@/lib/checkIn";
 import { describeError, type UiError } from "@/lib/errors";
 import { distanceLabel, durationLabel, localYmd, paceLabel } from "@/lib/units";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
@@ -19,14 +20,32 @@ type SummaryRow = {
   threeWkAvg: string;
   delta: string;
 };
-type Summary = { unit: UnitPreference; rows: SummaryRow[] };
+/** The goal's lines above the numbers: hard minutes, quality sessions, run time, longest run. */
+type GoalLine = {
+  id: string;
+  label: string;
+  /** Null for a line that is a whole sentence. */
+  value: string | null;
+  headline: boolean;
+  flag: boolean;
+};
+type Summary = { unit: UnitPreference; rows: SummaryRow[]; goalLines?: GoalLine[] };
 type Zones = {
   distribution: {
     zonePct: { z1: number; z2: number; z3: number; z4: number; z5: number };
     z1z2Pct: number;
-    z1z2TargetMet: boolean | null;
+    /** Present only when the goal sets an easy-share target. */
+    z1z2TargetMet?: boolean | null;
     noHrTimeSeriesInWeek: boolean;
   };
+  /** The goal's easy-share target in percent; null when the goal sets none. */
+  easyShareTarget?: number | null;
+  /**
+   * False: the target is a reference for Coach Cade only (5k, 10k, speed).
+   * The bar then draws no tick and no target line: on a week with two quality
+   * sessions heart-rate time sits under it, and a tick would read as a miss.
+   */
+  easyShareVerdict?: boolean;
 };
 type RunRow = {
   workoutId: string;
@@ -38,8 +57,12 @@ type RunRow = {
   avgPaceS: number;
   avgHeartRateBpm: number | null;
   drift: { driftBpm: number } | null;
+  /** The goal's drift cap for this run; null: never labelled high. */
+  driftCapBpm?: number | null;
   weather: string | null;
   shoe: { label: string } | null;
+  /** Quality and Race runs with two or more reps, already in the athlete's unit. */
+  repSummary?: string;
 };
 type Runs = { unit: UnitPreference; runs: RunRow[] };
 type Trends = {
@@ -49,6 +72,8 @@ type Trends = {
     easyPaceSecPerKm: Array<number | null>;
     avgEasyHr: Array<number | null>;
     longRunDistanceM: Array<number | null>;
+    /** Easy pace with easy heart rate, now against three weeks ago, in the athlete's unit. */
+    easyRunLine?: string;
   };
 };
 type Notable = { notable: { bullets: string[] } };
@@ -104,7 +129,13 @@ const cell = "border-b border-border px-3 py-2 first:pl-0";
 /** Numeric cells: right-aligned, tabular, kept on one line. */
 const num = cx(cell, "text-right tabular-nums whitespace-nowrap");
 
-function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
+function ZoneBar({
+  zones,
+  target,
+}: {
+  zones: Zones["distribution"];
+  target: number | null;
+}) {
   if (zones.noHrTimeSeriesInWeek) {
     return <Muted>No heart rate data came in for this week.</Muted>;
   }
@@ -126,12 +157,15 @@ function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
             />
           ) : null,
         )}
-        {/* The 80% easy-zone target. */}
-        <div
-          className="absolute inset-y-0 w-0.5 bg-ink"
-          style={{ left: "80%" }}
-          aria-hidden
-        />
+        {/* The goal's easy-zone target, when it sets one. */}
+        {target !== null ? (
+          <div
+            className="absolute inset-y-0 w-0.5 bg-ink"
+            style={{ left: `${target}%` }}
+            data-easy-share-target={target}
+            aria-hidden
+          />
+        ) : null}
       </div>
       <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-sm tabular-nums">
         {ZONES.map((z, i) => (
@@ -143,19 +177,22 @@ function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
       </ul>
       <p className="m-0 text-muted">
         {zones.z1z2Pct}% of your time was in the two easiest zones.{" "}
-        {zones.z1z2TargetMet === true
-          ? "That meets the 80% target."
-          : zones.z1z2TargetMet === false
-            ? "The target is 80% or more."
-            : null}
+        {target === null
+          ? null
+          : zones.z1z2TargetMet === true
+            ? `That meets the ${target}% target.`
+            : `The target is ${target}% or more.`}
       </p>
     </div>
   );
 }
 
-function answerLines(a: SubjectiveAnswers["weekly"]): Array<[string, string]> {
-  if (!a) return [];
+function answerLines(answers: SubjectiveAnswers | null): Array<[string, string]> {
   const rows: Array<[string, string]> = [];
+  const pain = painHighestText(answers?.runs ?? []);
+  if (pain) rows.push(["Pain", pain]);
+  const a = answers?.weekly;
+  if (!a) return rows;
   if (a.sleep_avg_hrs != null) {
     const range = a.sleep_range_hrs
       ? ` (from ${a.sleep_range_hrs[0]} to ${a.sleep_range_hrs[1]})`
@@ -163,15 +200,8 @@ function answerLines(a: SubjectiveAnswers["weekly"]): Array<[string, string]> {
     rows.push(["Sleep", `About ${a.sleep_avg_hrs} hours a night${range}`]);
   }
   if (a.stress_level) rows.push(["Stress", a.stress_level]);
-  if (a.strength_sessions) {
-    const s = a.strength_sessions;
-    const count =
-      s.completed != null
-        ? `${s.completed}${s.planned != null ? ` of ${s.planned}` : ""} sessions`
-        : null;
-    const text = [count, s.notes].filter(Boolean).join(" · ");
-    if (text) rows.push(["Strength", text]);
-  }
+  const strength = strengthText(a.strength_sessions);
+  if (strength) rows.push([STRENGTH_LABEL, strength]);
   if (a.body_check) rows.push(["How your body feels", a.body_check]);
   if (a.feeling_into_next_week) rows.push(["Going into next week", a.feeling_into_next_week]);
   if (a.questions_for_coach?.length) {
@@ -240,7 +270,7 @@ export function YourWeek({
 
   const unit = summary?.unit ?? runs?.unit ?? "imperial";
   const answerByDate = new Map(answers?.runs.map((r) => [r.date, r]) ?? []);
-  const checkIn = answerLines(answers?.weekly);
+  const checkIn = [...raceResultLines(answers), ...answerLines(answers)];
 
   if (!loaded) return <Muted>Loading your week…</Muted>;
 
@@ -252,6 +282,22 @@ export function YourWeek({
         <Notice title="You skipped this week’s check-in">
           Coach Cade worked from your runs alone, without how the week felt to you.
         </Notice>
+      ) : null}
+
+      {summary?.goalLines && summary.goalLines.length > 0 ? (
+        <ul aria-label="Your week at a glance" className="m-0 flex list-none flex-col gap-1 p-0">
+          {summary.goalLines.map((l) => (
+            <li
+              key={l.id + l.label}
+              className={cx(
+                l.headline ? "text-lg font-semibold text-ink" : "text-ink",
+                l.flag && "font-semibold text-warn",
+              )}
+            >
+              {l.value === null ? l.label : `${l.label}: ${l.value}`}
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {summary ? (
@@ -276,7 +322,14 @@ export function YourWeek({
       {zones ? (
         <div className="flex flex-col gap-2">
           <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">Heart rate zones</h3>
-          <ZoneBar zones={zones.distribution} />
+          <ZoneBar
+            zones={zones.distribution}
+            target={
+              zones.easyShareVerdict === false
+                ? null
+                : (zones.easyShareTarget ?? null)
+            }
+          />
         </div>
       ) : null}
 
@@ -297,13 +350,19 @@ export function YourWeek({
                       {r.runType ?? "Run"}
                       {r.shoe ? ` · ${r.shoe.label}` : ""}
                     </span>
+                    {r.repSummary ? (
+                      <span className="block font-normal tabular-nums">
+                        {r.repSummary}
+                      </span>
+                    ) : null}
                     <LabelValueList
                       size="compact"
                       className="mt-1 font-normal"
                       items={[
                         ["Effort", mine?.rpe != null ? `${mine.rpe}/10` : null],
                         ["Went", mine?.felt != null ? `${mine.felt}/10` : null],
-                        ["Pain", mine?.pain],
+                        ["Result", mine?.result],
+                        ["Pain", painText(mine)],
                       ]}
                     />
                   </th>
@@ -316,7 +375,9 @@ export function YourWeek({
                   <td className={num}>
                     {r.drift
                       ? `${r.drift.driftBpm > 0 ? "+" : ""}${r.drift.driftBpm} bpm${
-                          r.drift.driftBpm > 10 ? " (high)" : ""
+                          r.driftCapBpm != null && r.drift.driftBpm > r.driftCapBpm
+                            ? " (high)"
+                            : ""
                         }`
                       : "–"}
                   </td>
@@ -366,6 +427,11 @@ export function YourWeek({
               </tr>
             ))}
           </Table>
+          {trends.trends.easyRunLine ? (
+            <p className="m-0 tabular-nums" data-testid="easy-run-trend">
+              {trends.trends.easyRunLine}
+            </p>
+          ) : null}
         </div>
       ) : null}
 

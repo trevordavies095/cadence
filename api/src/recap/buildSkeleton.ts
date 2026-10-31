@@ -7,6 +7,7 @@ import { buildRecapRunByRun } from "./buildRunByRun.js";
 import { buildRecapSummary } from "./buildSummary.js";
 import { buildRecapTrends } from "./buildTrends.js";
 import { buildRecapZones } from "./buildZones.js";
+import { fetchWeeklyRecapStats } from "./fetchWeeklyRecapStats.js";
 import {
   RECAP_SKELETON_ORDER,
   resolveRecapDepthKnobs,
@@ -79,14 +80,24 @@ export async function buildRecapSkeleton(args: {
     goal: args.goal,
   });
 
+  // One weekly-recap call per report, shared by summary and zones.
+  const weeklyStats = fetchWeeklyRecapStats(tempoPort, session);
   const [summary, zones, runByRun, longRun, trends, notable, grading] =
     await Promise.all([
       buildRecapSummary({
         session,
         tempoPort,
         unit: args.unit,
+        weeklyStats,
+        knobs,
       }),
-      buildRecapZones({ session, tempoPort }),
+      buildRecapZones({
+        session,
+        tempoPort,
+        weeklyStats,
+        easyShareTarget: knobs.thresholds.easyShareTarget,
+        easyShareVerdict: knobs.thresholds.easyShareVerdict,
+      }),
       buildRecapRunByRun({
         session,
         tempoPort,

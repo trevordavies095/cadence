@@ -51,11 +51,14 @@ export {
   DOSSIER_V1_SYSTEM_PROMPT,
   fitSafetyCalloutBody,
   MIDWEEK_SYSTEM_PROMPT,
+  midWeekSystemPrompt,
   SAFETY_CALLOUT_PROMPT,
   SAFETY_ESCALATION_LINE,
   safetyCalloutsJsonSchema,
   WEEKLY_SYSTEM_PROMPT,
+  weeklySystemPrompt,
 } from "./safety.js";
+export { coachingBlock } from "./coachingBlocks.js";
 export { COACH_STANCE_SUMMARY, COACH_SYSTEM_STANCE } from "./stance.js";
 export {
   buildStubAttachedRunFeedback,

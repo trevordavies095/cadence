@@ -21,13 +21,14 @@ import {
   type LlmPort,
 } from "./port.js";
 import { formatIsoWeekRangeShort } from "../clock/weekRangeShort.js";
+import { goalPromptLines } from "./goalLines.js";
 import {
   DOSSIER_AUDIT_SYSTEM_PROMPT,
   DOSSIER_CORRECTION_SYSTEM_PROMPT,
   DOSSIER_V1_SYSTEM_PROMPT,
-  MIDWEEK_SYSTEM_PROMPT,
+  midWeekSystemPrompt,
   safetyCalloutsJsonSchema,
-  WEEKLY_SYSTEM_PROMPT,
+  weeklySystemPrompt,
 } from "./safety.js";
 import {
   DAY_NOTES_TARGET,
@@ -119,6 +120,38 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /** The reason for a session, shown beside it on the plan. */
 const DAY_NOTES_DESCRIPTION = `Why this session, this week: one or two sentences, under ${DAY_NOTES_TARGET} characters. Shown beside the session.`;
 
+/** Day types; every type but rest and other carries a run. */
+const DAY_TYPE_DESCRIPTION =
+  "Every type but rest needs a run, except other: an other day with no run (run null) is strength, cross-training or a walk, and its notes must say what it is (\"30 min strength: squats, lunges, core\"). It is not counted or graded as a run.";
+
+/** A planned run, prescribed by distance, by duration, or by both. */
+export function prescribedRunJsonSchema(): Record<string, unknown> {
+  return {
+    type: ["object", "null"],
+    additionalProperties: false,
+    properties: {
+      type: {
+        type: "string",
+        enum: ["easy", "quality", "long", "race", "other"],
+      },
+      distanceM: {
+        type: "number",
+        description:
+          "Planned distance in meters. 0 when the run is prescribed by duration only.",
+      },
+      durationS: {
+        type: ["number", "null"],
+        description:
+          "Planned duration in seconds, for a run prescribed by time (2400 for 40 minutes). Set it with distanceM 0 for a time-only run, or beside a distance to give both.",
+      },
+      structure: { type: ["string", "null"] },
+      paceOrHr: { type: ["string", "null"] },
+      shoes: { type: ["string", "null"] },
+    },
+    required: ["type", "distanceM"],
+  };
+}
+
 function weeklyReplyToolSchema() {
   return {
     type: "object",
@@ -202,22 +235,9 @@ function weeklyReplyToolSchema() {
                 dayType: {
                   type: "string",
                   enum: ["rest", "easy", "quality", "long", "race", "other"],
+                  description: DAY_TYPE_DESCRIPTION,
                 },
-                run: {
-                  type: ["object", "null"],
-                  additionalProperties: false,
-                  properties: {
-                    type: {
-                      type: "string",
-                      enum: ["easy", "quality", "long", "race", "other"],
-                    },
-                    distanceM: { type: "number" },
-                    structure: { type: ["string", "null"] },
-                    paceOrHr: { type: ["string", "null"] },
-                    shoes: { type: ["string", "null"] },
-                  },
-                  required: ["type", "distanceM"],
-                },
+                run: prescribedRunJsonSchema(),
                 strength: { type: ["string", "null"] },
                 notes: {
                   type: ["string", "null"],
@@ -239,7 +259,7 @@ function weeklyReplyToolSchema() {
   };
 }
 
-function prescribedDayJsonSchema(): Record<string, unknown> {
+export function prescribedDayJsonSchema(): Record<string, unknown> {
   return {
     type: "object",
     additionalProperties: false,
@@ -252,22 +272,9 @@ function prescribedDayJsonSchema(): Record<string, unknown> {
       dayType: {
         type: "string",
         enum: ["rest", "easy", "quality", "long", "race", "other"],
+        description: DAY_TYPE_DESCRIPTION,
       },
-      run: {
-        type: ["object", "null"],
-        additionalProperties: false,
-        properties: {
-          type: {
-            type: "string",
-            enum: ["easy", "quality", "long", "race", "other"],
-          },
-          distanceM: { type: "number" },
-          structure: { type: ["string", "null"] },
-          paceOrHr: { type: ["string", "null"] },
-          shoes: { type: ["string", "null"] },
-        },
-        required: ["type", "distanceM"],
-      },
+      run: prescribedRunJsonSchema(),
       strength: { type: ["string", "null"] },
       notes: { type: ["string", "null"], description: DAY_NOTES_DESCRIPTION },
     },
@@ -421,6 +428,7 @@ function buildWeeklyUserPrompt(
   const dates = expectedPlanDates(weekStartMonday);
   const reviewed = packet.week?.isoWeek?.trim();
   return [
+    ...goalPromptLines(packet, weekStartMonday),
     reviewed ? `Reviewed week (already happened): ${reviewed}` : null,
     `Plan week ISO label: ${planIsoWeek ?? reviewed ?? "unknown"}`,
     `Plan week Monday (YYYY-MM-DD): ${weekStartMonday}`,
@@ -434,6 +442,12 @@ function buildWeeklyUserPrompt(
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
+}
+
+/** The weekly read's user prompt exactly as {@link createAnthropicLlmPort} sends it. */
+export function weeklyUserPromptFor(packet: ModelPacket): string {
+  const planWeek = resolveWeeklyPlanWeek(packet);
+  return buildWeeklyUserPrompt(packet, planWeek.weekStartMonday, planWeek.isoWeek);
 }
 
 function buildMidWeekUserPrompt(
@@ -451,6 +465,7 @@ function buildMidWeekUserPrompt(
     ? `Current prescribed week is in the packet. To change remaining days, emit prescribedDayPatches using only these dates: ${dates.join(", ")}. Past days stay stable unless allowPastDayPatches is true.`
     : "No prescribed week in packet — reply in prose only (no prescribedDayPatches).";
   return [
+    ...goalPromptLines(packet, weekStartMonday),
     "Call the submit_mid_week_chat_reply tool exactly once with your full answer.",
     attachLine,
     planLine,
@@ -930,7 +945,7 @@ export function createAnthropicLlmPort(
       const requestBody: AnthropicMessagesRequest = {
         model,
         max_tokens: MAX_OUTPUT_TOKENS,
-        system: WEEKLY_SYSTEM_PROMPT,
+        system: weeklySystemPrompt(packet.goal),
         tools: [
           {
             name: WEEKLY_TOOL_NAME,
@@ -982,7 +997,7 @@ export function createAnthropicLlmPort(
       const requestBody: AnthropicMessagesRequest = {
         model,
         max_tokens: MAX_OUTPUT_TOKENS,
-        system: MIDWEEK_SYSTEM_PROMPT,
+        system: midWeekSystemPrompt(packet.goal),
         tools: [
           {
             name: MIDWEEK_TOOL_NAME,

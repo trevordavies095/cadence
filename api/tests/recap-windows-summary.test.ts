@@ -188,10 +188,10 @@ describe("recap week windows + summary columns match tempo-cli (#83)", () => {
     expect(body.comparisonSource).toBe("windows");
     // This week keeps its Monday run.
     expect(byMetric("Runs").thisWeek).toBe("1");
-    expect(byMetric("Mileage").thisWeek).toBe("3.00 mi");
+    expect(byMetric("Distance").thisWeek).toBe("3.00 mi");
     // Prev week = only PREV_WEEK_RUN (5000 m), not also THIS_MON_RUN.
     expect(byMetric("Runs").prevWeek).toBe("1");
-    expect(byMetric("Mileage").prevWeek).toBe("3.11 mi"); // 5000 m
+    expect(byMetric("Distance").prevWeek).toBe("3.11 mi"); // 5000 m
     // 3-wk avg over W40(0) / W41(10000, not +PREV_WEEK_RUN) / W42(5000).
     const comparison = body.comparison as {
       mileage: { threeWkAvgDistanceM: number };
@@ -215,7 +215,7 @@ describe("recap week windows + summary columns match tempo-cli (#83)", () => {
       calls.filter((c) => c.startsWith("/workouts?")).length,
     ).toBe(1);
 
-    expect(byMetric("Mileage")).toMatchObject({
+    expect(byMetric("Distance")).toMatchObject({
       thisWeek: "3.00 mi",
       prevWeek: "20.00 mi",
       threeWkAvg: "30.00 mi",
@@ -262,7 +262,7 @@ describe("recap week windows + summary columns match tempo-cli (#83)", () => {
       });
       expect(calls.some((c) => c.startsWith("/stats/weekly-recap"))).toBe(true);
       expect(body.comparisonSource).toBe("windows");
-      expect(byMetric("Mileage")).toMatchObject({
+      expect(byMetric("Distance")).toMatchObject({
         thisWeek: "3.00 mi",
         prevWeek: "3.11 mi",
         threeWkAvg: "3.11 mi",
@@ -284,7 +284,7 @@ describe("recap week windows + summary columns match tempo-cli (#83)", () => {
       stats: "404",
     });
     expect(body.comparisonSource).toBe("windows");
-    expect(byMetric("Mileage")).toMatchObject({
+    expect(byMetric("Distance")).toMatchObject({
       thisWeek: "3.00 mi",
       prevWeek: "0.00 mi",
       threeWkAvg: "0.00 mi",
