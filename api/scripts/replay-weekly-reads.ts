@@ -7,7 +7,7 @@
  * A person still reads the report: the checks only point at what to look at.
  *
  *   cd api
- *   ANTHROPIC_API_KEY=sk-ant-... npx tsx scripts/replay-weekly-reads.ts
+ *   ANTHROPIC_API_KEY=sk-ant-... npm run replay
  *
  * Calls run one at a time, on the model each original call used. A call whose
  * output file already exists is skipped, so an interrupted run can be resumed.
@@ -18,7 +18,7 @@
  * Pass --packets <dir> to replay a folder of packets instead of the demo
  * snapshot, such as the synthetic seasons that are not marathon blocks:
  *
- *   npx tsx scripts/replay-weekly-reads.ts --packets tests/fixtures/replay-packets --dry-run
+ *   npm run replay -- --packets tests/fixtures/replay-packets --dry-run
  *
  * The folder holds one JSON file per weekly call, replayed in file-name order.
  * Each file is a model packet as the app builds it, with the athlete's goal in
@@ -37,8 +37,10 @@
  * Every report opens with three goal checks, each naming the read that failed:
  * a packet with no goal line (no goal, or the rebuilt prompt does not open with
  * "Athlete goal:"); "marathon" in a read whose goal is not a marathon; and a
- * long-run verdict in a read whose goal is stay fit. The script exits non-zero
- * when any check fails. The dry run over tests/fixtures/replay-packets runs in
+ * long-run verdict in a read whose goal is stay fit. A refused reply also fails,
+ * since it leaves a read unchecked. The checks read every athlete-facing word:
+ * headline, flags, answers, the read, the days, safety callouts and About you
+ * proposals. The script exits non-zero when any check fails. The dry run over tests/fixtures/replay-packets runs in
  * the API test suite (tests/replay-weekly-reads.test.ts).
  */
 import { randomUUID } from "node:crypto";
@@ -364,6 +366,8 @@ function report(): ReplayCheckFailure[] {
       ...(n.answers ?? []).flatMap((a) => [a.question, a.answer]),
       n.analysis,
       dayText(n.prescribedWeek.days),
+      ...(n.safetyCallouts ?? []).map((c) => JSON.stringify(c)),
+      ...(n.settingsProposalBullets ?? []),
     ].join("\n");
     const goal = s.goal ?? null;
     const failed = replayCheckFailures({ label, goal, prompt: s.promptHead ?? "", readText: newText });
@@ -433,6 +437,16 @@ function report(): ReplayCheckFailure[] {
       "",
     );
   }
+  const refused = numbered(".failed.json").filter((f) => !existsSync(f.replace(/\.failed\.json$/, ".json")));
+  // A refused reply has no read to check, so it cannot pass the gate either.
+  for (const f of refused) {
+    const d = JSON.parse(readFileSync(f, "utf8")) as { source?: string; originalCallAt: string | null };
+    const name = path.basename(f, ".failed.json");
+    const label = d.originalCallAt
+      ? `${name} (week read on ${d.originalCallAt.slice(0, 10)})`
+      : `${name} (${d.source ?? "unknown packet"})`;
+    checkFailures.push({ label, check: "refused reply", detail: "no read to check; replay it again" });
+  }
   const out: string[] = [
     "# Replay gate: first-pass report",
     "",
@@ -444,14 +458,13 @@ function report(): ReplayCheckFailure[] {
     "",
     ...(checkFailures.length
       ? checkFailures.map((f) => `- ${f.label}: ${f.check}: ${f.detail}`)
-      : ["All passed: every packet has a goal line, no non-marathon read says marathon, and no stay-fit read gives a long-run verdict."]),
+      : ["All passed: every packet has a goal line, no non-marathon read says marathon, no stay-fit read gives a long-run verdict, and no reply was refused."]),
     "",
     ...sections,
   ];
   if (retried.length > 0) {
     out.push("## Retried replies", "", "Refused for their shape, then came back when asked once more, as the app does.", "", ...retried, "");
   }
-  const refused = numbered(".failed.json").filter((f) => !existsSync(f.replace(/\.failed\.json$/, ".json")));
   if (refused.length > 0) {
     out.push("## Refused replies", "");
     for (const f of refused) {

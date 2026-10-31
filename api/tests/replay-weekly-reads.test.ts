@@ -100,13 +100,15 @@ describe("replay dry run over a packet folder", () => {
     expect(run.report()).not.toContain("- 01 (01-stay-fit.json):");
   }, 30_000);
 
-  it("asks once more for a reply refused for its shape, notes the retry and lists it apart from failures", () => {
+  it("asks once more for a reply refused for its shape, notes the retry, lists it apart from failures and fails on a refusal", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "replay-packets-"));
     const packet = (f: string) => JSON.parse(readFileSync(path.join(FIXTURE, f), "utf8")) as unknown;
     writeFileSync(path.join(dir, "01-retried.json"), JSON.stringify({ packet: packet("01-stay-fit.json"), stubRefusals: 1 }));
     writeFileSync(path.join(dir, "02-failed.json"), JSON.stringify({ packet: packet("02-10k.json"), stubRefusals: 2 }));
     const run = dryRun(dir);
-    expect(run.status).toBe(0);
+    // The retried reply passes; the reply refused twice leaves a read unchecked.
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain("02 (02-failed.json): refused reply");
     expect(run.stdout).toMatch(/01\.json done in \d+ s after asking once more/);
     expect(run.stdout).toContain("02.json refused: stub refusal");
 

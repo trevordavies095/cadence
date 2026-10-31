@@ -1,6 +1,6 @@
 # 0003: The goal is data, and the report follows it
 
-**Status:** Accepted, 2026-10-31, after two live replays over three non-marathon seasons (see Evidence).
+**Status:** Accepted, 2026-10-30, after two live replays over three non-marathon seasons (see Evidence).
 
 ## Context
 
@@ -43,7 +43,7 @@ The replay script (`api/scripts/replay-weekly-reads.ts`, ADR 0002) now takes a f
 - the word "marathon" in a read whose goal is not a marathon ("half marathon" does not count);
 - a long-run verdict, such as "fast finish" or a long run called improving or declining, in a read whose goal is stay fit.
 
-The script exits non-zero when any check fails. A dry run over the packet fixtures (`api/tests/fixtures/replay-packets/`) uses the offline stub only.
+A refused reply fails too, since it leaves a read unchecked, and the checks read every athlete-facing word, safety callouts and About you proposals included. The script exits non-zero when any check fails. A dry run over the packet fixtures (`api/tests/fixtures/replay-packets/`) uses the offline stub only.
 
 The evidence is two live replays over three synthetic six-week seasons that are not marathon blocks: a stay-fit runner, a 10K runner and a returning runner (`api/tests/fixtures/seasons/`, regenerated with `api/scripts/regenerate-replay-seasons.ts`). A person read every read.
 
