@@ -90,9 +90,14 @@ export async function assembleLeanLiveContext(
       getCurrentGoal(),
     ]);
   const goal = currentGoal?.goal ?? null;
+  const planWeek = input.includePlanWeek
+    ? toPacketPlanWeek(input.focusSession)
+    : undefined;
+  // The weekly read prescribes N+1, so its coaching block is for that week;
+  // the conversation stays on the focus week.
   const coaching = packetCoaching(
     goal,
-    isoWeekMondayDate(input.focusSession.isoWeek),
+    planWeek?.startDate ?? isoWeekMondayDate(input.focusSession.isoWeek),
   );
 
   // Defense in depth: even if listThreadMessages were widened, drop other weeks.
@@ -118,9 +123,7 @@ export async function assembleLeanLiveContext(
     })),
     attachments: input.attachments,
     week: toPacketWeek(input.focusSession),
-    planWeek: input.includePlanWeek
-      ? toPacketPlanWeek(input.focusSession)
-      : undefined,
+    planWeek,
     prescribedWeek: input.prescribedWeek,
     recentHistory,
     recentHistoryLimit: limit,

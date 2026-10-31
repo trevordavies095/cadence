@@ -98,15 +98,23 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
     expect(lastPacket.packet.coaching).toEqual({ phase: "base", weeksToRace: 19 });
   });
 
-  it("a return goal goes with the weekly read", async () => {
-    const { app, id } = await ready(RETURN);
+  it("the weekly read resolves coaching for the plan week (N+1)", async () => {
+    const { app, id } = await ready(HALF);
     const res = await app.request(`/weeks/${id}/recap?skip_subjective=true`);
     expect(res.status).toBe(200);
     await waitForReplyRunsIdle();
 
     const { lastPacket } = await json(await app.request("/settings/last-packet"));
     expect(lastPacket.summary.weekSessionId).toBe(id);
-    expect(lastPacket.packet.planWeek).toBeTruthy();
+    expect(lastPacket.packet.planWeek.startDate).toBe("2026-10-26");
+    expect(lastPacket.packet.goal).toEqual(HALF);
+    // Oct 26 2026 to Mar 7 2027 is 132 days: 18 whole weeks, base.
+    expect(lastPacket.packet.coaching).toEqual({ phase: "base", weeksToRace: 18 });
+  });
+
+  it("a return goal goes with a conversation reply", async () => {
+    const { app, id } = await ready(RETURN);
+    const lastPacket = await chat(app, id);
     expect(lastPacket.packet.goal).toEqual(RETURN);
     expect(lastPacket.packet.coaching).toEqual({ phase: "recovery" });
   });
