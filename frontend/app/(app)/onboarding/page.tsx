@@ -3,13 +3,12 @@
 import { describeError, type UiError } from "@/lib/errors";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ChipChoice, DayChips, DayChoice } from "@/components/OnboardingControls";
+import { GoalFields } from "@/components/GoalFields";
+import { DayChips, DayChoice } from "@/components/OnboardingControls";
 import { Stepper } from "@/components/CheckInControls";
 import {
   Button,
   ErrorNote,
-  Field,
-  Input,
   Muted,
   Page,
   PageTitle,
@@ -26,10 +25,8 @@ import {
 } from "@/lib/api";
 import {
   EMPTY_DRAFT,
-  GOAL_CHOICES,
   ONBOARDING_STEPS,
-  RACE_DISTANCE_CHOICES,
-  SPEED_DISTANCE_CHOICES,
+  longRunName,
   serializeAnswers,
   stepProblem,
   type OnboardingDraft,
@@ -183,6 +180,8 @@ export default function OnboardingPage() {
   const name = ONBOARDING_STEPS[step]!;
   const isLast = step + 1 >= ONBOARDING_STEPS.length;
   const required = name === "goal" || name === "days";
+  // Getting back to running is not asked about a long run day.
+  const longRun = longRunName(draft);
 
   return (
     <Page flow>
@@ -195,73 +194,7 @@ export default function OnboardingPage() {
         {name === "goal" ? (
           <section className="flex flex-col gap-3">
             <p className="m-0 text-lg font-medium">What are you training for?</p>
-            <ChipChoice
-              label="What you’re training for"
-              options={GOAL_CHOICES}
-              value={draft.goalKind}
-              onChange={(kind) => change({ goalKind: kind })}
-            />
-            {draft.goalKind === "race" ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <p className="m-0 text-sm font-semibold text-muted">How far is the race?</p>
-                  <ChipChoice
-                    label="Race distance"
-                    options={RACE_DISTANCE_CHOICES}
-                    value={draft.raceDistance}
-                    onChange={(distance) => change({ raceDistance: distance })}
-                  />
-                </div>
-                <Field label="Which race?">
-                  <Input
-                    value={draft.raceName}
-                    onChange={(e) => change({ raceName: e.target.value })}
-                    placeholder="For example, the Lakeshore Half"
-                  />
-                </Field>
-                <Field label="Race date" hint="Optional. Leave blank if you haven’t picked one yet.">
-                  <Input
-                    type="date"
-                    value={draft.raceDate}
-                    onChange={(e) => change({ raceDate: e.target.value })}
-                  />
-                </Field>
-                <Field
-                  label="Target"
-                  hint="Optional. In your own words, for example under 2 hours or finish feeling strong."
-                >
-                  <Input
-                    value={draft.raceTarget}
-                    onChange={(e) => change({ raceTarget: e.target.value })}
-                  />
-                </Field>
-              </div>
-            ) : draft.goalKind === "speed" ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <p className="m-0 text-sm font-semibold text-muted">Which distance?</p>
-                  <ChipChoice
-                    label="Distance to get faster at"
-                    options={SPEED_DISTANCE_CHOICES}
-                    value={draft.speedDistance}
-                    onChange={(distance) => change({ speedDistance: distance })}
-                  />
-                </div>
-                <Field label="Target" hint="Optional. In your own words, for example under 45 minutes.">
-                  <Input
-                    value={draft.speedTarget}
-                    onChange={(e) => change({ speedTarget: e.target.value })}
-                  />
-                </Field>
-                <Field label="Next race date" hint="Optional. Leave blank if there isn’t one yet.">
-                  <Input
-                    type="date"
-                    value={draft.nextRaceDate}
-                    onChange={(e) => change({ nextRaceDate: e.target.value })}
-                  />
-                </Field>
-              </div>
-            ) : null}
+            <GoalFields draft={draft} onChange={change} />
           </section>
         ) : name === "days" ? (
           <section className="flex flex-col gap-4">
@@ -280,19 +213,21 @@ export default function OnboardingPage() {
                 })
               }
             />
-            <div className="flex flex-col gap-2">
-              <p className="m-0 font-medium">Which day suits a long run best?</p>
-              {draft.runDays.length > 0 ? (
-                <DayChoice
-                  label="Long run day"
-                  options={draft.runDays}
-                  value={draft.longRunDay}
-                  onChange={(day) => change({ longRunDay: day })}
-                />
-              ) : (
-                <Muted>Pick your free days first.</Muted>
-              )}
-            </div>
+            {longRun ? (
+              <div className="flex flex-col gap-2">
+                <p className="m-0 font-medium">Which day suits a {longRun}?</p>
+                {draft.runDays.length > 0 ? (
+                  <DayChoice
+                    label={longRun === "long run" ? "Long run day" : "Longer run day"}
+                    options={draft.runDays}
+                    value={draft.longRunDay}
+                    onChange={(day) => change({ longRunDay: day })}
+                  />
+                ) : (
+                  <Muted>Pick your free days first.</Muted>
+                )}
+              </div>
+            ) : null}
           </section>
         ) : name === "hours" ? (
           <section className="flex flex-col gap-3">

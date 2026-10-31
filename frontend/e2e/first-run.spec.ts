@@ -39,7 +39,9 @@ test.describe("first run", () => {
     for (const day of ["Tue", "Thu", "Sat"]) {
       await page.getByRole("checkbox", { name: day }).click();
     }
-    await page.getByRole("radio", { name: "Sat" }).click();
+    // A half has a long run; shorter goals are asked about a longer run.
+    await expect(page.getByText("Which day suits a long run?")).toBeVisible();
+    await page.getByRole("radiogroup", { name: "Long run day" }).getByRole("radio", { name: "Sat" }).click();
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: "More hours" }).click();
     await page.getByRole("button", { name: "More hours" }).click();
