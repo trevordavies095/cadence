@@ -22,6 +22,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
           presenceCheck: false,
           flagAboveZero: false,
         },
+        thresholdMinutes: goal === "half",
         volumeChangeWarningPct: 20,
         headline: ["distance"],
       });
@@ -58,6 +59,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
         presenceCheck: false,
         flagAboveZero: false,
       },
+      thresholdMinutes: true,
       volumeChangeWarningPct: 20,
       headline: ["distance", "hardMinutes"],
     });
@@ -105,6 +107,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
         presenceCheck: true,
         flagAboveZero: false,
       },
+      thresholdMinutes: false,
       volumeChangeWarningPct: 30,
       headline: ["runMinutes"],
     });
@@ -137,6 +140,7 @@ describe("resolveRecapDepthKnobs: the knobs table by goal column", () => {
         presenceCheck: false,
         flagAboveZero: true,
       },
+      thresholdMinutes: false,
       volumeChangeWarningPct: 10,
       headline: ["runMinutes", "longestRunDuration"],
     });

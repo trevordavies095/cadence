@@ -47,6 +47,11 @@ export type RecapThresholdKnobs = {
     /** Any hard minutes are flagged (return). */
     flagAboveZero: boolean;
   };
+  /**
+   * "Threshold minutes" on the summary: time near the athlete-set threshold
+   * pace or heart rate. Shown only when a threshold is set in the running log.
+   */
+  thresholdMinutes: boolean;
   /** Week-over-week volume change, in percent, above which the report warns. */
   volumeChangeWarningPct: number;
   /** What the summary leads with. */
@@ -126,6 +131,8 @@ export function resolveRecapThresholds(args: {
           presenceCheck: false,
           flagAboveZero: false,
         },
+        // Threshold work is a staple of a half block; the marathon block leads with the long run.
+        thresholdMinutes: args.goal === "half",
         volumeChangeWarningPct: VOLUME_WARNING_PCT_TRAINING,
         headline: ["distance"],
       };
@@ -149,6 +156,7 @@ export function resolveRecapThresholds(args: {
           presenceCheck: false,
           flagAboveZero: false,
         },
+        thresholdMinutes: true,
         volumeChangeWarningPct: VOLUME_WARNING_PCT_TRAINING,
         headline: ["distance", "hardMinutes"],
       };
@@ -171,6 +179,7 @@ export function resolveRecapThresholds(args: {
           presenceCheck: true,
           flagAboveZero: false,
         },
+        thresholdMinutes: false,
         volumeChangeWarningPct: VOLUME_WARNING_PCT_FITNESS,
         headline: ["runMinutes"],
       };
@@ -193,6 +202,7 @@ export function resolveRecapThresholds(args: {
           // Warden: during a return, any Z4+Z5 time is worth flagging.
           flagAboveZero: true,
         },
+        thresholdMinutes: false,
         volumeChangeWarningPct: VOLUME_WARNING_PCT_RETURN,
         headline: ["runMinutes", "longestRunDuration"],
       };

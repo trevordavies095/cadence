@@ -2,6 +2,7 @@ import { listAllWorkoutsInWindow } from "./listWindow.js";
 import type {
   TempoPort,
   TempoUnitPreference,
+  TempoWorkoutSummary,
 } from "../tempo/port.js";
 import type { WeekSession } from "../week/store.js";
 import type { RecapDepthKnobs } from "./phase.js";
@@ -25,6 +26,12 @@ import {
   buildSummaryGoalLinesMarkdown,
   type SummaryGoalLine,
 } from "./summaryGoalLines.js";
+import {
+  hasAthleteThreshold,
+  thresholdSecondsForWeek,
+  type AthleteThresholds,
+} from "./thresholdMinutes.js";
+import { loadRecapWorkoutDetails } from "./workoutDetails.js";
 import { priorWeekWindows, type WeekWindow } from "./weekWindows.js";
 
 export type RecapSummaryResult = {
@@ -82,6 +89,38 @@ export async function resolveRecapUnit(
   return "metric";
 }
 
+/** The athlete-set threshold pace and heart rate; null when neither is set or settings fail. */
+async function loadAthleteThresholds(
+  port: TempoPort,
+): Promise<AthleteThresholds | null> {
+  try {
+    const t = (await port.getSettings())?.thresholds;
+    if (!t) return null;
+    const out = { paceS: t.thresholdPaceS, heartRateBpm: t.thresholdHeartRateBpm };
+    return hasAthleteThreshold(out) ? out : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The week's seconds near the athlete-set threshold, from each run's series.
+ * Undefined when no threshold is set (the line is then absent).
+ */
+async function weekThresholdSeconds(
+  port: TempoPort,
+  workouts: readonly TempoWorkoutSummary[],
+): Promise<number | undefined> {
+  const thresholds = await loadAthleteThresholds(port);
+  if (!thresholds) return undefined;
+  if (workouts.length === 0) return 0;
+  const details = await loadRecapWorkoutDetails(port, workouts);
+  return thresholdSecondsForWeek(
+    details.map((d) => d?.timeSeries),
+    thresholds,
+  );
+}
+
 /** Build Summary section for a persisted week session via TempoPort. */
 export async function buildRecapSummary(args: {
   session: WeekSession;
@@ -125,6 +164,10 @@ export async function buildRecapSummary(args: {
     comparisonSource = "windows";
   }
   const rows = buildSummaryTableRows({ thisWeek, comparison, unit });
+  // Only the goals that show the line pay for the series fetch.
+  const thresholdSeconds = args.knobs?.thresholds.thresholdMinutes
+    ? await weekThresholdSeconds(tempoPort, thisItems)
+    : undefined;
   const goalLines = args.knobs
     ? buildSummaryGoalLines({
         thresholds: args.knobs.thresholds,
@@ -132,6 +175,7 @@ export async function buildRecapSummary(args: {
         stats,
         unit,
         timezone: session.timezone,
+        thresholdSeconds,
       })
     : [];
   const markdown = buildSummaryMarkdown(

@@ -1,6 +1,6 @@
 /**
  * The goal's lines on the summary (ticket 13): hard minutes, quality sessions,
- * run time and longest run, chosen by the knobs table (goalKnobs.ts).
+ * threshold minutes (ticket 16), run time and longest run, chosen by the knobs table (goalKnobs.ts).
  */
 import type {
   TempoUnitPreference,
@@ -15,6 +15,7 @@ const METERS_PER_MILE = 1609.344;
 export type SummaryGoalLineId =
   | "hardMinutes"
   | "qualitySessions"
+  | "thresholdMinutes"
   | "runTime"
   | "longestRun"
   | "hardMinutesAboveZero"
@@ -84,6 +85,11 @@ export function buildSummaryGoalLines(args: {
   stats: TempoWeeklyRecapStats | null;
   unit: TempoUnitPreference;
   timezone: string;
+  /**
+   * The week's seconds near the athlete-set threshold (thresholdMinutes.ts).
+   * Undefined when no threshold is set in the running log: no line.
+   */
+  thresholdSeconds?: number;
 }): SummaryGoalLine[] {
   const { thresholds: k, workouts, stats, unit, timezone } = args;
   const headline = new Set(k.headline);
@@ -173,6 +179,16 @@ export function buildSummaryGoalLines(args: {
       id: "qualitySessions",
       label: "Quality sessions",
       value: String(count),
+      headline: false,
+      flag: false,
+    });
+  }
+
+  if (k.thresholdMinutes && finite(args.thresholdSeconds)) {
+    lines.push({
+      id: "thresholdMinutes",
+      label: "Threshold minutes",
+      value: `${Math.max(0, Math.round(args.thresholdSeconds / 60))} min`,
       headline: false,
       flag: false,
     });
