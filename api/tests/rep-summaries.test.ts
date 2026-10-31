@@ -208,9 +208,10 @@ const W2 = "22222222-2222-4222-8222-222222222222";
 
 /**
  * The mini export with Monday as a Threshold run carrying only distance
- * splits, and Wednesday as Intervals with FIT device laps.
+ * splits, and Wednesday (Intervals unless `w2Type` says otherwise) with FIT
+ * device laps.
  */
-function exportZipWithQualityRuns(): string {
+function exportZipWithQualityRuns(w2Type = "Intervals"): string {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "tempo-export-reps-"));
   const dir = path.join(tmp, "pack");
   fs.cpSync(FIXTURE_DIR, dir, { recursive: true });
@@ -221,7 +222,7 @@ function exportZipWithQualityRuns(): string {
   >;
   for (const w of workouts) {
     if (w.id === W1) w.runType = "Threshold";
-    if (w.id === W2) w.runType = "Intervals";
+    if (w.id === W2) w.runType = w2Type;
   }
   fs.writeFileSync(workoutsPath, JSON.stringify(workouts));
 
@@ -300,5 +301,30 @@ describe("rep line on Your week's runs", () => {
     expect(body.markdown as string).toContain(
       "Reps: 6 reps, avg 3:08 at 6:18/mi, fade 4%, rests 90 s",
     );
+  });
+
+  async function wednesdayAs(runType: string) {
+    await acceptAndReady();
+    const app = createApp({
+      dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+      clock: new FixedClock(new Date("2026-10-21T15:00:00.000Z")),
+      tempoPort: createExportTempoPort({ exportPath: exportZipWithQualityRuns(runType) }),
+    });
+    const week = await json(await app.request("/weeks/current", { method: "POST" }));
+    const body = await json(
+      await app.request(`/weeks/${week.id as string}/recap/run-by-run?format=json`),
+    );
+    return (body.runs as Array<Record<string, unknown>>).find((r) => r.workoutId === W2)!;
+  }
+
+  it("prints reps for a Race run with device laps", async () => {
+    const race = await wednesdayAs("Race");
+    expect(race.runType).toBe("Race");
+    expect(race.repSummary).toBe("6 reps, avg 3:08 at 6:18/mi, fade 4%, rests 90 s");
+  });
+
+  it("prints no reps for an easy run, whatever its laps", async () => {
+    const easy = await wednesdayAs("Easy Run");
+    expect(easy).not.toHaveProperty("repSummary");
   });
 });

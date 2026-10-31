@@ -49,7 +49,7 @@ const REPORT = {
   sections: { summary: "", zones: "", runByRun: "" },
 };
 
-async function serveCheckIn(page: Page, opts: { goalKind?: string } = {}) {
+async function serveCheckIn(page: Page, opts: { goalKind?: string; runByRun?: unknown } = {}) {
   const saved: unknown[] = [];
   const skips: string[] = [];
   // No goal unless a test gives one: pain stays a line of words.
@@ -89,6 +89,12 @@ async function serveCheckIn(page: Page, opts: { goalKind?: string } = {}) {
   await page.route(/\/api\/weeks\/[^/]+\/recap\/(summary|zones|run-by-run|trends|notable)$/, (route) =>
     route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "not_found" }) }),
   );
+  // Registered after the 404 above, so it wins for run-by-run.
+  if (opts.runByRun) {
+    await page.route(/\/api\/weeks\/[^/]+\/recap\/run-by-run$/, (route) =>
+      route.fulfill({ contentType: "application/json", body: JSON.stringify(opts.runByRun) }),
+    );
+  }
   await page.route(/\/api\/weeks\/[^/]+\/recap\/subjective$/, (route) => {
     saved.push(route.request().postDataJSON());
     return route.fulfill({
@@ -281,7 +287,23 @@ test.describe("check-in", () => {
   });
 
   test("a return goal asks for pain from 0 to 10, and Your week shows the highest with its day", async ({ page }) => {
-    const saved = await serveCheckIn(page, { goalKind: "return" });
+    // Tue's drift is past the easy cap; Thu is a Threshold run, which has no cap.
+    const runByRun = {
+      unit: "imperial",
+      runs: [
+        {
+          workoutId: "r1", startedAt: "2026-10-20T16:00:00.000Z", titleDate: "Tue Oct 20", runType: "Easy Run",
+          distanceM: 10000, durationS: 3600, avgPaceS: 360, avgHeartRateBpm: 140,
+          drift: { driftBpm: 12 }, driftCapBpm: 10, weather: null, shoe: null,
+        },
+        {
+          workoutId: "r2", startedAt: "2026-10-22T16:00:00.000Z", titleDate: "Thu Oct 22", runType: "Threshold",
+          distanceM: 8000, durationS: 2400, avgPaceS: 300, avgHeartRateBpm: 165,
+          drift: { driftBpm: 18 }, driftCapBpm: null, weather: null, shoe: null,
+        },
+      ],
+    };
+    const saved = await serveCheckIn(page, { goalKind: "return", runByRun });
     await page.goto("/check-in");
 
     // Tue: no pain at all, which is an answer, not a blank.
@@ -312,8 +334,20 @@ test.describe("check-in", () => {
     await expect(page).toHaveURL(/\/review/);
     const card = page.getByRole("region", { name: "Your week", exact: true });
     await expect(card.getByRole("heading", { name: "Your check-in" })).toBeVisible();
-    await expect(card.getByRole("term").filter({ hasText: /^Pain$/ })).toHaveCount(1);
+    // One Pain line in the check-in card, plus one on each run's row.
+    const runs = card.getByRole("table", { name: "Your runs" });
+    await expect(runs.getByRole("term").filter({ hasText: /^Pain$/ })).toHaveCount(2);
+    await expect(card.getByRole("term").filter({ hasText: /^Pain$/ })).toHaveCount(3);
     await expect(card).toContainText("Highest 3/10 (Thu)");
+
+    // Each run's row carries its own score, and the drift label only past a cap.
+    const tue = runs.getByRole("row").filter({ hasText: "Tue Oct 20" });
+    const thu = runs.getByRole("row").filter({ hasText: "Thu Oct 22" });
+    await expect(tue).toContainText("0/10");
+    await expect(thu).toContainText("3/10 (Achilles stiff at the start)");
+    await expect(tue).toContainText("+12 bpm (high)");
+    await expect(thu).toContainText("+18 bpm");
+    await expect(thu).not.toContainText("(high)");
   });
 
   test("a strength answer with only the number done reaches Your week", async ({ page }) => {

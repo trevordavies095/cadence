@@ -7,6 +7,7 @@ import { migrate } from "../src/migrate.js";
 import { createExportTempoPort } from "../src/tempo/exportZip.js";
 import type {
   TempoPort,
+  TempoTimeSeriesPoint,
   TempoWeeklyRecapStats,
 } from "../src/tempo/port.js";
 import {
@@ -28,9 +29,11 @@ type Counts = {
 /**
  * The fixture week (2026-W43 in the export pack: two runs, 3600 s + 1800 s,
  * all Z1 by the per-second method) behind a counting fake port. With `stats`
- * the port also answers the weekly recap, as the live port does.
+ * the port also answers the weekly recap, as the live port does. With
+ * `spread`, the series' samples take turns across the five zones so the week
+ * lands in every one.
  */
-function fixturePort(stats?: TempoWeeklyRecapStats | "throws") {
+function fixturePort(stats?: TempoWeeklyRecapStats | "throws", spread = false) {
   const base = createExportTempoPort({ exportPath: FIXTURE_ZIP });
   const counts: Counts = {
     getWorkout: 0,
@@ -44,12 +47,13 @@ function fixturePort(stats?: TempoWeeklyRecapStats | "throws") {
     getBestEfforts: () => base.getBestEfforts(),
     async getWorkout(id) {
       counts.getWorkout += 1;
-      return base.getWorkout(id);
+      const d = await base.getWorkout(id);
+      return d && spread ? { ...d, timeSeries: spreadZones(d.timeSeries ?? []) } : d;
     },
     async getWorkoutTimeSeries(id) {
       counts.getWorkoutTimeSeries += 1;
       const d = await base.getWorkout(id);
-      return d?.timeSeries ?? [];
+      return spread ? spreadZones(d?.timeSeries ?? []) : (d?.timeSeries ?? []);
     },
   };
   if (stats !== undefined) {
@@ -60,6 +64,17 @@ function fixturePort(stats?: TempoWeeklyRecapStats | "throws") {
     };
   }
   return { port, counts };
+}
+
+/** One heart rate inside each of the fixture's five zones (129/150/167/176/186 bpm floors). */
+const SPREAD_BPM = [180, 140, 160, 170, 190];
+
+function spreadZones(series: TempoTimeSeriesPoint[]): TempoTimeSeriesPoint[] {
+  return series.map((p, i) =>
+    typeof p.heartRateBpm === "number"
+      ? { ...p, heartRateBpm: SPREAD_BPM[i % SPREAD_BPM.length]! }
+      : p,
+  );
 }
 
 /**
@@ -163,6 +178,38 @@ describe("zones section from the log's weekly zone aggregate (#12)", () => {
     );
     expect(aggregate.markdown).toBe(perSecond.markdown);
     expect(aggregate.markdown).toContain("Easy-running share: 100% (zones 1 and 2");
+  });
+
+  it("prints the same zone share either way on a week spread across every zone", async () => {
+    const perSecond = await zonesFor(fixturePort(undefined, true).port);
+    expect(perSecond.zoneSource).toBe("time-series");
+    const secs = perSecond.distribution.zoneSeconds;
+    // Every zone is used, so the comparison means something.
+    expect(secs.every((n) => n > 0)).toBe(true);
+    expect(perSecond.distribution.z1z2Pct).toBeLessThan(80);
+
+    // The log buckets on its own: a couple of seconds land in the next zone up.
+    const logged = secs.map((n, i) => n + (i === 0 ? -2 : i === 1 ? 2 : 0));
+    const stats: TempoWeeklyRecapStats = {
+      ...FIXTURE_LOG_STATS,
+      zoneSecondsZ1: { current: logged[0]! },
+      zoneSecondsZ2: { current: logged[1]! },
+      zoneSecondsZ3: { current: logged[2]! },
+      zoneSecondsZ4: { current: logged[3]! },
+      zoneSecondsZ5: { current: logged[4]! },
+    };
+    await resetAppTables();
+    await acceptAndReady();
+    const aggregate = await zonesFor(fixturePort(stats, true).port);
+
+    expect(aggregate.zoneSource).toBe("weekly-recap");
+    for (const z of ["z1", "z2", "z3", "z4", "z5"]) {
+      expect(
+        Math.abs(aggregate.distribution.zonePct[z]! - perSecond.distribution.zonePct[z]!),
+      ).toBeLessThanOrEqual(0.1);
+    }
+    expect(aggregate.distribution.z1z2Pct).toBeCloseTo(perSecond.distribution.z1z2Pct, 1);
+    expect(aggregate.markdown).toBe(perSecond.markdown);
   });
 
   it("falls back to the per-second method when any bucket is null", async () => {
