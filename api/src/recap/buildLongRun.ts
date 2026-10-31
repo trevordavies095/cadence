@@ -11,7 +11,6 @@ import {
   computeHalfSplit,
   finishAtGoalEffortLikely,
   formatSplitPacesFromDetail,
-  isLongRunType,
 } from "./longRunFormat.js";
 import type { LongRunDetail, RecapLongRunResult } from "./longRunTypes.js";
 import {
@@ -20,6 +19,7 @@ import {
   type RecapPhase,
 } from "./phase.js";
 import { computeRunHrMetrics } from "./runByRunHr.js";
+import { isLongRun } from "./runTypes.js";
 import { formatTitleDate } from "./runByRunFormat.js";
 import { loadRecapWorkoutDetails } from "./workoutDetails.js";
 import type { WeekWindow } from "./weekWindows.js";
@@ -38,7 +38,7 @@ function pickLongRunDetail(args: {
   );
   if (usable.length === 0) return undefined;
 
-  const typed = usable.filter((d) => isLongRunType(d.runType));
+  const typed = usable.filter((d) => isLongRun(d.runType));
   if (typed.length > 0) {
     const tMax = Math.max(...typed.map((d) => d.distanceM));
     const candidates = typed.filter((d) => d.distanceM === tMax);

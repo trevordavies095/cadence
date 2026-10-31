@@ -7,6 +7,7 @@ import type {
   TempoHeartRateZone,
   TempoTimeSeriesPoint,
 } from "../tempo/port.js";
+import { isEasyFamily, isLongRun } from "./runTypes.js";
 
 export type RunByRunHrSample = {
   elapsedSeconds: number;
@@ -191,14 +192,12 @@ export function computeRunHrMetrics(args: {
 const DRIFT_WARN = "⚠ above target (target ≤10 bpm)";
 const DRIFT_STRONG = "⚠⚠ well above target";
 
-/** tempo-cli driftSeverityLabel: only meaningful for Easy / Long runs. */
+/** tempo-cli driftSeverityLabel: only meaningful for easy-family / Long runs. */
 export function driftSeverityLabel(
   driftBpm: number,
   runType: string | null | undefined,
 ): string | undefined {
-  if (typeof runType !== "string") return undefined;
-  const t = runType.trim().toLowerCase();
-  if (!t.includes("easy") && !t.includes("long")) return undefined;
+  if (!isEasyFamily(runType) && !isLongRun(runType)) return undefined;
   const d = Math.abs(driftBpm);
   if (d <= 10) return undefined;
   return d <= 20 ? DRIFT_WARN : DRIFT_STRONG;

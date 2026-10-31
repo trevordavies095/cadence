@@ -6,16 +6,13 @@ import {
   formatSplitPaceList,
 } from "./runByRunFormat.js";
 import type { LongRunDetail, LongRunHalfSplit } from "./longRunTypes.js";
+import { isEasyFamily } from "./runTypes.js";
 
 const METERS_PER_MILE = 1609.344;
 /** Negative split when back half avg pace is faster than front by ≥5s/mi. */
 export const NEG_SPLIT_SEC_PER_MI = 5;
 /** Pace pickup vs overall avg on last ~3 mi window (sec/mi). */
 const GOAL_PACE_PICKUP_SEC_PER_MI = 10;
-
-export function isLongRunType(runType: unknown): boolean {
-  return typeof runType === "string" && runType.toLowerCase().includes("long");
-}
 
 function paceSecKmToSecMi(paceS: number): number {
   return paceS * (METERS_PER_MILE / 1000);
@@ -166,8 +163,7 @@ function buildTempoLongRunMarkdown(
     lines.push(formatHalfLine(detail.half, unit), "");
   }
   const windowLabel = unit === "imperial" ? "Last 3 mi" : "Last ~5 km window";
-  const runType = detail.runType.toLowerCase();
-  const assignedEasy = runType.includes("easy") || runType.includes("recovery");
+  const assignedEasy = isEasyFamily(detail.runType);
   if (
     detail.finishAtGoalEffort === null ||
     detail.finishAtGoalEffort === undefined

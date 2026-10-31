@@ -47,15 +47,11 @@ export async function buildRecapTrends(args: {
   const thisWeek: WeekWindow = { start: session.start, end: session.end };
   const fetchWin = trendsFetchWindow(thisWeek);
 
-  const [workouts, settings] = await Promise.all([
-    listAllWorkoutsInWindow(tempoPort, fetchWin),
-    tempoPort.getSettings(),
-  ]);
+  const workouts = await listAllWorkoutsInWindow(tempoPort, fetchWin);
 
   const trends = computeRecapTrendsSnapshot({
     isoWeek: session.isoWeek,
     thisWeek,
-    zones: settings.heartRateZones.zones,
     workouts,
   });
   const markdown = buildTrendsMarkdown(

@@ -4,14 +4,13 @@
  */
 
 import type {
-  TempoHeartRateZone,
   TempoUnitPreference,
   TempoWorkoutSummary,
 } from "../tempo/port.js";
 import { formatDistanceM } from "./format.js";
 import type { SectionDepth } from "./phase.js";
 import { formatPaceFromSecondsPerKm } from "./runByRunFormat.js";
-import { isLongRunType } from "./longRunFormat.js";
+import { isEasyFamily, isLongRun } from "./runTypes.js";
 import type { WeekWindow } from "./weekWindows.js";
 import { priorWeekWindows, shiftWeekWindow } from "./weekWindows.js";
 
@@ -36,42 +35,6 @@ export type RecapTrendsSnapshot = {
     longRunDistance?: string;
   };
 };
-
-function isEasyOrUntypedNonLong(runType: unknown): boolean {
-  if (runType === undefined || runType === null) return true;
-  const s = String(runType).trim();
-  if (s === "") return true;
-  const t = s.toLowerCase();
-  if (t.includes("long")) return false;
-  return t.includes("easy") || t.includes("recovery");
-}
-
-function z2MaxBpm(zones: readonly TempoHeartRateZone[]): number | undefined {
-  const z2 = [...zones]
-    .sort((a, b) => a.zoneNumber - b.zoneNumber)
-    .find((z) => z.zoneNumber === 2);
-  return z2 !== undefined && z2.maxBpm > 0 ? z2.maxBpm : undefined;
-}
-
-function qualifiesEasyAvgHr(
-  runType: string | null | undefined,
-  avgHr: number | null | undefined,
-  z2Max: number | undefined,
-): boolean {
-  if (avgHr === undefined || avgHr === null || !Number.isFinite(avgHr)) {
-    return false;
-  }
-  const blank =
-    runType === undefined ||
-    runType === null ||
-    (typeof runType === "string" && runType.trim() === "");
-  if (blank) {
-    return z2Max !== undefined && avgHr <= z2Max;
-  }
-  const t = String(runType).trim().toLowerCase();
-  if (t.includes("long")) return false;
-  return t.includes("easy") || t.includes("recovery");
-}
 
 type WeekAgg = {
   paceWeightedSum: number;
@@ -113,36 +76,28 @@ function finalizeWeekAgg(a: WeekAgg): {
   return { paceSecPerKm, avgEasyHr, longRunM };
 }
 
-function accumulate(
-  agg: WeekAgg,
-  w: TempoWorkoutSummary,
-  z2Max: number | undefined,
-): void {
+function accumulate(agg: WeekAgg, w: TempoWorkoutSummary): void {
   const dist = w.distanceM;
   if (Number.isFinite(dist) && dist > agg.maxDistanceM) agg.maxDistanceM = dist;
 
-  if (isLongRunType(w.runType) && Number.isFinite(dist) && dist > 0) {
+  if (isLongRun(w.runType) && Number.isFinite(dist) && dist > 0) {
     agg.longDistances.push(dist);
   }
 
-  if (!isEasyOrUntypedNonLong(w.runType)) return;
+  // Labels are trusted as set: no heart-rate gate on the easy family.
+  if (!isEasyFamily(w.runType)) return;
 
   const hr = w.avgHeartRateBpm;
-  if (qualifiesEasyAvgHr(w.runType, hr, z2Max) && typeof hr === "number") {
+  if (typeof hr === "number" && Number.isFinite(hr)) {
     agg.easyHrSum += hr;
     agg.easyHrCount += 1;
   }
 
   if (
-    z2Max !== undefined &&
-    typeof hr === "number" &&
-    Number.isFinite(hr) &&
-    hr <= z2Max &&
     Number.isFinite(w.avgPaceS) &&
     w.avgPaceS > 0 &&
     Number.isFinite(w.durationS) &&
-    w.durationS > 0 &&
-    isEasyOrUntypedNonLong(w.runType)
+    w.durationS > 0
   ) {
     agg.paceWeightedSum += w.avgPaceS * w.durationS;
     agg.paceWeight += w.durationS;
@@ -250,13 +205,11 @@ function workoutsInWindow(
 export function computeRecapTrendsSnapshot(args: {
   isoWeek: string;
   thisWeek: WeekWindow;
-  zones: readonly TempoHeartRateZone[];
   /** Workouts spanning W−3…W0. */
   workouts: readonly TempoWorkoutSummary[];
 }): RecapTrendsSnapshot {
   const weekLabels = buildTrendWeekLabels(args.isoWeek);
   const windows = trendWeekWindows(args.thisWeek);
-  const z2Max = z2MaxBpm(args.zones);
   const paceSeries: (number | null)[] = [];
   const hrSeries: (number | null)[] = [];
   const longSeries: (number | null)[] = [];
@@ -264,7 +217,7 @@ export function computeRecapTrendsSnapshot(args: {
   for (const win of windows) {
     const agg = emptyAgg();
     for (const w of workoutsInWindow(args.workouts, win)) {
-      accumulate(agg, w, z2Max);
+      accumulate(agg, w);
     }
     const f = finalizeWeekAgg(agg);
     paceSeries.push(f.paceSecPerKm);
