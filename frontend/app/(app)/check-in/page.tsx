@@ -29,6 +29,8 @@ import {
 } from "@/lib/api";
 import {
   finalizeAnswers,
+  isRaceRun,
+  RACE_RESULT_QUESTION,
   runTitle,
   STRESS_WORDS,
   summaryRows,
@@ -186,6 +188,7 @@ export default function CheckInPage() {
         felt: undefined,
         pain: undefined,
         pain_score: undefined,
+        result: undefined,
       });
     } else if (current.key === "sleep") {
       next = withWeeklyAnswer(next, { sleep_avg_hrs: undefined });
@@ -510,13 +513,24 @@ function RunQuestions({
         }
         onChange={(n) => onChange(withRunAnswer(answers, run.date, { rpe: n }))}
       />
-      <ScaleSlider
-        label="How did it go?"
-        low="Rough"
-        high="Great"
-        value={row?.felt}
-        onChange={(n) => onChange(withRunAnswer(answers, run.date, { felt: n }))}
-      />
+      {isRaceRun(run) ? (
+        <label className="flex flex-col gap-1.5">
+          <span className="font-medium">{RACE_RESULT_QUESTION}</span>
+          <Input
+            value={row?.result ?? ""}
+            onChange={(e) => onChange(withRunAnswer(answers, run.date, { result: e.target.value }))}
+            placeholder="Your time and how it compared"
+          />
+        </label>
+      ) : (
+        <ScaleSlider
+          label="How did it go?"
+          low="Rough"
+          high="Great"
+          value={row?.felt}
+          onChange={(n) => onChange(withRunAnswer(answers, run.date, { felt: n }))}
+        />
+      )}
       {painScale ? (
         <ScaleSlider
           label="How much did it hurt?"

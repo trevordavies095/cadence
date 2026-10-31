@@ -7,7 +7,7 @@ import {
   type SubjectiveAnswers,
   type UnitPreference,
 } from "@/lib/api";
-import { painHighestText, painText, STRENGTH_LABEL, strengthText } from "@/lib/checkIn";
+import { painHighestText, painText, raceResultLines, STRENGTH_LABEL, strengthText } from "@/lib/checkIn";
 import { describeError, type UiError } from "@/lib/errors";
 import { distanceLabel, durationLabel, localYmd, paceLabel } from "@/lib/units";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
@@ -237,7 +237,7 @@ export function YourWeek({
 
   const unit = summary?.unit ?? runs?.unit ?? "imperial";
   const answerByDate = new Map(answers?.runs.map((r) => [r.date, r]) ?? []);
-  const checkIn = answerLines(answers);
+  const checkIn = [...raceResultLines(answers), ...answerLines(answers)];
 
   if (!loaded) return <Muted>Loading your week…</Muted>;
 
@@ -300,6 +300,7 @@ export function YourWeek({
                       items={[
                         ["Effort", mine?.rpe != null ? `${mine.rpe}/10` : null],
                         ["Went", mine?.felt != null ? `${mine.felt}/10` : null],
+                        ["Result", mine?.result],
                         ["Pain", painText(mine)],
                       ]}
                     />

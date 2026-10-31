@@ -677,6 +677,8 @@ export type SubjectiveRunRow = {
   pain?: string;
   /** 0 to 10; 0 means no pain. Asked when the goal is a return to running. */
   pain_score?: number;
+  /** A Race run's answer to "How did it go against your target?". */
+  result?: string;
 };
 
 export type SubjectiveAnswers = {

@@ -40,6 +40,23 @@ export function runTitle(run: NeedsSubjectiveRun, unit: UnitPreference): string 
   return parts.filter(Boolean).join(" · ");
 }
 
+/** A run typed Race in the running log (Tempo's label, case-sensitive). */
+export function isRaceRun(run: { runType: string | null }): boolean {
+  return run.runType?.trim() === "Race";
+}
+
+/** The second run question: a race is asked against its target, and answered in words. */
+export const RACE_RESULT_QUESTION = "How did it go against your target?";
+
+/** "Race result" for the check-in card, with the day when the week had more than one race. */
+export function raceResultLines(answers: SubjectiveAnswers | null): Array<[string, string]> {
+  const results = (answers?.runs ?? []).filter((r) => r.result?.trim());
+  return results.map((r) => [
+    results.length > 1 ? `Race result, ${dayLabel(r.date)}` : "Race result",
+    r.result!.trim(),
+  ]);
+}
+
 function emptyToUndefined<T extends object>(value: T): T | undefined {
   return Object.keys(value).length > 0 ? value : undefined;
 }
@@ -52,7 +69,7 @@ export function withRunAnswer(
 ): SubjectiveAnswers {
   const existing = answers.runs.find((r) => r.date === date) ?? { date };
   const row: SubjectiveRunRow = { ...existing, ...patch };
-  for (const key of ["rpe", "felt", "pain", "pain_score"] as const) {
+  for (const key of ["rpe", "felt", "pain", "pain_score", "result"] as const) {
     if (row[key] === undefined || row[key] === "") delete row[key];
   }
   const others = answers.runs.filter((r) => r.date !== date);
@@ -144,6 +161,7 @@ export function summaryRows(
     if (row?.rpe !== undefined) parts.push(`Effort ${outOf10(row.rpe)}`);
     else if (run.apiRpe != null) parts.push(`Effort ${outOf10(run.apiRpe)} from your watch`);
     if (row?.felt !== undefined) parts.push(`Went ${outOf10(row.felt)}`);
+    if (row?.result) parts.push(`Result: ${row.result}`);
     if (row?.pain_score !== undefined) {
       parts.push(`Pain ${outOf10(row.pain_score)}${row.pain ? ` (${row.pain})` : ""}`);
     } else if (row?.pain) parts.push(`Pain: ${row.pain}`);
