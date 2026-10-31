@@ -45,6 +45,9 @@ export function WeekStrip({
           d.state !== "done" && d.state !== "rest" && !(distance != null && distance > 0)
             ? (d.plannedDurationS ?? null)
             : null;
+        // An other day with nothing planned to run: strength, cross-training or a walk.
+        const notARun =
+          d.dayType === "other" && d.plannedDistanceM == null && d.plannedDurationS == null;
         return (
           <li
             key={d.date}
@@ -71,7 +74,7 @@ export function WeekStrip({
                 (d.state === "upcoming" || d.state === "rest") && "text-muted",
               )}
             >
-              {STATE_LABEL[d.state]}
+              {d.state === "rest" && notARun ? "Not a run" : STATE_LABEL[d.state]}
               {d.state === "done" && d.isToday ? " · today" : ""}
             </span>
           </li>

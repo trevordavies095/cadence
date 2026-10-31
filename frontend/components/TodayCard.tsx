@@ -1,6 +1,6 @@
 import type { PrescribedDay, UnitPreference } from "@/lib/api";
 import { plannedRunLabel } from "@/lib/units";
-import { meaningful, weekdayLabel } from "./PlanDayRow";
+import { isNotARun, meaningful, weekdayLabel } from "./PlanDayRow";
 import { ButtonLink, Card, LabelValueList, Muted } from "./ui";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
@@ -16,7 +16,7 @@ const DAY_TYPE_LABEL: Record<string, string> = {
 export function sessionQuote(day: PrescribedDay, unit: UnitPreference): string {
   const parts = [
     weekdayLabel(day.date),
-    DAY_TYPE_LABEL[day.dayType] ?? day.dayType,
+    isNotARun(day) ? "Not a run" : (DAY_TYPE_LABEL[day.dayType] ?? day.dayType),
     day.run ? plannedRunLabel(day.run, unit) : null,
   ].filter(Boolean);
   return `About today's session (${parts.join(", ")}): `;
@@ -51,6 +51,8 @@ export function TodayCard({
   const structure = meaningful(run?.structure);
   const strength = meaningful(today.strength);
   const note = meaningful(today.notes);
+  // Strength, cross-training or a walk: the notes say what the day is.
+  const notRun = isNotARun(today) && note != null;
 
   return (
     <Card className="flex flex-col gap-3" aria-label="Today">
@@ -61,9 +63,13 @@ export function TodayCard({
         <h2 className="m-0 text-2xl font-semibold">
           {run
             ? `${DAY_TYPE_LABEL[today.dayType] ?? today.dayType} · ${plannedRunLabel(run, unit)}`
-            : (DAY_TYPE_LABEL[today.dayType] ?? "Rest day")}
+            : notRun
+              ? "Not a run"
+              : (DAY_TYPE_LABEL[today.dayType] ?? "Rest day")}
         </h2>
       </div>
+
+      {notRun ? <p className="m-0">{note}</p> : null}
 
       {structure ? <p className="m-0">{structure}</p> : null}
       <LabelValueList
@@ -73,7 +79,7 @@ export function TodayCard({
           ["Strength", strength],
         ]}
       />
-      {note ? <p className="m-0 text-muted">{note}</p> : null}
+      {note && !notRun ? <p className="m-0 text-muted">{note}</p> : null}
 
       <div>
         <ButtonLink

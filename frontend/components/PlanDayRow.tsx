@@ -19,6 +19,11 @@ export function meaningful(text: string | null | undefined): string | null {
   return /^(none|rest|n\/a)\.?$/i.test(t) ? null : t;
 }
 
+/** A planned day that is not a run: an other day with no run, such as strength or a walk. */
+export function isNotARun(day: Pick<PrescribedDay, "dayType" | "run">): boolean {
+  return day.dayType === "other" && day.run == null;
+}
+
 const DAY_TYPE_LABEL: Record<string, string> = {
   easy: "Easy run",
   quality: "Quality session",
@@ -42,6 +47,8 @@ export function PlanDayRow({
   const notes = meaningful(day.notes);
   const shoes = meaningful(run?.shoes);
   const target = meaningful(run?.paceOrHr);
+  // Strength, cross-training or a walk: the notes say what it is, in place of figures.
+  const notRun = isNotARun(day) && notes != null;
   return (
     <li
       aria-current={isToday ? "date" : undefined}
@@ -69,6 +76,11 @@ export function PlanDayRow({
           {plannedRunLabel(run, unit)}
           {meaningful(run.structure) ? ` · ${run.structure}` : ""}
         </p>
+      ) : notRun ? (
+        <p className="m-0">
+          <span className="text-muted">Not a run · </span>
+          {notes}
+        </p>
       ) : (
         <p className="m-0 text-muted">No run</p>
       )}
@@ -79,7 +91,7 @@ export function PlanDayRow({
           ["Strength", strength],
         ]}
       />
-      {notes ? <p className="m-0 text-muted">{notes}</p> : null}
+      {notes && !notRun ? <p className="m-0 text-muted">{notes}</p> : null}
     </li>
   );
 }
