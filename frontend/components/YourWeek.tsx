@@ -20,7 +20,16 @@ type SummaryRow = {
   threeWkAvg: string;
   delta: string;
 };
-type Summary = { unit: UnitPreference; rows: SummaryRow[] };
+/** The goal's lines above the numbers: hard minutes, quality sessions, run time, longest run. */
+type GoalLine = {
+  id: string;
+  label: string;
+  /** Null for a line that is a whole sentence. */
+  value: string | null;
+  headline: boolean;
+  flag: boolean;
+};
+type Summary = { unit: UnitPreference; rows: SummaryRow[]; goalLines?: GoalLine[] };
 type Zones = {
   distribution: {
     zonePct: { z1: number; z2: number; z3: number; z4: number; z5: number };
@@ -263,6 +272,22 @@ export function YourWeek({
         <Notice title="You skipped this week’s check-in">
           Coach Cade worked from your runs alone, without how the week felt to you.
         </Notice>
+      ) : null}
+
+      {summary?.goalLines && summary.goalLines.length > 0 ? (
+        <ul aria-label="Your week at a glance" className="m-0 flex list-none flex-col gap-1 p-0">
+          {summary.goalLines.map((l) => (
+            <li
+              key={l.id + l.label}
+              className={cx(
+                l.headline ? "text-lg font-semibold text-ink" : "text-ink",
+                l.flag && "font-semibold text-warn",
+              )}
+            >
+              {l.value === null ? l.label : `${l.label}: ${l.value}`}
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {summary ? (

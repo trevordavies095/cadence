@@ -117,6 +117,10 @@ test.describe("History", () => {
     ).toHaveText("Oct 12 – 18");
     const report = page.getByRole("region", { name: "Your week", exact: true });
     await expect(report.getByRole("table", { name: "This week in numbers" })).toBeVisible();
+    // Every goal sees the week's hard minutes above the numbers.
+    await expect(
+      report.getByRole("list", { name: "Your week at a glance" }).getByText(/^Hard minutes \(zones 4 and 5\): /),
+    ).toBeVisible();
 
     // Read-only: nothing to send, retry or redo, and a way back.
     await expect(page.getByRole("region", { name: "The conversation" })).toBeVisible();
