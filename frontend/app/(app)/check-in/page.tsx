@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import {
   ensureCurrentWeek,
+  fetchGoalKind,
   fetchHome,
   fetchWeekRecap,
   saveSubjectiveAnswers,
@@ -65,6 +66,8 @@ export default function CheckInPage() {
   const [confirmSkipAll, setConfirmSkipAll] = useState(false);
   // True while changing one answer from the summary, so Next goes straight back to it.
   const [fromSummary, setFromSummary] = useState(false);
+  // A return to running asks for pain as a 0 to 10 score beside the words.
+  const [painScale, setPainScale] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,6 +99,13 @@ export default function CheckInPage() {
           if (today && saturday && today < saturday) setOpens(saturday);
         } catch {
           /* open: the server decides whether the check-in can be saved */
+        }
+        try {
+          const kind = await fetchGoalKind();
+          if (cancelled) return;
+          setPainScale(kind === "return");
+        } catch {
+          /* no goal to read: pain stays a line of words */
         }
         setLoaded(true);
       } catch (err) {
@@ -171,7 +181,12 @@ export default function CheckInPage() {
     if (!current || !answers) return;
     let next = answers;
     if (current.kind === "run") {
-      next = withRunAnswer(next, current.run.date, { rpe: undefined, felt: undefined, pain: undefined });
+      next = withRunAnswer(next, current.run.date, {
+        rpe: undefined,
+        felt: undefined,
+        pain: undefined,
+        pain_score: undefined,
+      });
     } else if (current.key === "sleep") {
       next = withWeeklyAnswer(next, { sleep_avg_hrs: undefined });
     } else if (current.key === "stress") {
@@ -301,6 +316,7 @@ export default function CheckInPage() {
             run={current.run}
             unit={unit}
             answers={answers}
+            painScale={painScale}
             onChange={(next) => setAnswers(next)}
           />
         ) : current.key === "sleep" ? (
@@ -468,11 +484,13 @@ function RunQuestions({
   run,
   unit,
   answers,
+  painScale,
   onChange,
 }: {
   run: NeedsSubjectiveRun & { date: string };
   unit: UnitPreference;
   answers: SubjectiveAnswers;
+  painScale: boolean;
   onChange: (next: SubjectiveAnswers) => void;
 }) {
   const row = answers.runs.find((r) => r.date === run.date);
@@ -499,6 +517,16 @@ function RunQuestions({
         value={row?.felt}
         onChange={(n) => onChange(withRunAnswer(answers, run.date, { felt: n }))}
       />
+      {painScale ? (
+        <ScaleSlider
+          label="How much did it hurt?"
+          low="None"
+          high="Worst"
+          min={0}
+          value={row?.pain_score}
+          onChange={(n) => onChange(withRunAnswer(answers, run.date, { pain_score: n }))}
+        />
+      ) : null}
       <label className="flex flex-col gap-1.5">
         <span className="font-medium">Any pain or niggles?</span>
         <Input

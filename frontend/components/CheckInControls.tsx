@@ -4,7 +4,7 @@ import { useId } from "react";
 import { cx } from "@/components/ui";
 
 /**
- * A 1 to 10 slider with a word at each end. It starts unanswered, so skipping a
+ * A 1 to 10 slider (0 to 10 with min 0) with a word at each end. It starts unanswered, so skipping a
  * question and answering "5" are different things.
  */
 export function ScaleSlider({
@@ -14,6 +14,7 @@ export function ScaleSlider({
   value,
   onChange,
   hint,
+  min = 1,
 }: {
   label: string;
   low: string;
@@ -21,6 +22,7 @@ export function ScaleSlider({
   value: number | undefined;
   onChange: (next: number) => void;
   hint?: string;
+  min?: 0 | 1;
 }) {
   const labelId = useId();
   const answered = value !== undefined;
@@ -36,7 +38,7 @@ export function ScaleSlider({
       </div>
       <input
         type="range"
-        min={1}
+        min={min}
         max={10}
         step={1}
         value={value ?? 5}

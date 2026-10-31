@@ -52,7 +52,7 @@ export function withRunAnswer(
 ): SubjectiveAnswers {
   const existing = answers.runs.find((r) => r.date === date) ?? { date };
   const row: SubjectiveRunRow = { ...existing, ...patch };
-  for (const key of ["rpe", "felt", "pain"] as const) {
+  for (const key of ["rpe", "felt", "pain", "pain_score"] as const) {
     if (row[key] === undefined || row[key] === "") delete row[key];
   }
   const others = answers.runs.filter((r) => r.date !== date);
@@ -144,7 +144,9 @@ export function summaryRows(
     if (row?.rpe !== undefined) parts.push(`Effort ${outOf10(row.rpe)}`);
     else if (run.apiRpe != null) parts.push(`Effort ${outOf10(run.apiRpe)} from your watch`);
     if (row?.felt !== undefined) parts.push(`Went ${outOf10(row.felt)}`);
-    if (row?.pain) parts.push(`Pain: ${row.pain}`);
+    if (row?.pain_score !== undefined) {
+      parts.push(`Pain ${outOf10(row.pain_score)}${row.pain ? ` (${row.pain})` : ""}`);
+    } else if (row?.pain) parts.push(`Pain: ${row.pain}`);
     const answered = row !== undefined;
     return {
       step,
@@ -163,4 +165,24 @@ export function summaryRows(
   ];
   weekly.forEach(([label, answer], i) => rows.push({ step: runs.length + i, label, answer }));
   return rows;
+}
+
+/** One run's pain for Your week: "3/10 (Tight left calf)", the score or the words alone, or null. */
+export function painText(row: SubjectiveRunRow | undefined): string | null {
+  const words = row?.pain?.trim() || null;
+  if (row?.pain_score === undefined) return words;
+  return words ? `${row.pain_score}/10 (${words})` : `${row.pain_score}/10`;
+}
+
+/** "Highest 3/10 (Thu)": the week's highest pain score and each day that reached it. Null when none. */
+export function painHighestText(runs: SubjectiveRunRow[]): string | null {
+  const scored = runs.filter((r) => r.pain_score !== undefined);
+  if (scored.length === 0) return null;
+  const highest = Math.max(...scored.map((r) => r.pain_score as number));
+  const days = scored
+    .filter((r) => r.pain_score === highest)
+    .map((r) => r.date)
+    .sort()
+    .map((date) => dayLabel(date).split(" ")[0]);
+  return `Highest ${highest}/10 (${days.join(", ")})`;
 }

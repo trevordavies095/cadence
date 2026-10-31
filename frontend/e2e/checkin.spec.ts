@@ -49,9 +49,20 @@ const REPORT = {
   sections: { summary: "", zones: "", runByRun: "" },
 };
 
-async function serveCheckIn(page: Page) {
+async function serveCheckIn(page: Page, opts: { goalKind?: string } = {}) {
   const saved: unknown[] = [];
   const skips: string[] = [];
+  // No goal unless a test gives one: pain stays a line of words.
+  await page.route(/\/api\/goal$/, (route) =>
+    opts.goalKind
+      ? route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            id: 1, goal: { kind: opts.goalKind }, source: "onboarding", createdAt: "2026-10-01T12:00:00.000Z",
+          }),
+        })
+      : route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "goal_not_found" }) }),
+  );
   await page.route(/\/api\/weeks\/current$/, (route) =>
     route.fulfill({
       status: 200,
@@ -258,6 +269,51 @@ test.describe("check-in", () => {
     await expect(card.getByRole("heading", { name: "Your check-in" })).toBeVisible();
     await expect(card.getByRole("term").filter({ hasText: "Strength, rehab or cross-training" })).toHaveCount(1);
     await expect(card).toContainText("2 of 3 planned · One swim, one physio session");
+  });
+
+  test("without a return goal, pain is the line of words only", async ({ page }) => {
+    await serveCheckIn(page, { goalKind: "race" });
+    await page.goto("/check-in");
+    const first = page.getByRole("region", { name: /Tue Oct 20/ });
+    await expect(first.getByRole("slider")).toHaveCount(2);
+    await expect(first.getByRole("slider", { name: "How much did it hurt?" })).toHaveCount(0);
+    await expect(first.getByRole("textbox")).toBeVisible();
+  });
+
+  test("a return goal asks for pain from 0 to 10, and Your week shows the highest with its day", async ({ page }) => {
+    const saved = await serveCheckIn(page, { goalKind: "return" });
+    await page.goto("/check-in");
+
+    // Tue: no pain at all, which is an answer, not a blank.
+    const first = page.getByRole("region", { name: /Tue Oct 20/ });
+    const tuePain = first.getByRole("slider", { name: "How much did it hurt?" });
+    await expect(tuePain).toHaveAttribute("min", "0");
+    await tuePain.fill("0");
+    await expect(first).toContainText("0 of 10");
+    await next(page).click();
+    // Thu: 3 of 10 with words.
+    const second = page.getByRole("region", { name: /Thu Oct 22/ });
+    await second.getByRole("slider", { name: "How much did it hurt?" }).fill("3");
+    await second.getByRole("textbox").fill("Achilles stiff at the start");
+    await next(page).click();
+    for (let i = 0; i < 6; i += 1) await page.getByRole("button", { name: "Skip", exact: true }).click();
+
+    await expect(page.getByLabel("Your answers")).toContainText("Pain 3 of 10 (Achilles stiff at the start)");
+    await page.getByRole("button", { name: "Finish check-in" }).click();
+    await expect.poll(() => saved.length).toBe(1);
+    expect(saved[0]).toEqual({
+      week: "2026-W43",
+      runs: [
+        { date: "2026-10-20", pain_score: 0 },
+        { date: "2026-10-22", rpe: 6, pain_score: 3, pain: "Achilles stiff at the start" },
+      ],
+    });
+
+    await expect(page).toHaveURL(/\/review/);
+    const card = page.getByRole("region", { name: "Your week", exact: true });
+    await expect(card.getByRole("heading", { name: "Your check-in" })).toBeVisible();
+    await expect(card.getByRole("term").filter({ hasText: /^Pain$/ })).toHaveCount(1);
+    await expect(card).toContainText("Highest 3/10 (Thu)");
   });
 
   test("a strength answer with only the number done reaches Your week", async ({ page }) => {

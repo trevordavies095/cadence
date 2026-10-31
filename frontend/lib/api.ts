@@ -657,7 +657,7 @@ export type NeedsSubjectiveRun = {
 
 export type SubjectiveQuestionnaire = {
   order: string[];
-  per_run: { rpe: string; felt: string; pain: string };
+  per_run: { rpe: string; felt: string; pain: string; pain_score?: string };
   weekly: {
     sleep_avg_hrs: string;
     sleep_range_hrs: string;
@@ -675,6 +675,8 @@ export type SubjectiveRunRow = {
   rpe?: number;
   felt?: number;
   pain?: string;
+  /** 0 to 10; 0 means no pain. Asked when the goal is a return to running. */
+  pain_score?: number;
 };
 
 export type SubjectiveAnswers = {
@@ -884,4 +886,15 @@ export async function fetchDossierChanges(): Promise<{
   changes: DossierProposal[];
 }> {
   return readJson(await fetch("/api/dossier/changes"));
+}
+
+/** What the athlete is training for; "return" is getting back to running. */
+export type GoalKind = "race" | "speed" | "fitness" | "return";
+
+/** The current goal's kind, or null when no goal is stored. */
+export async function fetchGoalKind(): Promise<GoalKind | null> {
+  const res = await fetch("/api/goal");
+  if (res.status === 404) return null;
+  const body = await readJson<{ goal: { kind: GoalKind } }>(res);
+  return body.goal.kind;
 }

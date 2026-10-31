@@ -7,7 +7,7 @@ import {
   type SubjectiveAnswers,
   type UnitPreference,
 } from "@/lib/api";
-import { STRENGTH_LABEL, strengthText } from "@/lib/checkIn";
+import { painHighestText, painText, STRENGTH_LABEL, strengthText } from "@/lib/checkIn";
 import { describeError, type UiError } from "@/lib/errors";
 import { distanceLabel, durationLabel, localYmd, paceLabel } from "@/lib/units";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
@@ -154,9 +154,12 @@ function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
   );
 }
 
-function answerLines(a: SubjectiveAnswers["weekly"]): Array<[string, string]> {
-  if (!a) return [];
+function answerLines(answers: SubjectiveAnswers | null): Array<[string, string]> {
   const rows: Array<[string, string]> = [];
+  const pain = painHighestText(answers?.runs ?? []);
+  if (pain) rows.push(["Pain", pain]);
+  const a = answers?.weekly;
+  if (!a) return rows;
   if (a.sleep_avg_hrs != null) {
     const range = a.sleep_range_hrs
       ? ` (from ${a.sleep_range_hrs[0]} to ${a.sleep_range_hrs[1]})`
@@ -234,7 +237,7 @@ export function YourWeek({
 
   const unit = summary?.unit ?? runs?.unit ?? "imperial";
   const answerByDate = new Map(answers?.runs.map((r) => [r.date, r]) ?? []);
-  const checkIn = answerLines(answers?.weekly);
+  const checkIn = answerLines(answers);
 
   if (!loaded) return <Muted>Loading your week…</Muted>;
 
@@ -297,7 +300,7 @@ export function YourWeek({
                       items={[
                         ["Effort", mine?.rpe != null ? `${mine.rpe}/10` : null],
                         ["Went", mine?.felt != null ? `${mine.felt}/10` : null],
-                        ["Pain", mine?.pain],
+                        ["Pain", painText(mine)],
                       ]}
                     />
                   </th>
