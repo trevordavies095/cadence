@@ -25,6 +25,7 @@ import {
   deleteAnthropicConnection,
   deleteTempoConnection,
   fetchGoal,
+  fetchOnboarding,
   fetchSettings,
   putAnthropicConnection,
   putTempoConnection,
@@ -37,7 +38,13 @@ import {
 } from "@/lib/api";
 import { GoalFields } from "@/components/GoalFields";
 import { NoteCard, toNote } from "@/components/NoteCard";
-import { draftGoal, goalDraft, goalProblem, type GoalDraft } from "@/lib/onboarding";
+import {
+  draftGoal,
+  EMPTY_GOAL_DRAFT,
+  goalDraft,
+  goalProblem,
+  type GoalDraft,
+} from "@/lib/onboarding";
 
 type GateState = "loading" | "open";
 
@@ -75,8 +82,9 @@ function ConfirmClear({
 /**
  * What the athlete is training for, with Change. After the first answers this is the only
  * way to change the goal: saving stores it and tells Coach Cade, who notes it in About you.
+ * An athlete who onboarded before goals were stored has none yet, and sets one here.
  */
-function TrainingGoalSection({ initial }: { initial: StoredGoal }) {
+function TrainingGoalSection({ initial }: { initial: StoredGoal | null }) {
   const [stored, setStored] = useState(initial);
   const [draft, setDraft] = useState<GoalDraft | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -85,7 +93,7 @@ function TrainingGoalSection({ initial }: { initial: StoredGoal }) {
   const [saving, setSaving] = useState(false);
 
   function startChange() {
-    setDraft(goalDraft(stored.goal));
+    setDraft(stored ? goalDraft(stored.goal) : { ...EMPTY_GOAL_DRAFT });
     setProblem(null);
     setError(null);
     setNote(null);
@@ -139,10 +147,19 @@ function TrainingGoalSection({ initial }: { initial: StoredGoal }) {
         </form>
       ) : (
         <>
-          {stored.sentence ? <p className="m-0">{stored.sentence}</p> : null}
-          <Muted>Coach Cade plans every week around this.</Muted>
+          {stored ? (
+            <>
+              {stored.sentence ? <p className="m-0">{stored.sentence}</p> : null}
+              <Muted>Coach Cade plans every week around this.</Muted>
+            </>
+          ) : (
+            <Muted>
+              No goal set yet. Until you set one, Coach Cade reads your weeks as training to stay
+              fit.
+            </Muted>
+          )}
           <div>
-            <Button onClick={startChange}>Change</Button>
+            <Button onClick={startChange}>{stored ? "Change" : "Set your goal"}</Button>
           </div>
         </>
       )}
@@ -167,6 +184,7 @@ export default function SettingsPage() {
   const [anthropic, setAnthropic] = useState<AnthropicConnection | null>(null);
   const [sources, setSources] = useState<SettingsSources | null>(null);
   const [goal, setGoal] = useState<StoredGoal | null>(null);
+  const [onboarded, setOnboarded] = useState(false);
   const [appearance, setAppearance] = useState<AppearancePreference>("dark");
   const [confirming, setConfirming] = useState<"tempo" | "anthropic" | null>(null);
   const [tempoBaseUrl, setTempoBaseUrl] = useState("http://localhost:5001");
@@ -180,13 +198,15 @@ export default function SettingsPage() {
     let cancelled = false;
     async function check() {
       try {
-        const [settings, storedGoal] = await Promise.all([
+        const [settings, storedGoal, onboarding] = await Promise.all([
           fetchSettings(),
           // The goal section is extra: if it cannot load, the connections still can.
           fetchGoal().catch(() => null),
+          fetchOnboarding().catch(() => null),
         ]);
         if (cancelled) return;
         setGoal(storedGoal);
+        setOnboarded(onboarding != null && onboarding.status !== "needs_onboarding");
         setTempo(settings.tempo);
         setAnthropic(settings.anthropic);
         setSources({
@@ -303,7 +323,7 @@ export default function SettingsPage() {
       </PageHead>
 
       {/* No goal before the first answers: onboarding asks for it. */}
-      {goal ? <TrainingGoalSection initial={goal} /> : null}
+      {goal || onboarded ? <TrainingGoalSection initial={goal} /> : null}
 
       <section className="flex flex-col gap-3" aria-label="Tempo connection">
         <SectionTitle>Tempo</SectionTitle>

@@ -64,4 +64,26 @@ test.describe("what you're training for, in Settings", () => {
     await expect(changes).toContainText("Your correction");
     await expect(changes).toContainText("My goal is now general fitness");
   });
+
+  test("an athlete who onboarded before goals were stored can set one", async ({ page }) => {
+    // Onboarding is done but no goal row exists, as for anyone onboarded before goals.
+    await page.route("**/api/goal", (route) =>
+      route.request().method() === "GET"
+        ? route.fulfill({ status: 404, json: { error: "no_goal" } })
+        : route.fallback(),
+    );
+    await page.goto("/settings");
+    const section = page.getByRole("region", { name: "What you’re training for" });
+    await expect(section).toContainText("No goal set yet.");
+
+    await section.getByRole("button", { name: "Set your goal" }).click();
+    await expect(section.getByRole("radio", { name: "Stay fit" })).toHaveAttribute("aria-checked", "false");
+    await section.getByRole("radio", { name: "Stay fit" }).click();
+    const saving = page.waitForResponse(
+      (r) => r.url().endsWith("/api/goal") && r.request().method() === "PUT",
+    );
+    await section.getByRole("button", { name: "Save" }).click();
+    expect((await saving).status()).toBe(201);
+    await expect(section).toContainText("General fitness, no race planned.");
+  });
 });

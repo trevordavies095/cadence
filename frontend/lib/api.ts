@@ -309,6 +309,13 @@ export type OnboardingGate =
       updatedAt: string;
     }
   | {
+      /** About you exists: the first answers are done. */
+      status: "complete";
+      note: string;
+      answers: OnboardingAnswers | null;
+      dossierVersionId: number;
+    }
+  | {
       status: "complete";
       note: string;
       answers: OnboardingAnswers | null;
