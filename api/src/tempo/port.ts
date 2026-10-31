@@ -175,21 +175,52 @@ export type TempoBestEfforts = {
   distances: TempoBestEffort[];
 };
 
-/** One metric of GET /stats/weekly-recap: current week, previous week, 3-week trailing mean. */
+/**
+ * One metric of GET /stats/weekly-recap: current week, previous week, 3-week
+ * trailing mean, and current − previous. A field Tempo sends as null (or
+ * omits) is absent here; a block with no numbers at all is absent on the stats.
+ */
 export type TempoWeeklyRecapMetric = {
   current?: number;
   previous?: number;
   trailingAvg?: number;
+  deltaVsPrevious?: number;
 };
 
-/** Parsed `metrics` of GET /stats/weekly-recap (distance m, duration s, elevation m). */
+/**
+ * Parsed `metrics` of GET /stats/weekly-recap (distance m, duration s,
+ * elevation m). Field names mirror Tempo's wire names.
+ */
 export type TempoWeeklyRecapStats = {
   runs?: TempoWeeklyRecapMetric;
   distanceM?: TempoWeeklyRecapMetric;
+  /** Elapsed time summed per run. */
   durationS?: TempoWeeklyRecapMetric;
   elevationGainM?: TempoWeeklyRecapMetric;
   relativeEffortSum?: TempoWeeklyRecapMetric;
+  /** Null-bucket weeks (no Easy Run / Recovery) leave `current` etc. absent. */
   easyRunAvgHeartRateBpm?: TempoWeeklyRecapMetric;
+  /** Moving time summed per run, falling back to elapsed when a run has none. */
+  movingTimeS?: TempoWeeklyRecapMetric;
+  /** Longest single run by distance; 0 for a week with no runs. */
+  longestRunDistanceM?: TempoWeeklyRecapMetric;
+  /** Longest single run by moving (else elapsed) time; may be a different run. */
+  longestRunDurationS?: TempoWeeklyRecapMetric;
+  /**
+   * Current week only: run counts keyed by exact run type (zero counts
+   * omitted, untyped runs under `Unspecified`). `{}` for a week with no runs.
+   */
+  runsByType?: Record<string, number>;
+  /**
+   * Seconds in HR zone 1..5, summed from each run's stored zone seconds (the
+   * values the log shows on a workout). Null buckets — a week with no HR
+   * series — leave the field absent, so `current` absent means "unknown".
+   */
+  zoneSecondsZ1?: TempoWeeklyRecapMetric;
+  zoneSecondsZ2?: TempoWeeklyRecapMetric;
+  zoneSecondsZ3?: TempoWeeklyRecapMetric;
+  zoneSecondsZ4?: TempoWeeklyRecapMetric;
+  zoneSecondsZ5?: TempoWeeklyRecapMetric;
 };
 
 /** Query for GET /stats/weekly-recap (tempo-cli params). */
