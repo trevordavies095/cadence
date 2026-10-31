@@ -151,7 +151,7 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
   });
 
   it("marks a race that has passed and drops weeks to race", async () => {
-    const past = { kind: "race", distance: "10k", raceDate: "2026-10-11" };
+    const past = { kind: "race", distance: "10k", raceName: "Harbour 10k", raceDate: "2026-10-11" };
     const { app, id } = await ready(past);
     const lastPacket = await chat(app, id);
     expect(lastPacket.packet.goal).toEqual(past);

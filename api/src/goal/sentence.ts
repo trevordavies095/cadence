@@ -71,3 +71,12 @@ export function goalSentenceProblem(goal: TrainingGoal): string | null {
 export function goalSentence(goal: TrainingGoal): string {
   return SENTENCES[goal.kind](goal);
 }
+
+/**
+ * What the athlete tells Coach Cade when they change the goal in Settings, sent through
+ * Fix something: "My goal is now general fitness, no race planned."
+ */
+export function goalChangeMessage(goal: TrainingGoal): string {
+  const sentence = goalSentence(goal);
+  return `My goal is now ${sentence.charAt(0).toLowerCase()}${sentence.slice(1)}`;
+}

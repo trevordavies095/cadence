@@ -206,7 +206,7 @@ describe("POST /week/reply week-loop (export TempoPort + LlmPort stub)", () => {
     await app.request("/goal", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ kind: "race", distance: "marathon" }),
+      body: JSON.stringify({ kind: "race", distance: "marathon", raceName: "Lakeshore Marathon" }),
     });
 
     const week = await json(

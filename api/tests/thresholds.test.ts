@@ -155,7 +155,7 @@ describe("athlete settings carry thresholds and observed max HR (coaching-bias 1
 
 /** Sun Oct 25 2026: focus week 2026-W43. */
 const SUN = "2026-10-25T15:00:00.000Z";
-const HALF = { kind: "race", distance: "half", raceDate: "2027-03-07" } as const;
+const HALF = { kind: "race", distance: "half", raceName: "Shamrock Half", raceDate: "2027-03-07" } as const;
 
 describe("the packet's coaching block carries thresholds and max HR (coaching-bias 15)", () => {
   beforeAll(async () => {

@@ -67,7 +67,9 @@ describe("training goal routes", () => {
 
     const read = await app.request("/goal");
     expect(read.status).toBe(200);
-    expect(await json(read)).toEqual(saved);
+    const { correction: _none, ...version } = saved;
+    expect(_none).toBeNull();
+    expect(await json(read)).toEqual(version);
   });
 
   it("PUT accepts the goal wrapped in { goal }", async () => {
