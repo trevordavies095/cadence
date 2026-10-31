@@ -56,6 +56,16 @@ export type TempoWorkoutSplit = {
   startElapsedS?: number | null;
   endElapsedS?: number | null;
   startDistanceM?: number | null;
+  /**
+   * Device-lap intensity, snake_case (active, rest, warmup, cooldown,
+   * recovery, interval, other). Null for distance splits and for sources
+   * without it (HealthKit, Strava CSV, GPX).
+   */
+  intensity?: string | null;
+  /** Device-lap trigger, snake_case (manual, time, distance, session_end, …). */
+  trigger?: string | null;
+  /** Structured-workout step this lap belongs to. */
+  stepIndex?: number | null;
 };
 
 /** Sparse time-series sample for recap HR analytics (no GPS). */

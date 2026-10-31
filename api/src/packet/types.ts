@@ -41,6 +41,10 @@ export type ModelPacketAttachment = {
     durationS?: number | null;
     paceS?: number | null;
     avgHeartRateBpm?: number | null;
+    /** Device-lap intensity (active, rest, interval, …); null when not sent. */
+    intensity?: string | null;
+    trigger?: string | null;
+    stepIndex?: number | null;
   }>;
 };
 

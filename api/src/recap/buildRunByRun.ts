@@ -20,6 +20,8 @@ import {
   formatSimilarRouteText,
   formatWeather,
 } from "./similarRouteLine.js";
+import { formatRepSummary, summarizeReps } from "./repSummary.js";
+import { isQualityFamily, isRace } from "./runTypes.js";
 import { loadRecapWorkoutDetails } from "./workoutDetails.js";
 import type {
   RecapRunByRunResult,
@@ -97,10 +99,14 @@ function mapSplits(detail: TempoWorkoutDetail): RunByRunSplit[] {
   return detail.splits.map((s) => {
     const split: RunByRunSplit = {};
     if (s.idx !== undefined) split.idx = s.idx;
+    if (s.kind !== undefined) split.kind = s.kind;
     if (s.paceS !== undefined) split.paceS = s.paceS;
     if (s.distanceM !== undefined) split.distanceM = s.distanceM;
     if (s.durationS !== undefined) split.durationS = s.durationS;
     if (s.avgHeartRateBpm !== undefined) split.avgHeartRateBpm = s.avgHeartRateBpm;
+    if (s.intensity !== undefined) split.intensity = s.intensity;
+    if (s.trigger !== undefined) split.trigger = s.trigger;
+    if (s.stepIndex !== undefined) split.stepIndex = s.stepIndex;
     return split;
   });
 }
@@ -191,6 +197,10 @@ function buildEntry(args: {
   if (detail.notes !== undefined) entry.notes = detail.notes;
   if (detail.shoeId !== undefined) entry.shoeId = detail.shoeId;
   if (splitPacesFormatted) entry.splitPacesFormatted = splitPacesFormatted;
+  if (isQualityFamily(runType) || isRace(runType)) {
+    const reps = summarizeReps(splits, detail.avgPaceS);
+    if (reps) entry.repSummary = formatRepSummary(reps, unit);
+  }
   if (hr.drift) {
     entry.drift = hr.drift;
     const severity = driftSeverityLabel(hr.drift.driftBpm, detail.runType);

@@ -124,6 +124,11 @@ function formatOneRunMarkdown(
   lines.push(`Splits: ${run.splitPacesFormatted ?? "n/a"}`);
   lines.push("");
 
+  if (run.repSummary) {
+    lines.push(`Reps: ${run.repSummary}`);
+    lines.push("");
+  }
+
   if (run.drift) {
     const sign = run.drift.driftBpm >= 0 ? "+" : "";
     const severity = run.driftSeverity ? ` ${run.driftSeverity}` : "";

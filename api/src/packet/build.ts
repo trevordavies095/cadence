@@ -61,6 +61,12 @@ function mapSplit(
   if (paceS !== undefined) split.paceS = paceS;
   const avgHeartRateBpm = asNumber(raw.avgHeartRateBpm);
   if (avgHeartRateBpm !== undefined) split.avgHeartRateBpm = avgHeartRateBpm;
+  const intensity = asString(raw.intensity);
+  if (intensity !== undefined) split.intensity = intensity;
+  const trigger = asString(raw.trigger);
+  if (trigger !== undefined) split.trigger = trigger;
+  const stepIndex = asNumber(raw.stepIndex);
+  if (stepIndex !== undefined) split.stepIndex = stepIndex;
   return split;
 }
 

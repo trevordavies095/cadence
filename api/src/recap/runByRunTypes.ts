@@ -9,10 +9,14 @@ export type RunByRunShoe = {
 
 export type RunByRunSplit = {
   idx?: number;
+  kind?: string | null;
   paceS?: number | null;
   distanceM?: number | null;
   durationS?: number | null;
   avgHeartRateBpm?: number | null;
+  intensity?: string | null;
+  trigger?: string | null;
+  stepIndex?: number | null;
 };
 
 /** One workout under Run-by-run — Tempo data only (no subjective RPE/feel). */
@@ -42,6 +46,11 @@ export type RunByRunEntry = {
   splits: RunByRunSplit[];
   /** Formatted split paces joined with " / ", when any paceS present. */
   splitPacesFormatted?: string;
+  /**
+   * Quality-family and Race runs with two or more reps, in the athlete's
+   * unit: "6 reps, avg 3:05 at 4:02/km, fade 4%, rests 90 s".
+   */
+  repSummary?: string;
   drift?: RunByRunHrDrift;
   /** tempo-cli severity suffix (Easy/Long runs only), e.g. "⚠ above target (target ≤10 bpm)". */
   driftSeverity?: string;
