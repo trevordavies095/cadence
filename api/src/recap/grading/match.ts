@@ -1,4 +1,4 @@
-import type { PrescribedDay, PrescribedWeek } from "../../llm/types.js";
+import type { PrescribedDay, PrescribedRun, PrescribedWeek } from "../../llm/types.js";
 import type { TempoWorkoutDetail } from "../../tempo/port.js";
 import { isLongRun, isQualityFamily, isRace } from "../runTypes.js";
 import { workoutLocalDate } from "../subjectiveRuns.js";
@@ -11,14 +11,30 @@ export function normalizeIsoWeekId(raw: string): string {
   return `${m[1]}-W${w}`;
 }
 
+function positive(n: number | null | undefined): n is number {
+  return typeof n === "number" && Number.isFinite(n) && n > 0;
+}
+
+/** A planned run with a distance, a duration, or both. */
+export function isPrescribedRun(run: PrescribedRun): boolean {
+  return positive(run.distanceM) || positive(run.durationS);
+}
+
+/**
+ * A run prescribed by duration alone. It is graded by date: a run on that date
+ * counts, since there is no planned distance to compare against.
+ */
+export function isTimedOnlyRun(run: PrescribedRun): boolean {
+  return !positive(run.distanceM) && positive(run.durationS);
+}
+
 /** Quality / race days with a planned run. */
 export function prescribedQualityDays(plan: PrescribedWeek): PrescribedDay[] {
   return plan.days.filter(
     (d) =>
       (d.dayType === "quality" || d.dayType === "race") &&
       d.run != null &&
-      Number.isFinite(d.run.distanceM) &&
-      d.run.distanceM > 0,
+      isPrescribedRun(d.run),
   );
 }
 
@@ -28,8 +44,7 @@ export function prescribedLongDay(plan: PrescribedWeek): PrescribedDay | null {
     (d) =>
       d.dayType === "long" &&
       d.run != null &&
-      Number.isFinite(d.run.distanceM) &&
-      d.run.distanceM > 0,
+      isPrescribedRun(d.run),
   );
   return day ?? null;
 }

@@ -119,6 +119,34 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /** The reason for a session, shown beside it on the plan. */
 const DAY_NOTES_DESCRIPTION = `Why this session, this week: one or two sentences, under ${DAY_NOTES_TARGET} characters. Shown beside the session.`;
 
+/** A planned run, prescribed by distance, by duration, or by both. */
+export function prescribedRunJsonSchema(): Record<string, unknown> {
+  return {
+    type: ["object", "null"],
+    additionalProperties: false,
+    properties: {
+      type: {
+        type: "string",
+        enum: ["easy", "quality", "long", "race", "other"],
+      },
+      distanceM: {
+        type: "number",
+        description:
+          "Planned distance in meters. 0 when the run is prescribed by duration only.",
+      },
+      durationS: {
+        type: ["number", "null"],
+        description:
+          "Planned duration in seconds, for a run prescribed by time (2400 for 40 minutes). Set it with distanceM 0 for a time-only run, or beside a distance to give both.",
+      },
+      structure: { type: ["string", "null"] },
+      paceOrHr: { type: ["string", "null"] },
+      shoes: { type: ["string", "null"] },
+    },
+    required: ["type", "distanceM"],
+  };
+}
+
 function weeklyReplyToolSchema() {
   return {
     type: "object",
@@ -203,21 +231,7 @@ function weeklyReplyToolSchema() {
                   type: "string",
                   enum: ["rest", "easy", "quality", "long", "race", "other"],
                 },
-                run: {
-                  type: ["object", "null"],
-                  additionalProperties: false,
-                  properties: {
-                    type: {
-                      type: "string",
-                      enum: ["easy", "quality", "long", "race", "other"],
-                    },
-                    distanceM: { type: "number" },
-                    structure: { type: ["string", "null"] },
-                    paceOrHr: { type: ["string", "null"] },
-                    shoes: { type: ["string", "null"] },
-                  },
-                  required: ["type", "distanceM"],
-                },
+                run: prescribedRunJsonSchema(),
                 strength: { type: ["string", "null"] },
                 notes: {
                   type: ["string", "null"],
@@ -253,21 +267,7 @@ function prescribedDayJsonSchema(): Record<string, unknown> {
         type: "string",
         enum: ["rest", "easy", "quality", "long", "race", "other"],
       },
-      run: {
-        type: ["object", "null"],
-        additionalProperties: false,
-        properties: {
-          type: {
-            type: "string",
-            enum: ["easy", "quality", "long", "race", "other"],
-          },
-          distanceM: { type: "number" },
-          structure: { type: ["string", "null"] },
-          paceOrHr: { type: ["string", "null"] },
-          shoes: { type: ["string", "null"] },
-        },
-        required: ["type", "distanceM"],
-      },
+      run: prescribedRunJsonSchema(),
       strength: { type: ["string", "null"] },
       notes: { type: ["string", "null"], description: DAY_NOTES_DESCRIPTION },
     },

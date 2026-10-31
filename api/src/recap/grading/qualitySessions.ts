@@ -4,10 +4,12 @@ import { formatDistanceM } from "../format.js";
 import { formatPaceFromSecondsPerKm, formatTitleDate } from "../runByRunFormat.js";
 import {
   distanceRatio,
+  isTimedOnlyRun,
   matchWorkoutOnDate,
   normalizeIsoWeekId,
   prescribedQualityDays,
 } from "./match.js";
+import { formatPrescribedAmount } from "./prescribedAmount.js";
 import type { GradeVerdict, QualitySessionGrade } from "./types.js";
 
 /** Session-level: ≥80% of prescribed distance counts as on target. */
@@ -26,8 +28,10 @@ function sessionDescription(day: {
 function verdictFor(args: {
   matched: boolean;
   ratio: number | undefined;
+  timedOnly: boolean;
 }): GradeVerdict {
   if (!args.matched) return "missed";
+  if (args.timedOnly) return "on_target";
   if (args.ratio === undefined) return "partial";
   if (args.ratio >= DISTANCE_ON_TARGET) return "on_target";
   return "short";
@@ -83,7 +87,11 @@ export function gradeQualitySessions(args: {
     const ratio = matched
       ? distanceRatio(matched.distanceM, run.distanceM)
       : undefined;
-    const verdict = verdictFor({ matched: !!matched, ratio });
+    const verdict = verdictFor({
+      matched: !!matched,
+      ratio,
+      timedOnly: isTimedOnlyRun(run),
+    });
     const description = sessionDescription(day);
 
     const grade: QualitySessionGrade = {
@@ -96,6 +104,9 @@ export function gradeQualitySessions(args: {
       matched: !!matched,
       verdict,
     };
+    if (run.durationS != null && run.durationS > 0) {
+      grade.prescribedDurationS = run.durationS;
+    }
     if (matched) {
       grade.workoutId = matched.id;
       grade.actualDistanceM = matched.distanceM;
@@ -118,9 +129,9 @@ export function gradeQualitySessions(args: {
     const titleDate = matched
       ? formatTitleDate(matched.startedAt, args.timeZoneId)
       : day.date;
-    const prescribedDist = formatDistanceM(run.distanceM, args.unit);
+    const prescribed = formatPrescribedAmount(run, args.unit);
     const paceOrHr = run.paceOrHr?.trim() || "n/a";
-    const prescribedLine = `Prescribed: ${prescribedDist} · ${paceOrHr}`;
+    const prescribedLine = `Prescribed: ${prescribed} · ${paceOrHr}`;
 
     let actualLine: string;
     if (!matched) {

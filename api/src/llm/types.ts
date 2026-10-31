@@ -71,8 +71,10 @@ export type RunType = "easy" | "quality" | "long" | "race" | "other";
 
 export type PrescribedRun = {
   type: RunType;
-  /** Planned distance in meters. */
+  /** Planned distance in meters; 0 when the run is prescribed by duration only. */
   distanceM: number;
+  /** Planned duration in seconds, when the run is prescribed by time. */
+  durationS?: number | null;
   /** Workout recipe (intervals, etc.); null on unstructured easy/rest. */
   structure?: string | null;
   /** Athlete-facing pace or HR guidance. */

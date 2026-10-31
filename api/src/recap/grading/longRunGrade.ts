@@ -4,9 +4,11 @@ import { formatDistanceM } from "../format.js";
 import { formatPaceFromSecondsPerKm, formatTitleDate } from "../runByRunFormat.js";
 import {
   distanceRatio,
+  isTimedOnlyRun,
   matchWorkoutOnDate,
   prescribedLongDay,
 } from "./match.js";
+import { formatPrescribedAmount } from "./prescribedAmount.js";
 import type { GradeVerdict, LongRunGrade } from "./types.js";
 
 /** tempo-cli §2.6: ≥75% of prescribed long-run distance qualifies. */
@@ -29,9 +31,12 @@ function verdictGlyph(v: GradeVerdict): string {
   return "✗";
 }
 
-function verdictSummary(grade: LongRunGrade): string {
+function verdictSummary(grade: LongRunGrade, timedOnly: boolean): string {
   if (grade.verdict === "missed") {
     return "Verdict: no matching long run on prescribed date.";
+  }
+  if (grade.verdict === "on_target" && timedOnly) {
+    return "Verdict: on target (a run on the prescribed date; the plan set a duration, not a distance).";
   }
   if (grade.verdict === "on_target") {
     return "Verdict: on target (≥75% of prescribed distance).";
@@ -67,7 +72,11 @@ export function gradeLongRun(args: {
   const ratio = matched
     ? distanceRatio(matched.distanceM, run.distanceM)
     : undefined;
-  const thresholdMet = ratio !== undefined && ratio >= LONG_RUN_THRESHOLD;
+  // A long run prescribed by duration alone is matched by date, not distance.
+  const timedOnly = isTimedOnlyRun(run);
+  const thresholdMet = timedOnly
+    ? !!matched
+    : ratio !== undefined && ratio >= LONG_RUN_THRESHOLD;
   const verdict = verdictFor({
     matched: !!matched,
     thresholdMet,
@@ -88,6 +97,9 @@ export function gradeLongRun(args: {
     thresholdMet,
     verdict,
   };
+  if (run.durationS != null && run.durationS > 0) {
+    grade.prescribedDurationS = run.durationS;
+  }
   if (matched) {
     grade.workoutId = matched.id;
     grade.actualDistanceM = matched.distanceM;
@@ -109,7 +121,7 @@ export function gradeLongRun(args: {
   const titleDate = matched
     ? formatTitleDate(matched.startedAt, args.timeZoneId)
     : day.date;
-  const prescribedDist = formatDistanceM(run.distanceM, args.unit);
+  const prescribed = formatPrescribedAmount(run, args.unit);
   const paceOrHr = run.paceOrHr?.trim() || "n/a";
 
   const lines: string[] = [
@@ -117,7 +129,7 @@ export function gradeLongRun(args: {
     "",
     "### Prescribed vs actual",
     "",
-    `Prescribed: ${prescribedDist} · ${paceOrHr}`,
+    `Prescribed: ${prescribed} · ${paceOrHr}`,
     "",
   ];
 
@@ -136,15 +148,17 @@ export function gradeLongRun(args: {
       bits.push(`${Math.round(ratio * 100)}% of plan`);
     }
     lines.push(`Actual: ${bits.join(" · ")} ${verdictGlyph(verdict)}`, "");
-    lines.push(
-      `Distance vs plan: ${
-        ratio !== undefined ? `${Math.round(ratio * 100)}%` : "n/a"
-      } (threshold 75%) ${thresholdMet ? "✓" : "✗"}`,
-      "",
-    );
+    if (!timedOnly) {
+      lines.push(
+        `Distance vs plan: ${
+          ratio !== undefined ? `${Math.round(ratio * 100)}%` : "n/a"
+        } (threshold 75%) ${thresholdMet ? "✓" : "✗"}`,
+        "",
+      );
+    }
   }
 
-  lines.push(verdictSummary(grade), "");
+  lines.push(verdictSummary(grade, timedOnly), "");
 
   return {
     grade,
