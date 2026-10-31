@@ -310,10 +310,39 @@ export type LastOutboundPacketSummary = {
   recentHistoryLimit?: number;
 };
 
+/** The training goal as it went to Coach Cade (API `TrainingGoal`). */
+export type SentGoal = {
+  kind: "race" | "speed" | "fitness" | "return";
+  distance?: "5k" | "10k" | "half" | "marathon" | "other";
+  raceName?: string;
+  /** YYYY-MM-DD. */
+  raceDate?: string;
+  target?: string;
+  startingPoint?: string;
+  /** YYYY-MM-DD. */
+  since?: string;
+};
+
+/** Where the athlete is in training for the week that was sent (API `ModelPacketCoaching`). */
+export type SentCoaching = {
+  phase: "recovery" | "base" | "build" | "peak" | "taper";
+  weeksToRace?: number;
+  racePassed?: boolean;
+  thresholdPaceS?: number;
+  thresholdHeartRateBpm?: number;
+  maxHeartRateBpm?: number;
+  observedMaxHeartRateBpm?: number;
+};
+
 export type LastOutboundPacket = {
   savedAt: string;
   summary: LastOutboundPacketSummary;
-  packet: unknown;
+  /** Full redacted packet; older packets may lack goal and coaching. */
+  packet: {
+    goal?: SentGoal | null;
+    coaching?: SentCoaching | null;
+    [key: string]: unknown;
+  };
 };
 
 /** Plan hard-gate: check-in must be finished or skipped (#52). */
