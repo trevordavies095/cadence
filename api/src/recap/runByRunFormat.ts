@@ -17,8 +17,10 @@ export function formatPaceFromSecondsPerKm(
   if (!Number.isFinite(secPerKm) || secPerKm <= 0) return "n/a";
   const secPerUnit =
     unit === "imperial" ? secPerKm * (METERS_PER_MILE / 1000) : secPerKm;
-  const m = Math.floor(secPerUnit / 60);
-  const s = Math.round(secPerUnit % 60);
+  // Round the whole pace first, so 5:59.6 becomes 6:00, never 5:60.
+  const total = Math.round(secPerUnit);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   const suf = unit === "imperial" ? "/mi" : "/km";
   return `${m}:${String(s).padStart(2, "0")}${suf}`;
 }

@@ -155,9 +155,14 @@ async function report(
 const LONG_TREND_VALUES = "14.00 km → 16.00 km → 18.00 km → 21.00 km";
 const FAST_FINISH_METRIC = "Fast finish? Yes (last 5 km 12 s/km faster than the rest)";
 
-/** The long-run distance trend line, without the leading label. */
+/**
+ * The distance trend line. It is labelled "Long-run distance" for goals with a
+ * long-run section and "Longest run" for the others.
+ */
 function longTrendLine(trends: string): string {
-  const line = trends.split("\n").find((l) => l.includes("**Long-run distance**"));
+  const line = trends
+    .split("\n")
+    .find((l) => l.includes("**Long-run distance**") || l.includes("**Longest run**"));
   expect(line).toBeDefined();
   return line!;
 }
@@ -233,7 +238,9 @@ describe("the long-run section by goal (#08)", () => {
       expect(body.sections.longRun).toBe("");
       expect(body.reportMarkdown).not.toMatch(/^#+ Long(est)? run/m);
       expect(body.reportMarkdown).not.toContain("Fast finish");
-      expect(longTrendLine(body.sections.trends)).not.toMatch(/improving|declining/);
+      const line = longTrendLine(body.sections.trends);
+      expect(line).toContain("**Longest run**");
+      expect(line).not.toMatch(/improving|declining/);
     });
   }
 

@@ -82,7 +82,10 @@ export async function buildRecapTrends(args: {
     trends,
     unit,
     knobs.sections.trends,
-    { tempoParity: args.tempoParity },
+    {
+      tempoParity: args.tempoParity,
+      longRunSection: knobs.thresholds.longRun.section,
+    },
   );
 
   return {

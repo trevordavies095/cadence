@@ -371,9 +371,17 @@ export function buildTrendsMarkdown(
   snapshot: RecapTrendsSnapshot,
   unit: TempoUnitPreference,
   depth: SectionDepth,
-  opts?: { tempoParity?: boolean },
+  opts?: {
+    tempoParity?: boolean;
+    /**
+     * False for goals with no long-run section (5K, speed, fitness, return):
+     * the distance row is the week's longest run, not a long run.
+     */
+    longRunSection?: boolean;
+  },
 ): string {
   const parity = opts?.tempoParity === true;
+  const longRunSection = opts?.longRunSection !== false;
   const lines: string[] = ["## Trends", ""];
 
   if (!parity && depth === "detailed" && snapshot.weekLabels) {
@@ -442,7 +450,9 @@ export function buildTrendsMarkdown(
     const tail =
       [sp && ` ${sp}`, vd && ` (${vd})`].filter(Boolean).join("") || "";
     lines.push(
-      `- **Long-run distance** (max long-typed, else max run in week): ${chain}${tail}`,
+      longRunSection
+        ? `- **Long-run distance** (max long-typed, else max run in week): ${chain}${tail}`
+        : `- **Longest run**: ${chain}${tail}`,
     );
     lines.push("");
   }

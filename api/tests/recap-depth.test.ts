@@ -160,7 +160,7 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
       .longRunDistanceM;
     expect(longSeries[3]).toBe(10000);
     expect(trendsBody.markdown).toContain("## Trends");
-    expect(trendsBody.markdown).toContain("**Long-run distance**");
+    expect(trendsBody.markdown).toContain("**Longest run**");
 
     const notableRes = await app.request(
       `/weeks/${weekSessionId}/recap/notable?format=json&phase=base`,
