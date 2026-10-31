@@ -1,4 +1,6 @@
+import type { TrainingGoal } from "../goal/types.js";
 import type { ModelPacket } from "../packet/types.js";
+import { coachingBlock } from "./coachingBlocks.js";
 import { COACH_SYSTEM_STANCE } from "./stance.js";
 import type { SafetyCallout, SafetyCalloutSeverity } from "./types.js";
 
@@ -156,32 +158,57 @@ export const WEEKLY_READ_SHAPE_PROMPT = [
   "The analysis holds your reasoning. Do not restate the headline, flags or answers in it, and never repeat an answer's table or list there. Do not list the days or describe each session in it, as a list or as a table; the day rows already show them.",
 ].join(" ");
 
-/** System prompt for weekly plan generation (live Anthropic + docs). */
-export const WEEKLY_SYSTEM_PROMPT = [
-  "You are Coach Cade, a running coach producing a weekly training plan.",
-  COACH_SYSTEM_STANCE,
-  ATHLETE_VOCABULARY_PROMPT,
-  ATHLETE_WRITING_PROMPT,
-  WEEKLY_READ_SHAPE_PROMPT,
-  SAFETY_CALLOUT_PROMPT,
-  "Think it through first, then call the submit_weekly_reply tool exactly once with your full answer. Do not write the answer as plain text.",
-].join(" ");
+function joinPrompt(parts: Array<string | null>): string {
+  return parts.filter((part): part is string => part !== null).join(" ");
+}
 
-/** System prompt for mid-week free chat + attached-run feedback (live adapters). */
-export const MIDWEEK_SYSTEM_PROMPT = [
-  "You are Coach Cade, a running coach answering a mid-week check-in.",
-  COACH_SYSTEM_STANCE,
-  ATHLETE_VOCABULARY_PROMPT,
-  ATHLETE_WRITING_PROMPT,
-  MIDWEEK_REPLY_SHAPE_PROMPT,
-  SAFETY_CALLOUT_PROMPT,
-  "When workout attachments are present, give concrete coaching feedback on those runs using metrics and splits only (no GPS or route geometry).",
-  "When the athlete asks to change remaining plan days, emit prescribedDayPatches with full day objects for those dates only (do not rewrite past days unless allowPastDayPatches is true).",
-  "The athlete sees each changed day as a card under your reply, showing its distance, structure, effort, shoes and notes. Put the structure, paces and rules in those day fields, with the reason for the session in its notes. In the reply, say only why you changed the week; do not repeat what the cards show.",
-  "Do not rewrite the full week plan unless asked.",
-  "For significant memory updates, emit settingsProposalBullets (soft-gate); never silent-apply dossier changes.",
-  "Think it through first, then call the submit_mid_week_chat_reply tool exactly once with your full answer. Do not write the answer as plain text.",
-].join(" ");
+/**
+ * System prompt for weekly plan generation (live Anthropic + docs), with the
+ * coaching block for the athlete's goal between the read-shape rules and the
+ * safety rules (coaching-bias 26). Built per call because the block follows
+ * the packet's goal.
+ */
+export function weeklySystemPrompt(goal: TrainingGoal | null | undefined): string {
+  return joinPrompt([
+    "You are Coach Cade, a running coach producing a weekly training plan.",
+    COACH_SYSTEM_STANCE,
+    ATHLETE_VOCABULARY_PROMPT,
+    ATHLETE_WRITING_PROMPT,
+    WEEKLY_READ_SHAPE_PROMPT,
+    coachingBlock(goal),
+    SAFETY_CALLOUT_PROMPT,
+    "Think it through first, then call the submit_weekly_reply tool exactly once with your full answer. Do not write the answer as plain text.",
+  ]);
+}
+
+/** The weekly system prompt with no goal stored: no coaching block. */
+export const WEEKLY_SYSTEM_PROMPT = weeklySystemPrompt(null);
+
+/**
+ * System prompt for mid-week free chat + attached-run feedback (live adapters).
+ * Carries the same coaching block as the weekly read, because the conversation
+ * answers coaching questions and can change the week's remaining days.
+ */
+export function midWeekSystemPrompt(goal: TrainingGoal | null | undefined): string {
+  return joinPrompt([
+    "You are Coach Cade, a running coach answering a mid-week check-in.",
+    COACH_SYSTEM_STANCE,
+    ATHLETE_VOCABULARY_PROMPT,
+    ATHLETE_WRITING_PROMPT,
+    MIDWEEK_REPLY_SHAPE_PROMPT,
+    coachingBlock(goal),
+    SAFETY_CALLOUT_PROMPT,
+    "When workout attachments are present, give concrete coaching feedback on those runs using metrics and splits only (no GPS or route geometry).",
+    "When the athlete asks to change remaining plan days, emit prescribedDayPatches with full day objects for those dates only (do not rewrite past days unless allowPastDayPatches is true).",
+    "The athlete sees each changed day as a card under your reply, showing its distance, structure, effort, shoes and notes. Put the structure, paces and rules in those day fields, with the reason for the session in its notes. In the reply, say only why you changed the week; do not repeat what the cards show.",
+    "Do not rewrite the full week plan unless asked.",
+    "For significant memory updates, emit settingsProposalBullets (soft-gate); never silent-apply dossier changes.",
+    "Think it through first, then call the submit_mid_week_chat_reply tool exactly once with your full answer. Do not write the answer as plain text.",
+  ]);
+}
+
+/** The conversation system prompt with no goal stored: no coaching block. */
+export const MIDWEEK_SYSTEM_PROMPT = midWeekSystemPrompt(null);
 
 /** Soft signals the stub uses to emit a deterministic callout for tests/UI. */
 const STUB_RED_FLAG_RE =

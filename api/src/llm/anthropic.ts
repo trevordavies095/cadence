@@ -26,9 +26,9 @@ import {
   DOSSIER_AUDIT_SYSTEM_PROMPT,
   DOSSIER_CORRECTION_SYSTEM_PROMPT,
   DOSSIER_V1_SYSTEM_PROMPT,
-  MIDWEEK_SYSTEM_PROMPT,
+  midWeekSystemPrompt,
   safetyCalloutsJsonSchema,
-  WEEKLY_SYSTEM_PROMPT,
+  weeklySystemPrompt,
 } from "./safety.js";
 import {
   DAY_NOTES_TARGET,
@@ -945,7 +945,7 @@ export function createAnthropicLlmPort(
       const requestBody: AnthropicMessagesRequest = {
         model,
         max_tokens: MAX_OUTPUT_TOKENS,
-        system: WEEKLY_SYSTEM_PROMPT,
+        system: weeklySystemPrompt(packet.goal),
         tools: [
           {
             name: WEEKLY_TOOL_NAME,
@@ -997,7 +997,7 @@ export function createAnthropicLlmPort(
       const requestBody: AnthropicMessagesRequest = {
         model,
         max_tokens: MAX_OUTPUT_TOKENS,
-        system: MIDWEEK_SYSTEM_PROMPT,
+        system: midWeekSystemPrompt(packet.goal),
         tools: [
           {
             name: MIDWEEK_TOOL_NAME,
