@@ -1,6 +1,6 @@
 "use client";
 
-import { trainingForLabel, trainingStageLabel } from "@/lib/sentGoal";
+import { trainingForLabel, trainingNumbersLabel, trainingStageLabel } from "@/lib/sentGoal";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
 import { describeError, type UiError } from "@/lib/errors";
 import { useEffect, useState } from "react";
@@ -45,6 +45,7 @@ function SentSummary({ sent }: { sent: LastOutboundPacket }) {
   // Packets saved before the goal was sent have neither field.
   const goal = sent.packet?.goal ?? null;
   const coaching = sent.packet?.coaching ?? null;
+  const numbers = coaching ? trainingNumbersLabel(coaching) : null;
   const included: string[] = [];
   if (summary.dossierVersionId != null) included.push("what Coach Cade knows about you");
   if (summary.hasRecap) included.push("your weekly report");
@@ -83,6 +84,12 @@ function SentSummary({ sent }: { sent: LastOutboundPacket }) {
         <>
           <dt className="text-muted">That week</dt>
           <dd className="m-0">{trainingStageLabel(coaching)}</dd>
+        </>
+      ) : null}
+      {numbers ? (
+        <>
+          <dt className="text-muted">Your numbers</dt>
+          <dd className="m-0">{numbers}</dd>
         </>
       ) : null}
       <dt className="text-muted">It included</dt>

@@ -1,5 +1,6 @@
 import type { SentCoaching, SentGoal } from "./api";
 import { dayLabel } from "./checkIn";
+import { paceLabel } from "./units";
 
 const DISTANCE_WORDS: Record<NonNullable<SentGoal["distance"]>, string> = {
   "5k": "5K",
@@ -64,4 +65,28 @@ const STAGE_WORDS: Record<SentCoaching["phase"], string> = {
 /** Where the athlete is in training that week, in plain words (never the word "phase"). */
 export function trainingStageLabel(coaching: SentCoaching): string {
   return STAGE_WORDS[coaching.phase];
+}
+
+/**
+ * The training numbers that went along, in plain words, or null when none did:
+ * "threshold pace 7:15/mi, threshold heart rate 168 bpm, max heart rate 186 bpm".
+ */
+export function trainingNumbersLabel(coaching: SentCoaching): string | null {
+  const unit = coaching.unitPreference ?? "metric";
+  const parts: string[] = [];
+  if (coaching.thresholdPaceS !== undefined) {
+    parts.push(`threshold pace ${paceLabel(coaching.thresholdPaceS, unit)}`);
+  } else if (coaching.suggestedThresholdPaceS !== undefined) {
+    parts.push(`suggested threshold pace ${paceLabel(coaching.suggestedThresholdPaceS, unit)}`);
+  }
+  if (coaching.thresholdHeartRateBpm !== undefined) {
+    parts.push(`threshold heart rate ${coaching.thresholdHeartRateBpm} bpm`);
+  }
+  if (coaching.maxHeartRateBpm !== undefined) {
+    parts.push(`max heart rate ${coaching.maxHeartRateBpm} bpm`);
+  }
+  if (coaching.observedMaxHeartRateBpm !== undefined) {
+    parts.push(`highest heart rate in the last year ${coaching.observedMaxHeartRateBpm} bpm`);
+  }
+  return parts.length > 0 ? parts.join(", ") : null;
 }

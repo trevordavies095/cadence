@@ -353,8 +353,13 @@ export type SentCoaching = {
   phase: "recovery" | "base" | "build" | "peak" | "taper";
   weeksToRace?: number;
   racePassed?: boolean;
+  /** The running log's distance unit; threshold paces print in it. */
+  unitPreference?: UnitPreference;
+  /** Seconds per km, athlete-set. */
   thresholdPaceS?: number;
   thresholdHeartRateBpm?: number;
+  /** Seconds per km, suggested by the running log from a recent best. */
+  suggestedThresholdPaceS?: number;
   maxHeartRateBpm?: number;
   observedMaxHeartRateBpm?: number;
 };
