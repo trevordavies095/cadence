@@ -112,9 +112,17 @@ type Behavior = {
    * marathon that beat earlier bests, "first" a first-ever 10K, "later" a
    * best set by a run after this week, "early-monday" a 5K by the Brisbane
    * run (returned only when since is on or before its UTC date, as Tempo
-   * compares), "empty" none, "500" a failure.
+   * compares), "sunday-best" a 5K that beats a best set the Sunday before
+   * the week, "empty" none, "500" a failure.
    */
-  bestEfforts?: "pr" | "first" | "later" | "early-monday" | "empty" | "500";
+  bestEfforts?:
+    | "pr"
+    | "first"
+    | "later"
+    | "early-monday"
+    | "sunday-best"
+    | "empty"
+    | "500";
   /** Records the `since` query of each best-efforts call. */
   bestEffortsSince?: (string | null)[];
   /** Make only the Notable builder's shoe lookup throw (Run-by-run keeps working). */
@@ -242,6 +250,13 @@ function buildTempo(b: Behavior) {
                   },
                 ]
               : [],
+        });
+      }
+      if (b.bestEfforts === "sunday-best") {
+        // 22:05 before the Sunday, 21:50 on it, 21:40 this week. Only a call
+        // from Monday on sees the Sunday's 21:50 as the best before.
+        return ok({
+          distances: [row("5K", 5000, 1300, since >= "2026-10-19" ? 1310 : 1325)],
         });
       }
       if (b.bestEfforts === "first") {
@@ -457,14 +472,24 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     expect(md).toContain("## Subjective recap");
   });
 
-  it("asks Tempo for bests set since this week's Monday", async () => {
+  it("asks Tempo for bests set since this week's Monday, and since the Sunday before", async () => {
     const since: (string | null)[] = [];
     const app = makeApp({ ...FULL, bestEffortsSince: since });
     const weekSessionId = await openWeek(app);
     expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
     expect(since.length).toBeGreaterThan(0);
-    // The Sunday before the local Monday, as Tempo compares UTC dates.
-    expect(new Set(since)).toEqual(new Set(["2026-10-18"]));
+    // The Sunday before the local Monday, as Tempo compares UTC dates, and
+    // the Monday, for a "was" that counts a best set on that Sunday.
+    expect(new Set(since)).toEqual(new Set(["2026-10-18", "2026-10-19"]));
+  });
+
+  it("a best that beats one set the Sunday before says what it beat", async () => {
+    const app = makeApp({ ...FULL, bestEfforts: "sunday-best" });
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+      .reportMarkdown as string;
+    expect(md).toContain("- New best: 5K 21:40 (was 21:50)");
   });
 
   it("a best from an early Monday run east of UTC is still named", async () => {
