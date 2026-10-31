@@ -21,7 +21,7 @@ import {
   ensureCurrentWeek,
   fetchOnboarding,
   saveOnboardingAnswers,
-  type OnboardingAnswers,
+  type OnboardingSubmission,
   type OnboardingGate,
   type WeekSession,
 } from "@/lib/api";
@@ -92,12 +92,12 @@ export default function OnboardingPage() {
     setDraft((d) => ({ ...d, ...patch }));
   }
 
-  async function finishInterview(answers: OnboardingAnswers) {
+  async function finishInterview(submission: OnboardingSubmission) {
     if (!week) return;
     setBusy(true);
     setError(null);
     try {
-      await saveOnboardingAnswers(answers, week.id);
+      await saveOnboardingAnswers(submission, week.id);
       // The coach has written down what it understood; the next stop is the card that asks
       // whether that looks right.
       router.replace("/dossier");
@@ -119,12 +119,12 @@ export default function OnboardingPage() {
       setStep(step + 1);
       return;
     }
-    const answers = serializeAnswers(draft);
-    if (!answers) {
+    const submission = serializeAnswers(draft);
+    if (!submission) {
       setProblem("Your goal and run days are needed before Coach Cade can start.");
       return;
     }
-    void finishInterview(answers);
+    void finishInterview(submission);
   }
 
   if (gate !== "open") {

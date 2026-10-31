@@ -45,13 +45,24 @@ test.describe("first run", () => {
     await page.getByLabel("Injuries and limits").fill("Tight left calf.");
     await page.getByRole("button", { name: "Next", exact: true }).click();
 
-    // The fields reach the coach as the same four answers as before.
-    const saving = page.waitForRequest((r) => r.url().endsWith("/api/onboarding/answers"));
+    // The goal goes as a record; the API writes the sentence the coach reads, so the coach
+    // still gets the same four answers as before.
+    const schedule =
+      "Free to run on Tue, Thu, Sat. These are the days that work, not a target: the plan decides how many runs to schedule and which of these days to use. Prefers the long run on Sat. Up to about 5 hours a week for training.";
+    const saving = page.waitForResponse((r) => r.url().endsWith("/api/onboarding/answers"));
     await page.getByRole("button", { name: "Finish" }).click();
-    expect((await saving).postDataJSON().answers).toEqual({
+    const saved = await saving;
+    const sent = saved.request().postDataJSON();
+    expect(sent.answers).toEqual({ schedule, injuries_constraints: "Tight left calf." });
+    expect(sent.goal).toEqual({
+      kind: "race",
+      distance: "other",
+      raceName: "Half marathon",
+      raceDate: "2027-01-16",
+    });
+    expect((await saved.json()).answers).toEqual({
       goal: "Race: Half marathon on Sat Jan 16 2027.",
-      schedule:
-        "Free to run on Tue, Thu, Sat. These are the days that work, not a target: the plan decides how many runs to schedule and which of these days to use. Prefers the long run on Sat. Up to about 5 hours a week for training.",
+      schedule,
       injuries_constraints: "Tight left calf.",
     });
 

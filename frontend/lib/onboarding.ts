@@ -1,5 +1,4 @@
-import type { OnboardingAnswers } from "./api";
-import { dayLabel } from "./checkIn";
+import type { OnboardingSubmission, TrainingGoal } from "./api";
 
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 export type Weekday = (typeof WEEKDAYS)[number];
@@ -30,23 +29,22 @@ export const EMPTY_DRAFT: OnboardingDraft = {
   preferences: "",
 };
 
-/** "Sat Jan 16 2027". */
-function dateWithYear(ymd: string): string {
-  return `${dayLabel(ymd)} ${ymd.slice(0, 4)}`;
-}
-
 function joinDays(days: readonly Weekday[]): string {
   return WEEKDAYS.filter((d) => days.includes(d)).join(", ");
 }
 
-export function serializeGoal(d: OnboardingDraft): string {
+/**
+ * The goal as the record the API stores; it writes the sentence the coach reads. The page
+ * does not ask for a race distance yet, so a race goes as "other".
+ */
+export function draftGoal(d: OnboardingDraft): TrainingGoal | null {
   if (d.goalKind === "race") {
-    const name = d.raceName.trim();
-    if (!name) return "";
-    return d.raceDate ? `Race: ${name} on ${dateWithYear(d.raceDate)}.` : `Race: ${name}, date not set yet.`;
+    const raceName = d.raceName.trim();
+    if (!raceName) return null;
+    return { kind: "race", distance: "other", raceName, ...(d.raceDate ? { raceDate: d.raceDate } : {}) };
   }
-  if (d.goalKind === "fitness") return "General fitness, no race planned.";
-  return "";
+  if (d.goalKind === "fitness") return { kind: "fitness" };
+  return null;
 }
 
 /**
@@ -72,16 +70,18 @@ export function serializeSchedule(d: OnboardingDraft): string {
   return parts.join(" ");
 }
 
-/** The four answers the coach already reads. Null while a required one is missing. */
-export function serializeAnswers(d: OnboardingDraft): OnboardingAnswers | null {
-  const goal = serializeGoal(d);
+/** The goal record and the other answers the coach reads. Null while a required one is missing. */
+export function serializeAnswers(d: OnboardingDraft): OnboardingSubmission | null {
+  const goal = draftGoal(d);
   const schedule = serializeSchedule(d);
   if (!goal || !schedule) return null;
   return {
+    answers: {
+      schedule,
+      injuries_constraints: d.injuries.trim() || undefined,
+      preferences: d.preferences.trim() || undefined,
+    },
     goal,
-    schedule,
-    injuries_constraints: d.injuries.trim() || undefined,
-    preferences: d.preferences.trim() || undefined,
   };
 }
 

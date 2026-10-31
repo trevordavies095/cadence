@@ -242,6 +242,24 @@ export type OnboardingAnswers = {
   preferences?: string;
 };
 
+/** What the athlete is training for, as the API stores it. */
+export type TrainingGoal = {
+  kind: "race" | "speed" | "fitness" | "return";
+  distance?: "5k" | "10k" | "half" | "marathon" | "other";
+  raceName?: string;
+  /** YYYY-MM-DD. */
+  raceDate?: string;
+  target?: string;
+  startingPoint?: string;
+  since?: string;
+};
+
+/** The answers the page sends: the goal goes as a record and the API writes its sentence. */
+export type OnboardingSubmission = {
+  answers: Omit<OnboardingAnswers, "goal">;
+  goal: TrainingGoal;
+};
+
 export type OnboardingQuestionnaire = {
   order: OnboardingFieldKey[];
   fields: Record<OnboardingFieldKey, string>;
@@ -639,7 +657,7 @@ export async function fetchOnboarding(): Promise<OnboardingGate> {
 
 
 export async function saveOnboardingAnswers(
-  answers: OnboardingAnswers,
+  submission: OnboardingSubmission,
   weekSessionId?: string,
 ): Promise<{
   status: "ready";
@@ -660,7 +678,7 @@ export async function saveOnboardingAnswers(
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(
-        weekSessionId ? { answers, weekSessionId } : { answers },
+        weekSessionId ? { ...submission, weekSessionId } : submission,
       ),
     }),
   );
