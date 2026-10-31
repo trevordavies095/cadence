@@ -22,7 +22,7 @@ const NEEDS_ONBOARDING = {
 };
 
 async function serveQuestions(page: Page) {
-  const saved: { answers: Record<string, string> }[] = [];
+  const saved: { answers: Record<string, string>; goal?: Record<string, string> }[] = [];
   await page.route(/\/api\/onboarding$/, (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify(NEEDS_ONBOARDING) }),
   );
@@ -214,8 +214,9 @@ test.describe("onboarding", () => {
     await page.getByRole("button", { name: "Finish" }).click();
 
     await expect.poll(() => saved.length).toBe(1);
+    // The goal goes as a record; the API writes the sentence the coach reads.
+    expect(saved[0]!.goal).toEqual({ kind: "fitness" });
     expect(saved[0]!.answers).toEqual({
-      goal: "General fitness, no race planned.",
       schedule:
         "Free to run on Mon, Wed. These are the days that work, not a target: the plan decides how many runs to schedule and which of these days to use.",
       preferences: "I like trails.",
