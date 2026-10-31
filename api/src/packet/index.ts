@@ -41,5 +41,7 @@ export type {
   ModelPacketRecentWeek,
   ModelPacketRole,
   ModelPacketThreadMessage,
+  ModelPacketThresholdSource,
   ModelPacketWeek,
 } from "./types.js";
+export { thresholdPhrase } from "./thresholdPhrase.js";

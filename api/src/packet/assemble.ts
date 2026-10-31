@@ -18,6 +18,8 @@ import { isoWeekMondayDate, nextIsoWeekBounds } from "../clock/isoWeek.js";
 import { resolveGoalContext } from "../goal/context.js";
 import { getCurrentGoal } from "../goal/store.js";
 import type { TrainingGoal } from "../goal/types.js";
+import { resolveConfiguredMaxHr } from "../recap/maxHr.js";
+import type { TempoAthleteSettings, TempoPort } from "../tempo/port.js";
 import type {
   IdentityHints,
   ModelPacketCoaching,
@@ -39,6 +41,11 @@ export type AssembleLeanLiveContextInput = {
   /** Current prescribed week for mid-week patch context. */
   prescribedWeek?: PrescribedWeek | null;
   identityHints?: IdentityHints;
+  /**
+   * Source of the athlete settings behind the coaching block's thresholds and
+   * max heart rate. Omitted, or failing, leaves those fields unset.
+   */
+  tempoPort?: Pick<TempoPort, "getSettings">;
 };
 
 export function toPacketPlanWeek(session: WeekSession): ModelPacketPlanWeek {
@@ -56,18 +63,65 @@ function toPacketWeek(session: WeekSession): ModelPacketWeek {
 
 /**
  * The packet's coaching block for the week starting `weekMonday`, or null with
- * no goal stored. Thresholds and max heart rate are left unset here.
+ * no goal stored. With athlete settings it also carries the running log's
+ * thresholds and max heart rate.
  */
 export function packetCoaching(
   goal: TrainingGoal | null,
   weekMonday: string,
+  settings?: TempoAthleteSettings | null,
 ): ModelPacketCoaching | null {
   if (!goal) return null;
   const context = resolveGoalContext(goal, weekMonday);
   const coaching: ModelPacketCoaching = { phase: context.phase };
   if (context.weeksToRace !== null) coaching.weeksToRace = context.weeksToRace;
   if (context.racePassed) coaching.racePassed = true;
+  if (settings) Object.assign(coaching, settingsCoaching(settings));
   return coaching;
+}
+
+function settingsCoaching(
+  settings: TempoAthleteSettings,
+): Partial<ModelPacketCoaching> {
+  const out: Partial<ModelPacketCoaching> = {};
+  const t = settings.thresholds;
+  if (t) {
+    if (t.thresholdPaceS !== null) out.thresholdPaceS = t.thresholdPaceS;
+    if (t.thresholdHeartRateBpm !== null) {
+      out.thresholdHeartRateBpm = t.thresholdHeartRateBpm;
+    }
+    if (t.suggestedThresholdPaceS !== null) {
+      out.suggestedThresholdPaceS = t.suggestedThresholdPaceS;
+      if (t.suggestedFrom) {
+        out.suggestedThresholdFrom = {
+          distance: t.suggestedFrom.distance,
+          timeS: t.suggestedFrom.timeS,
+          workoutDate: t.suggestedFrom.workoutDate,
+        };
+      }
+    }
+  }
+  const maxHr = resolveConfiguredMaxHr(settings.heartRateZones);
+  if (maxHr !== undefined) out.maxHeartRateBpm = maxHr;
+  const observed = settings.heartRateZones.observedMaxHeartRateBpm;
+  if (typeof observed === "number" && observed > 0) {
+    out.observedMaxHeartRateBpm = Math.round(observed);
+  }
+  return out;
+}
+
+/** Athlete settings for the coaching block; null when unavailable. */
+async function loadCoachingSettings(
+  port: Pick<TempoPort, "getSettings"> | undefined,
+): Promise<TempoAthleteSettings | null> {
+  if (!port) return null;
+  try {
+    return await port.getSettings();
+  } catch {
+    // Thresholds are context, not a precondition: a Tempo hiccup must not
+    // block the reply.
+    return null;
+  }
 }
 
 /**
@@ -82,12 +136,13 @@ export async function assembleLeanLiveContext(
   const limit = resolveRecentHistoryLimit(input.recentHistoryLimit);
   const focusId = input.focusSession.id;
 
-  const [dossier, recentHistory, threadMessages, currentGoal] =
+  const [dossier, recentHistory, threadMessages, currentGoal, settings] =
     await Promise.all([
       getCurrentDossier(),
       loadRecentWeekSummaries({ focusWeekSessionId: focusId, limit }),
       listThreadMessages(focusId),
       getCurrentGoal(),
+      loadCoachingSettings(input.tempoPort),
     ]);
   const goal = currentGoal?.goal ?? null;
   const planWeek = input.includePlanWeek
@@ -98,6 +153,7 @@ export async function assembleLeanLiveContext(
   const coaching = packetCoaching(
     goal,
     planWeek?.startDate ?? isoWeekMondayDate(input.focusSession.isoWeek),
+    settings,
   );
 
   // Defense in depth: even if listThreadMessages were widened, drop other weeks.

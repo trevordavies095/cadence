@@ -141,7 +141,33 @@ export type TempoHeartRateZones = {
   age?: number | null;
   restingHeartRateBpm?: number | null;
   maxHeartRateBpm?: number | null;
+  /**
+   * Highest workout max HR in the last 12 months (readings above 230 ignored);
+   * null without HR data. Informational: never feeds the resolved max.
+   */
+  observedMaxHeartRateBpm?: number | null;
   zones: TempoHeartRateZone[];
+};
+
+/** The best effort Tempo derived the suggested threshold pace from. */
+export type TempoThresholdSuggestionSource = {
+  /** Best-effort distance label: "5K" or "10K". */
+  distance: string;
+  timeS: number;
+  /** UTC date the workout started (yyyy-MM-dd). */
+  workoutDate: string;
+  workoutId: string;
+};
+
+/** Tempo GET /settings/thresholds. Paces are seconds per km. */
+export type TempoThresholds = {
+  /** Athlete-set threshold pace, or null when not set. */
+  thresholdPaceS: number | null;
+  /** Athlete-set threshold heart rate, or null when not set. */
+  thresholdHeartRateBpm: number | null;
+  /** Daniels VDOT from the best 5K/10K in the last 90 days; null when none qualifies. */
+  suggestedThresholdPaceS: number | null;
+  suggestedFrom: TempoThresholdSuggestionSource | null;
 };
 
 /**
@@ -152,6 +178,11 @@ export type TempoAthleteSettings = {
   unitPreference: TempoUnitPreference;
   defaultShoeId?: string | null;
   heartRateZones: TempoHeartRateZones;
+  /**
+   * Threshold pace and heart rate from the running log. Undefined in export
+   * mode and against an older Tempo without the endpoint.
+   */
+  thresholds?: TempoThresholds;
 };
 
 export type ListShoesQuery = {
@@ -259,7 +290,7 @@ export type TempoPort = {
   listWorkouts(query?: ListWorkoutsQuery): Promise<ListWorkoutsResult>;
   /** Returns null when Tempo responds 404. */
   getWorkout(id: string): Promise<TempoWorkoutDetail | null>;
-  /** Unit preference, HR zones, and default shoe id. */
+  /** Unit preference, HR zones, default shoe id and thresholds. */
   getSettings(): Promise<TempoAthleteSettings>;
   listShoes(query?: ListShoesQuery): Promise<TempoShoe[]>;
   /**

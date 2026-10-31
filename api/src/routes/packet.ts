@@ -109,6 +109,7 @@ export function createPacketRoutes(options: PacketRouteOptions): Hono {
       recapMarkdown: body.recapMarkdown ?? null,
       attachments,
       identityHints: body.identityHints,
+      tempoPort,
     });
 
     assertPacketHasNoPiiOrGps(packet, {

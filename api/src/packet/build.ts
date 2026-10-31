@@ -245,7 +245,18 @@ export function buildModelPacket(input: BuildModelPacketInput): ModelPacket {
     // The goal and its coaching context are structured athlete data, not
     // identity: copied through without scrubbing.
     goal: input.goal ? { ...input.goal } : null,
-    coaching: input.coaching ? { ...input.coaching } : null,
+    coaching: input.coaching
+      ? {
+          ...input.coaching,
+          ...(input.coaching.suggestedThresholdFrom
+            ? {
+                suggestedThresholdFrom: {
+                  ...input.coaching.suggestedThresholdFrom,
+                },
+              }
+            : {}),
+        }
+      : null,
   };
   if (input.planWeek !== undefined) {
     packet.planWeek = input.planWeek;

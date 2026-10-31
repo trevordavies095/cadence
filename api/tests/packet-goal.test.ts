@@ -37,6 +37,9 @@ const RETURN = {
   since: "2026-10-05",
 } as const;
 
+// The export fixture's zones are Custom with zone 5 topping out at 201, so the
+// coaching block carries that as max HR. Export mode has no thresholds.
+
 describe("the packet carries the goal (coaching-bias 10)", () => {
   beforeAll(async () => {
     process.env.DATA_PROTECTION_SECRET_KEY = TEST_DATA_PROTECTION_KEY;
@@ -95,7 +98,11 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
     const lastPacket = await chat(app, id);
     expect(lastPacket.packet.goal).toEqual(HALF);
     // Oct 19 2026 to Mar 7 2027 is 139 days: 19 whole weeks, base.
-    expect(lastPacket.packet.coaching).toEqual({ phase: "base", weeksToRace: 19 });
+    expect(lastPacket.packet.coaching).toEqual({
+      phase: "base",
+      weeksToRace: 19,
+      maxHeartRateBpm: 201,
+    });
   });
 
   it("the weekly read resolves coaching for the plan week (N+1)", async () => {
@@ -109,14 +116,18 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
     expect(lastPacket.packet.planWeek.startDate).toBe("2026-10-26");
     expect(lastPacket.packet.goal).toEqual(HALF);
     // Oct 26 2026 to Mar 7 2027 is 132 days: 18 whole weeks, base.
-    expect(lastPacket.packet.coaching).toEqual({ phase: "base", weeksToRace: 18 });
+    expect(lastPacket.packet.coaching).toEqual({
+      phase: "base",
+      weeksToRace: 18,
+      maxHeartRateBpm: 201,
+    });
   });
 
   it("a return goal goes with a conversation reply", async () => {
     const { app, id } = await ready(RETURN);
     const lastPacket = await chat(app, id);
     expect(lastPacket.packet.goal).toEqual(RETURN);
-    expect(lastPacket.packet.coaching).toEqual({ phase: "recovery" });
+    expect(lastPacket.packet.coaching).toEqual({ phase: "recovery", maxHeartRateBpm: 201 });
   });
 
   it("with no goal stored both fields are null in the conversation and the weekly read", async () => {
@@ -138,7 +149,11 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
     const { app, id } = await ready(past);
     const lastPacket = await chat(app, id);
     expect(lastPacket.packet.goal).toEqual(past);
-    expect(lastPacket.packet.coaching).toEqual({ phase: "recovery", racePassed: true });
+    expect(lastPacket.packet.coaching).toEqual({
+      phase: "recovery",
+      racePassed: true,
+      maxHeartRateBpm: 201,
+    });
   });
 
   it("the race name is not identity: identity hints neither scrub nor reject it", async () => {

@@ -92,11 +92,30 @@ export type ModelPacketCoaching = {
   weeksToRace?: number;
   /** Present (true) only once the race date is before the focus week's Monday. */
   racePassed?: boolean;
-  /** Threshold pace, seconds per km. */
+  /** Athlete-set threshold pace from the running log, seconds per km. */
   thresholdPaceS?: number;
+  /** Athlete-set threshold heart rate from the running log. */
   thresholdHeartRateBpm?: number;
+  /**
+   * Threshold pace the running log suggests from a recent 5K or 10K best,
+   * seconds per km. Present whether or not the athlete set one.
+   */
+  suggestedThresholdPaceS?: number;
+  /** The best effort behind `suggestedThresholdPaceS`; present with it. */
+  suggestedThresholdFrom?: ModelPacketThresholdSource;
+  /** Max heart rate as the running log resolves it for the zone method. */
   maxHeartRateBpm?: number;
+  /** Highest workout max heart rate in the last 12 months. */
   observedMaxHeartRateBpm?: number;
+};
+
+/** The best effort a suggested threshold pace comes from. */
+export type ModelPacketThresholdSource = {
+  /** "5K" or "10K". */
+  distance: string;
+  timeS: number;
+  /** UTC date of the workout, yyyy-MM-dd. */
+  workoutDate: string;
 };
 
 /**

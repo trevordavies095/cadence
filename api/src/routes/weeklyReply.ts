@@ -148,6 +148,7 @@ async function assemblePacket(
     includePlanWeek: true,
     attachments,
     identityHints: body.identityHints,
+    tempoPort,
   });
 
   assertPacketHasNoPiiOrGps(packet, {
