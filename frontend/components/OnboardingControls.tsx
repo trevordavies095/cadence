@@ -70,3 +70,36 @@ export function DayChoice({
     </div>
   );
 }
+
+/** One of a few labelled choices. Picking one again keeps it: a required answer stays given. */
+export function ChipChoice<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: readonly (readonly [T, string])[];
+  value: T | null;
+  onChange: (next: T) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
+      {options.map(([option, text]) => {
+        const on = value === option;
+        return (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(option)}
+            className={cx(chip, on ? chipOn : chipOff)}
+          >
+            {text}
+          </button>
+        );
+      })}
+    </div>
+  );
+}

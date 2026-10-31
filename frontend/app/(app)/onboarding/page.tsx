@@ -3,7 +3,7 @@
 import { describeError, type UiError } from "@/lib/errors";
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { DayChips, DayChoice } from "@/components/OnboardingControls";
+import { ChipChoice, DayChips, DayChoice } from "@/components/OnboardingControls";
 import { Stepper } from "@/components/CheckInControls";
 import {
   Button,
@@ -15,7 +15,6 @@ import {
   PageTitle,
   Textarea,
   WaitingState,
-  cx,
 } from "@/components/ui";
 import {
   ensureCurrentWeek,
@@ -27,10 +26,12 @@ import {
 } from "@/lib/api";
 import {
   EMPTY_DRAFT,
+  GOAL_CHOICES,
   ONBOARDING_STEPS,
+  RACE_DISTANCE_CHOICES,
+  SPEED_DISTANCE_CHOICES,
   serializeAnswers,
   stepProblem,
-  type GoalKind,
   type OnboardingDraft,
 } from "@/lib/onboarding";
 
@@ -121,7 +122,7 @@ export default function OnboardingPage() {
     }
     const submission = serializeAnswers(draft);
     if (!submission) {
-      setProblem("Your goal and run days are needed before Coach Cade can start.");
+      setProblem("What you’re training for and your run days are needed before Coach Cade can start.");
       return;
     }
     void finishInterview(submission);
@@ -157,7 +158,7 @@ export default function OnboardingPage() {
           first weeks of your plan.
         </p>
         <ul className="m-0 flex flex-col gap-1.5 pl-5">
-          <li>What you’re training for</li>
+          <li>What you’re training for: a race, getting faster, staying fit or getting back to running</li>
           <li>Which days you’re free to run</li>
           <li>How much time you have</li>
           <li>Any injuries or limits</li>
@@ -194,45 +195,69 @@ export default function OnboardingPage() {
         {name === "goal" ? (
           <section className="flex flex-col gap-3">
             <p className="m-0 text-lg font-medium">What are you training for?</p>
-            <div role="radiogroup" aria-label="Your goal" className="flex flex-wrap gap-2">
-              {(
-                [
-                  ["race", "A race"],
-                  ["fitness", "General fitness"],
-                ] as [GoalKind, string][]
-              ).map(([kind, label]) => (
-                <button
-                  key={kind}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.goalKind === kind}
-                  onClick={() => change({ goalKind: kind })}
-                  className={cx(
-                    "rounded-tempo border px-4 py-2.5 text-base font-semibold",
-                    draft.goalKind === kind
-                      ? "border-ink bg-raised text-ink"
-                      : "border-border text-muted hover:text-ink",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <ChipChoice
+              label="What you’re training for"
+              options={GOAL_CHOICES}
+              value={draft.goalKind}
+              onChange={(kind) => change({ goalKind: kind })}
+            />
             {draft.goalKind === "race" ? (
               <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <p className="m-0 text-sm font-semibold text-muted">How far is the race?</p>
+                  <ChipChoice
+                    label="Race distance"
+                    options={RACE_DISTANCE_CHOICES}
+                    value={draft.raceDistance}
+                    onChange={(distance) => change({ raceDistance: distance })}
+                  />
+                </div>
                 <Field label="Which race?">
                   <Input
                     value={draft.raceName}
                     onChange={(e) => change({ raceName: e.target.value })}
-                    placeholder="For example, a half marathon"
-                    autoFocus
+                    placeholder="For example, the Lakeshore Half"
                   />
                 </Field>
-                <Field label="Race date" hint="Leave blank if you haven’t picked one yet.">
+                <Field label="Race date" hint="Optional. Leave blank if you haven’t picked one yet.">
                   <Input
                     type="date"
                     value={draft.raceDate}
                     onChange={(e) => change({ raceDate: e.target.value })}
+                  />
+                </Field>
+                <Field
+                  label="Target"
+                  hint="Optional. In your own words, for example under 2 hours or finish feeling strong."
+                >
+                  <Input
+                    value={draft.raceTarget}
+                    onChange={(e) => change({ raceTarget: e.target.value })}
+                  />
+                </Field>
+              </div>
+            ) : draft.goalKind === "speed" ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <p className="m-0 text-sm font-semibold text-muted">Which distance?</p>
+                  <ChipChoice
+                    label="Distance to get faster at"
+                    options={SPEED_DISTANCE_CHOICES}
+                    value={draft.speedDistance}
+                    onChange={(distance) => change({ speedDistance: distance })}
+                  />
+                </div>
+                <Field label="Target" hint="Optional. In your own words, for example under 45 minutes.">
+                  <Input
+                    value={draft.speedTarget}
+                    onChange={(e) => change({ speedTarget: e.target.value })}
+                  />
+                </Field>
+                <Field label="Next race date" hint="Optional. Leave blank if there isn’t one yet.">
+                  <Input
+                    type="date"
+                    value={draft.nextRaceDate}
+                    onChange={(e) => change({ nextRaceDate: e.target.value })}
                   />
                 </Field>
               </div>

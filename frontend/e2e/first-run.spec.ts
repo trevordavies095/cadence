@@ -31,8 +31,10 @@ test.describe("first run", () => {
     await page.getByRole("radio", { name: "A race" }).click();
     // The raw hints from your running log are not dumped on the questions.
     await expect(page.getByText(/HR Z2|from Tempo|Recent training|Tempo hints/)).toHaveCount(0);
-    await page.getByLabel("Which race?").fill("Half marathon");
+    await page.getByRole("radio", { name: "Half", exact: true }).click();
+    await page.getByLabel("Which race?").fill("Lakeshore Half");
     await page.getByLabel("Race date").fill("2027-01-16");
+    await page.getByLabel("Target").fill("under 2 hours");
     await page.getByRole("button", { name: "Next", exact: true }).click();
     for (const day of ["Tue", "Thu", "Sat"]) {
       await page.getByRole("checkbox", { name: day }).click();
@@ -56,12 +58,14 @@ test.describe("first run", () => {
     expect(sent.answers).toEqual({ schedule, injuries_constraints: "Tight left calf." });
     expect(sent.goal).toEqual({
       kind: "race",
-      distance: "other",
-      raceName: "Half marathon",
+      distance: "half",
+      raceName: "Lakeshore Half",
       raceDate: "2027-01-16",
+      target: "under 2 hours",
     });
+    const goalSentence = "Race: Lakeshore Half on Sat Jan 16 2027, target under 2 hours.";
     expect((await saved.json()).answers).toEqual({
-      goal: "Race: Half marathon on Sat Jan 16 2027.",
+      goal: goalSentence,
       schedule,
       injuries_constraints: "Tight left calf.",
     });
@@ -71,7 +75,7 @@ test.describe("first run", () => {
     await expect(page.getByText("Answers saved")).toHaveCount(0);
     await expect(
       page.locator('[aria-label="Here’s what Coach Cade understood"]'),
-    ).toContainText("Half marathon");
+    ).toContainText(goalSentence);
     // Nothing is written into the conversation in the athlete's name.
     const thread = await (await page.request.get("/api/thread")).json();
     expect(thread.messages.filter((m: { role: string }) => m.role === "athlete")).toEqual([]);
@@ -90,7 +94,7 @@ test.describe("first run", () => {
     await expect(page.getByRole("heading", { name: "About you", level: 1 })).toBeVisible();
     const card = page.getByRole("region", { name: "Here’s what Coach Cade understood" })
       .or(page.locator('[aria-label="Here’s what Coach Cade understood"]'));
-    await expect(card).toContainText("Half marathon");
+    await expect(card).toContainText(goalSentence);
     await expect(card.getByRole("button", { name: "Looks right" })).toBeVisible();
     await expect(card.getByRole("button", { name: "Fix something" })).toBeVisible();
     await expect(page.getByText("Proposed notes")).toHaveCount(0);
@@ -118,7 +122,7 @@ test.describe("first run", () => {
     await expect(page.getByRole("region", { name: "Changes" })).toContainText("Your first answers");
     await page.reload();
     await expect(page.getByRole("region", { name: "What Coach Cade knows" })).toBeVisible();
-    await expect(page.getByText("Half marathon").first()).toBeVisible();
+    await expect(page.getByText("Lakeshore Half").first()).toBeVisible();
 
     await page.goto("/");
     await expect(page.getByText("Here’s what Coach Cade understood")).toHaveCount(0);

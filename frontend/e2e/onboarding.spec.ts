@@ -45,6 +45,16 @@ async function serveQuestions(page: Page) {
 }
 
 const next = (page: Page) => page.getByRole("button", { name: "Next", exact: true });
+// Exact, because "Faster at 5k or 10k" also has 5k in its name.
+const chip = (page: Page, name: string) => page.getByRole("radio", { name, exact: true });
+
+/** Past the run-days step with Tue picked, then through the optional steps to Finish. */
+async function finishAfterGoal(page: Page) {
+  await next(page).click();
+  await page.getByRole("checkbox", { name: "Tue" }).click();
+  for (let i = 0; i < 3; i += 1) await next(page).click();
+  await page.getByRole("button", { name: "Finish" }).click();
+}
 
 test.describe("onboarding", () => {
   test("a welcome screen says what is coming, with one way forward", async ({ page }) => {
@@ -54,6 +64,9 @@ test.describe("onboarding", () => {
     await expect(page.getByRole("heading", { name: "Let Coach Cade get to know you", level: 1 })).toBeVisible();
     await expect(page.getByText("Five short questions")).toBeVisible();
     await expect(page.getByText("Which days you’re free to run")).toBeVisible();
+    await expect(
+      page.getByText("What you’re training for: a race, getting faster, staying fit or getting back to running"),
+    ).toBeVisible();
     await expect(page.locator("main").getByRole("button")).toHaveCount(1);
     await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
     await expect(page.getByRole("textbox")).toHaveCount(0);
@@ -87,7 +100,7 @@ test.describe("onboarding", () => {
     ).toBeVisible();
 
     await page.getByRole("button", { name: "Start" }).click();
-    await page.getByRole("radio", { name: "General fitness" }).click();
+    await page.getByRole("radio", { name: "Stay fit" }).click();
     const text = await page.locator("main").innerText();
     expect(text).not.toMatch(/HR Z2|Nimbus|bpm|from Tempo|Recent training/);
   });
@@ -117,14 +130,43 @@ test.describe("onboarding", () => {
     await page.goto("/onboarding");
     await page.getByRole("button", { name: "Start" }).click();
 
-    // 1: goal. A race asks for a name and a date picker; general fitness asks for nothing more.
+    // 1: what you're training for. Four choices, each showing only its own fields.
     await expect(page.getByText("What are you training for?")).toBeVisible();
+    await expect(
+      page.getByRole("radiogroup", { name: "What you’re training for" }).getByRole("radio"),
+    ).toHaveText(["A race", "Faster at 5k or 10k", "Stay fit", "Getting back to running"]);
     await expect(page.getByLabel("Which race?")).toHaveCount(0);
+    await expect(page.getByLabel("Target")).toHaveCount(0);
+
+    // A race: distance chips, a name, a date picker and a target.
     await page.getByRole("radio", { name: "A race" }).click();
+    await expect(page.getByRole("radiogroup", { name: "Race distance" }).getByRole("radio")).toHaveText([
+      "5k", "10k", "Half", "Marathon", "Other",
+    ]);
     await expect(page.getByLabel("Which race?")).toBeVisible();
+    await expect(page.getByLabel("Which race?")).not.toHaveAttribute("placeholder", /a half marathon/);
     await expect(page.getByLabel("Race date")).toHaveAttribute("type", "date");
-    await page.getByRole("radio", { name: "General fitness" }).click();
+    await expect(page.getByLabel("Target")).toBeVisible();
+    await expect(page.getByLabel("Next race date")).toHaveCount(0);
+
+    // Faster at 5k or 10k: two distance chips, a target and a next race date.
+    await page.getByRole("radio", { name: "Faster at 5k or 10k" }).click();
     await expect(page.getByLabel("Which race?")).toHaveCount(0);
+    await expect(page.getByRole("radiogroup", { name: "Race distance" })).toHaveCount(0);
+    await expect(
+      page.getByRole("radiogroup", { name: "Distance to get faster at" }).getByRole("radio"),
+    ).toHaveText(["5k", "10k"]);
+    await expect(page.getByLabel("Target")).toBeVisible();
+    await expect(page.getByLabel("Next race date")).toHaveAttribute("type", "date");
+
+    // Stay fit and getting back to running ask for nothing more here.
+    for (const kind of ["Stay fit", "Getting back to running"]) {
+      await page.getByRole("radio", { name: kind }).click();
+      await expect(page.getByLabel("Which race?")).toHaveCount(0);
+      await expect(page.getByLabel("Target")).toHaveCount(0);
+      await expect(page.getByLabel("Next race date")).toHaveCount(0);
+    }
+    await page.getByRole("radio", { name: "Stay fit" }).click();
     await expect(page.getByText("Required.")).toBeVisible();
     await next(page).click();
 
@@ -171,12 +213,21 @@ test.describe("onboarding", () => {
     await expect(page.locator("main").getByRole("alert")).toHaveText("Choose one to continue.");
     await expect(page.getByText("1 of 5", { exact: true })).toBeVisible();
 
-    await page.getByRole("radio", { name: "A race" }).click();
+    // Speed waits for its distance alone.
+    await page.getByRole("radio", { name: "Faster at 5k or 10k" }).click();
     await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
+    await next(page).click();
+    await expect(page.locator("main").getByRole("alert")).toHaveText("Choose 5k or 10k.");
+
+    // A race waits for a distance and a name; the date and the target can stay blank.
+    await page.getByRole("radio", { name: "A race" }).click();
+    await next(page).click();
+    await expect(page.locator("main").getByRole("alert")).toHaveText("Choose the race distance.");
+    await chip(page, "10k").click();
     await next(page).click();
     await expect(page.locator("main").getByRole("alert")).toHaveText("Tell Coach Cade which race it is.");
 
-    await page.getByLabel("Which race?").fill("10k");
+    await page.getByLabel("Which race?").fill("Turkey Trot");
     await next(page).click();
     await next(page).click();
     await expect(page.locator("main").getByRole("alert")).toHaveText("Choose at least one day to continue.");
@@ -188,7 +239,8 @@ test.describe("onboarding", () => {
     await page.goto("/onboarding");
     await page.getByRole("button", { name: "Start" }).click();
     await page.getByRole("radio", { name: "A race" }).click();
-    await page.getByLabel("Which race?").fill("10k");
+    await chip(page, "10k").click();
+    await page.getByLabel("Which race?").fill("Turkey Trot");
     await next(page).click();
 
     const form = page.getByRole("form", { name: "A few questions for Coach Cade" });
@@ -196,15 +248,92 @@ test.describe("onboarding", () => {
     await expect(form.getByRole("button", { name: /Skip/ })).toHaveCount(0);
 
     await form.getByRole("button", { name: "Back" }).click();
-    await expect(page.getByLabel("Which race?")).toHaveValue("10k");
+    await expect(page.getByLabel("Which race?")).toHaveValue("Turkey Trot");
     await expect(page.getByRole("radio", { name: "A race" })).toHaveAttribute("aria-checked", "true");
+    await expect(chip(page, "10k")).toHaveAttribute("aria-checked", "true");
   });
 
-  test("general fitness with two run days is worded for the coach as the same four answers", async ({ page }) => {
+  test("a race posts its distance, name, date and target", async ({ page }) => {
     const saved = await serveQuestions(page);
     await page.goto("/onboarding");
     await page.getByRole("button", { name: "Start" }).click();
-    await page.getByRole("radio", { name: "General fitness" }).click();
+    await page.getByRole("radio", { name: "A race" }).click();
+    await chip(page, "Marathon").click();
+    await page.getByLabel("Which race?").fill("  Lakeshore Marathon ");
+    await page.getByLabel("Race date").fill("2027-04-11");
+    await page.getByLabel("Target").fill("under 3:30");
+    await finishAfterGoal(page);
+
+    await expect.poll(() => saved.length).toBe(1);
+    expect(saved[0]!.goal).toEqual({
+      kind: "race",
+      distance: "marathon",
+      raceName: "Lakeshore Marathon",
+      raceDate: "2027-04-11",
+      target: "under 3:30",
+    });
+  });
+
+  test("a race without a date or target posts only what was given", async ({ page }) => {
+    const saved = await serveQuestions(page);
+    await page.goto("/onboarding");
+    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("radio", { name: "A race" }).click();
+    await chip(page, "Other").click();
+    await page.getByLabel("Which race?").fill("Hill 15k");
+    await finishAfterGoal(page);
+
+    await expect.poll(() => saved.length).toBe(1);
+    expect(saved[0]!.goal).toEqual({ kind: "race", distance: "other", raceName: "Hill 15k" });
+  });
+
+  test("faster at 5k or 10k posts the distance, with a target and next race date when given", async ({ page }) => {
+    const saved = await serveQuestions(page);
+    await page.goto("/onboarding");
+    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("radio", { name: "Faster at 5k or 10k" }).click();
+    await chip(page, "10k").click();
+    await page.getByLabel("Target").fill("under 45 minutes");
+    await page.getByLabel("Next race date").fill("2027-01-16");
+    await finishAfterGoal(page);
+
+    await expect.poll(() => saved.length).toBe(1);
+    expect(saved[0]!.goal).toEqual({
+      kind: "speed",
+      distance: "10k",
+      target: "under 45 minutes",
+      raceDate: "2027-01-16",
+    });
+  });
+
+  test("faster at 5k or 10k continues with the distance alone", async ({ page }) => {
+    const saved = await serveQuestions(page);
+    await page.goto("/onboarding");
+    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("radio", { name: "Faster at 5k or 10k" }).click();
+    await chip(page, "5k").click();
+    await finishAfterGoal(page);
+
+    await expect.poll(() => saved.length).toBe(1);
+    expect(saved[0]!.goal).toEqual({ kind: "speed", distance: "5k" });
+  });
+
+  test("getting back to running continues with the choice alone", async ({ page }) => {
+    const saved = await serveQuestions(page);
+    await page.goto("/onboarding");
+    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("radio", { name: "Getting back to running" }).click();
+    await finishAfterGoal(page);
+
+    await expect.poll(() => saved.length).toBe(1);
+    expect(saved[0]!.goal).toEqual({ kind: "return" });
+  });
+
+  test("stay fit with two run days is worded for the coach as the same four answers", async ({ page }) => {
+    const saved = await serveQuestions(page);
+    await page.goto("/onboarding");
+    await page.getByRole("button", { name: "Start" }).click();
+    await page.getByRole("radio", { name: "Stay fit" }).click();
     await next(page).click();
     await page.getByRole("checkbox", { name: "Mon" }).click();
     await page.getByRole("checkbox", { name: "Wed" }).click();
@@ -227,7 +356,7 @@ test.describe("onboarding", () => {
     const saved = await serveQuestions(page);
     await page.goto("/onboarding");
     await page.getByRole("button", { name: "Start" }).click();
-    await page.getByRole("radio", { name: "General fitness" }).click();
+    await page.getByRole("radio", { name: "Stay fit" }).click();
     await next(page).click();
 
     await expect(page.getByText("Your coach decides how many of them to use")).toBeVisible();
