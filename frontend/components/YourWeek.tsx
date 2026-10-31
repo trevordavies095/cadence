@@ -25,9 +25,12 @@ type Zones = {
   distribution: {
     zonePct: { z1: number; z2: number; z3: number; z4: number; z5: number };
     z1z2Pct: number;
-    z1z2TargetMet: boolean | null;
+    /** Present only when the goal sets an easy-share target. */
+    z1z2TargetMet?: boolean | null;
     noHrTimeSeriesInWeek: boolean;
   };
+  /** The goal's easy-share target in percent; null when the goal sets none. */
+  easyShareTarget?: number | null;
 };
 type RunRow = {
   workoutId: string;
@@ -105,7 +108,13 @@ const cell = "border-b border-border px-3 py-2 first:pl-0";
 /** Numeric cells: right-aligned, tabular, kept on one line. */
 const num = cx(cell, "text-right tabular-nums whitespace-nowrap");
 
-function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
+function ZoneBar({
+  zones,
+  target,
+}: {
+  zones: Zones["distribution"];
+  target: number | null;
+}) {
   if (zones.noHrTimeSeriesInWeek) {
     return <Muted>No heart rate data came in for this week.</Muted>;
   }
@@ -127,12 +136,15 @@ function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
             />
           ) : null,
         )}
-        {/* The 80% easy-zone target. */}
-        <div
-          className="absolute inset-y-0 w-0.5 bg-ink"
-          style={{ left: "80%" }}
-          aria-hidden
-        />
+        {/* The goal's easy-zone target, when it sets one. */}
+        {target !== null ? (
+          <div
+            className="absolute inset-y-0 w-0.5 bg-ink"
+            style={{ left: `${target}%` }}
+            data-easy-share-target={target}
+            aria-hidden
+          />
+        ) : null}
       </div>
       <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-sm tabular-nums">
         {ZONES.map((z, i) => (
@@ -144,11 +156,11 @@ function ZoneBar({ zones }: { zones: Zones["distribution"] }) {
       </ul>
       <p className="m-0 text-muted">
         {zones.z1z2Pct}% of your time was in the two easiest zones.{" "}
-        {zones.z1z2TargetMet === true
-          ? "That meets the 80% target."
-          : zones.z1z2TargetMet === false
-            ? "The target is 80% or more."
-            : null}
+        {target === null
+          ? null
+          : zones.z1z2TargetMet === true
+            ? `That meets the ${target}% target.`
+            : `The target is ${target}% or more.`}
       </p>
     </div>
   );
@@ -273,7 +285,10 @@ export function YourWeek({
       {zones ? (
         <div className="flex flex-col gap-2">
           <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">Heart rate zones</h3>
-          <ZoneBar zones={zones.distribution} />
+          <ZoneBar
+            zones={zones.distribution}
+            target={zones.easyShareTarget ?? null}
+          />
         </div>
       ) : null}
 

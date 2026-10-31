@@ -107,7 +107,7 @@ test.describe("Your week: the report", () => {
     // Distances come in the athlete's units, not as raw metres.
     await expect(numbers.getByRole("row", { name: /Mileage/ })).toContainText(/\d+\.\d+ mi/);
 
-    // Heart rate zones as a bar plus words, with the 80% target.
+    // Heart rate zones as a bar plus words; the target follows the athlete's goal.
     await expect(week.getByRole("heading", { name: "Heart rate zones" })).toBeVisible();
     await expect(week.getByRole("img", { name: /Time in heart rate zones/ })).toBeVisible();
 
@@ -120,6 +120,52 @@ test.describe("Your week: the report", () => {
     // No raw markdown or ISO labels leak into the report.
     const text = await week.innerText();
     expect(text).not.toMatch(/\|\s*---|\*\*|\b\d{4}-W\d{2}\b/);
+  });
+
+  test("the zone bar draws the goal's easy-share target, and none without one", async ({
+    page,
+  }) => {
+    const zonesWith = async (target: number | null, met: boolean | null) => {
+      await page.unroute(/\/api\/weeks\/[^/]+\/recap\/zones$/);
+      await page.route(/\/api\/weeks\/[^/]+\/recap\/zones$/, (route) =>
+        route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            easyShareTarget: target,
+            distribution: {
+              zonePct: { z1: 40, z2: 37, z3: 18, z4: 5, z5: 0 },
+              z1z2Pct: 77,
+              ...(met === null ? {} : { z1z2TargetMet: met }),
+              easyShareTarget: target,
+              noHrTimeSeriesInWeek: false,
+            },
+          }),
+        }),
+      );
+      await page.goto("/review");
+      return page.getByRole("region", { name: "Your week", exact: true });
+    };
+
+    // A 10k block: 75%, met.
+    let week = await zonesWith(75, true);
+    await expect(week).toContainText("77% of your time was in the two easiest zones.");
+    await expect(week).toContainText("That meets the 75% target.");
+    await expect(week.locator("[data-easy-share-target]")).toHaveAttribute(
+      "data-easy-share-target",
+      "75",
+    );
+
+    // A half in build: 80%, below.
+    week = await zonesWith(80, false);
+    await expect(week).toContainText("The target is 80% or more.");
+
+    // Staying fit: the bar with no tick and no verdict.
+    week = await zonesWith(null, null);
+    await expect(week).toContainText("77% of your time was in the two easiest zones.");
+    await expect(week.locator("[data-easy-share-target]")).toHaveCount(0);
+    await expect(week.getByText(/of your time was in the two easiest zones/)).not.toContainText(
+      /target/i,
+    );
   });
 
   test("says so when the check-in was skipped, instead of showing answers", async ({
