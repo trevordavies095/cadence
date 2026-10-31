@@ -90,6 +90,38 @@ export function finalizeAnswers(
   return next;
 }
 
+type Strength = NonNullable<Weekly["strength_sessions"]>;
+
+/** The strength question covers rehab and cross-training too: Tempo only logs runs. */
+export const STRENGTH_LABEL = "Strength, rehab or cross-training";
+
+/** Change the strength answer; blank parts are dropped, and an empty answer is removed. */
+export function withStrengthAnswer(
+  answers: SubjectiveAnswers,
+  patch: { [K in keyof Strength]?: Strength[K] | undefined },
+): SubjectiveAnswers {
+  const strength: Strength = { ...(answers.weekly?.strength_sessions ?? {}), ...patch };
+  if (strength.completed === undefined) delete strength.completed;
+  if (strength.planned === undefined) delete strength.planned;
+  if (!strength.notes?.trim()) delete strength.notes;
+  return withWeeklyAnswer(answers, { strength_sessions: emptyToUndefined(strength) });
+}
+
+/** "2 sessions", or "2 of 3 planned", with any notes after. Null when there is nothing. */
+export function strengthText(s: Strength | undefined): string | null {
+  if (!s) return null;
+  const count =
+    s.completed != null && s.planned != null
+      ? `${s.completed} of ${s.planned} planned`
+      : s.completed != null
+        ? `${s.completed} ${s.completed === 1 ? "session" : "sessions"}`
+        : s.planned != null
+          ? `${s.planned} planned`
+          : null;
+  const text = [count, s.notes?.trim() || null].filter(Boolean).join(" · ");
+  return text || null;
+}
+
 export type SummaryRow = {
   /** Index into the steps, so "Change" can go straight there. */
   step: number;
@@ -124,12 +156,7 @@ export function summaryRows(
   const weekly: [string, string | null][] = [
     ["Sleep", w.sleep_avg_hrs !== undefined ? `${w.sleep_avg_hrs.toFixed(1)} hours a night` : null],
     ["Stress", w.stress_level ?? null],
-    [
-      "Strength",
-      w.strength_sessions?.completed !== undefined
-        ? `${w.strength_sessions.completed} ${w.strength_sessions.completed === 1 ? "session" : "sessions"}`
-        : null,
-    ],
+    [STRENGTH_LABEL, strengthText(w.strength_sessions)],
     ["Your body", w.body_check ?? null],
     ["Next week", w.feeling_into_next_week ?? null],
     ["For Coach Cade", w.questions_for_coach?.[0] ?? null],

@@ -7,6 +7,7 @@ import {
   Button,
   ButtonLink,
   ErrorNote,
+  Field,
   Input,
   Muted,
   Page,
@@ -32,6 +33,7 @@ import {
   summaryRows,
   dayLabel,
   withRunAnswer,
+  withStrengthAnswer,
   withWeeklyAnswer,
 } from "@/lib/checkIn";
 import { describeError, type UiError } from "@/lib/errors";
@@ -327,22 +329,42 @@ export default function CheckInPage() {
             />
           </Question>
         ) : current.key === "strength" ? (
-          <Question text="How many strength sessions did you do?">
+          <Question text="Strength, rehab or cross-training sessions this week?">
+            <p className="m-0 text-sm font-semibold text-muted">How many you did</p>
             <Stepper
-              label="Strength sessions"
+              label="Sessions you did"
               value={weekly.strength_sessions?.completed}
               min={0}
-              max={7}
+              max={14}
               step={1}
               firstUp={1}
               firstDown={0}
               format={sessions}
               lessLabel="Fewer sessions"
               moreLabel="More sessions"
-              onChange={(n) =>
-                setAnswers(withWeeklyAnswer(answers, { strength_sessions: { completed: n } }))
-              }
+              onChange={(n) => setAnswers(withStrengthAnswer(answers, { completed: n }))}
             />
+            <p className="m-0 text-sm font-semibold text-muted">How many you planned, if you had a plan</p>
+            <Stepper
+              label="Sessions you planned"
+              value={weekly.strength_sessions?.planned}
+              min={0}
+              max={14}
+              step={1}
+              firstUp={1}
+              firstDown={0}
+              format={sessions}
+              lessLabel="Fewer planned"
+              moreLabel="More planned"
+              onChange={(n) => setAnswers(withStrengthAnswer(answers, { planned: n }))}
+            />
+            <Field label="What you did, like swimming, cycling or physio exercises">
+              <Textarea
+                rows={2}
+                value={weekly.strength_sessions?.notes ?? ""}
+                onChange={(e) => setAnswers(withStrengthAnswer(answers, { notes: e.target.value }))}
+              />
+            </Field>
           </Question>
         ) : current.key === "body" ? (
           <Question text="How did your body feel? Mention any aches, niggles or tiredness.">

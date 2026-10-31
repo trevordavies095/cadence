@@ -7,6 +7,7 @@ import {
   type SubjectiveAnswers,
   type UnitPreference,
 } from "@/lib/api";
+import { STRENGTH_LABEL, strengthText } from "@/lib/checkIn";
 import { describeError, type UiError } from "@/lib/errors";
 import { distanceLabel, durationLabel, localYmd, paceLabel } from "@/lib/units";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
@@ -163,15 +164,8 @@ function answerLines(a: SubjectiveAnswers["weekly"]): Array<[string, string]> {
     rows.push(["Sleep", `About ${a.sleep_avg_hrs} hours a night${range}`]);
   }
   if (a.stress_level) rows.push(["Stress", a.stress_level]);
-  if (a.strength_sessions) {
-    const s = a.strength_sessions;
-    const count =
-      s.completed != null
-        ? `${s.completed}${s.planned != null ? ` of ${s.planned}` : ""} sessions`
-        : null;
-    const text = [count, s.notes].filter(Boolean).join(" · ");
-    if (text) rows.push(["Strength", text]);
-  }
+  const strength = strengthText(a.strength_sessions);
+  if (strength) rows.push([STRENGTH_LABEL, strength]);
   if (a.body_check) rows.push(["How your body feels", a.body_check]);
   if (a.feeling_into_next_week) rows.push(["Going into next week", a.feeling_into_next_week]);
   if (a.questions_for_coach?.length) {

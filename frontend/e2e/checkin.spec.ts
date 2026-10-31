@@ -66,11 +66,18 @@ async function serveCheckIn(page: Page) {
   await page.route(/\/api\/weeks\/[^/]+\/recap(\?.*)?$/, (route) => {
     const skipped = route.request().url().includes("skip_subjective=true");
     if (skipped) skips.push(route.request().url());
-    return route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify(skipped ? { ...REPORT, checkInStatus: "skipped", subjective: "skipped" } : NEEDS_CHECK_IN),
-    });
+    // Once answers are saved, the week is a report carrying them, as Your week reads it.
+    const body = skipped
+      ? { ...REPORT, checkInStatus: "skipped", subjective: "skipped" }
+      : saved.length > 0
+        ? { ...REPORT, subjectiveAnswers: saved[saved.length - 1] }
+        : NEEDS_CHECK_IN;
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
   });
+  // Your week's numbers are not under test here; only its check-in card is.
+  await page.route(/\/api\/weeks\/[^/]+\/recap\/(summary|zones|run-by-run|trends|notable)$/, (route) =>
+    route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "not_found" }) }),
+  );
   await page.route(/\/api\/weeks\/[^/]+\/recap\/subjective$/, (route) => {
     saved.push(route.request().postDataJSON());
     return route.fulfill({
@@ -152,7 +159,10 @@ test.describe("check-in", () => {
       "Very low", "Low", "Moderate", "High", "Very high",
     ]);
     await next(page).click();
-    await expect(page.getByText("How many strength sessions did you do?")).toBeVisible();
+    await expect(page.getByText("Strength, rehab or cross-training sessions this week?")).toBeVisible();
+    await expect(page.getByRole("button", { name: "More sessions" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "More planned" })).toBeVisible();
+    await expect(page.getByLabel("What you did, like swimming, cycling or physio exercises")).toBeVisible();
     await next(page).click();
     await expect(page.getByText("How did your body feel?")).toBeVisible();
     await next(page).click();
@@ -206,7 +216,12 @@ test.describe("check-in", () => {
     await next(page).click();
     await page.getByRole("button", { name: "More sessions" }).click();
     await page.getByRole("button", { name: "More sessions" }).click();
-    await expect(page.getByText("2 sessions")).toBeVisible();
+    await expect(page.getByRole("group", { name: "Sessions you did" })).toContainText("2 sessions");
+    for (let i = 0; i < 3; i += 1) await page.getByRole("button", { name: "More planned" }).click();
+    await expect(page.getByRole("group", { name: "Sessions you planned" })).toContainText("3 sessions");
+    await page
+      .getByLabel("What you did, like swimming, cycling or physio exercises")
+      .fill("One swim, one physio session");
     await next(page).click();
     await page.getByLabel("How your body felt").fill("Legs heavy midweek.");
     await next(page).click();
@@ -215,6 +230,7 @@ test.describe("check-in", () => {
     await page.getByLabel("Anything else for Coach Cade").fill("Can I move Thursday?\nAlso, what about shoes?");
     await next(page).click();
     await expect(page.getByText("Here’s what you’re sending Coach Cade.")).toBeVisible();
+    await expect(page.getByLabel("Your answers")).toContainText("2 of 3 planned · One swim, one physio session");
     await page.getByRole("button", { name: "Finish check-in" }).click();
 
     await expect.poll(() => saved.length).toBe(1);
@@ -227,7 +243,7 @@ test.describe("check-in", () => {
       weekly: {
         sleep_avg_hrs: 7.5,
         stress_level: "High",
-        strength_sessions: { completed: 2 },
+        strength_sessions: { completed: 2, planned: 3, notes: "One swim, one physio session" },
         body_check: "Legs heavy midweek.",
         feeling_into_next_week: "Rested and keen.",
         // One entry, not one per line.
@@ -236,6 +252,30 @@ test.describe("check-in", () => {
     });
     expect(posted).toEqual([]);
     await expect(page).toHaveURL(/\/review/);
+
+    // Your week's check-in card shows the strength answer as it was given.
+    const card = page.getByRole("region", { name: "Your week", exact: true });
+    await expect(card.getByRole("heading", { name: "Your check-in" })).toBeVisible();
+    await expect(card.getByRole("term").filter({ hasText: "Strength, rehab or cross-training" })).toHaveCount(1);
+    await expect(card).toContainText("2 of 3 planned · One swim, one physio session");
+  });
+
+  test("a strength answer with only the number done reaches Your week", async ({ page }) => {
+    const saved = await serveCheckIn(page);
+    await page.goto("/check-in");
+    for (let i = 0; i < 4; i += 1) await page.getByRole("button", { name: "Skip", exact: true }).click();
+    // Strength: the number done, nothing else.
+    await page.getByRole("button", { name: "More sessions" }).click();
+    await page.getByRole("button", { name: "More sessions" }).click();
+    for (let i = 0; i < 4; i += 1) await next(page).click();
+    await page.getByRole("button", { name: "Finish check-in" }).click();
+
+    await expect.poll(() => saved.length).toBe(1);
+    expect((saved[0] as { weekly: unknown }).weekly).toEqual({ strength_sessions: { completed: 2 } });
+    await expect(page).toHaveURL(/\/review/);
+    const card = page.getByRole("region", { name: "Your week", exact: true });
+    await expect(card.getByRole("term").filter({ hasText: "Strength, rehab or cross-training" })).toHaveCount(1);
+    await expect(card).toContainText("2 sessions");
   });
 
   test("skipping every question saves only the watch's effort", async ({ page }) => {
