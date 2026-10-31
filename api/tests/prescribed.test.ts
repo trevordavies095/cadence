@@ -45,6 +45,13 @@ describe("prescribed week persist + thread artifact (#30)", () => {
       }),
     });
 
+    // A race goal keeps the week with a quality session and a Sunday long run.
+    await app.request("/goal", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ kind: "race", distance: "marathon" }),
+    });
+
     const week = await json(
       await app.request("/weeks/current", { method: "POST" }),
     );

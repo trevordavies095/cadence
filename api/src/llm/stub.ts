@@ -9,6 +9,7 @@ import {
   formatIsoWeekRangeShort,
   formatWeekRangeShort,
 } from "../clock/weekRangeShort.js";
+import type { GoalKind } from "../goal/types.js";
 import type { ModelPacket } from "../packet/types.js";
 import { LlmSchemaError, type LlmCallOptions, type LlmPort } from "./port.js";
 import {
@@ -34,6 +35,7 @@ import type {
   DossierV1Input,
   MidWeekChatReply,
   PrescribedDay,
+  PrescribedRun,
   PrescribedWeek,
   ReadAnswer,
   ReadFlag,
@@ -110,71 +112,270 @@ function resolveIsoWeekLabel(packet: ModelPacket, weekStartMonday: string): stri
   return `${isoYear}-W${String(isoWeek).padStart(2, "0")}`;
 }
 
+/** The goal kind the stub plans for; no goal plans as fitness. */
+function stubGoalKind(packet: ModelPacket): GoalKind {
+  return packet.goal?.kind ?? "fitness";
+}
+
+/** Weekly distance (meters) the stub plans when the report gives no history. */
+const STUB_DEFAULT_WEEK_M: Record<Exclude<GoalKind, "return">, number> = {
+  race: 40000,
+  speed: 30000,
+  fitness: 24000,
+};
+
+const METERS_PER_MILE = 1609.344;
+
+/** Meters from a report cell such as "42.00 km" or "26.10 mi"; null otherwise. */
+function parseDistanceCell(cell: string | undefined): number | null {
+  const m = /^\s*(\d+(?:\.\d+)?)\s*(km|mi)\s*$/.exec(cell ?? "");
+  if (!m) return null;
+  const value = Number(m[1]);
+  return m[2] === "mi" ? value * METERS_PER_MILE : value * 1000;
+}
+
+/** The Mileage row of a report's Summary table: this week and the 3-week average. */
+function parseMileageRow(
+  md: string | null | undefined,
+): { thisWeekM: number | null; threeWkAvgM: number | null } | null {
+  const row = /^\|\s*Mileage\s*\|([^\n]*)$/m.exec(md ?? "");
+  if (!row) return null;
+  const cells = row[1]!.split("|").map((c) => c.trim());
+  return {
+    thisWeekM: parseDistanceCell(cells[0]),
+    threeWkAvgM: parseDistanceCell(cells[2]),
+  };
+}
+
 /**
- * Deterministic 7-day template (Mon–Sun):
- * easy / rest / easy / quality / rest / easy / long
+ * Average weekly distance (meters) over the last four weeks, from the report's
+ * Mileage row (this week plus the 3-week average of the weeks before), else
+ * from this week and the recent weeks' reports. Null when nothing says.
  */
-function buildStubDays(weekStartMonday: string): PrescribedDay[] {
-  const dates = expectedPlanDates(weekStartMonday);
-  const pattern: Array<{
-    dayType: DayType;
-    distanceM?: number;
-    structure?: string | null;
-    paceOrHr?: string | null;
-    shoes?: string | null;
-    strength?: string | null;
-    notes?: string | null;
-  }> = [
-    {
-      dayType: "easy",
-      distanceM: 8000,
-      paceOrHr: "easy pace / conversational",
-      shoes: "daily trainer",
-      notes: "Keep HR relaxed.",
-    },
-    { dayType: "rest", notes: "Full rest or easy walk." },
-    {
-      dayType: "easy",
-      distanceM: 10000,
-      paceOrHr: "easy pace",
-      shoes: "daily trainer",
-      strength: "20–30 min core + hip stability",
-    },
-    {
-      dayType: "quality",
-      distanceM: 12000,
-      structure: "2 mi warm-up + 4×3 min threshold w/ 2 min jog + cool-down",
-      paceOrHr: "threshold effort / controlled breathing",
-      shoes: "lighter trainer or race flat",
-      notes: "Stop if form falls apart.",
-    },
-    { dayType: "rest", strength: "Optional mobility only." },
-    {
-      dayType: "easy",
-      distanceM: 8000,
-      paceOrHr: "easy pace",
-      shoes: "daily trainer",
-    },
-    {
-      dayType: "long",
-      distanceM: 18000,
-      paceOrHr: "easy–steady; finish feeling you could do 2 more easy miles",
-      shoes: "cushioned long-run shoe",
-      notes: "Fuel early; no heroics.",
-    },
+export function recentWeeklyDistanceM(packet: ModelPacket): number | null {
+  const current = parseMileageRow(packet.recapMarkdown);
+  if (current?.thisWeekM != null && current.threeWkAvgM != null) {
+    const avg = (current.thisWeekM + 3 * current.threeWkAvgM) / 4;
+    return avg > 0 ? avg : null;
+  }
+  const weeks: number[] = [];
+  if (current?.thisWeekM != null) weeks.push(current.thisWeekM);
+  for (const w of packet.recentHistory ?? []) {
+    if (weeks.length >= 4) break;
+    const m = parseMileageRow(w.recapMarkdown)?.thisWeekM;
+    if (m != null) weeks.push(m);
+  }
+  if (weeks.length === 0) return null;
+  const avg = weeks.reduce((a, b) => a + b, 0) / weeks.length;
+  return avg > 0 ? avg : null;
+}
+
+type StubDayPattern = {
+  dayType: DayType;
+  /** Share of the week's distance (distance-based kinds). */
+  share?: number;
+  /** Planned minutes (return weeks: duration only). */
+  minutes?: number;
+  structure?: string | null;
+  paceOrHr?: string | null;
+  shoes?: string | null;
+  strength?: string | null;
+  notes?: string | null;
+};
+
+const REST: StubDayPattern = { dayType: "rest", notes: "Full rest or easy walk." };
+
+/** Race: today's shape, easy / rest / easy / quality / rest / easy / long. */
+const RACE_PATTERN: StubDayPattern[] = [
+  {
+    dayType: "easy",
+    share: 8 / 56,
+    paceOrHr: "easy pace / conversational",
+    shoes: "daily trainer",
+    notes: "Keep HR relaxed.",
+  },
+  REST,
+  {
+    dayType: "easy",
+    share: 10 / 56,
+    paceOrHr: "easy pace",
+    shoes: "daily trainer",
+    strength: "20–30 min core + hip stability",
+  },
+  {
+    dayType: "quality",
+    share: 12 / 56,
+    structure: "2 mi warm-up + 4×3 min threshold w/ 2 min jog + cool-down",
+    paceOrHr: "threshold effort / controlled breathing",
+    shoes: "lighter trainer or race flat",
+    notes: "Stop if form falls apart.",
+  },
+  { dayType: "rest", strength: "Optional mobility only." },
+  { dayType: "easy", share: 8 / 56, paceOrHr: "easy pace", shoes: "daily trainer" },
+  {
+    dayType: "long",
+    share: 18 / 56,
+    paceOrHr: "easy–steady; finish feeling you could do 2 more easy miles",
+    shoes: "cushioned long-run shoe",
+    notes: "Fuel early; no heroics.",
+  },
+];
+
+/** Speed: one quality session and one longer run, easy days around them. */
+const SPEED_PATTERN: StubDayPattern[] = [
+  REST,
+  {
+    dayType: "quality",
+    share: 0.25,
+    structure: "15 min easy warm-up, 5 x 3 min at 5K effort with 2 min jog, 10 min cool-down",
+    paceOrHr: "5K effort / hard but controlled",
+    shoes: "lighter trainer",
+    notes: "The one hard session this week. Stop if form falls apart.",
+  },
+  {
+    dayType: "easy",
+    share: 0.2,
+    paceOrHr: "easy pace / conversational",
+    shoes: "daily trainer",
+    notes: "Easy the day after the session.",
+  },
+  { dayType: "rest", strength: "20–30 min core + hip stability" },
+  { dayType: "easy", share: 0.2, paceOrHr: "easy pace", shoes: "daily trainer" },
+  REST,
+  {
+    dayType: "long",
+    share: 0.35,
+    paceOrHr: "easy pace throughout",
+    shoes: "daily trainer",
+    notes: "Longer, never harder.",
+  },
+];
+
+/** Fitness: three easy runs and one optional longer run. */
+const FITNESS_PATTERN: StubDayPattern[] = [
+  REST,
+  { dayType: "easy", share: 0.22, paceOrHr: "easy pace / conversational", shoes: "daily trainer" },
+  REST,
+  {
+    dayType: "easy",
+    share: 0.22,
+    paceOrHr: "easy pace / conversational",
+    shoes: "daily trainer",
+    strength: "Optional 20 min core + mobility",
+  },
+  REST,
+  { dayType: "easy", share: 0.22, paceOrHr: "easy pace / conversational", shoes: "daily trainer" },
+  {
+    dayType: "long",
+    share: 0.34,
+    paceOrHr: "easy pace throughout",
+    shoes: "daily trainer",
+    notes: "Optional. Skip it or keep it short if the week has been full.",
+  },
+];
+
+/** Minutes a return session starts from when the starting point gives no number. */
+const RETURN_DEFAULT_START_MIN = 15;
+/** Minutes added per week since the return began. */
+const RETURN_WEEKLY_STEP_MIN = 3;
+const RETURN_MAX_MIN = 45;
+
+/** Whole weeks from `since` (YYYY-MM-DD) to the plan week's Monday; 0 when unknown. */
+function weeksSince(since: string | undefined, weekStartMonday: string): number {
+  if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since)) return 0;
+  const days =
+    (Date.parse(`${weekStartMonday}T00:00:00Z`) - Date.parse(`${since}T00:00:00Z`)) /
+    86400000;
+  return Number.isFinite(days) && days > 0 ? Math.floor(days / 7) : 0;
+}
+
+/**
+ * Session minutes for a return week: the number in the starting point (else
+ * 15), plus a little for each whole week since the return began, capped.
+ */
+export function returnSessionMinutes(packet: ModelPacket, weekStartMonday: string): number {
+  const m = /(\d+)\s*-?\s*(?:min|mins|minute|minutes)\b/i.exec(
+    packet.goal?.startingPoint ?? "",
+  );
+  const parsed = m ? Number(m[1]) : NaN;
+  const start =
+    Number.isFinite(parsed) && parsed > 0
+      ? Math.min(parsed, RETURN_MAX_MIN)
+      : RETURN_DEFAULT_START_MIN;
+  const built =
+    start + RETURN_WEEKLY_STEP_MIN * weeksSince(packet.goal?.since, weekStartMonday);
+  return Math.min(built, RETURN_MAX_MIN);
+}
+
+function walkRunStructure(minutes: number): string {
+  const intervals =
+    minutes < 20
+      ? "1 min run, 2 min walk"
+      : minutes < 30
+        ? "2 min run, 1 min walk"
+        : "4 min run, 1 min walk";
+  return `${minutes} min walk-run: ${intervals}, repeated`;
+}
+
+/** Return: three walk-run sessions in minutes, rest between. */
+function returnPattern(minutes: number): StubDayPattern[] {
+  const session = (notes: string): StubDayPattern => ({
+    dayType: "easy",
+    minutes,
+    structure: walkRunStructure(minutes),
+    paceOrHr: "very easy; walk whenever you need to",
+    shoes: "daily trainer",
+    notes,
+  });
+  return [
+    session("Stop and walk home if anything hurts."),
+    REST,
+    session("Same as Monday. Note how you feel the next morning."),
+    { dayType: "rest", strength: "Optional 15 min mobility" },
+    REST,
+    session("Only if Wednesday felt fine the next day."),
+    REST,
   ];
+}
+
+/** Round to the nearest 500 m, never under 3 km. */
+function roundRunM(m: number): number {
+  return Math.max(3000, Math.round(m / 500) * 500);
+}
+
+/**
+ * Deterministic 7-day plan (Mon–Sun) shaped by the goal kind: race keeps the
+ * easy / rest / easy / quality / rest / easy / long week, speed has one quality
+ * session and one longer run, fitness three easy runs and an optional longer
+ * one, return walk-run sessions in minutes. No goal plans as fitness. Distance
+ * kinds scale the week from the last four weeks, else a modest default.
+ */
+function buildStubDays(packet: ModelPacket, weekStartMonday: string): PrescribedDay[] {
+  const dates = expectedPlanDates(weekStartMonday);
+  const kind = stubGoalKind(packet);
+  let pattern: StubDayPattern[];
+  let weekM = 0;
+  if (kind === "return") {
+    pattern = returnPattern(returnSessionMinutes(packet, weekStartMonday));
+  } else {
+    pattern =
+      kind === "race" ? RACE_PATTERN : kind === "speed" ? SPEED_PATTERN : FITNESS_PATTERN;
+    weekM = recentWeeklyDistanceM(packet) ?? STUB_DEFAULT_WEEK_M[kind];
+  }
 
   return dates.map((date, i) => {
     const p = pattern[i]!;
     const day: PrescribedDay = { date, dayType: p.dayType };
-    if (p.dayType !== "rest" && p.distanceM != null) {
-      day.run = {
+    if (p.dayType !== "rest" && (p.share != null || p.minutes != null)) {
+      const run: PrescribedRun = {
         type: p.dayType === "quality" || p.dayType === "long" ? p.dayType : "easy",
-        distanceM: p.distanceM,
+        distanceM: p.share != null ? roundRunM(p.share * weekM) : 0,
         structure: p.structure ?? null,
         paceOrHr: p.paceOrHr ?? null,
         shoes: p.shoes ?? null,
       };
+      if (p.minutes != null) run.durationS = p.minutes * 60;
+      day.run = run;
     } else {
       day.run = null;
     }
@@ -184,17 +385,45 @@ function buildStubDays(weekStartMonday: string): PrescribedDay[] {
   });
 }
 
+/** The second sentence of the headline, by goal kind. */
+const STUB_HEADLINE_FOCUS: Record<GoalKind, string> = {
+  race: "Protect easy days and land the long run.",
+  speed: "Make the one quality session count and keep the rest easy.",
+  fitness: "Three easy runs keep you fit, and the longer run is optional.",
+  return: "Walk-run sessions, a little longer than last week, and stop if anything hurts.",
+};
+
 /** The stub's headline: the same sentence its read opens with. */
 function buildStubHeadline(packet: ModelPacket): string {
   const hasRecap = Boolean(packet.recapMarkdown?.trim());
+  const kind = stubGoalKind(packet);
   const planRange = packet.planWeek
     ? formatWeekRangeShort(packet.planWeek.startDate, packet.planWeek.endDate)
     : null;
   const weekLabel = planRange ? `Next week (${planRange})` : "Next week";
-  return hasRecap
-    ? `${weekLabel} looks workable. Protect easy days and land the long run.`
-    : `I don't have much to go on for ${weekLabel.toLowerCase()}, so this is a conservative base week.`;
+  if (hasRecap) return `${weekLabel} looks workable. ${STUB_HEADLINE_FOCUS[kind]}`;
+  const week = weekLabel.toLowerCase();
+  return kind === "return"
+    ? `I don't have much to go on for ${week}, so this is a gentle walk-run week.`
+    : `I don't have much to go on for ${week}, so this is a conservative base week.`;
 }
+
+/** The flag the stub watches when nothing else stands out, by goal kind. */
+const STUB_DEFAULT_FLAG: Record<GoalKind, ReadFlag> = {
+  race: { title: "Heart rate drift", detail: "Nothing major. Watch drift on easy days." },
+  speed: {
+    title: "The day after the session",
+    detail: "Nothing major. Keep the day after the quality session truly easy.",
+  },
+  fitness: {
+    title: "Easy means easy",
+    detail: "Nothing major. Every run this week should feel conversational.",
+  },
+  return: {
+    title: "Pain over pace",
+    detail: "Walk or stop if anything hurts, and tell me in your check-in.",
+  },
+};
 
 /** What the stub watches: the same concerns its read used to list. */
 function buildStubFlags(packet: ModelPacket): ReadFlag[] {
@@ -220,8 +449,10 @@ function buildStubFlags(packet: ModelPacket): ReadFlag[] {
       detail: "I am working from your profile and weekly report only.",
     });
   }
-  if (flags.length === 0) {
-    flags.push({ title: "Heart rate drift", detail: "Nothing major. Watch drift on easy days." });
+  const kind = stubGoalKind(packet);
+  // A return week always watches for pain; other kinds only when nothing else stands out.
+  if (flags.length === 0 || kind === "return") {
+    flags.push(STUB_DEFAULT_FLAG[kind]);
   }
   return flags;
 }
@@ -243,16 +474,23 @@ function buildStubAnswers(packet: ModelPacket): ReadAnswer[] {
     .slice(0, 8)
     .map((question) => ({
       question,
-      answer: "Keep quality to one session and treat rest days as real rest. Ask me again during the week if it still feels off.",
+      answer: "Keep the week as planned and treat rest days as real rest. Ask me again during the week if it still feels off.",
     }));
 }
 
 /** The stub's reasoning; the headline, flags and answers are shown above it. */
-function buildStubAnalysis(): string {
-  return [
-    "## Why this plan",
-    "Keep quality to one session, shoes as listed, and treat rest days as real rest.",
-  ].join("\n");
+const STUB_ANALYSIS: Record<GoalKind, string> = {
+  race: "Keep quality to one session, shoes as listed, and treat rest days as real rest.",
+  speed:
+    "One quality session carries the week. The longer run stays easy and rest days are real rest.",
+  fitness:
+    "Three easy runs hold your fitness. The longer run is a bonus, not a test, and rest days are real rest.",
+  return:
+    "Walk-run sessions in minutes, not distance, a little longer each week. Rest days are part of the return.",
+};
+
+function buildStubAnalysis(packet: ModelPacket): string {
+  return ["## Why this plan", STUB_ANALYSIS[stubGoalKind(packet)]].join("\n");
 }
 
 function buildStubSettingsBullets(packet: ModelPacket): string[] | undefined {
@@ -271,13 +509,13 @@ export function buildStubWeeklyReply(packet: ModelPacket): WeeklyReply {
     planWeek.isoWeek ?? resolveIsoWeekLabel(packet, weekStartMonday);
   const prescribedWeek: PrescribedWeek = {
     week,
-    days: buildStubDays(weekStartMonday),
+    days: buildStubDays(packet, weekStartMonday),
   };
   const reply: WeeklyReply = {
     headline: buildStubHeadline(packet),
     flags: buildStubFlags(packet),
     answers: buildStubAnswers(packet),
-    analysis: buildStubAnalysis(),
+    analysis: buildStubAnalysis(packet),
     prescribedWeek,
   };
   const bullets = buildStubSettingsBullets(packet);
