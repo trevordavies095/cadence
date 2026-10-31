@@ -51,7 +51,7 @@ The evidence this decision rests on is a replay over three six-week seasons that
 
 - A report line that judges the athlete needs a knob. A new verdict, or a new goal column, means a change to `goalKnobs.ts`, with the source beside the constant, and a check that the stay-fit and return columns stay quiet.
 - The knobs table's values come from published coaching and injury research, not from Cadence's own data. Retuning one is a change to that file alone.
-- The goal record is the only place the goal lives. About you still describes it in prose for the model, and the Settings correction keeps the two in step. Code must read the record, never About you.
+- The goal record is the source of truth for the goal. About you still describes it in prose for the model, and the Settings correction keeps the two in step. Code must read the record, never About you.
 - Because labels are trusted, a mislabelled run skews the easy-family lines and trends. That is accepted: the athlete owns the label and can fix it in Tempo.
 - Any change to the weekly prompt, its goal lines or the coaching blocks is replayed through the three goal checks before it ships.
 - An athlete with no stored goal gets the fitness column until they set one in Settings.
