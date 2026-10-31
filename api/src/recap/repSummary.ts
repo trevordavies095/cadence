@@ -5,10 +5,13 @@
  * Pure: takes a run's splits and average pace, returns numbers or a string.
  *
  * - Only device laps count. Distance splits (km/mile) are never reps.
- * - When any device lap carries an intensity, reps are the laps marked
- *   `active` or `interval`.
- * - Otherwise (HealthKit, Strava CSV, GPX), reps are laps at least 20 s/km
- *   faster than the run's average pace, and the summary says "(by pace)".
+ * - When any device lap carries a structured intensity (rest, recovery,
+ *   warmup, cooldown, interval), reps are the laps marked `active` or
+ *   `interval`. Laps that are all `active` are plain auto-laps, not a
+ *   structured session, so they fall through to the pace rule.
+ * - Otherwise (auto-laps, HealthKit, Strava CSV, GPX), reps are laps at
+ *   least 20 s/km faster than the run's average pace, and the summary says
+ *   "(by pace)".
  * - Fewer than two reps is no summary.
  */
 import type { TempoUnitPreference } from "../tempo/port.js";
@@ -42,6 +45,14 @@ export type RepSummary = {
 export const PACE_REP_MARGIN_S_PER_KM = 20;
 
 const REP_INTENSITIES = new Set(["active", "interval"]);
+/** Intensities that only a structured workout writes. */
+const STRUCTURED_INTENSITIES = new Set([
+  "rest",
+  "recovery",
+  "warmup",
+  "cooldown",
+  "interval",
+]);
 /** Tempo's device-lap kind; "lap" is the older export spelling. */
 const DEVICE_LAP_KINDS = new Set(["device_lap", "lap"]);
 
@@ -57,8 +68,15 @@ function lapPace(lap: RepLap): number | undefined {
   return undefined;
 }
 
-function hasIntensity(lap: RepLap): boolean {
-  return typeof lap.intensity === "string" && lap.intensity.trim() !== "";
+function intensityOf(lap: RepLap): string | undefined {
+  if (typeof lap.intensity !== "string") return undefined;
+  const v = lap.intensity.trim().toLowerCase();
+  return v === "" ? undefined : v;
+}
+
+function hasStructuredIntensity(lap: RepLap): boolean {
+  const v = intensityOf(lap);
+  return v !== undefined && STRUCTURED_INTENSITIES.has(v);
 }
 
 function isDeviceLap(lap: RepLap): boolean {
@@ -80,13 +98,11 @@ export function detectReps(
   runAvgPaceS: number,
 ): { laps: RepLap[]; repIndexes: number[]; method: RepMethod } {
   const laps = deviceLaps(splits);
-  if (laps.some(hasIntensity)) {
-    const repIndexes = laps.flatMap((l, i) =>
-      hasIntensity(l) &&
-      REP_INTENSITIES.has((l.intensity as string).trim().toLowerCase())
-        ? [i]
-        : [],
-    );
+  if (laps.some(hasStructuredIntensity)) {
+    const repIndexes = laps.flatMap((l, i) => {
+      const v = intensityOf(l);
+      return v !== undefined && REP_INTENSITIES.has(v) ? [i] : [];
+    });
     return { laps, repIndexes, method: "intensity" };
   }
   if (!positive(runAvgPaceS)) return { laps, repIndexes: [], method: "pace" };

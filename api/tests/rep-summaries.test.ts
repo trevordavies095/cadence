@@ -127,6 +127,16 @@ describe("rep detection", () => {
     expect(summarizeReps(steady, 300)).toBeNull();
   });
 
+  it("treats all-active 1 km auto-laps as a steady run, not reps", () => {
+    // Steady Threshold run: 8 x 1 km auto-laps, every one "active".
+    const paces = [262, 258, 255, 254, 253, 252, 251, 250];
+    const laps = paces.map((p, i) =>
+      lap(i, 1000, p, { intensity: "active", trigger: "distance" }),
+    );
+    expect(detectReps(laps, 254).method).toBe("pace");
+    expect(summarizeReps(laps, 254)).toBeNull();
+  });
+
   it("gives no summary when every split is a distance split", () => {
     const splits = [
       { idx: 0, kind: "distance", distanceM: 1000, durationS: 200, paceS: 200, intensity: null },
