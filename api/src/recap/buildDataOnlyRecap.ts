@@ -100,7 +100,7 @@ export async function buildDataOnlyRecap(args: {
 
   const subjectiveMarkdown =
     args.subjective === "present"
-      ? buildSubjectiveRecapMarkdown(answers?.weekly)
+      ? buildSubjectiveRecapMarkdown(answers?.weekly, answers?.runs)
       : "";
   const questionsMarkdown =
     args.subjective === "present"

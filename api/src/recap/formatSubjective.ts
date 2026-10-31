@@ -14,6 +14,7 @@ export type SubjectiveRunFields = {
   rpe?: number;
   felt?: number;
   pain?: string;
+  pain_score?: number;
 };
 
 /** Last row wins when duplicate dates appear. */
@@ -26,6 +27,7 @@ export function subjectiveRunsToDateMap(
     if (r.rpe !== undefined) bits.rpe = r.rpe;
     if (r.felt !== undefined) bits.felt = r.felt;
     if (r.pain !== undefined) bits.pain = r.pain;
+    if (r.pain_score !== undefined) bits.pain_score = r.pain_score;
     m.set(r.date, bits);
   }
   return m;
@@ -37,8 +39,13 @@ export function formatSubjectiveRunLine(
   const parts: string[] = [];
   if (fields.rpe !== undefined) parts.push(`RPE: ${fields.rpe}/10`);
   if (fields.felt !== undefined) parts.push(`Felt: ${fields.felt}/10`);
-  if (fields.pain !== undefined && fields.pain.trim()) {
-    parts.push(`Pain: ${fields.pain.trim()}`);
+  const painText = fields.pain?.trim();
+  if (fields.pain_score !== undefined) {
+    parts.push(
+      `Pain: ${fields.pain_score}/10${painText ? ` (${painText})` : ""}`,
+    );
+  } else if (painText) {
+    parts.push(`Pain: ${painText}`);
   }
   return parts.length > 0 ? parts.join("  ·  ") : undefined;
 }
@@ -76,13 +83,50 @@ function formatStrengthLine(
   return `Strength, rehab or cross-training: ${body}`;
 }
 
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** "Thu" from YYYY-MM-DD; calendar arithmetic only, so no time zone moves it. */
+function weekdayOf(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return WEEKDAYS[new Date(Date.UTC(y!, m! - 1, d!)).getUTCDay()]!;
+}
+
+/**
+ * "Pain: highest 3/10 (Thu)": the week's highest pain score and every day that
+ * reached it. Undefined when no run has a score.
+ */
+export function formatPainHighLine(
+  runs: readonly SubjectiveRunRow[],
+): string | undefined {
+  const scored = runs.filter(
+    (r): r is SubjectiveRunRow & { pain_score: number } =>
+      r.pain_score !== undefined,
+  );
+  if (scored.length === 0) return undefined;
+  const highest = Math.max(...scored.map((r) => r.pain_score));
+  const days = scored
+    .filter((r) => r.pain_score === highest)
+    .map((r) => r.date)
+    .sort()
+    .map(weekdayOf);
+  return `Pain: highest ${highest}/10 (${days.join(", ")})`;
+}
+
 export function buildSubjectiveRecapMarkdown(
   weekly: SubjectiveWeeklyMeta | undefined,
+  runs: readonly SubjectiveRunRow[] = [],
 ): string {
-  if (!weekly) return "";
+  const painHigh = formatPainHighLine(runs);
+  if (!weekly && !painHigh) return "";
+  weekly ??= {};
   const lines: string[] = [];
   lines.push("## Subjective recap");
   lines.push("");
+
+  if (painHigh) {
+    lines.push(painHigh);
+    lines.push("");
+  }
 
   const range =
     weekly.sleep_range_hrs !== undefined && weekly.sleep_range_hrs.length >= 2
