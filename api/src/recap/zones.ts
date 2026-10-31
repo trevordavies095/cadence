@@ -163,11 +163,21 @@ export function computeWeekZoneDistribution(args: {
     }
   }
 
+  return zoneDistributionFromSeconds(weekSeconds);
+}
+
+/**
+ * Week distribution from seconds per zone (Z1..Zn order): the per-second
+ * sums above, or the log's stored zone seconds from the weekly recap.
+ */
+export function zoneDistributionFromSeconds(
+  weekSeconds: readonly number[],
+): ZoneWeekDistribution {
   const totalHrSeconds = weekSeconds.reduce((a, b) => a + b, 0);
   if (totalHrSeconds === 0) {
     return {
       totalHrSeconds: 0,
-      zoneSeconds: weekSeconds,
+      zoneSeconds: [...weekSeconds],
       noHrTimeSeriesInWeek: true,
       note: "No usable HR samples for workouts this week. Zone totals need time-series heart rate.",
     };
@@ -180,7 +190,7 @@ export function computeWeekZoneDistribution(args: {
 
   return {
     totalHrSeconds,
-    zoneSeconds: weekSeconds,
+    zoneSeconds: [...weekSeconds],
     zonePct,
     z1z2Pct,
     z1z2TargetMet: z1z2Pct >= 80,

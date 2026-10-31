@@ -151,6 +151,7 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
         timezone: zones.timezone,
         range: zones.range,
         zones: zones.zones,
+        zoneSource: zones.zoneSource,
         distribution: zones.distribution,
         markdown: zones.markdown,
       });

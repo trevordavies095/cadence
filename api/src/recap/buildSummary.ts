@@ -2,7 +2,6 @@ import { listAllWorkoutsInWindow } from "./listWindow.js";
 import type {
   TempoPort,
   TempoUnitPreference,
-  TempoWeeklyRecapStats,
 } from "../tempo/port.js";
 import type { WeekSession } from "../week/store.js";
 import { aggregateWorkouts, type WeekAggregate } from "./aggregate.js";
@@ -16,7 +15,10 @@ import {
   buildSummaryTableRows,
   type RecapSummaryTableRow,
 } from "./format.js";
-import { weeklyRecapQueryForWeek } from "./weeklyRecapParams.js";
+import {
+  fetchWeeklyRecapStats,
+  type SharedWeeklyRecapStats,
+} from "./fetchWeeklyRecapStats.js";
 import { priorWeekWindows, type WeekWindow } from "./weekWindows.js";
 
 export type RecapSummaryResult = {
@@ -72,26 +74,13 @@ export async function resolveRecapUnit(
   return "metric";
 }
 
-async function fetchWeeklyRecapStats(
-  port: TempoPort,
-  session: WeekSession,
-): Promise<TempoWeeklyRecapStats | null> {
-  if (typeof port.getWeeklyRecapStats !== "function") return null;
-  try {
-    return await port.getWeeklyRecapStats(
-      weeklyRecapQueryForWeek(session.start, session.timezone),
-    );
-  } catch {
-    // 404 / HTTP / transport / bad JSON: fall back to the week windows.
-    return null;
-  }
-}
-
 /** Build Summary section for a persisted week session via TempoPort. */
 export async function buildRecapSummary(args: {
   session: WeekSession;
   tempoPort: TempoPort;
   unit?: TempoUnitPreference;
+  /** The report's one weekly-recap fetch; fetched here when omitted. */
+  weeklyStats?: SharedWeeklyRecapStats;
 }): Promise<RecapSummaryResult> {
   const { session, tempoPort } = args;
   const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
@@ -100,7 +89,8 @@ export async function buildRecapSummary(args: {
 
   // Prev / 3-wk columns: Tempo GET /stats/weekly-recap when the port offers it
   // and it answers; otherwise computed from the (instant-filtered) windows.
-  const statsPromise = fetchWeeklyRecapStats(tempoPort, session);
+  const statsPromise =
+    args.weeklyStats ?? fetchWeeklyRecapStats(tempoPort, session);
   const [thisItems, stats] = await Promise.all([
     listAllWorkoutsInWindow(tempoPort, thisWindow),
     statsPromise,

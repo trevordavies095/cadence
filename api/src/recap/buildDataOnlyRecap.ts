@@ -6,6 +6,7 @@ import { buildRecapTrends } from "./buildTrends.js";
 import { buildRecapRunByRun } from "./buildRunByRun.js";
 import { buildRecapSummary, resolveRecapUnit } from "./buildSummary.js";
 import { buildRecapZones } from "./buildZones.js";
+import { fetchWeeklyRecapStats } from "./fetchWeeklyRecapStats.js";
 import {
   buildCoachQuestionsMarkdown,
   buildSubjectiveRecapMarkdown,
@@ -66,10 +67,12 @@ export async function buildDataOnlyRecap(args: {
     }
   };
 
+  // One weekly-recap call per report, shared by summary and zones.
+  const weeklyStats = fetchWeeklyRecapStats(tempoPort, session);
   const [summary, zones, runByRun, longRunMd, trendsMd, notableMd] =
     await Promise.all([
-      buildRecapSummary({ session, tempoPort, unit }),
-      buildRecapZones({ session, tempoPort }),
+      buildRecapSummary({ session, tempoPort, unit, weeklyStats }),
+      buildRecapZones({ session, tempoPort, weeklyStats }),
       buildRecapRunByRun({ session, tempoPort, unit }),
       optional(() =>
         buildRecapLongRun({ session, tempoPort, unit, tempoParity: true }),
