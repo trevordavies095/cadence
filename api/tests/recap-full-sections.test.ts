@@ -3,6 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
+import { appendGoal } from "../src/goal/store.js";
 import { buildStubWeeklyReply } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket } from "../src/packet/index.js";
@@ -303,6 +304,15 @@ async function saveSubjective(
 
 const FULL: Behavior = { workouts: [W40_EASY, W42_EASY, W43_EASY, W43_LONG] };
 
+/** A marathon with no race date: base, so the report has the long-run section. */
+async function storeMarathonGoal() {
+  await appendGoal(
+    new Date("2026-10-01T12:00:00Z"),
+    { kind: "race", distance: "marathon" },
+    "settings",
+  );
+}
+
 describe("full recap sections in tempo-cli order (#88)", () => {
   beforeAll(async () => {
     process.env.DATA_PROTECTION_SECRET_KEY = TEST_DATA_PROTECTION_KEY;
@@ -313,6 +323,7 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     await resetAppTables();
     delete process.env.TEMPO_EXPORT_PATH;
     await acceptAndReady();
+    await storeMarathonGoal();
   });
 
   it("stored recap and thread artifact contain Long run, Trends, Notable in order", async () => {
@@ -353,7 +364,7 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     // Notable names each new best of the week, shortest distance first.
     expect(md).toContain(`## Notable\n\n${NOTABLE_PR}\n`);
 
-    // Long run: tempo-cli text (no section heading, marathon-pace wording).
+    // Long run: tempo-cli shape (no section heading).
     const longRun = md.slice(
       md.indexOf("### Long run — "),
       md.indexOf("## Trends"),
@@ -363,10 +374,8 @@ describe("full recap sections in tempo-cli order (#88)", () => {
       "Avg pace: 10:44/mi  ·  Avg HR 145  ·  Drift: n/a",
     );
     expect(longRun).toContain("Splits: n/a");
-    // No splits in the fixture, so the last-window line is n/a (as in tempo-cli).
-    expect(longRun).toContain(
-      "Last 3 mi at marathon-pace effort? n/a (pace data incomplete)",
-    );
+    // No splits in the fixture, so the fast-finish line cannot tell.
+    expect(longRun).toContain("Fast finish? n/a (no split paces)");
     expect(md).not.toMatch(/^## Long run/m);
 
     // Per-section routes keep returning what they did.
@@ -377,7 +386,7 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     expect(await routeTrends.text()).toContain("## Trends");
   });
 
-  it("omits Long run without a typed long run, Notable when empty", async () => {
+  it("without a typed long run the longest run stands in; Notable omitted when empty", async () => {
     const app = makeApp({
       workouts: [W42_EASY, W43_EASY],
       bestEfforts: "empty",
@@ -386,9 +395,11 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
     const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
       .reportMarkdown as string;
-    expect(md).not.toContain("Long run —");
+    expect(md).not.toContain("### Long run —");
+    expect(md).toContain("### Longest run — ");
+    expect(md).toContain("No run was typed Long Run this week.");
     expect(md).toContain("## Trends");
-    // Long-run trend falls back to the longest run, as in tempo-cli.
+    // Long-run trend falls back to the longest run, as in tempo-cli (marathon base: verdict).
     expect(md).toContain(
       "- **Long-run distance** (max long-typed, else max run in week): — → — → 5.00 mi → 3.00 mi ▁▁█▁ (declining)",
     );
@@ -515,6 +526,7 @@ describe("full recap sections reach the weekly reply (#88)", () => {
 
   it("the logged weekly reply request contains Trends, Notable and Long run", async () => {
     await acceptAndReady();
+    await storeMarathonGoal();
     await putAnthropicConnection(
       "sk-ant-test-key-fixture-xyz",
       new SecretProtector(TEST_DATA_PROTECTION_KEY),

@@ -8,8 +8,8 @@ import { resolveRecapUnit } from "./buildSummary.js";
 import { listAllWorkoutsInWindow } from "./listWindow.js";
 import {
   buildLongRunMarkdown,
+  computeFastFinish,
   computeHalfSplit,
-  finishAtGoalEffortLikely,
   formatSplitPacesFromDetail,
 } from "./longRunFormat.js";
 import type { LongRunDetail, RecapLongRunResult } from "./longRunTypes.js";
@@ -67,6 +67,8 @@ function toLongRunDetail(args: {
   unit: TempoUnitPreference;
   timeZone: string;
   zones: readonly { zoneNumber: number; minBpm: number; maxBpm: number }[];
+  /** The goal gets the fast-finish line (half and marathon). */
+  fastFinish: boolean;
 }): LongRunDetail {
   const { detail, selectionReason, unit, timeZone, zones } = args;
   const hr = computeRunHrMetrics({
@@ -75,11 +77,6 @@ function toLongRunDetail(args: {
     zones,
   });
   const half = computeHalfSplit(detail.splits);
-  const finish = finishAtGoalEffortLikely({
-    splits: detail.splits,
-    distanceM: detail.distanceM,
-    avgPaceS: detail.avgPaceS,
-  });
   const runType =
     typeof detail.runType === "string" && detail.runType.trim()
       ? detail.runType.trim()
@@ -109,7 +106,13 @@ function toLongRunDetail(args: {
   const splitFmt = formatSplitPacesFromDetail(detail.splits, unit);
   if (splitFmt) out.splitPacesFormatted = splitFmt;
   if (half) out.half = half;
-  out.finishAtGoalEffort = finish;
+  if (args.fastFinish) {
+    out.fastFinish = computeFastFinish({
+      splits: detail.splits,
+      distanceM: detail.distanceM,
+      unit,
+    });
+  }
   return out;
 }
 
@@ -125,7 +128,7 @@ export async function buildRecapLongRun(args: {
    * the goal kind's thresholds, which phase/goal alone cannot resolve.
    */
   knobs?: RecapDepthKnobs;
-  /** Full-recap mode: only a typed Long Run qualifies; tempo-cli text. */
+  /** Full-recap mode: tempo-cli shape (no section heading, full depth). */
   tempoParity?: boolean;
 }): Promise<RecapLongRunResult> {
   const { session, tempoPort } = args;
@@ -136,6 +139,24 @@ export async function buildRecapLongRun(args: {
       goal: args.goal,
     });
   const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
+  const longRunKnobs = knobs.thresholds.longRun;
+
+  const base = {
+    weekSessionId: session.id,
+    isoWeek: session.isoWeek,
+    timezone: session.timezone,
+    range: { start: session.start, end: session.end },
+    unit,
+    phase: knobs.phase,
+    goal: knobs.goal,
+    knobs,
+  };
+
+  // The goal has no long-run section (5k, speed, stay fit, return).
+  if (!longRunKnobs.section) {
+    return { ...base, included: false, reason: "not_for_goal", markdown: "" };
+  }
+
   const window: WeekWindow = { start: session.start, end: session.end };
 
   const [summaries, settings] = await Promise.all([
@@ -148,7 +169,8 @@ export async function buildRecapLongRun(args: {
 
   const picked = pickLongRunDetail({
     details,
-    longestAsLongRun: args.tempoParity ? false : knobs.longestAsLongRun,
+    longestAsLongRun:
+      longRunKnobs.longestRunFallback && knobs.longestAsLongRun,
   });
 
   if (!picked) {
@@ -158,19 +180,7 @@ export async function buildRecapLongRun(args: {
       knobs.sections.longRun,
       { tempoParity: args.tempoParity },
     );
-    return {
-      weekSessionId: session.id,
-      isoWeek: session.isoWeek,
-      timezone: session.timezone,
-      range: { start: session.start, end: session.end },
-      unit,
-      phase: knobs.phase,
-      goal: knobs.goal,
-      knobs,
-      included: false,
-      reason: "not_eligible",
-      markdown,
-    };
+    return { ...base, included: false, reason: "not_eligible", markdown };
   }
 
   const longRun = toLongRunDetail({
@@ -179,6 +189,7 @@ export async function buildRecapLongRun(args: {
     unit,
     timeZone: session.timezone,
     zones: settings.heartRateZones.zones,
+    fastFinish: knobs.thresholds.fastFinish,
   });
   const markdown = buildLongRunMarkdown(
     longRun,
@@ -188,14 +199,7 @@ export async function buildRecapLongRun(args: {
   );
 
   return {
-    weekSessionId: session.id,
-    isoWeek: session.isoWeek,
-    timezone: session.timezone,
-    range: { start: session.start, end: session.end },
-    unit,
-    phase: knobs.phase,
-    goal: knobs.goal,
-    knobs,
+    ...base,
     included: true,
     reason: picked.selectionReason,
     longRun,

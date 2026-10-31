@@ -47,7 +47,7 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
     const { app, weekSessionId } = await openWeek();
 
     const recoveryRes = await app.request(
-      `/weeks/${weekSessionId}/recap/skeleton?format=json&phase=recovery&goal=general`,
+      `/weeks/${weekSessionId}/recap/skeleton?format=json&phase=recovery&goal=marathon`,
     );
     expect(recoveryRes.status).toBe(200);
     const recovery = await json(recoveryRes);
@@ -72,7 +72,7 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
     expect(iNotableR).toBeGreaterThan(iTrendsR);
     // Recovery does not invent a long run from easy miles.
     expect(recoveryMd).toContain("No qualifying long run this week.");
-    expect(recoveryMd).not.toContain("Last 3 mi at goal effort");
+    expect(recoveryMd).not.toContain("Fast finish?");
     // Brief trends: long-run distance only (no easy pace / easy HR lines).
     expect(recoveryMd).toContain("**Long-run distance**");
     expect(recoveryMd).not.toContain("**Easy pace");
@@ -93,7 +93,8 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
     });
 
     const buildMd = build.markdown as string;
-    const iLongB = buildMd.indexOf("## Long run");
+    // No run is typed Long Run in the fixture: the longest run stands in.
+    const iLongB = buildMd.indexOf("## Longest run");
     const iTrendsB = buildMd.indexOf("## Trends");
     const iNotableB = buildMd.indexOf("## Notable");
     expect(iLongB).toBeGreaterThan(-1);
@@ -101,8 +102,10 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
     expect(iNotableB).toBeGreaterThan(iTrendsB);
     // Same skeleton order as recovery (section headings positions relative).
     expect(iLongB).toBeLessThan(iTrendsB);
-    expect(buildMd).toContain("### Long run —");
-    expect(buildMd).toContain("Last 3 mi at goal effort");
+    expect(buildMd).toContain("### Longest run —");
+    expect(buildMd).toContain("No run was typed Long Run this week.");
+    expect(buildMd).toContain("Fast finish?");
+    expect(buildMd).not.toMatch(/marathon-pace|HR above/);
     expect(buildMd).toContain("Weeks:");
     expect(buildMd).toContain("**Easy pace");
     // Depth changed; order did not.
@@ -113,7 +116,7 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
     const { app, weekSessionId } = await openWeek();
 
     const missing = await app.request(
-      `/weeks/${weekSessionId}/recap/long-run?phase=recovery`,
+      `/weeks/${weekSessionId}/recap/long-run?phase=recovery&goal=marathon`,
     );
     expect(missing.status).toBe(200);
     const missingBody = await json(missing);
@@ -133,7 +136,10 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
       distanceM: 10000,
       selectionReason: "longest_run_fallback",
     });
-    expect(presentBody.markdown).toContain("### Long run —");
+    expect(presentBody.markdown).toContain("### Longest run —");
+    expect(presentBody.markdown).toContain(
+      "No run was typed Long Run this week.",
+    );
     expect(presentBody.markdown).toContain("Splits:");
     assertNoGpsFields(presentBody);
   });

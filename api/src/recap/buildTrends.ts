@@ -29,6 +29,18 @@ export type RecapTrendsResult = {
   markdown: string;
 };
 
+/**
+ * The long-run distance trend carries a verdict only for half and marathon in
+ * base or build; other goals show the four values alone.
+ */
+function withoutLongRunVerdict(
+  snapshot: RecapTrendsSnapshot,
+): RecapTrendsSnapshot {
+  if (!snapshot.verdicts) return snapshot;
+  const { longRunDistance: _dropped, ...verdicts } = snapshot.verdicts;
+  return { ...snapshot, verdicts };
+}
+
 /** Build Trends section for a persisted week session via TempoPort. */
 export async function buildRecapTrends(args: {
   session: WeekSession;
@@ -57,11 +69,14 @@ export async function buildRecapTrends(args: {
 
   const workouts = await listAllWorkoutsInWindow(tempoPort, fetchWin);
 
-  const trends = computeRecapTrendsSnapshot({
+  const snapshot = computeRecapTrendsSnapshot({
     isoWeek: session.isoWeek,
     thisWeek,
     workouts,
   });
+  const trends = knobs.thresholds.longRun.distanceTrendVerdict
+    ? snapshot
+    : withoutLongRunVerdict(snapshot);
   const markdown = buildTrendsMarkdown(
     trends,
     unit,
