@@ -14,23 +14,60 @@
  * Pass --report-only to rebuild the report from the saved replies, or
  * --dry-run to exercise the whole run with the offline stub, at no cost, into a
  * separate folder.
+ *
+ * Pass --packets <dir> to replay a folder of packets instead of the demo
+ * snapshot, such as the synthetic seasons that are not marathon blocks:
+ *
+ *   npx tsx scripts/replay-weekly-reads.ts --packets tests/fixtures/replay-packets --dry-run
+ *
+ * The folder holds one JSON file per weekly call, replayed in file-name order.
+ * Each file is a model packet as the app builds it, with the athlete's goal in
+ * its `goal` field, or `{ "packet": {...}, "model": "..." }` to pin the model
+ * (otherwise ANTHROPIC_MODEL or the port's default). A packet has no old reply,
+ * so its report shows the new reply only. Replies and the report go to
+ * .scratch/replay-packets/<folder name> (with -dry-run on a dry run).
+ * Pass --out <dir> to write somewhere else, with either source.
+ *
+ * Every report opens with three goal checks, each naming the read that failed:
+ * a packet with no goal line (no goal, or the rebuilt prompt does not open with
+ * "Athlete goal:"); "marathon" in a read whose goal is not a marathon; and a
+ * long-run verdict in a read whose goal is stay fit. The script exits non-zero
+ * when any check fails. The dry run over tests/fixtures/replay-packets runs in
+ * the API test suite (tests/replay-weekly-reads.test.ts).
  */
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createAnthropicLlmPort } from "../src/llm/anthropic.js";
+import type { TrainingGoal } from "../src/goal/types.js";
+import { createAnthropicLlmPort, weeklyUserPromptFor } from "../src/llm/anthropic.js";
 import { createStubLlmPort } from "../src/llm/stub.js";
 import type { PrescribedDay, WeeklyReply } from "../src/llm/types.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
 import type { ModelPacket } from "../src/packet/types.js";
+import { replayCheckFailures, type ReplayCheckFailure } from "./replayChecks.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SNAPSHOT = path.resolve(here, "../../demo/snapshot.sql");
 const reportOnly = process.argv.includes("--report-only");
 const dryRun = process.argv.includes("--dry-run");
-const OUT = path.resolve(here, `../../.scratch/reading-flow/${dryRun ? "replay-dry-run" : "replay"}`);
+
+/** The value after a flag such as --packets, resolved from the working directory. */
+function flagPath(flag: string): string | null {
+  const i = process.argv.indexOf(flag);
+  if (i < 0) return null;
+  const value = process.argv[i + 1];
+  if (!value || value.startsWith("--")) throw new Error(`${flag} needs a folder`);
+  return path.resolve(value);
+}
+
+const PACKETS = flagPath("--packets");
+const OUT =
+  flagPath("--out") ??
+  (PACKETS
+    ? path.resolve(here, `../../.scratch/replay-packets/${path.basename(PACKETS)}${dryRun ? "-dry-run" : ""}`)
+    : path.resolve(here, `../../.scratch/reading-flow/${dryRun ? "replay-dry-run" : "replay"}`));
 
 // ---- Reading the snapshot ---------------------------------------------------
 
@@ -58,7 +95,14 @@ function copyTable(sql: string, table: string): Array<Record<string, string | nu
   return rows;
 }
 
-type StoredCall = { createdAt: string; model: string; packet: ModelPacket; old: Record<string, unknown> };
+type StoredCall = {
+  /** Where the call came from: the snapshot's call time, or the packet's file name. */
+  source: string;
+  createdAt: string | null;
+  model: string | undefined;
+  packet: ModelPacket;
+  old: Record<string, unknown> | null;
+};
 
 function storedWeeklyCalls(): StoredCall[] {
   const rows = copyTable(readFileSync(SNAPSHOT, "utf8"), "llm_call_log")
@@ -74,7 +118,23 @@ function storedWeeklyCalls(): StoredCall[] {
     };
     const old = response.content.find((b) => b.type === "tool_use" && b.name === "submit_weekly_reply")?.input;
     if (!old) throw new Error(`Call at ${r.created_at} has no weekly reply`);
-    return { createdAt: r.created_at!, model: r.model!, packet, old };
+    return { source: `snapshot call at ${r.created_at}`, createdAt: r.created_at!, model: r.model!, packet, old };
+  });
+}
+
+// ---- Reading a packet folder ------------------------------------------------
+
+function folderCalls(dir: string): StoredCall[] {
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith(".json"))
+    .sort();
+  if (files.length === 0) throw new Error(`No .json packets in ${dir}`);
+  return files.map((f) => {
+    const raw = JSON.parse(readFileSync(path.join(dir, f), "utf8")) as Record<string, unknown>;
+    const wrapped = raw.packet && typeof raw.packet === "object";
+    const packet = (wrapped ? raw.packet : raw) as ModelPacket;
+    const model = wrapped && typeof raw.model === "string" ? raw.model : process.env.ANTHROPIC_MODEL?.trim() || undefined;
+    return { source: f, createdAt: null, model, packet, old: null };
   });
 }
 
@@ -128,8 +188,9 @@ async function replay(calls: StoredCall[]): Promise<void> {
         failedFile,
         JSON.stringify(
           {
+            source: call.source,
             originalCallAt: call.createdAt,
-            model: call.model,
+            model: call.model ?? null,
             replayedAt: new Date().toISOString(),
             error: err instanceof Error ? err.message : String(err),
             outcome: failed?.outcome ?? null,
@@ -149,9 +210,13 @@ async function replay(calls: StoredCall[]): Promise<void> {
       file,
       JSON.stringify(
         {
+          source: call.source,
           originalCallAt: call.createdAt,
-          model: call.model,
+          model: call.model ?? null,
           replayedAt: new Date().toISOString(),
+          // What the goal checks read: the packet's goal and the rebuilt prompt's first line.
+          goal: call.packet.goal ?? null,
+          promptHead: weeklyUserPromptFor(call.packet).split("\n", 1)[0],
           outcome: row?.outcome ?? null,
           repairs: row?.errorMessage ?? null,
           inputTokens: row?.inputTokens ?? null,
@@ -170,13 +235,18 @@ async function replay(calls: StoredCall[]): Promise<void> {
 // ---- The first-pass coverage report -------------------------------------------
 
 type Saved = {
-  originalCallAt: string;
-  model: string;
+  /** Missing on replies saved before packet folders existed. */
+  source?: string;
+  originalCallAt: string | null;
+  model: string | null;
+  goal?: TrainingGoal | null;
+  promptHead?: string;
   outcome: string | null;
   repairs: string | null;
   inputTokens: number | null;
   outputTokens: number | null;
-  old: { analysis: string; prescribedWeek: { days: PrescribedDay[] } };
+  /** Null for a packet from a folder: it has no earlier reply. */
+  old: { analysis: string; prescribedWeek: { days: PrescribedDay[] } } | null;
   new: WeeklyReply;
 };
 
@@ -207,21 +277,29 @@ function oldSessionReasons(analysis: string): string[] {
   return section ? [...section[1]!.matchAll(/^\s*[-*]\s+(.+)$/gm)].map((m) => m[1]!) : [];
 }
 
-function report(): void {
-  const files = Array.from({ length: 10 }, (_, i) => path.join(OUT, `${String(i + 1).padStart(2, "0")}.json`)).filter(
-    existsSync,
-  );
-  const out: string[] = [
-    "# Replay gate: first-pass report",
-    "",
-    `Generated ${new Date().toISOString()} from ${files.length} replayed weekly calls.`,
-    "",
-    "The checks below only point at what to read. A figure listed as missing may be rounded, restated or deliberately dropped; each one is judged by a person before the gate passes.",
-    "",
-  ];
+/** Numbered files in the output folder, such as 01.json, in order. */
+function numbered(suffix: string): string[] {
+  const pattern = new RegExp(`^\\d+${suffix.replace(/\./g, "\\.")}$`);
+  return readdirSync(OUT)
+    .filter((f) => pattern.test(f))
+    .sort()
+    .map((f) => path.join(OUT, f));
+}
+
+/** Builds the report and returns the goal checks that failed. */
+function report(): ReplayCheckFailure[] {
+  const files = numbered(".json");
+  const sections: string[] = [];
+  const checkFailures: ReplayCheckFailure[] = [];
   for (const file of files) {
     const s = JSON.parse(readFileSync(file, "utf8")) as Saved;
     const n = s.new;
+    const old = s.old;
+    const name = path.basename(file, ".json");
+    // Names the packet: its file in a folder, or the original call's date in the snapshot.
+    const label = s.originalCallAt
+      ? `${name} (week read on ${s.originalCallAt.slice(0, 10)})`
+      : `${name} (${s.source ?? "unknown packet"})`;
     const newText = [
       n.headline,
       ...(n.flags ?? []).flatMap((f) => [f.title, f.detail]),
@@ -229,10 +307,13 @@ function report(): void {
       n.analysis,
       dayText(n.prescribedWeek.days),
     ].join("\n");
+    const goal = s.goal ?? null;
+    const failed = replayCheckFailures({ label, goal, prompt: s.promptHead ?? "", readText: newText });
+    checkFailures.push(...failed);
     const normalized = newText.replace(/[–—]/g, "-");
-    const missing = figures(s.old.analysis).filter((f) => !normalized.includes(f));
-    const questions = oldQuestions(s.old.analysis);
-    const reasons = oldSessionReasons(s.old.analysis);
+    const missing = old ? figures(old.analysis).filter((f) => !normalized.includes(f)) : [];
+    const questions = old ? oldQuestions(old.analysis) : [];
+    const reasons = old ? oldSessionReasons(old.analysis) : [];
     const daysWithNotes = n.prescribedWeek.days.filter((d) => d.notes?.trim()).length;
     const repeatsHeadline = n.analysis.includes(n.headline.slice(0, 60));
     const listsDays =
@@ -249,29 +330,38 @@ function report(): void {
     const repeatsAnswerTable = (n.answers ?? []).some((a) => tableRows(a.answer).some((r) => analysisRows.has(r)));
     const banned = bannedTermsIn(newText);
 
-    out.push(
-      `## ${path.basename(file, ".json")}: week read on ${s.originalCallAt.slice(0, 10)}`,
+    const heading = s.originalCallAt
+      ? `## ${name}: week read on ${s.originalCallAt.slice(0, 10)}`
+      : `## ${label}`;
+    sections.push(
+      heading,
       "",
-      `Model ${s.model}. Outcome ${s.outcome}${s.repairs ? ` (${s.repairs})` : ""}. Tokens in ${s.inputTokens}, out ${s.outputTokens}.`,
+      `Model ${s.model ?? "default"}. Outcome ${s.outcome}${s.repairs ? ` (${s.repairs})` : ""}. Tokens in ${s.inputTokens}, out ${s.outputTokens}.`,
+      "",
+      `Goal: ${goal ? `${goal.kind}${goal.distance ? ` (${goal.distance})` : ""}` : "none"}. Goal checks: ${failed.length ? failed.map((f) => f.check).join(", ") : "passed"}.`,
       "",
       "| Check | Old | New |",
       "|---|---|---|",
-      `| Read length (characters) | ${s.old.analysis.length} | ${n.analysis.length} |`,
+      `| Read length (characters) | ${old?.analysis.length ?? ""} | ${n.analysis.length} |`,
       `| Headline | | ${n.headline.length} chars |`,
       `| Flags | | ${n.flags?.length ?? 0} |`,
-      `| Questions answered | ${questions.length} | ${n.answers?.length ?? 0} |`,
-      `| Session reasons | ${reasons.length} in the read | ${daysWithNotes} days with notes |`,
+      `| Questions answered | ${old ? questions.length : ""} | ${n.answers?.length ?? 0} |`,
+      `| Session reasons | ${old ? `${reasons.length} in the read` : ""} | ${daysWithNotes} days with notes |`,
       `| Read repeats the headline | | ${repeatsHeadline ? "yes" : "no"} |`,
       `| Read lists the days (as a list or a table) | | ${listsDays ? "yes" : "no"} |`,
       `| A flag or answer points "above" or "below" | | ${pointsAcross ? "yes" : "no"} |`,
       `| Read repeats an answer's table | | ${repeatsAnswerTable ? "yes" : "no"} |`,
       `| Internal words | | ${banned.length ? banned.join(", ") : "none"} |`,
       "",
-      `Figures in the old read not found anywhere in the new reply: ${missing.length ? missing.join(", ") : "none"}`,
-      "",
-      "Old questions:",
-      ...(questions.length ? questions.map((q) => `- ${q}`) : ["- none found"]),
-      "",
+      ...(old
+        ? [
+            `Figures in the old read not found anywhere in the new reply: ${missing.length ? missing.join(", ") : "none"}`,
+            "",
+            "Old questions:",
+            ...(questions.length ? questions.map((q) => `- ${q}`) : ["- none found"]),
+            "",
+          ]
+        : []),
       "New answers to:",
       ...((n.answers ?? []).length ? n.answers!.map((a) => `- ${a.question}`) : ["- none"]),
       "",
@@ -279,21 +369,46 @@ function report(): void {
       "",
     );
   }
-  const failures = Array.from({ length: 10 }, (_, i) =>
-    path.join(OUT, `${String(i + 1).padStart(2, "0")}.failed.json`),
-  ).filter((f) => existsSync(f) && !existsSync(f.replace(/\.failed\.json$/, ".json")));
-  if (failures.length > 0) {
+  const out: string[] = [
+    "# Replay gate: first-pass report",
+    "",
+    `Generated ${new Date().toISOString()} from ${files.length} replayed weekly calls${PACKETS ? ` in ${PACKETS}` : ""}.`,
+    "",
+    "The checks below only point at what to read. A figure listed as missing may be rounded, restated or deliberately dropped; each one is judged by a person before the gate passes.",
+    "",
+    "## Goal checks",
+    "",
+    ...(checkFailures.length
+      ? checkFailures.map((f) => `- ${f.label}: ${f.check}: ${f.detail}`)
+      : ["All passed: every packet has a goal line, no non-marathon read says marathon, and no stay-fit read gives a long-run verdict."]),
+    "",
+    ...sections,
+  ];
+  const refused = numbered(".failed.json").filter((f) => !existsSync(f.replace(/\.failed\.json$/, ".json")));
+  if (refused.length > 0) {
     out.push("## Refused replies", "");
-    for (const f of failures) {
-      const d = JSON.parse(readFileSync(f, "utf8")) as { originalCallAt: string; error: string; stopReason: string | null };
-      out.push(`- ${path.basename(f)} (week read on ${d.originalCallAt.slice(0, 10)}): ${d.error}; stop reason ${d.stopReason}`);
+    for (const f of refused) {
+      const d = JSON.parse(readFileSync(f, "utf8")) as {
+        source?: string;
+        originalCallAt: string | null;
+        error: string;
+        stopReason: string | null;
+      };
+      const what = d.originalCallAt ? `week read on ${d.originalCallAt.slice(0, 10)}` : d.source;
+      out.push(`- ${path.basename(f)} (${what}): ${d.error}; stop reason ${d.stopReason}`);
     }
     out.push("");
   }
   writeFileSync(path.join(OUT, "report.md"), out.join("\n"));
   console.log(`report written to ${path.join(OUT, "report.md")}`);
+  return checkFailures;
 }
 
 mkdirSync(OUT, { recursive: true });
-if (!reportOnly) await replay(storedWeeklyCalls());
-report();
+if (!reportOnly) await replay(PACKETS ? folderCalls(PACKETS) : storedWeeklyCalls());
+const checkFailures = report();
+if (checkFailures.length > 0) {
+  console.error(`${checkFailures.length} goal check${checkFailures.length === 1 ? "" : "s"} failed:`);
+  for (const f of checkFailures) console.error(`- ${f.label}: ${f.check}: ${f.detail}`);
+  process.exitCode = 1;
+}

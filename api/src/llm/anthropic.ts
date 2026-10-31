@@ -444,6 +444,12 @@ function buildWeeklyUserPrompt(
     .join("\n");
 }
 
+/** The weekly read's user prompt exactly as {@link createAnthropicLlmPort} sends it. */
+export function weeklyUserPromptFor(packet: ModelPacket): string {
+  const planWeek = resolveWeeklyPlanWeek(packet);
+  return buildWeeklyUserPrompt(packet, planWeek.weekStartMonday, planWeek.isoWeek);
+}
+
 function buildMidWeekUserPrompt(
   packet: ModelPacket,
   weekStartMonday: string,

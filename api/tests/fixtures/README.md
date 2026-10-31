@@ -21,6 +21,10 @@ cd api
 node scripts/regenerate-tempo-export-mini.mjs
 ```
 
+## `replay-packets/` (replay dry run)
+
+Two hand-built weekly model packets, a stay-fit runner and a 10K runner, each carrying its goal and coaching block as the app builds them. `replay-weekly-reads.test.ts` runs `scripts/replay-weekly-reads.ts --packets tests/fixtures/replay-packets --dry-run` over them with the offline stub and expects every goal check to pass. Fictional athlete; no identity.
+
 ## Full athlete export (local only)
 
 Keep real Tempo downloads under gitignored `.scratch/` (see repo root `.gitignore`). Example:
