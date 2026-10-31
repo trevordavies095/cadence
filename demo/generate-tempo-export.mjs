@@ -11,17 +11,23 @@
  * byte-identical zip. Same shape as api/tests/fixtures/tempo-export-mini. Needs the
  * `zip` CLI (as the mini fixture packer does).
  */
-import { createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  M_PER_MILE,
+  buildExportFiles,
+  createWorkoutBuilder,
+  gaussFrom,
+  mulberry32,
+  packZip,
+  seg,
+  uuidIn,
+} from "./lib/tempoExport.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_OUT = path.join(__dirname, "tempo-export.zip");
 
-const M_PER_MILE = 1609.344;
 const SAMPLE_EVERY_S = 30;
 const WEEK1_MONDAY = Date.UTC(2026, 7, 3); // Mon Aug 3 2026
 const EXPORT_DATE = "2026-10-14T14:00:00Z";
@@ -30,26 +36,10 @@ const EDT_OFFSET_H = 4;
 
 // --- seeded randomness -------------------------------------------------------------
 
-function mulberry32(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 const rand = mulberry32(20261014);
 /** Roughly normal, mean 0, sd 1. */
-const gauss = () => rand() + rand() + rand() + rand() - 2;
-
-function uuid(key) {
-  const h = createHash("sha1").update(`cadence-demo:${key}`).digest("hex");
-  const variant = "89ab"[parseInt(h[16], 16) % 4];
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
-}
+const gauss = gaussFrom(rand);
+const uuid = uuidIn("cadence-demo");
 
 // --- pace / effort model -----------------------------------------------------------
 
@@ -125,7 +115,6 @@ const BASE = [
 
 // --- segments: [distanceM, secondsPerMile, targetHr, label] -----------------------------
 
-const seg = (distM, secPerMile, hr, label = "easy") => ({ distM, secPerMile, hr, label });
 const miles = (n) => n * M_PER_MILE;
 
 /** Split `totalMiles` into mile segments (last one partial) at a steady pace. */
@@ -207,113 +196,13 @@ const SHOES = [
   workouts: [],
 }));
 
-/** A rolling profile that differs run to run (own phase and amplitude). */
-function elevationAt(distM, profile) {
-  return (
-    profile.base +
-    profile.amp * Math.sin((distM + profile.phase) / 1200) +
-    3 * Math.sin((distM + profile.phase) / 370)
-  );
-}
-
-function buildWorkout({ key, startedAt, name, runType, segments, week, quality, notes, stops = 0 }) {
-  const id = uuid(`workout-${key}`);
-  const profile = { base: 30 + rand() * 25, amp: 7 + rand() * 9, phase: rand() * 7000 };
-  const distanceM = Math.round(segments.reduce((a, s) => a + s.distM, 0));
-  const segTimes = segments.map((s) => (s.distM / M_PER_MILE) * s.secPerMile);
-  const movingTimeS = Math.round(segTimes.reduce((a, b) => a + b, 0));
-  const durationS = movingTimeS + stops;
-
-  // Cumulative bounds per segment on the elapsed clock.
-  let t0 = 0;
-  let d0 = 0;
-  const bounds = segments.map((s, i) => {
-    const b = { t0, t1: t0 + segTimes[i], d0, d1: d0 + s.distM };
-    t0 = b.t1;
-    d0 = b.d1;
-    return b;
-  });
-
-  // Splits: one lap per segment (mile laps for steady running, reps/jogs as run).
-  const splits = segments.map((s, idx) => ({
-    id: uuid(`split-${key}-${idx}`),
-    workoutId: id,
-    kind: "lap",
-    idx,
-    distanceM: Math.round(s.distM),
-    durationS: Math.round(segTimes[idx]),
-    paceS: Math.round(segTimes[idx] / (s.distM / 1000)),
-    avgHeartRateBpm: Math.round(s.hr + gauss() * 1.5),
-    startElapsedS: Math.round(bounds[idx].t0),
-    endElapsedS: Math.round(bounds[idx].t1),
-    startDistanceM: Math.round(bounds[idx].d0),
-    workout: null,
-  }));
-
-  // Time series: HR follows the segment target with a lag and a little noise.
-  const timeSeries = [];
-  let hr = segments[0].hr - 18;
-  let si = 0;
-  let elevGainM = 0;
-  let prevEl = elevationAt(0, profile);
-  const hrValues = [];
-  for (let t = 0; t <= movingTimeS; t += SAMPLE_EVERY_S) {
-    while (si < segments.length - 1 && t > bounds[si].t1) si += 1;
-    const s = segments[si];
-    const b = bounds[si];
-    const within = (t - b.t0) / Math.max(b.t1 - b.t0, 1);
-    const distM = Math.min(b.d0 + within * s.distM, distanceM);
-    hr += (s.hr - hr) * 0.22 + gauss() * 0.9;
-    const bpm = Math.round(hr);
-    hrValues.push(bpm);
-    const el = elevationAt(distM, profile);
-    if (t > 0 && el > prevEl) elevGainM += el - prevEl;
-    prevEl = el;
-    const hard = s.label === "rep" || s.label === "tempo" || s.label === "mp";
-    timeSeries.push({
-      id: uuid(`ts-${key}-${t}`),
-      workoutId: id,
-      elapsedSeconds: t,
-      distanceM: Math.round(distM),
-      heartRateBpm: bpm,
-      cadenceRpm: Math.round((hard ? 181 : 172) + gauss() * 2),
-      speedMps: Number((M_PER_MILE / s.secPerMile).toFixed(2)),
-      elevationM: Number(el.toFixed(1)),
-      workout: null,
-    });
-  }
-
-  const avgHr = Math.round(hrValues.reduce((a, b) => a + b, 0) / hrValues.length);
-  const minutes = durationS / 60;
-  const intensity = { easy: 0.7, tempo: 1.5, mp: 1.3, reps: 1.6 }[quality] ?? 0.7;
-  const shoe = quality === "easy" ? SHOES[0] : SHOES[1];
-
-  return {
-    id,
-    startedAt,
-    durationS,
-    distanceM,
-    avgPaceS: Math.round(durationS / (distanceM / 1000)),
-    elevGainM: Math.round(elevGainM),
-    movingTimeS,
-    maxHeartRateBpm: Math.max(...hrValues) + 2,
-    avgHeartRateBpm: avgHr,
-    minHeartRateBpm: Math.min(...hrValues),
-    relativeEffort: Math.round(minutes * intensity),
-    name,
-    runType,
-    notes: notes ?? null,
-    source: "demo",
-    device: "demo",
-    shoeId: shoe.id,
-    shoe,
-    splits: [],
-    timeSeries: [],
-    weather: { tempC: weekTempC(week) + Math.round(gauss() * 2) },
-    _splits: splits,
-    _timeSeries: timeSeries,
-  };
-}
+const buildWorkout = createWorkoutBuilder({
+  rand,
+  uuid,
+  shoeFor: (quality) => (quality === "easy" ? SHOES[0] : SHOES[1]),
+  tempCFor: weekTempC,
+  sampleEveryS: SAMPLE_EVERY_S,
+});
 
 function startIso(weekIdx, dayOffset, hourLocal, minuteLocal) {
   const jitter = Math.round(gauss() * 8);
@@ -398,71 +287,36 @@ function paceLabel(secPerMile) {
 
 // --- export files ---------------------------------------------------------------------
 
-function buildFiles(workouts) {
-  const splits = workouts.flatMap((w) => w._splits);
-  const timeSeries = workouts.flatMap((w) => w._timeSeries);
-  const clean = workouts.map(({ week, _splits, _timeSeries, ...w }) => w);
-  const routes = clean.map((w) => ({ id: uuid(`route-${w.id}`), workoutId: w.id }));
+const SETTINGS = {
+  id: uuid("settings"),
+  calculationMethod: 2,
+  unitPreference: "imperial",
+  defaultShoeId: SHOES[0].id,
+  zone1MinBpm: 112,
+  zone1MaxBpm: 131,
+  zone2MinBpm: 131,
+  zone2MaxBpm: 150,
+  zone3MinBpm: 150,
+  zone3MaxBpm: 164,
+  zone4MinBpm: 164,
+  zone4MaxBpm: 177,
+  zone5MinBpm: 177,
+  zone5MaxBpm: 188,
+  createdAt: "2026-06-15T12:00:00Z",
+  updatedAt: "2026-06-15T12:00:00Z",
+};
 
-  return {
-    "manifest.json": {
-      version: "1.0.0",
-      tempoVersion: "demo",
-      exportDate: EXPORT_DATE,
-      exportedBy: "cadence-demo",
-      statistics: {
-        settings: 1,
-        shoes: SHOES.length,
-        workouts: clean.length,
-        routes: routes.length,
-        splits: splits.length,
-        timeSeries: timeSeries.length,
-        mediaFiles: 0,
-        bestEfforts: 0,
-      },
-      dataFormat: {
-        settings: "data/settings.json",
-        shoes: "data/shoes.json",
-        workouts: "data/workouts.json",
-        routes: "data/routes.json",
-        splits: "data/splits.json",
-        timeSeries: "data/time-series.json",
-        mediaMetadata: "data/media-metadata.json",
-        bestEfforts: "data/best-efforts.json",
-      },
-      scrub: {
-        note: "Synthetic: fictional athlete, generated by demo/generate-tempo-export.mjs",
-        routes: "presence-only (workoutId stubs; no routeGeoJson)",
-        media: "empty",
-        identity: "none",
-      },
-    },
-    "data/settings.json": {
-      id: uuid("settings"),
-      calculationMethod: 2,
-      unitPreference: "imperial",
-      defaultShoeId: SHOES[0].id,
-      zone1MinBpm: 112,
-      zone1MaxBpm: 131,
-      zone2MinBpm: 131,
-      zone2MaxBpm: 150,
-      zone3MinBpm: 150,
-      zone3MaxBpm: 164,
-      zone4MinBpm: 164,
-      zone4MaxBpm: 177,
-      zone5MinBpm: 177,
-      zone5MaxBpm: 188,
-      createdAt: "2026-06-15T12:00:00Z",
-      updatedAt: "2026-06-15T12:00:00Z",
-    },
-    "data/shoes.json": SHOES,
-    "data/workouts.json": clean,
-    "data/splits.json": splits,
-    "data/time-series.json": timeSeries,
-    "data/routes.json": routes,
-    "data/media-metadata.json": [],
-    "data/best-efforts.json": [],
-  };
+function buildFiles(workouts) {
+  return buildExportFiles({
+    workouts,
+    shoes: SHOES,
+    uuid,
+    exportDate: EXPORT_DATE,
+    tempoVersion: "demo",
+    exportedBy: "cadence-demo",
+    note: "Synthetic: fictional athlete, generated by demo/generate-tempo-export.mjs",
+    settings: SETTINGS,
+  });
 }
 
 function weeklyTable(workouts) {
@@ -481,32 +335,6 @@ function weeklyTable(workouts) {
   return lines.join("\n");
 }
 
-function pack(files, outZip) {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "demo-tempo-"));
-  try {
-    const names = Object.keys(files).sort();
-    const fixed = new Date("2026-10-14T14:00:00Z");
-    for (const name of names) {
-      const file = path.join(tmp, name);
-      fs.mkdirSync(path.dirname(file), { recursive: true });
-      fs.writeFileSync(file, `${JSON.stringify(files[name])}\n`, "utf8");
-      fs.utimesSync(file, fixed, fixed);
-    }
-    const abs = path.resolve(outZip);
-    fs.mkdirSync(path.dirname(abs), { recursive: true });
-    if (fs.existsSync(abs)) fs.unlinkSync(abs);
-    const result = spawnSync("zip", ["-q", "-X", "-D", abs, ...names], {
-      cwd: tmp,
-      stdio: "inherit",
-      env: { ...process.env, TZ: "UTC" },
-    });
-    if (result.status !== 0) throw new Error(`zip failed with status ${result.status}`);
-    return abs;
-  } finally {
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
-}
-
 function main() {
   const argv = process.argv.slice(2);
   let out = DEFAULT_OUT;
@@ -518,7 +346,7 @@ function main() {
     }
   }
   const workouts = buildAllWorkouts();
-  const abs = pack(buildFiles(workouts), out);
+  const abs = packZip(buildFiles(workouts), out, EXPORT_DATE);
   console.log(weeklyTable(workouts));
   console.log(`\n${workouts.length} runs -> ${abs} (${fs.statSync(abs).size} bytes)`);
 }
