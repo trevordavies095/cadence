@@ -7,6 +7,7 @@
  * comments; the prompt never names them. Pure.
  */
 import type { GoalDistance, GoalKind, TrainingGoal } from "../goal/types.js";
+import { VOLUME_WARNING_PCT_RETURN } from "../recap/goalKnobs.js";
 
 // Sources: Seiler (polarized intensity distribution, ~80/20 by time),
 // Fitzgerald (80/20 Running), Daniels (Daniels' Running Formula: phases I–IV,
@@ -50,15 +51,20 @@ const FITNESS_BLOCK = [
   "Coaching method for general fitness: consistency matters most, so plan a week the athlete can repeat, on regular days, with nothing that needs extra recovery to absorb.",
   "Keep about 80 percent of the running time easy, with one moderate session a week such as strides, hills or a short tempo, and add a second only if the athlete wants it.",
   "Grow volume slowly and hold each step for a few weeks before the next, since there is no race to peak for.",
+  "The week's longest run is a longer easy run, not a key session: do not build it toward a target distance or judge the week by it.",
 ].join(" ");
 
 // Sources: Warden (return-to-run progression after bone stress injury: time and
 // frequency before pace or distance, walk-run intervals by minutes, intensity
 // only after weeks of symptom-free running), Silbernagel (pain-monitoring model:
-// pain during activity and the next morning sets the next step).
+// pain during activity and the next morning sets the next step). The weekly cap
+// is the return column's volume-change warning, so the prompt and the report
+// agree on what too big a step is.
 const RETURN_BLOCK = [
   "Coaching method for a return to running: progress run minutes and how often the athlete runs before pace or distance, and plan walk-run sessions by minutes, such as 5 rounds of 2 min running and 1 min walking.",
-  "Keep every run easy, with no intervals, hills or strides, until the athlete has had four pain-free weeks.",
+  `Raise the week's total running minutes by no more than about ${VOLUME_WARNING_PCT_RETURN} percent, and the longest continuous run by no more than 2 to 3 minutes at a time.`,
+  "Keep every run easy, with no intervals, hills or strides, until the athlete has had four pain-free weeks in a row.",
+  "A pain-free week is one in which every run stayed at 0 of 10 and was quiet the next morning; any pain, even pain that settled, starts the count again.",
   "Pain above 3 of 10 during a run, or pain that is worse the next morning, means a smaller next step: repeat or shorten the last session instead of adding to it.",
   "Pain at 3 of 10 or below that settles by the next morning allows the next small step.",
 ].join(" ");

@@ -8,6 +8,7 @@ import {
   createAnthropicLlmPort,
 } from "../src/llm/index.js";
 import { packetCoaching } from "../src/packet/assemble.js";
+import { VOLUME_WARNING_PCT_RETURN } from "../src/recap/goalKnobs.js";
 import { buildModelPacket, type ModelPacket } from "../src/packet/index.js";
 import { anthropicStreamResponse, anthropicToolMessage } from "./helpers.js";
 
@@ -130,6 +131,27 @@ describe("Coach Cade's method by goal (coaching-bias 26)", () => {
     expect(system).toMatch(/four pain-free weeks/);
     expect(system).toMatch(/above 3 of 10 during a run, or .*worse the next morning/);
     expect(system).toMatch(/walk-run sessions by minutes/);
+  });
+
+  it("return: defines a pain-free week, so the count is the same every week", async () => {
+    const system = await capture().weekly(packetFor({ kind: "return" }));
+    expect(system).toMatch(/four pain-free weeks in a row/);
+    expect(system).toMatch(
+      /A pain-free week is one in which every run stayed at 0 of 10 and was quiet the next morning; any pain, even pain that settled, starts the count again\./,
+    );
+  });
+
+  it("return: caps the weekly step at the return column's volume warning", async () => {
+    const system = await capture().weekly(packetFor({ kind: "return" }));
+    expect(system).toContain(
+      `total running minutes by no more than about ${VOLUME_WARNING_PCT_RETURN} percent`,
+    );
+    expect(system).toMatch(/longest continuous run by no more than 2 to 3 minutes at a time/);
+  });
+
+  it("fitness: the longest run is a longer easy run, not a key session", async () => {
+    const system = await capture().weekly(packetFor({ kind: "fitness" }));
+    expect(system).toMatch(/longest run is a longer easy run, not a key session/);
   });
 
   it("no block names its sources", async () => {
