@@ -143,7 +143,8 @@ describe("GET /home (#100)", () => {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          answers: { goal: "Half marathon in January", schedule: "Tue Thu Sat" },
+          answers: { schedule: "Tue Thu Sat" },
+          goal: { kind: "race", distance: "half", raceName: "Half marathon in January" },
         }),
       });
       expect(saved.status).toBe(201);

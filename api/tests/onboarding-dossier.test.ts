@@ -28,6 +28,9 @@ const SAMPLE_ANSWERS = {
   preferences: "Long run Saturday, prefer trails",
 };
 
+/** The record the route turns into "Race: Half marathon in April, date not set yet." */
+const SAMPLE_GOAL = { kind: "race", distance: "half", raceName: "Half marathon in April" };
+
 function sampleInput(overrides?: Partial<DossierV1Input>): DossierV1Input {
   return {
     answers: SAMPLE_ANSWERS,
@@ -131,6 +134,7 @@ describe("onboarding → stub LLM dossier v1 proposal + Accept", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         answers: SAMPLE_ANSWERS,
+        goal: SAMPLE_GOAL,
         weekSessionId: week.id,
       }),
     });
@@ -191,7 +195,7 @@ describe("onboarding → stub LLM dossier v1 proposal + Accept", () => {
       await app.request("/onboarding/answers", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(SAMPLE_ANSWERS),
+        body: JSON.stringify({ ...SAMPLE_ANSWERS, goal: SAMPLE_GOAL }),
       }),
     );
     const proposalId = (created.proposal as { id: number }).id;
@@ -248,7 +252,7 @@ describe("onboarding → stub LLM dossier v1 proposal + Accept", () => {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          goal: "10k PR",
+          goal: { kind: "race", distance: "10k", raceName: "10k PR" },
           schedule: "MWF",
         }),
       }),

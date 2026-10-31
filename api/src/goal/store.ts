@@ -1,3 +1,4 @@
+import type { PoolClient } from "pg";
 import { pool } from "../db.js";
 import type {
   GoalDistance,
@@ -57,13 +58,18 @@ export async function getCurrentGoal(): Promise<GoalVersion | null> {
   return row ? toVersion(row) : null;
 }
 
-/** Append a goal row; it becomes the current goal. `goal` must already be parsed. */
+/**
+ * Append a goal row; it becomes the current goal. `goal` must already be parsed.
+ * Pass `client` to write it inside the caller's transaction.
+ */
 export async function appendGoal(
   at: Date,
   goal: TrainingGoal,
   source: GoalSource,
+  client?: Pick<PoolClient, "query">,
 ): Promise<GoalVersion> {
-  const result = await pool.query<Row>(
+  const db = client ?? pool;
+  const result = await db.query<Row>(
     `
     INSERT INTO training_goals
       (kind, distance, race_name, race_date, target, starting_point, since, source, created_at)

@@ -104,7 +104,7 @@ describe("onboarding interview questionnaire gate", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        goal: "Half marathon in April",
+        goal: { kind: "race", distance: "half", raceName: "Half marathon in April" },
         schedule: "Tue/Thu/Sat, ~5 hrs/week",
         injuries_constraints: "Left calf tight after hills",
         preferences: "Long run Saturday, prefer trails",
@@ -114,7 +114,7 @@ describe("onboarding interview questionnaire gate", () => {
     const saved = await json(created);
     expect(saved.status).toBe("ready");
     expect(saved.answers).toMatchObject({
-      goal: "Half marathon in April",
+      goal: "Race: Half marathon in April, date not set yet.",
       schedule: "Tue/Thu/Sat, ~5 hrs/week",
       injuries_constraints: "Left calf tight after hills",
       preferences: "Long run Saturday, prefer trails",
@@ -129,14 +129,16 @@ describe("onboarding interview questionnaire gate", () => {
     const gate = await json(await app.request("/onboarding"));
     expect(gate.status).toBe("ready");
     expect(gate.answers).toMatchObject({
-      goal: "Half marathon in April",
+      goal: "Race: Half marathon in April, date not set yet.",
       schedule: "Tue/Thu/Sat, ~5 hrs/week",
     });
 
     // Store seam used by later dossier generation (#17)
     const fromStore = await getOnboardingAnswers();
     expect(fromStore).not.toBeNull();
-    expect(fromStore!.answers.goal).toBe("Half marathon in April");
+    expect(fromStore!.answers.goal).toBe(
+      "Race: Half marathon in April, date not set yet.",
+    );
     expect(fromStore!.answers.injuries_constraints).toContain("calf");
   });
 
@@ -152,15 +154,15 @@ describe("onboarding interview questionnaire gate", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        answers: {
-          goal: "5k PR",
-          schedule: "MWF",
-        },
+        answers: { schedule: "MWF" },
+        goal: { kind: "fitness" },
       }),
     });
     expect(res.status).toBe(201);
     const body = await json(res);
-    expect((body.answers as { goal: string }).goal).toBe("5k PR");
+    expect((body.answers as { goal: string }).goal).toBe(
+      "General fitness, no race planned.",
+    );
   });
 
   it("requires goal and schedule", async () => {
@@ -181,7 +183,7 @@ describe("onboarding interview questionnaire gate", () => {
     const missingSchedule = await app.request("/onboarding/answers", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ goal: "10k" }),
+      body: JSON.stringify({ goal: { kind: "fitness" } }),
     });
     expect(missingSchedule.status).toBe(400);
     expect((await json(missingSchedule)).error).toBe("schedule_required");
@@ -199,7 +201,7 @@ describe("onboarding interview questionnaire gate", () => {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        goal: "Marathon",
+        goal: { kind: "race", distance: "marathon", raceName: "Marathon" },
         schedule: "5 days",
       }),
     });
@@ -212,7 +214,9 @@ describe("onboarding interview questionnaire gate", () => {
     const gate = await json(await app.request("/onboarding"));
     expect(gate.status).toBe("complete");
     expect(gate.dossierVersionId).toBeTruthy();
-    expect((gate.answers as { goal: string }).goal).toBe("Marathon");
+    expect((gate.answers as { goal: string }).goal).toBe(
+      "Race: Marathon, date not set yet.",
+    );
 
     const locked = await app.request("/onboarding/answers", {
       method: "POST",

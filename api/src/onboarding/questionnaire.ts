@@ -3,6 +3,9 @@
  * Conversational prompts for the coach thread — not a multi-page form wizard.
  */
 
+import { goalSentence, goalSentenceProblem } from "../goal/sentence.js";
+import { parseTrainingGoal, type TrainingGoal } from "../goal/types.js";
+
 export type OnboardingFieldKey =
   | "goal"
   | "schedule"
@@ -39,20 +42,33 @@ export const ONBOARDING_QUESTIONNAIRE: OnboardingQuestionnaire = {
   required: ["goal", "schedule"],
 };
 
+/**
+ * Validate the onboarding request. The goal arrives as a record, not a sentence: the
+ * sentence the coach reads is generated here, so onboarding and Settings use the same words.
+ * Any text `goal` in the answers is ignored.
+ */
 export function parseOnboardingAnswers(
   raw: unknown,
+  rawGoal: unknown,
 ):
-  | { ok: true; answers: OnboardingAnswers }
+  | { ok: true; answers: OnboardingAnswers; goal: TrainingGoal }
   | { ok: false; error: string } {
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
     return { ok: false, error: "answers_object_required" };
   }
   const body = raw as Record<string, unknown>;
 
-  const goal = typeof body.goal === "string" ? body.goal.trim() : "";
+  if (rawGoal === undefined || rawGoal === null) {
+    return { ok: false, error: "goal_required" };
+  }
+  const parsedGoal = parseTrainingGoal(rawGoal);
+  if (!parsedGoal.ok) return parsedGoal;
+  const goalProblem = goalSentenceProblem(parsedGoal.goal);
+  if (goalProblem) return { ok: false, error: goalProblem };
+  const goal = goalSentence(parsedGoal.goal);
+
   const schedule =
     typeof body.schedule === "string" ? body.schedule.trim() : "";
-  if (!goal) return { ok: false, error: "goal_required" };
   if (!schedule) return { ok: false, error: "schedule_required" };
 
   const answers: OnboardingAnswers = { goal, schedule };
@@ -73,5 +89,5 @@ export function parseOnboardingAnswers(
     if (v) answers.preferences = v;
   }
 
-  return { ok: true, answers };
+  return { ok: true, answers, goal: parsedGoal.goal };
 }

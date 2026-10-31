@@ -160,13 +160,14 @@ describe("LLM call log: stub port rows (#71)", () => {
     // Onboarding only runs before a dossier is installed.
     const { app, weekSessionId } = await setup({ dossier: false });
     const answers = {
-      goal: "Half marathon in April",
+      goal: "Race: Half marathon in April, date not set yet.",
       schedule: "Tue/Thu/Sat",
       injuries_constraints: "Left calf tight",
       preferences: "Long run Saturday",
     };
     const res = await post(app, "/onboarding/answers", {
       answers,
+      goal: { kind: "race", distance: "half", raceName: "Half marathon in April" },
       weekSessionId,
     });
     expect(res.status).toBe(201);

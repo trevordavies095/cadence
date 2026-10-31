@@ -278,7 +278,7 @@ cd api && npm run dev
 | GET | `/dossier/audit` | Dossier audit cadence meta only (`lastAuditAt`, `nextAuditDueAt`, `due`, `intervalWeeks`) |
 | POST | `/dossier/audits` | Coach-initiated audit/trim soft-gate proposal when due (or `force: true`); the LlmPort (stub or live) folds coach updates into Current Status |
 | GET | `/onboarding` | Onboarding interview gate (`needs_onboarding` \| `ready` \| `complete`) + questionnaire + Tempo prefills — **403** until accepted |
-| POST | `/onboarding/answers` | Persist onboarding answers; the LlmPort (stub or live) drafts the dossier v1 soft-gate proposal + coach thread summary — **403** until accepted |
+| POST | `/onboarding/answers` | Persist onboarding answers and the `goal` record (the API writes the goal sentence and a goal row, source `onboarding`); the LlmPort (stub or live) drafts the dossier v1 soft-gate proposal + coach thread summary — **403** until accepted |
 | GET | `/week` | Current ISO week Mon–Sun for injectable/dev clock (`?timezone=`, default `ATHLETE_TIMEZONE`) |
 | POST | `/weeks/current` | Get-or-create week session for clock “now” (`?timezone=`, default `ATHLETE_TIMEZONE`). Archives only weeks that started *before* it; a week that becomes current is un-archived — **403** until accepted |
 | GET | `/weeks` | List week sessions newest-first — **403** until accepted |
