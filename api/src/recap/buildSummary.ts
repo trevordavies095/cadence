@@ -4,6 +4,7 @@ import type {
   TempoUnitPreference,
 } from "../tempo/port.js";
 import type { WeekSession } from "../week/store.js";
+import type { RecapDepthKnobs } from "./phase.js";
 import { aggregateWorkouts, type WeekAggregate } from "./aggregate.js";
 import {
   buildSummaryComparison,
@@ -81,6 +82,8 @@ export async function buildRecapSummary(args: {
   unit?: TempoUnitPreference;
   /** The report's one weekly-recap fetch; fetched here when omitted. */
   weeklyStats?: SharedWeeklyRecapStats;
+  /** The week's resolved knobs (goal context); the summary's goal lines read these. */
+  knobs?: RecapDepthKnobs;
 }): Promise<RecapSummaryResult> {
   const { session, tempoPort } = args;
   const unit = args.unit ?? (await resolveRecapUnit(tempoPort));

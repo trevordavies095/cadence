@@ -90,7 +90,12 @@ export async function buildRecapSkeleton(args: {
         unit: args.unit,
         weeklyStats,
       }),
-      buildRecapZones({ session, tempoPort, weeklyStats }),
+      buildRecapZones({
+        session,
+        tempoPort,
+        weeklyStats,
+        easyShareTarget: knobs.thresholds.easyShareTarget,
+      }),
       buildRecapRunByRun({
         session,
         tempoPort,

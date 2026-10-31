@@ -46,15 +46,21 @@ export function buildZonesMarkdown(dist: ZoneWeekDistribution): string {
   }
   lines.push("");
   if (dist.z1z2Pct !== undefined) {
-    const flag =
-      dist.z1z2TargetMet === false
-        ? " **Below** typical marathon base target (≥80% Z1+Z2)."
-        : dist.z1z2TargetMet === true
-          ? " On target for ≥80% Z1+Z2."
-          : "";
     lines.push(
-      `Target for marathon base phase: **≥80% in Z1+Z2**. This week: **${dist.z1z2Pct}%**.${flag}`,
+      `Easy-running share: ${dist.z1z2Pct}% (zones 1 and 2 of time with heart rate).`,
     );
+    // Target and verdict only when the goal sets one; never a goal it is not.
+    if (dist.easyShareTarget !== null) {
+      const verdict =
+        dist.z1z2TargetMet === true
+          ? " This week meets the target."
+          : dist.z1z2TargetMet === false
+            ? " This week is below the target."
+            : "";
+      lines.push(
+        `Target for this block: ${dist.easyShareTarget}% or more.${verdict}`,
+      );
+    }
     lines.push("");
   }
   return lines.join("\n");

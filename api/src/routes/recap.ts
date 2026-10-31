@@ -3,6 +3,7 @@ import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import { buildRecapRunByRun } from "../recap/buildRunByRun.js";
 import { buildRecapSummary } from "../recap/buildSummary.js";
 import { buildRecapZones } from "../recap/buildZones.js";
+import { loadWeekGoalContext } from "../recap/weekGoalContext.js";
 import {
   TempoExportError,
   TempoHttpError,
@@ -137,7 +138,12 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
     }
 
     try {
-      const zones = await buildRecapZones({ session, tempoPort });
+      const goalContext = await loadWeekGoalContext(session);
+      const zones = await buildRecapZones({
+        session,
+        tempoPort,
+        easyShareTarget: goalContext.knobs.thresholds.easyShareTarget,
+      });
 
       if (formatRaw === "markdown") {
         return c.text(zones.markdown, 200, {
@@ -152,6 +158,7 @@ export function createRecapRoutes(options: RecapRouteOptions): Hono {
         range: zones.range,
         zones: zones.zones,
         zoneSource: zones.zoneSource,
+        easyShareTarget: zones.easyShareTarget,
         distribution: zones.distribution,
         markdown: zones.markdown,
       });

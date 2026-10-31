@@ -15,7 +15,10 @@ export type ZoneWeekDistribution = {
   zoneSeconds: number[];
   zonePct?: Record<string, number>;
   z1z2Pct?: number;
+  /** Set only when there is a target: z1z2Pct at or above easyShareTarget. */
   z1z2TargetMet?: boolean;
+  /** The goal's easy-share target in percent; null shows the share with no target. */
+  easyShareTarget: number | null;
   noHrTimeSeriesInWeek: boolean;
   note?: string;
 };
@@ -121,13 +124,17 @@ function sortZones(
 export function computeWeekZoneDistribution(args: {
   zones: readonly TempoHeartRateZone[];
   workouts: readonly TempoWorkoutDetail[];
+  /** The goal's easy-share target; null or omitted: no met flag. */
+  easyShareTarget?: number | null;
 }): ZoneWeekDistribution {
   const zonesSorted = sortZones(args.zones);
+  const easyShareTarget = args.easyShareTarget ?? null;
 
   if (zonesSorted.length === 0) {
     return {
       totalHrSeconds: 0,
       zoneSeconds: [],
+      easyShareTarget,
       noHrTimeSeriesInWeek: true,
       note: "No HR zones configured in Tempo settings.",
     };
@@ -139,6 +146,7 @@ export function computeWeekZoneDistribution(args: {
     return {
       totalHrSeconds: 0,
       zoneSeconds: weekSeconds,
+      easyShareTarget,
       noHrTimeSeriesInWeek: true,
       note: "No workouts in recap window.",
     };
@@ -163,7 +171,7 @@ export function computeWeekZoneDistribution(args: {
     }
   }
 
-  return zoneDistributionFromSeconds(weekSeconds);
+  return zoneDistributionFromSeconds(weekSeconds, easyShareTarget);
 }
 
 /**
@@ -172,12 +180,15 @@ export function computeWeekZoneDistribution(args: {
  */
 export function zoneDistributionFromSeconds(
   weekSeconds: readonly number[],
+  /** The goal's easy-share target; null or omitted: no met flag. */
+  easyShareTarget: number | null = null,
 ): ZoneWeekDistribution {
   const totalHrSeconds = weekSeconds.reduce((a, b) => a + b, 0);
   if (totalHrSeconds === 0) {
     return {
       totalHrSeconds: 0,
       zoneSeconds: [...weekSeconds],
+      easyShareTarget,
       noHrTimeSeriesInWeek: true,
       note: "No usable HR samples for workouts this week. Zone totals need time-series heart rate.",
     };
@@ -193,7 +204,10 @@ export function zoneDistributionFromSeconds(
     zoneSeconds: [...weekSeconds],
     zonePct,
     z1z2Pct,
-    z1z2TargetMet: z1z2Pct >= 80,
+    ...(easyShareTarget !== null
+      ? { z1z2TargetMet: z1z2Pct >= easyShareTarget }
+      : {}),
+    easyShareTarget,
     noHrTimeSeriesInWeek: false,
   };
 }

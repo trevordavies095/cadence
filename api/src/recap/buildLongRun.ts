@@ -15,6 +15,7 @@ import {
 import type { LongRunDetail, RecapLongRunResult } from "./longRunTypes.js";
 import {
   resolveRecapDepthKnobs,
+  type RecapDepthKnobs,
   type RecapGoal,
   type RecapPhase,
 } from "./phase.js";
@@ -119,14 +120,21 @@ export async function buildRecapLongRun(args: {
   unit?: TempoUnitPreference;
   phase?: RecapPhase;
   goal?: RecapGoal;
+  /**
+   * The week's resolved knobs (goal context). Wins over phase/goal, and carries
+   * the goal kind's thresholds, which phase/goal alone cannot resolve.
+   */
+  knobs?: RecapDepthKnobs;
   /** Full-recap mode: only a typed Long Run qualifies; tempo-cli text. */
   tempoParity?: boolean;
 }): Promise<RecapLongRunResult> {
   const { session, tempoPort } = args;
-  const knobs = resolveRecapDepthKnobs({
-    phase: args.phase,
-    goal: args.goal,
-  });
+  const knobs =
+    args.knobs ??
+    resolveRecapDepthKnobs({
+      phase: args.phase,
+      goal: args.goal,
+    });
   const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
   const window: WeekWindow = { start: session.start, end: session.end };
 

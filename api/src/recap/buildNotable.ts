@@ -10,6 +10,7 @@ import {
 } from "./notable.js";
 import {
   resolveRecapDepthKnobs,
+  type RecapDepthKnobs,
   type RecapGoal,
   type RecapPhase,
 } from "./phase.js";
@@ -42,14 +43,21 @@ export async function buildRecapNotable(args: {
   unit?: TempoUnitPreference;
   phase?: RecapPhase;
   goal?: RecapGoal;
+  /**
+   * The week's resolved knobs (goal context). Wins over phase/goal, and carries
+   * the goal kind's thresholds, which phase/goal alone cannot resolve.
+   */
+  knobs?: RecapDepthKnobs;
   /** Full-recap mode: omit the section when empty, never truncate bullets. */
   tempoParity?: boolean;
 }): Promise<RecapNotableResult> {
   const { session, tempoPort } = args;
-  const knobs = resolveRecapDepthKnobs({
-    phase: args.phase,
-    goal: args.goal,
-  });
+  const knobs =
+    args.knobs ??
+    resolveRecapDepthKnobs({
+      phase: args.phase,
+      goal: args.goal,
+    });
   const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
   const thisWindow: WeekWindow = { start: session.start, end: session.end };
   const { trailing } = priorWeekWindows(thisWindow);

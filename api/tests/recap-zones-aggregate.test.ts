@@ -105,7 +105,7 @@ type ZonesBody = {
     zoneSeconds: number[];
     zonePct: Record<string, number>;
     z1z2Pct: number;
-    z1z2TargetMet: boolean;
+    z1z2TargetMet?: boolean;
   };
   markdown: string;
 };
@@ -162,7 +162,7 @@ describe("zones section from the log's weekly zone aggregate (#12)", () => {
       1,
     );
     expect(aggregate.markdown).toBe(perSecond.markdown);
-    expect(aggregate.markdown).toContain("This week: **100%**");
+    expect(aggregate.markdown).toContain("Easy-running share: 100% (zones 1 and 2");
   });
 
   it("falls back to the per-second method when any bucket is null", async () => {
@@ -208,6 +208,6 @@ describe("zones section from the log's weekly zone aggregate (#12)", () => {
     const md = report.reportMarkdown as string;
     // Summary took prev / 3-wk from the same stats; zones from its buckets.
     expect(md).toContain("## HR zone distribution (week total)");
-    expect(md).toContain("This week: **100%**");
+    expect(md).toContain("Easy-running share: 100% (zones 1 and 2");
   });
 });

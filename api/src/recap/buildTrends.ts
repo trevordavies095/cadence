@@ -4,6 +4,7 @@ import { resolveRecapUnit } from "./buildSummary.js";
 import { listAllWorkoutsInWindow } from "./listWindow.js";
 import {
   resolveRecapDepthKnobs,
+  type RecapDepthKnobs,
   type RecapGoal,
   type RecapPhase,
 } from "./phase.js";
@@ -35,14 +36,21 @@ export async function buildRecapTrends(args: {
   unit?: TempoUnitPreference;
   phase?: RecapPhase;
   goal?: RecapGoal;
+  /**
+   * The week's resolved knobs (goal context). Wins over phase/goal, and carries
+   * the goal kind's thresholds, which phase/goal alone cannot resolve.
+   */
+  knobs?: RecapDepthKnobs;
   /** Full-recap mode: markdown exactly as tempo-cli (verdicts, omit when empty). */
   tempoParity?: boolean;
 }): Promise<RecapTrendsResult> {
   const { session, tempoPort } = args;
-  const knobs = resolveRecapDepthKnobs({
-    phase: args.phase,
-    goal: args.goal,
-  });
+  const knobs =
+    args.knobs ??
+    resolveRecapDepthKnobs({
+      phase: args.phase,
+      goal: args.goal,
+    });
   const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
   const thisWeek: WeekWindow = { start: session.start, end: session.end };
   const fetchWin = trendsFetchWindow(thisWeek);
