@@ -1,0 +1,117 @@
+{
+  "_readme": "Replay season (coaching-bias 25). Fictional athlete and race. Regenerate with `npx tsx scripts/regenerate-replay-seasons.ts` from api/ (see tests/fixtures/README.md).",
+  "id": "10k",
+  "seed": 250102,
+  "athlete": {
+    "name": "Owen Castellane",
+    "timezone": "Europe/London",
+    "utcOffsetHours": 1,
+    "story": "Training for a 10K in November: one Threshold and one Intervals session a week, a parkrun now and then, and a 5K best at parkrun in week 4."
+  },
+  "weekOneMonday": "2026-09-07",
+  "exportDate": "2026-10-18T19:00:00Z",
+  "unitPreference": "metric",
+  "zones": [[105, 128], [128, 146], [146, 160], [160, 172], [172, 189]],
+  "shoes": [
+    { "key": "daily", "brand": "Asics", "model": "Novablast 4", "initialKm": 310 },
+    { "key": "fast", "brand": "Adidas", "model": "Adizero Boston 12", "initialKm": 140 }
+  ],
+  "tempC": [19, 18, 16, 15, 13, 12],
+  "goal": { "kind": "race", "distance": "10k", "raceName": "Riverside 10K", "raceDate": "2026-11-08", "target": "under 45:00" },
+  "aboutYou": "# About you\n\nYou are training for the Riverside 10K on Sunday 8 November and want to break 45 minutes; your best is 46:40 from last spring. You run five days a week: easy on Monday, a Threshold session on Tuesday, Intervals on Thursday, parkrun or an easy run on Saturday and a longer easy run on Sunday. Wednesday and Friday are rest days. Your 5K best is 21:55 at parkrun. No injuries.",
+  "weeks": [
+    {
+      "runs": [
+        { "day": "Mon", "at": "18:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "5:40", "hr": 140, "driftBpm": 3 }], "stopsS": 15 },
+        { "day": "Tue", "at": "18:30", "name": "3 x 8 min threshold", "type": "Threshold", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 3, "parts": [{ "min": 8, "pace": "4:30", "hr": 164, "label": "tempo" }, { "min": 2, "pace": "6:10", "hr": 145, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 30 },
+        { "day": "Thu", "at": "18:30", "name": "6 x 800 m", "type": "Intervals", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 6, "parts": [{ "m": 800, "pace": "4:05", "hr": 173, "label": "rep" }, { "m": 400, "pace": "6:20", "hr": 148, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 45 },
+        { "day": "Sat", "at": "09:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 5, "pace": "5:45", "hr": 138, "driftBpm": 2 }], "stopsS": 10 },
+        { "day": "Sun", "at": "09:00", "name": "Long run", "type": "Long Run", "parts": [{ "km": 12, "pace": "5:50", "hr": 142, "driftBpm": 6 }], "stopsS": 40 }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 7 }, "Tue": { "rpe": 7, "felt": 7 }, "Thu": { "rpe": 8, "felt": 6 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 4, "felt": 7 } },
+        "weekly": { "sleep_avg_hrs": 7, "stress_level": "Normal", "body_check": "Calves a bit heavy after Thursday", "feeling_into_next_week": "Keen" }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "18:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "5:40", "hr": 139, "driftBpm": 3 }], "stopsS": 10 },
+        { "day": "Tue", "at": "18:30", "name": "3 x 9 min threshold", "type": "Threshold", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 3, "parts": [{ "min": 9, "pace": "4:29", "hr": 165, "label": "tempo" }, { "min": 2, "pace": "6:10", "hr": 145, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 30 },
+        { "day": "Thu", "at": "18:30", "name": "6 x 800 m", "type": "Intervals", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 6, "parts": [{ "m": 800, "pace": "4:03", "hr": 173, "label": "rep" }, { "m": 400, "pace": "6:20", "hr": 148, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 40 },
+        { "day": "Sat", "at": "09:00", "name": "parkrun", "type": "Race", "parts": [{ "km": 1.5, "pace": "5:50", "hr": 136, "label": "warmup" }, { "km": 5, "pace": "4:24", "hr": 176, "label": "rep" }], "stopsS": 300 },
+        { "day": "Sun", "at": "09:00", "name": "Long run", "type": "Long Run", "parts": [{ "km": 13, "pace": "5:50", "hr": 142, "driftBpm": 6 }], "stopsS": 45 }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 7 }, "Tue": { "rpe": 7, "felt": 7 }, "Thu": { "rpe": 8, "felt": 7 }, "Sat": { "rpe": 9, "result": "22:00, five seconds off my best. Went out too fast." }, "Sun": { "rpe": 4, "felt": 6 } },
+        "weekly": {
+          "sleep_avg_hrs": 7,
+          "stress_level": "Normal",
+          "body_check": "Fine",
+          "questions_for_coach": ["Should parkrun count as my Intervals session on the weeks I race it?"]
+        }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "18:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "5:40", "hr": 139, "driftBpm": 3 }], "stopsS": 15 },
+        { "day": "Tue", "at": "18:30", "name": "3 x 10 min threshold", "type": "Threshold", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 3, "parts": [{ "min": 10, "pace": "4:28", "hr": 165, "label": "tempo" }, { "min": 2, "pace": "6:10", "hr": 145, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 35 },
+        { "day": "Thu", "at": "18:30", "name": "5 x 1 km", "type": "Intervals", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 5, "parts": [{ "m": 1000, "pace": "4:08", "hr": 172, "label": "rep" }, { "m": 400, "pace": "6:20", "hr": 148, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 45 },
+        { "day": "Sat", "at": "09:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 5, "pace": "5:45", "hr": 137, "driftBpm": 2 }], "stopsS": 15 },
+        { "day": "Sun", "at": "09:00", "name": "Long run", "type": "Long Run", "parts": [{ "km": 14, "pace": "5:48", "hr": 142, "driftBpm": 6 }], "stopsS": 50 }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 7 }, "Tue": { "rpe": 7, "felt": 8 }, "Thu": { "rpe": 8, "felt": 7 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 4, "felt": 7 } },
+        "weekly": { "sleep_avg_hrs": 7.5, "stress_level": "Low", "body_check": "Good", "feeling_into_next_week": "Want to have a proper go at parkrun on Saturday" }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "18:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "5:40", "hr": 138, "driftBpm": 3 }], "stopsS": 10 },
+        { "day": "Tue", "at": "18:30", "name": "2 x 10 min threshold", "type": "Threshold", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 2, "parts": [{ "min": 10, "pace": "4:27", "hr": 164, "label": "tempo" }, { "min": 2, "pace": "6:10", "hr": 145, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 30 },
+        { "day": "Thu", "at": "18:30", "name": "4 x 800 m", "type": "Intervals", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 4, "parts": [{ "m": 800, "pace": "4:02", "hr": 172, "label": "rep" }, { "m": 400, "pace": "6:20", "hr": 148, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 35 },
+        { "day": "Sat", "at": "09:00", "name": "parkrun", "type": "Race", "parts": [{ "km": 1.5, "pace": "5:50", "hr": 136, "label": "warmup" }, { "km": 5, "pace": "4:17", "hr": 178, "label": "rep" }], "stopsS": 300, "best": { "distance": "5K", "distanceM": 5000, "previousTimeS": 1315 } },
+        { "day": "Sun", "at": "09:30", "name": "Long run", "type": "Long Run", "parts": [{ "km": 12, "pace": "5:55", "hr": 141, "driftBpm": 5 }], "stopsS": 40 }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 7 }, "Tue": { "rpe": 6, "felt": 8 }, "Thu": { "rpe": 7, "felt": 8 }, "Sat": { "rpe": 9, "result": "New best by about half a minute. Even splits, strong last kilometre." }, "Sun": { "rpe": 4, "felt": 6 } },
+        "weekly": {
+          "sleep_avg_hrs": 7.5,
+          "stress_level": "Low",
+          "body_check": "Legs heavy on Sunday, otherwise fine",
+          "questions_for_coach": ["Does Saturday change what 45 minutes for the 10K looks like?"]
+        }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "18:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "5:38", "hr": 138, "driftBpm": 3 }], "stopsS": 10 },
+        { "day": "Tue", "at": "18:30", "name": "4 x 8 min threshold", "type": "Threshold", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 4, "parts": [{ "min": 8, "pace": "4:25", "hr": 165, "label": "tempo" }, { "min": 2, "pace": "6:10", "hr": 145, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 30 },
+        { "day": "Thu", "at": "18:30", "name": "6 x 1 km", "type": "Intervals", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 6, "parts": [{ "m": 1000, "pace": "4:06", "hr": 173, "label": "rep" }, { "m": 400, "pace": "6:20", "hr": 148, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 50 },
+        { "day": "Sat", "at": "09:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "5:45", "hr": 137, "driftBpm": 2 }], "stopsS": 10 },
+        { "day": "Sun", "at": "09:00", "name": "Long run", "type": "Long Run", "parts": [{ "km": 15, "pace": "5:48", "hr": 143, "driftBpm": 7 }], "stopsS": 55 }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 8 }, "Tue": { "rpe": 7, "felt": 8 }, "Thu": { "rpe": 8, "felt": 7 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 5, "felt": 6 } },
+        "weekly": { "sleep_avg_hrs": 7, "stress_level": "Normal", "body_check": "Tired by the end of Sunday", "feeling_into_next_week": "Ready for the last hard week" }
+      }
+    },
+    {
+      "runs": [
+        { "day": "Mon", "at": "18:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 6, "pace": "5:40", "hr": 138, "driftBpm": 3 }], "stopsS": 15 },
+        { "day": "Tue", "at": "18:30", "name": "3 x 10 min threshold", "type": "Threshold", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 3, "parts": [{ "min": 10, "pace": "4:24", "hr": 165, "label": "tempo" }, { "min": 2, "pace": "6:10", "hr": 145, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 30 },
+        { "day": "Thu", "at": "18:30", "name": "5 x 1 km", "type": "Intervals", "parts": [{ "km": 2, "pace": "5:45", "hr": 138, "label": "warmup" }, { "repeat": 5, "parts": [{ "m": 1000, "pace": "4:04", "hr": 173, "label": "rep" }, { "m": 400, "pace": "6:20", "hr": 148, "label": "jog" }] }, { "km": 1.5, "pace": "5:55", "hr": 140, "label": "cooldown" }], "stopsS": 45 },
+        { "day": "Sat", "at": "09:30", "name": "Easy", "type": "Easy Run", "parts": [{ "km": 5, "pace": "5:45", "hr": 137, "driftBpm": 2 }], "stopsS": 10 },
+        { "day": "Sun", "at": "09:00", "name": "Long run", "type": "Long Run", "parts": [{ "km": 14, "pace": "5:50", "hr": 142, "driftBpm": 6 }], "stopsS": 45 }
+      ],
+      "checkIn": {
+        "runs": { "Mon": { "rpe": 3, "felt": 7 }, "Tue": { "rpe": 7, "felt": 8 }, "Thu": { "rpe": 8, "felt": 8 }, "Sat": { "rpe": 2, "felt": 8 }, "Sun": { "rpe": 4, "felt": 7 } },
+        "weekly": {
+          "sleep_avg_hrs": 7.5,
+          "stress_level": "Low",
+          "body_check": "Good",
+          "questions_for_coach": ["Three weeks to go. When should I start backing off?"]
+        }
+      }
+    }
+  ]
+}
