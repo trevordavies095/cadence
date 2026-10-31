@@ -6,12 +6,16 @@
 import type {
   TempoBestEffort,
   TempoShoe,
+  TempoUnitPreference,
   TempoWorkoutSummary,
 } from "../tempo/port.js";
 import type { SectionDepth } from "./phase.js";
+import {
+  formatShoeDistance,
+  SHOE_WARN_DISTANCE_M,
+  shoeDistanceM,
+} from "./shoeDistance.js";
 
-const METERS_PER_MILE = 1609.344;
-export const NOTABLE_SHOE_MILEAGE_WARN_MI = 400;
 export const NOTABLE_RE_OVERLOAD_FACTOR = 1.3;
 
 /** A best set during the week at one standard distance. */
@@ -31,7 +35,8 @@ export type RecapNotableSnapshot = {
     fetchOk: boolean;
     newBests: NewBest[];
   };
-  shoesOverThreshold: { shoeId: string; label: string; mileageMi: number }[];
+  /** Shoes on this week's runs past the warning distance. */
+  shoesOverThreshold: ShoeOverThreshold[];
   overload: {
     flagged: boolean;
     weekRelativeEffort?: number;
@@ -39,41 +44,30 @@ export type RecapNotableSnapshot = {
   };
 };
 
-function shoeMileageMi(shoe: TempoShoe): number | undefined {
-  if (
-    typeof shoe.totalMileage === "number" &&
-    Number.isFinite(shoe.totalMileage) &&
-    shoe.totalMileage >= 0
-  ) {
-    if (shoe.totalMileage > 500) return shoe.totalMileage / METERS_PER_MILE;
-    return shoe.totalMileage;
-  }
-  if (
-    typeof shoe.initialMileageM === "number" &&
-    Number.isFinite(shoe.initialMileageM) &&
-    shoe.initialMileageM > 0
-  ) {
-    return shoe.initialMileageM / METERS_PER_MILE;
-  }
-  return undefined;
-}
-
 function shoeLabel(shoe: TempoShoe): string {
   const label = `${shoe.brand} ${shoe.model}`.trim();
   return label || shoe.id.slice(0, 8);
 }
 
+/** A shoe past the warning distance; `distanceM` in metres. */
+export type ShoeOverThreshold = {
+  shoeId: string;
+  label: string;
+  distanceM: number;
+};
+
 export function collectShoesOverMileageThreshold(args: {
   shoes: readonly TempoShoe[];
   weekWorkouts: readonly TempoWorkoutSummary[];
-  thresholdMi?: number;
-}): { shoeId: string; label: string; mileageMi: number }[] {
-  const threshold = args.thresholdMi ?? NOTABLE_SHOE_MILEAGE_WARN_MI;
+  /** Warning distance in metres; defaults to {@link SHOE_WARN_DISTANCE_M}. */
+  thresholdM?: number;
+}): ShoeOverThreshold[] {
+  const threshold = args.thresholdM ?? SHOE_WARN_DISTANCE_M;
   const byId = new Map(
     args.shoes.map((s) => [s.id.toLowerCase(), s] as const),
   );
   const seen = new Set<string>();
-  const out: { shoeId: string; label: string; mileageMi: number }[] = [];
+  const out: ShoeOverThreshold[] = [];
 
   for (const w of args.weekWorkouts) {
     const sid =
@@ -84,9 +78,9 @@ export function collectShoesOverMileageThreshold(args: {
     seen.add(key);
     const shoe = byId.get(key);
     if (!shoe) continue;
-    const mileageMi = shoeMileageMi(shoe);
-    if (mileageMi === undefined || mileageMi <= threshold) continue;
-    out.push({ shoeId: sid, label: shoeLabel(shoe), mileageMi });
+    const distanceM = shoeDistanceM(shoe);
+    if (distanceM === undefined || distanceM <= threshold) continue;
+    out.push({ shoeId: sid, label: shoeLabel(shoe), distanceM });
   }
   return out.sort((a, b) => a.label.localeCompare(b.label));
 }
@@ -144,6 +138,8 @@ export function buildRecapNotableSnapshot(args: {
   weekWorkouts: readonly TempoWorkoutSummary[];
   weekRelativeEffort: number;
   threeWeekAvgRelativeEffort?: number;
+  /** The athlete's Tempo unit, for the shoe warning. */
+  unit: TempoUnitPreference;
 }): RecapNotableSnapshot {
   const newBests: NewBest[] = args.bestEffortsFetchOk
     ? args.newBestEfforts
@@ -174,7 +170,7 @@ export function buildRecapNotableSnapshot(args: {
 
   for (const s of shoesOverThreshold) {
     bullets.push(
-      `Shoe **${s.label}** at ${Math.round(s.mileageMi)} mi (>${NOTABLE_SHOE_MILEAGE_WARN_MI} mi)`,
+      `Shoe **${s.label}** at ${formatShoeDistance(s.distanceM, args.unit)} (>${formatShoeDistance(SHOE_WARN_DISTANCE_M, args.unit)})`,
     );
   }
 

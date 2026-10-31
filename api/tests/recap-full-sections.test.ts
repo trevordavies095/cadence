@@ -31,6 +31,7 @@ type Fixture = {
   avgPaceS: number;
   durationS: number;
   avgHeartRateBpm: number;
+  shoeId?: string;
 };
 
 const id = (n: number) =>
@@ -120,6 +121,10 @@ type Behavior = {
   notableThrows?: boolean;
   /** Fail the multi-week Trends window (spans before and into this week). */
   failOlderWorkouts?: boolean;
+  /** Tempo's unit preference (default imperial). */
+  unit?: "imperial" | "metric";
+  /** What `GET /shoes` returns (default none). */
+  shoes?: unknown[];
 };
 
 function buildTempo(b: Behavior) {
@@ -138,6 +143,7 @@ function buildTempo(b: Behavior) {
       avgHeartRateBpm: f.avgHeartRateBpm,
       maxHeartRateBpm: 160,
       splits: [],
+      ...(f.shoeId ? { shoeId: f.shoeId } : {}),
     });
     if (p === "/workouts") {
       const start = url.searchParams.get("startDate");
@@ -172,7 +178,7 @@ function buildTempo(b: Behavior) {
       return w ? ok(full(w)) : new Response("", { status: 404 });
     }
     if (p === "/settings/unit-preference") {
-      return ok({ unitPreference: "imperial" });
+      return ok({ unitPreference: b.unit ?? "imperial" });
     }
     if (p === "/settings/heart-rate-zones") {
       return ok({
@@ -188,7 +194,7 @@ function buildTempo(b: Behavior) {
       });
     }
     if (p === "/settings/default-shoe") return ok({ defaultShoeId: null });
-    if (p === "/shoes") return ok([]);
+    if (p === "/shoes") return ok(b.shoes ?? []);
     if (p === "/stats/best-efforts") {
       const since = url.searchParams.get("since");
       b.bestEffortsSince?.push(since);
@@ -495,6 +501,62 @@ describe("full recap sections in tempo-cli order (#88)", () => {
       .reportMarkdown as string;
     expect(md).not.toContain("New best");
     expect(md).not.toContain("## Notable");
+  });
+
+  describe("shoe distance in the athlete's unit (#35)", () => {
+    const SHOE_ID = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+    const shoe = (totalMileage: number, unit: "miles" | "km") => ({
+      id: SHOE_ID,
+      brand: "Brooks",
+      model: "Ghost 16",
+      isRetired: false,
+      initialMileageM: 0,
+      totalMileage,
+      unit,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    });
+    const shod = (f: Fixture): Fixture => ({ ...f, shoeId: SHOE_ID });
+    const workouts = [W40_EASY, W42_EASY, shod(W43_EASY), shod(W43_LONG)];
+
+    async function reportFor(b: Behavior): Promise<string> {
+      const app = makeApp(b);
+      const weekSessionId = await openWeek(app);
+      expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+      return (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+        .reportMarkdown as string;
+    }
+
+    it("a metric athlete's report has no miles anywhere", async () => {
+      // Tempo states the total in the athlete's unit: 1100 km.
+      const md = await reportFor({
+        workouts,
+        unit: "metric",
+        shoes: [shoe(1100, "km")],
+      });
+      expect(md).toContain("## Summary");
+      expect(md).toContain("## Run-by-run");
+      expect(md).toContain("## Trends");
+      expect(md).toContain("## Notable");
+      expect(md).toMatch(/^\| Distance \|/m);
+      expect(md).toContain("Shoe: Brooks Ghost 16 (1100 km)");
+      expect(md).toContain("- Shoe **Brooks Ghost 16** at 1100 km (>644 km)");
+      expect(md).not.toMatch(/\bmi\b/);
+      expect(md).not.toMatch(/\bmiles?\b/i);
+      expect(md).not.toContain("Mileage");
+    });
+
+    it("a 600-mile shoe reads as 600 mi and the warning fires", async () => {
+      const md = await reportFor({ workouts, shoes: [shoe(600, "miles")] });
+      expect(md).toContain("Shoe: Brooks Ghost 16 (600 mi)");
+      expect(md).toContain("- Shoe **Brooks Ghost 16** at 600 mi (>400 mi)");
+    });
+
+    it("an imperial shoe under the warning distance is shown but not flagged", async () => {
+      const md = await reportFor({ workouts, shoes: [shoe(137, "miles")] });
+      expect(md).toContain("Shoe: Brooks Ghost 16 (137 mi)");
+      expect(md).not.toContain("- Shoe **");
+    });
   });
 
   it("a failing best-efforts fetch drops only the new-best lines", async () => {

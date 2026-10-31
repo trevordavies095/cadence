@@ -13,13 +13,17 @@ const PLAN_MONDAY = "2026-10-26";
 
 const SUMMARY_NO_TABLE = "## Summary\nSteady aerobic week.";
 
-function summaryWith(thisWeek: string, threeWkAvg: string): string {
+function summaryWith(
+  thisWeek: string,
+  threeWkAvg: string,
+  rowName = "Distance",
+): string {
   return [
     "## Summary",
     "",
     "| Metric | This week | Prev week | 3-wk avg | Δ |",
     "| --- | --- | --- | --- | --- |",
-    `| Mileage | ${thisWeek} | 30.00 km | ${threeWkAvg} | +1.0 |`,
+    `| ${rowName} | ${thisWeek} | 30.00 km | ${threeWkAvg} | +1.0 |`,
     "| Runs | 4 | 4 | 4.0 | +0.0 |",
     "",
   ].join("\n");
@@ -160,7 +164,8 @@ describe("the offline coach plans by goal (coaching-bias 20)", () => {
       const recentHistory = [20, 10].map((km, i) => ({
         isoWeek: `2026-W4${2 - i}`,
         weekSessionId: `00000000-0000-4000-8000-00000000000${i}`,
-        recapMarkdown: summaryWith(`${km}.00 km`, "—"),
+        // A report stored before the row was renamed still calls it Mileage.
+        recapMarkdown: summaryWith(`${km}.00 km`, "—", i === 1 ? "Mileage" : "Distance"),
       }));
       const r = reply({ kind: "fitness" }, { recapMarkdown, recentHistory });
       expect(Math.abs(totalM(r) - 20000)).toBeLessThanOrEqual(2000);

@@ -102,10 +102,10 @@ test.describe("Your week: the report", () => {
       "3-week average",
       "Change",
     ]);
-    await expect(numbers.getByRole("rowheader", { name: "Mileage" })).toBeVisible();
+    await expect(numbers.getByRole("rowheader", { name: "Distance" })).toBeVisible();
     await expect(numbers.getByRole("rowheader", { name: "Runs" })).toBeVisible();
     // Distances come in the athlete's units, not as raw metres.
-    await expect(numbers.getByRole("row", { name: /Mileage/ })).toContainText(/\d+\.\d+ mi/);
+    await expect(numbers.getByRole("row", { name: /Distance/ })).toContainText(/\d+\.\d+ mi/);
 
     // Heart rate zones as a bar plus words; the target follows the athlete's goal.
     await expect(week.getByRole("heading", { name: "Heart rate zones" })).toBeVisible();

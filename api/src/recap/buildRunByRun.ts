@@ -8,6 +8,7 @@ import type {
   TempoWorkoutSummary,
 } from "../tempo/port.js";
 import { resolveRecapUnit } from "./buildSummary.js";
+import { shoeDistanceM } from "./shoeDistance.js";
 import {
   buildRunByRunMarkdown,
   cadenceRpmToSpm,
@@ -37,34 +38,13 @@ import type {
 } from "./runByRunTypes.js";
 import type { WeekWindow } from "./weekWindows.js";
 
-const METERS_PER_MILE = 1609.344;
-
 type ShoeLookup = Map<string, RunByRunShoe>;
-
-function shoeMileageMi(shoe: TempoShoe): number | undefined {
-  if (
-    typeof shoe.totalMileage === "number" &&
-    Number.isFinite(shoe.totalMileage) &&
-    shoe.totalMileage >= 0
-  ) {
-    if (shoe.totalMileage > 500) return shoe.totalMileage / METERS_PER_MILE;
-    return shoe.totalMileage;
-  }
-  if (
-    typeof shoe.initialMileageM === "number" &&
-    Number.isFinite(shoe.initialMileageM) &&
-    shoe.initialMileageM > 0
-  ) {
-    return shoe.initialMileageM / METERS_PER_MILE;
-  }
-  return undefined;
-}
 
 function shoeFromPort(shoe: TempoShoe): RunByRunShoe {
   const label = `${shoe.brand} ${shoe.model}`.trim() || shoe.id.slice(0, 8);
   const out: RunByRunShoe = { id: shoe.id, label };
-  const mi = shoeMileageMi(shoe);
-  if (mi !== undefined) out.mileageMi = mi;
+  const distanceM = shoeDistanceM(shoe);
+  if (distanceM !== undefined) out.distanceM = distanceM;
   return out;
 }
 
@@ -77,19 +57,8 @@ function shoeFromNested(raw: unknown): RunByRunShoe | undefined {
   const model = typeof o.model === "string" ? o.model.trim() : "";
   const label = `${brand} ${model}`.trim() || id.slice(0, 8);
   const out: RunByRunShoe = { id, label };
-  const total =
-    typeof o.totalMileage === "number" && Number.isFinite(o.totalMileage)
-      ? o.totalMileage
-      : undefined;
-  if (total !== undefined && total >= 0) {
-    out.mileageMi = total > 500 ? total / METERS_PER_MILE : total;
-  } else if (
-    typeof o.initialMileageM === "number" &&
-    Number.isFinite(o.initialMileageM) &&
-    o.initialMileageM > 0
-  ) {
-    out.mileageMi = o.initialMileageM / METERS_PER_MILE;
-  }
+  const distanceM = shoeDistanceM(o);
+  if (distanceM !== undefined) out.distanceM = distanceM;
   return out;
 }
 

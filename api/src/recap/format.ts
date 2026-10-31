@@ -164,7 +164,7 @@ export function buildSummaryTableRows(args: {
 
   return [
     {
-      metric: "Mileage",
+      metric: "Distance",
       thisWeek: formatDistanceM(agg.distanceM, unit),
       prevWeek: cellOrDash(mileagePrev),
       threeWkAvg: cellOrDash(mileage3),

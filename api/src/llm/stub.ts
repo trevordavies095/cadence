@@ -135,11 +135,14 @@ function parseDistanceCell(cell: string | undefined): number | null {
   return m[2] === "mi" ? value * METERS_PER_MILE : value * 1000;
 }
 
-/** The Mileage row of a report's Summary table: this week and the 3-week average. */
-function parseMileageRow(
+/**
+ * The Distance row of a report's Summary table: this week and the 3-week
+ * average. Reports stored before the row was renamed call it "Mileage".
+ */
+function parseDistanceRow(
   md: string | null | undefined,
 ): { thisWeekM: number | null; threeWkAvgM: number | null } | null {
-  const row = /^\|\s*Mileage\s*\|([^\n]*)$/m.exec(md ?? "");
+  const row = /^\|\s*(?:Distance|Mileage)\s*\|([^\n]*)$/m.exec(md ?? "");
   if (!row) return null;
   const cells = row[1]!.split("|").map((c) => c.trim());
   return {
@@ -150,11 +153,11 @@ function parseMileageRow(
 
 /**
  * Average weekly distance (meters) over the last four weeks, from the report's
- * Mileage row (this week plus the 3-week average of the weeks before), else
+ * Distance row (this week plus the 3-week average of the weeks before), else
  * from this week and the recent weeks' reports. Null when nothing says.
  */
 export function recentWeeklyDistanceM(packet: ModelPacket): number | null {
-  const current = parseMileageRow(packet.recapMarkdown);
+  const current = parseDistanceRow(packet.recapMarkdown);
   if (current?.thisWeekM != null && current.threeWkAvgM != null) {
     const avg = (current.thisWeekM + 3 * current.threeWkAvgM) / 4;
     return avg > 0 ? avg : null;
@@ -163,7 +166,7 @@ export function recentWeeklyDistanceM(packet: ModelPacket): number | null {
   if (current?.thisWeekM != null) weeks.push(current.thisWeekM);
   for (const w of packet.recentHistory ?? []) {
     if (weeks.length >= 4) break;
-    const m = parseMileageRow(w.recapMarkdown)?.thisWeekM;
+    const m = parseDistanceRow(w.recapMarkdown)?.thisWeekM;
     if (m != null) weeks.push(m);
   }
   if (weeks.length === 0) return null;

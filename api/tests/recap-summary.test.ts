@@ -82,7 +82,7 @@ describe("weekly recap Summary (#19)", () => {
     const rows = body.rows as Array<Record<string, string>>;
     expect(rows).toHaveLength(6);
     expect(rows.map((r) => r.metric)).toEqual([
-      "Mileage",
+      "Distance",
       "Runs",
       "Total time",
       "Total elevation",

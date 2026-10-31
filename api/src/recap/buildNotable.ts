@@ -102,6 +102,7 @@ export async function buildRecapNotable(args: {
     weekWorkouts,
     weekRelativeEffort: thisAgg.relativeEffort,
     threeWeekAvgRelativeEffort,
+    unit,
   });
 
   const markdown = buildNotableMarkdown(notable, knobs.sections.notable, {

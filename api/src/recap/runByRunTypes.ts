@@ -4,7 +4,8 @@ import type { RunByRunHrDrift } from "./runByRunHr.js";
 export type RunByRunShoe = {
   id: string;
   label: string;
-  mileageMi?: number;
+  /** Shoe distance in metres, shown in the athlete's unit. */
+  distanceM?: number;
 };
 
 export type RunByRunSplit = {

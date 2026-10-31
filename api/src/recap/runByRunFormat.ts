@@ -5,6 +5,7 @@ import {
   type SubjectiveRunFields,
 } from "./formatSubjective.js";
 import type { RunByRunEntry } from "./runByRunTypes.js";
+import { formatShoeDistance } from "./shoeDistance.js";
 import { workoutLocalDate } from "./subjectiveRuns.js";
 
 const METERS_PER_MILE = 1609.344;
@@ -159,11 +160,11 @@ function formatOneRunMarkdown(
   }
 
   if (run.shoe) {
-    const mi =
-      run.shoe.mileageMi !== undefined
-        ? ` (${run.shoe.mileageMi.toFixed(0)} mi)`
+    const dist =
+      run.shoe.distanceM !== undefined
+        ? ` (${formatShoeDistance(run.shoe.distanceM, unit)})`
         : "";
-    lines.push(`Shoe: ${run.shoe.label}${mi}`);
+    lines.push(`Shoe: ${run.shoe.label}${dist}`);
     lines.push("");
   } else if (run.shoeId) {
     lines.push(`Shoe: n/a (id ${run.shoeId})`);
