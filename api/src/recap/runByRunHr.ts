@@ -189,16 +189,30 @@ export function computeRunHrMetrics(args: {
   return out;
 }
 
-const DRIFT_WARN = "⚠ above target (target ≤10 bpm)";
-const DRIFT_STRONG = "⚠⚠ well above target";
+/** The goal's drift caps in bpm: easy runs always, long runs only where the goal has one. */
+export type DriftCaps = { easy: number; long: number | null };
 
-/** tempo-cli driftSeverityLabel: only meaningful for easy-family / Long runs. */
+/**
+ * The drift cap that applies to a run: the easy cap on easy-family runs, the
+ * long cap on Long Run (null when the goal has no long run), null otherwise.
+ * Quality runs and races drift by design and are never labelled.
+ */
+export function driftCapForRun(
+  runType: string | null | undefined,
+  caps: DriftCaps,
+): number | null {
+  if (isLongRun(runType)) return caps.long;
+  if (isEasyFamily(runType)) return caps.easy;
+  return null;
+}
+
+/** tempo-cli severity suffix, once drift (last quarter minus first) exceeds the run's cap. */
 export function driftSeverityLabel(
   driftBpm: number,
-  runType: string | null | undefined,
+  capBpm: number | null,
 ): string | undefined {
-  if (!isEasyFamily(runType) && !isLongRun(runType)) return undefined;
-  const d = Math.abs(driftBpm);
-  if (d <= 10) return undefined;
-  return d <= 20 ? DRIFT_WARN : DRIFT_STRONG;
+  if (capBpm === null || !(driftBpm > capBpm)) return undefined;
+  return driftBpm <= capBpm + 10
+    ? `⚠ above target (target ≤${capBpm} bpm)`
+    : "⚠⚠ well above target";
 }

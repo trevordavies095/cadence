@@ -94,6 +94,9 @@ const BNE_EARLY_MONDAY: Fixture = {
 const TREND_PACE =
   "- **Easy pace (≤Z2, list/detail approx.)**: 12:52/mi → — → 11:16/mi → 12:04/mi ▁▁█▅";
 const TREND_HR = "- **Avg easy HR**: 130 → — → 138 → 135 █▁▁▃";
+// Pace and HR read together: faster at a higher HR earns no verdict.
+const TREND_EASY =
+  "- **Easy runs**: 12:04/mi at 135 bpm, from 12:52/mi at 130 bpm three weeks ago";
 const TREND_LONG =
   "- **Long-run distance** (max long-typed, else max run in week): 2.00 mi → — → 5.00 mi → 10.00 mi ▁▁▃█ (improving)";
 const NOTABLE_PR = [
@@ -355,7 +358,7 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     // Trends lines as tempo-cli prints them for the hand-computed data.
     const trends = md.slice(md.indexOf("## Trends"), md.indexOf("## Notable"));
     expect(trends).toBe(
-      ["## Trends", "", TREND_PACE, "", TREND_HR, "", TREND_LONG, "", ""].join(
+      ["## Trends", "", TREND_PACE, "", TREND_HR, "", TREND_EASY, "", TREND_LONG, "", ""].join(
         "\n",
       ),
     );

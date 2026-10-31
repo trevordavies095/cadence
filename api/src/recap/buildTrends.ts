@@ -73,6 +73,7 @@ export async function buildRecapTrends(args: {
     isoWeek: session.isoWeek,
     thisWeek,
     workouts,
+    unit,
   });
   const trends = knobs.thresholds.longRun.distanceTrendVerdict
     ? snapshot

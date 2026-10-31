@@ -15,7 +15,13 @@ import {
   formatTitleDate,
 } from "./runByRunFormat.js";
 import { percentMaxHr, resolveConfiguredMaxHr } from "./maxHr.js";
-import { computeRunHrMetrics, driftSeverityLabel } from "./runByRunHr.js";
+import { resolveRecapDepthKnobs, type RecapDepthKnobs } from "./phase.js";
+import {
+  computeRunHrMetrics,
+  driftCapForRun,
+  driftSeverityLabel,
+  type DriftCaps,
+} from "./runByRunHr.js";
 import {
   formatSimilarRouteText,
   formatWeather,
@@ -118,6 +124,7 @@ function buildEntry(args: {
   zones: readonly { zoneNumber: number; minBpm: number; maxBpm: number }[];
   shoes: ShoeLookup;
   maxHr?: number;
+  driftCaps: DriftCaps;
 }): RunByRunEntry {
   const { detail, unit, timeZone, zones, shoes, maxHr } = args;
   const hr = computeRunHrMetrics({
@@ -146,6 +153,7 @@ function buildEntry(args: {
     durationS: detail.durationS,
     avgPaceS: detail.avgPaceS,
     splits,
+    driftCapBpm: driftCapForRun(detail.runType, args.driftCaps),
   };
 
   if (detail.name !== undefined) entry.name = detail.name;
@@ -203,7 +211,7 @@ function buildEntry(args: {
   }
   if (hr.drift) {
     entry.drift = hr.drift;
-    const severity = driftSeverityLabel(hr.drift.driftBpm, detail.runType);
+    const severity = driftSeverityLabel(hr.drift.driftBpm, entry.driftCapBpm);
     if (severity) entry.driftSeverity = severity;
   }
   if (hr.zonePct) entry.zonePct = hr.zonePct;
@@ -229,8 +237,12 @@ export async function buildRecapRunByRun(args: {
   session: WeekSession;
   tempoPort: TempoPort;
   unit?: TempoUnitPreference;
+  /** The week's resolved knobs; the drift caps come from its thresholds. No knobs: the no-goal column. */
+  knobs?: RecapDepthKnobs;
 }): Promise<RecapRunByRunResult> {
   const { session, tempoPort } = args;
+  const driftCaps = (args.knobs ?? resolveRecapDepthKnobs()).thresholds
+    .driftCapBpm;
   const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
   const window: WeekWindow = { start: session.start, end: session.end };
 
@@ -260,6 +272,7 @@ export async function buildRecapRunByRun(args: {
         zones,
         shoes: shoeLookup,
         maxHr,
+        driftCaps,
       }),
     );
   }

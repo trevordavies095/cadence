@@ -4,7 +4,7 @@ import { FixedClock } from "../src/clock/clock.js";
 import type { PrescribedWeek } from "../src/llm/types.js";
 import { migrate } from "../src/migrate.js";
 import { gradePrescribedVsActual } from "../src/recap/buildGrading.js";
-import { driftSeverityLabel } from "../src/recap/runByRunHr.js";
+import { driftCapForRun, driftSeverityLabel } from "../src/recap/runByRunHr.js";
 import {
   isEasyFamily,
   isLongRun,
@@ -253,18 +253,35 @@ describe("summary and trends agree on easy runs", () => {
 });
 
 describe("drift label gate", () => {
-  it("labels drift only on easy-family and Long Run runs", () => {
-    const labelled = [...RUN_TYPES, undefined].filter(
-      (t) => driftSeverityLabel(15, t) !== undefined,
+  const RACE_CAPS = { easy: 10, long: 20 };
+  const capped = (drift: number, caps: { easy: number; long: number | null }) =>
+    [...RUN_TYPES, undefined].filter(
+      (t) => driftSeverityLabel(drift, driftCapForRun(t, caps)) !== undefined,
     );
-    expect(labelled).toEqual([
+
+  it("labels drift only on easy-family and Long Run runs", () => {
+    expect(capped(25, RACE_CAPS)).toEqual([
       "Easy Run",
       "Recovery",
       "Walk-Run",
       "Long Run",
       undefined,
     ]);
-    expect(driftSeverityLabel(8, "Easy Run")).toBeUndefined();
+    expect(driftSeverityLabel(8, driftCapForRun("Easy Run", RACE_CAPS))).toBeUndefined();
+  });
+
+  it("uses the goal's caps: 10 bpm easy, 20 bpm long, none on long runs without a long-run goal", () => {
+    expect(driftCapForRun("Easy Run", RACE_CAPS)).toBe(10);
+    expect(driftCapForRun("Long Run", RACE_CAPS)).toBe(20);
+    expect(driftCapForRun("Threshold", RACE_CAPS)).toBeNull();
+    expect(driftCapForRun("Race", RACE_CAPS)).toBeNull();
+    expect(driftCapForRun("Long Run", { easy: 10, long: null })).toBeNull();
+    // 15 bpm: above the easy cap, under the long cap.
+    expect(capped(15, RACE_CAPS)).toEqual(["Easy Run", "Recovery", "Walk-Run", undefined]);
+    expect(driftSeverityLabel(12, 10)).toBe("⚠ above target (target ≤10 bpm)");
+    expect(driftSeverityLabel(22, 20)).toBe("⚠ above target (target ≤20 bpm)");
+    expect(driftSeverityLabel(31, 20)).toBe("⚠⚠ well above target");
+    expect(driftSeverityLabel(40, null)).toBeUndefined();
   });
 });
 

@@ -52,7 +52,12 @@ export type RunByRunEntry = {
    */
   repSummary?: string;
   drift?: RunByRunHrDrift;
-  /** tempo-cli severity suffix (Easy/Long runs only), e.g. "⚠ above target (target ≤10 bpm)". */
+  /**
+   * The goal's drift cap for this run in bpm: easy-family runs and, where the
+   * goal has a long run, Long Run. Null: drift is never labelled high.
+   */
+  driftCapBpm: number | null;
+  /** tempo-cli severity suffix once drift exceeds driftCapBpm, e.g. "⚠ above target (target ≤10 bpm)". */
   driftSeverity?: string;
   /** % of athlete max HR for the run's average HR, one decimal. */
   pctMaxHr?: number;
