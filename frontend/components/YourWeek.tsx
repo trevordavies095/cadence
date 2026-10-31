@@ -51,6 +51,8 @@ type RunRow = {
   avgPaceS: number;
   avgHeartRateBpm: number | null;
   drift: { driftBpm: number } | null;
+  /** The goal's drift cap for this run; null: never labelled high. */
+  driftCapBpm?: number | null;
   weather: string | null;
   shoe: { label: string } | null;
   /** Quality and Race runs with two or more reps, already in the athlete's unit. */
@@ -64,6 +66,8 @@ type Trends = {
     easyPaceSecPerKm: Array<number | null>;
     avgEasyHr: Array<number | null>;
     longRunDistanceM: Array<number | null>;
+    /** Easy pace with easy heart rate, now against three weeks ago, in the athlete's unit. */
+    easyRunLine?: string;
   };
 };
 type Notable = { notable: { bullets: string[] } };
@@ -361,7 +365,9 @@ export function YourWeek({
                   <td className={num}>
                     {r.drift
                       ? `${r.drift.driftBpm > 0 ? "+" : ""}${r.drift.driftBpm} bpm${
-                          r.drift.driftBpm > 10 ? " (high)" : ""
+                          r.driftCapBpm != null && r.drift.driftBpm > r.driftCapBpm
+                            ? " (high)"
+                            : ""
                         }`
                       : "–"}
                   </td>
@@ -411,6 +417,11 @@ export function YourWeek({
               </tr>
             ))}
           </Table>
+          {trends.trends.easyRunLine ? (
+            <p className="m-0 tabular-nums" data-testid="easy-run-trend">
+              {trends.trends.easyRunLine}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
