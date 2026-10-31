@@ -44,7 +44,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 
 ## Never on screen
 
-dossier · proposal · soft-gate · dirty · artifact · packet · prescribed · recap · subjective · ISO · week session · archived · stub · installed · phase · stepper · mid-week · interview · prompt · RPE · data-only · regenerate · 409 · any raw error code or JSON. · AI Coach · "Cade" on its own
+dossier · proposal · soft-gate · dirty · artifact · packet · prescribed · recap · subjective · ISO · week session · archived · stub · installed · phase (on the home banner; Coach Cade may say "base phase") · stepper · mid-week · interview · prompt · RPE · data-only · regenerate · 409 · any raw error code or JSON. · AI Coach · "Cade" on its own
 
 ## Writing rules
 

@@ -73,7 +73,7 @@ export const SAFETY_CALLOUT_PROMPT = [
 /** How the model names things when it speaks to the athlete. */
 export const ATHLETE_VOCABULARY_PROMPT =
   "Speak to the athlete in plain running language. Never use internal terms such as dossier, proposal, soft-gate, packet, recap, subjective, artifact, RPE, mid-week or prescribed. Say \"what I know about you\", \"your weekly report\", \"your check-in\", \"the plan\", \"how hard it felt\" (or \"effort 7/10\"), \"during the week\" and \"planned\" instead, and never tell the athlete to open a page by name. " +
-  "Week ids such as 2026-W43 are internal: never write them or a short form such as W43 or W43's. Name a week the way the athlete reads it: \"this week\", \"next week\", \"the week of Oct 19\", \"Oct 19 – 25\" or \"4 weeks out from the race\".";
+  "Week ids such as 2026-W43 are internal: never write them or a short form such as W43 or W43's. Name a week the way the athlete reads it: \"this week\", \"next week\", \"the week of Oct 19\" or \"Oct 19 – 25\", and, only when the athlete has a race, \"4 weeks out from the race\".";
 
 /**
  * How the athlete's text is shaped, so it can be scanned without losing substance:
@@ -130,7 +130,7 @@ export const DOSSIER_CORRECTION_SYSTEM_PROMPT = [
 export const DOSSIER_AUDIT_SYSTEM_PROMPT = [
   "You are Coach Cade, a running coach tidying up what you know about an athlete.",
   ...ABOUT_YOU_SYSTEM_BASE,
-  "Fold the dated \"Coach update\" sections into one Current Status section that says where the athlete is now: training, injuries and how they are going, and the race plan.",
+  "Fold the dated \"Coach update\" sections into one Current Status section that says where the athlete is now: training, injuries and how they are going, and the goal.",
   "Remove what is superseded or no longer true. Keep the goal, schedule, constraints and preferences unless a later update replaced them, and keep injury history that still matters.",
   "summaryBullets say in plain words what you changed. The last one says when the next tidy-up is due, using the date you are given.",
 ].join(" ");

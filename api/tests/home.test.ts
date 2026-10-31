@@ -8,6 +8,7 @@ import {
   LlmTransportError,
   type LlmPort,
 } from "../src/llm/index.js";
+import { bannerBannedTermsIn } from "../src/llm/vocabulary.js";
 import { migrate } from "../src/migrate.js";
 import { savePrescribedWeek } from "../src/prescribed/store.js";
 import { waitForReplyRunsIdle } from "../src/replyRun/inflight.js";
@@ -105,7 +106,15 @@ describe("GET /home (#100)", () => {
     });
   }
 
-  const home = async (app: App) => json(await app.request("/home"));
+  // Every banner a test sees is checked against the banner's banned terms.
+  const home = async (app: App) => {
+    const body = await json(await app.request("/home"));
+    const banner = body.banner as { text: string; cta: { label: string } | null } | null;
+    if (banner) {
+      expect(bannerBannedTermsIn(`${banner.text} ${banner.cta?.label ?? ""}`)).toEqual([]);
+    }
+    return body;
+  };
   const states = (body: Record<string, unknown>) =>
     (body.week as Array<{ state: string }>).map((d) => d.state);
 

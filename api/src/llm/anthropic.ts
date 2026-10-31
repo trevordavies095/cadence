@@ -21,6 +21,7 @@ import {
   type LlmPort,
 } from "./port.js";
 import { formatIsoWeekRangeShort } from "../clock/weekRangeShort.js";
+import { goalPromptLines } from "./goalLines.js";
 import {
   DOSSIER_AUDIT_SYSTEM_PROMPT,
   DOSSIER_CORRECTION_SYSTEM_PROMPT,
@@ -427,6 +428,7 @@ function buildWeeklyUserPrompt(
   const dates = expectedPlanDates(weekStartMonday);
   const reviewed = packet.week?.isoWeek?.trim();
   return [
+    ...goalPromptLines(packet, weekStartMonday),
     reviewed ? `Reviewed week (already happened): ${reviewed}` : null,
     `Plan week ISO label: ${planIsoWeek ?? reviewed ?? "unknown"}`,
     `Plan week Monday (YYYY-MM-DD): ${weekStartMonday}`,
@@ -457,6 +459,7 @@ function buildMidWeekUserPrompt(
     ? `Current prescribed week is in the packet. To change remaining days, emit prescribedDayPatches using only these dates: ${dates.join(", ")}. Past days stay stable unless allowPastDayPatches is true.`
     : "No prescribed week in packet — reply in prose only (no prescribedDayPatches).";
   return [
+    ...goalPromptLines(packet, weekStartMonday),
     "Call the submit_mid_week_chat_reply tool exactly once with your full answer.",
     attachLine,
     planLine,
