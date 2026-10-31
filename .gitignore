@@ -8,7 +8,7 @@ AGENTS.md
 .claude/
 
 # Node / Next.js / API
-node_modules/
+node_modules
 dist/
 .next/
 .next-e2e/
