@@ -212,4 +212,32 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
       error: "week_session_not_found",
     });
   });
+
+  it("phase and goal query parameters override the knobs, including the goal knobs table", async () => {
+    const { app, weekSessionId } = await openWeek();
+
+    const half = await json(
+      await app.request(
+        `/weeks/${weekSessionId}/recap/skeleton?format=json&phase=taper&goal=half`,
+      ),
+    );
+    expect(half.knobs).toMatchObject({
+      phase: "taper",
+      goal: "half",
+      thresholds: { column: "endurance", easyShareTarget: null, fastFinish: true },
+    });
+
+    const tenK = await json(
+      await app.request(`/weeks/${weekSessionId}/recap/long-run?phase=build&goal=10k`),
+    );
+    expect(tenK.knobs).toMatchObject({
+      phase: "build",
+      goal: "10k",
+      thresholds: { column: "speed", easyShareTarget: 75 },
+    });
+
+    const bad = await app.request(`/weeks/${weekSessionId}/recap/trends?goal=ultra`);
+    expect(bad.status).toBe(400);
+    expect((await json(bad)).error).toBe("invalid_goal");
+  });
 });

@@ -2,6 +2,11 @@
  * Phase / goal depth knobs for the weekly recap skeleton.
  * Section order is stable; knobs only change depth/emphasis.
  */
+import type { GoalKind } from "../goal/types.js";
+import {
+  resolveRecapThresholds,
+  type RecapThresholdKnobs,
+} from "./goalKnobs.js";
 
 export const RECAP_SKELETON_ORDER = [
   "summary",
@@ -44,6 +49,8 @@ export type RecapDepthKnobs = {
    * the Long run section (phase-aware; recovery never invents a long run).
    */
   longestAsLongRun: boolean;
+  /** Targets, caps and which goal-specific lines appear (see goalKnobs.ts). */
+  thresholds: RecapThresholdKnobs;
 };
 
 const PHASES = new Set<RecapPhase>([
@@ -93,12 +100,14 @@ function allStandard(): RecapSectionDepths {
 }
 
 /**
- * Resolve depth knobs from phase + goal.
+ * Resolve depth knobs and the goal knobs table from phase + goal (+ kind).
  * Skeleton order is fixed; only per-section depth and long-run eligibility change.
  */
 export function resolveRecapDepthKnobs(args?: {
   phase?: RecapPhase;
   goal?: RecapGoal;
+  /** The goal kind, when known; picks the speed, fitness or return column. */
+  kind?: GoalKind;
 }): RecapDepthKnobs {
   const phase = args?.phase ?? "base";
   const goal = args?.goal ?? "general";
@@ -158,5 +167,7 @@ export function resolveRecapDepthKnobs(args?: {
       phase === "peak" ||
       phase === "taper");
 
-  return { phase, goal, sections, longestAsLongRun };
+  const thresholds = resolveRecapThresholds({ goal, phase, kind: args?.kind });
+
+  return { phase, goal, sections, longestAsLongRun, thresholds };
 }
