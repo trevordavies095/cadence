@@ -79,6 +79,17 @@ const W43_LONG: Fixture = {
   avgHeartRateBpm: 145,
 };
 
+/** Mon Oct 19 06:00 in Brisbane (UTC+10) is Sun Oct 18 20:00 UTC. */
+const BNE_EARLY_MONDAY: Fixture = {
+  id: id(5),
+  startedAt: "2026-10-18T20:00:00.000Z",
+  runType: "Easy Run",
+  distanceM: 8047,
+  avgPaceS: 400,
+  durationS: 3200,
+  avgHeartRateBpm: 135,
+};
+
 const TREND_PACE =
   "- **Easy pace (≤Z2, list/detail approx.)**: 12:52/mi → — → 11:16/mi → 12:04/mi ▁▁█▅";
 const TREND_HR = "- **Avg easy HR**: 130 → — → 138 → 135 █▁▁▃";
@@ -94,9 +105,11 @@ type Behavior = {
   /**
    * What Tempo's `since` call returns: "pr" (default) a 5K and a half
    * marathon that beat earlier bests, "first" a first-ever 10K, "later" a
-   * best set by a run after this week, "empty" none, "500" a failure.
+   * best set by a run after this week, "early-monday" a 5K by the Brisbane
+   * run (returned only when since is on or before its UTC date, as Tempo
+   * compares), "empty" none, "500" a failure.
    */
-  bestEfforts?: "pr" | "first" | "later" | "empty" | "500";
+  bestEfforts?: "pr" | "first" | "later" | "early-monday" | "empty" | "500";
   /** Records the `since` query of each best-efforts call. */
   bestEffortsSince?: (string | null)[];
   /** Make only the Notable builder's shoe lookup throw (Run-by-run keeps working). */
@@ -206,6 +219,21 @@ function buildTempo(b: Behavior) {
         workoutDate: "2026-10-24",
         previousTimeS,
       });
+      if (b.bestEfforts === "early-monday") {
+        // Tempo compares since with the run's UTC start date (2026-10-18).
+        const utcDate = BNE_EARLY_MONDAY.startedAt.slice(0, 10);
+        return ok({
+          distances:
+            since <= utcDate
+              ? [
+                  {
+                    ...row("5K", 5000, 1300, 1325, BNE_EARLY_MONDAY.id),
+                    workoutDate: utcDate,
+                  },
+                ]
+              : [],
+        });
+      }
       if (b.bestEfforts === "first") {
         return ok({ distances: [row("10K", 10000, 2770, null)] });
       }
@@ -415,7 +443,20 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     const weekSessionId = await openWeek(app);
     expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
     expect(since.length).toBeGreaterThan(0);
-    expect(new Set(since)).toEqual(new Set(["2026-10-19"]));
+    // The Sunday before the local Monday, as Tempo compares UTC dates.
+    expect(new Set(since)).toEqual(new Set(["2026-10-18"]));
+  });
+
+  it("a best from an early Monday run east of UTC is still named", async () => {
+    const app = makeApp(
+      { workouts: [BNE_EARLY_MONDAY], bestEfforts: "early-monday" },
+      { athleteTimezone: "Australia/Brisbane" },
+    );
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+      .reportMarkdown as string;
+    expect(md).toContain("- New best: 5K 21:40 (was 22:05)");
   });
 
   it("a first effort at a distance says so", async () => {

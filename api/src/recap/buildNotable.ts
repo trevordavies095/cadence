@@ -29,6 +29,12 @@ export type RecapNotableResult = {
   markdown: string;
 };
 
+/** yyyy-MM-dd of the calendar day before `date` (yyyy-MM-dd). */
+function dayBefore(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y!, m! - 1, d! - 1)).toISOString().slice(0, 10);
+}
+
 /** Build Notable section for a persisted week session via TempoPort. */
 export async function buildRecapNotable(args: {
   session: WeekSession;
@@ -54,14 +60,18 @@ export async function buildRecapNotable(args: {
     tempoPort.listShoes({ status: "all" }),
     tempoPort
       .getBestEfforts({
-        since: weeklyRecapQueryForWeek(session.start, session.timezone)
-          .referenceDate,
+        since: dayBefore(
+          weeklyRecapQueryForWeek(session.start, session.timezone)
+            .referenceDate,
+        ),
       })
       .catch(() => null),
   ]);
 
-  // Tempo reports the latest best on or after `since`, and compares dates in
-  // UTC; keep only bests set by this week's own runs.
+  // Tempo compares `since` with each run's UTC start date, so it is the
+  // Sunday before the local Monday: a run early Monday local time east of UTC
+  // starts on Sunday in UTC. Tempo also reports the latest best on or after
+  // `since`. Keep only bests set by this week's own runs.
   const weekWorkoutIds = new Set(weekWorkouts.map((w) => w.id.toLowerCase()));
   const newBestEfforts = (bestEfforts?.distances ?? []).filter((e) =>
     weekWorkoutIds.has(e.workoutId.toLowerCase()),
