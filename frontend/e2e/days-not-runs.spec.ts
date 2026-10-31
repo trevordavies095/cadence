@@ -9,7 +9,7 @@ const DAYS = [
   { date: "2026-10-21", dayType: "other", run: null, notes: "An hour's walk." },
   { date: "2026-10-22", dayType: "easy", run: { type: "easy", distanceM: 0, durationS: 2400 } },
   { date: "2026-10-23", dayType: "other", run: null, notes: "45 min on the bike, easy." },
-  { date: "2026-10-24", dayType: "rest", run: null },
+  { date: "2026-10-24", dayType: "other", run: null },
   { date: "2026-10-25", dayType: "long", run: { type: "long", distanceM: 16000 } },
 ];
 
@@ -58,7 +58,10 @@ test.describe("days that are not runs", () => {
     await expect(days.nth(4)).toContainText("Not a run · 45 min on the bike, easy.");
     await expect(days.nth(1)).toContainText("8.0 km");
     await expect(days.nth(1)).not.toContainText("Not a run");
-    await expect(days.nth(5)).toContainText("No run");
+    // A run-less day that arrived with no notes shows the label alone.
+    await expect(days.nth(5)).toContainText("Not a run");
+    await expect(days.nth(5)).not.toContainText("Not a run ·");
+    await expect(days.nth(5)).not.toContainText("No run");
   });
 
   test("Home shows today's run-less day and counts nothing for it", async ({ page }) => {
@@ -96,7 +99,8 @@ test.describe("days that are not runs", () => {
     await expect(strip.nth(0)).toContainText("Not a run");
     await expect(strip.nth(0)).not.toContainText("Missed");
     await expect(strip.nth(4)).toContainText("Not a run");
-    await expect(strip.nth(5)).toContainText("Rest");
+    await expect(strip.nth(5)).toContainText("Not a run");
+    await expect(strip.nth(6)).not.toContainText("Not a run");
     await expect(page.getByText("0.0 km of 24.0 km and 40 min planned")).toBeVisible();
   });
 

@@ -52,7 +52,7 @@ export function TodayCard({
   const strength = meaningful(today.strength);
   const note = meaningful(today.notes);
   // Strength, cross-training or a walk: the notes say what the day is.
-  const notRun = isNotARun(today) && note != null;
+  const notRun = isNotARun(today);
 
   return (
     <Card className="flex flex-col gap-3" aria-label="Today">
@@ -69,7 +69,7 @@ export function TodayCard({
         </h2>
       </div>
 
-      {notRun ? <p className="m-0">{note}</p> : null}
+      {notRun && note ? <p className="m-0">{note}</p> : null}
 
       {structure ? <p className="m-0">{structure}</p> : null}
       <LabelValueList

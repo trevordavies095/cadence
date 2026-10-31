@@ -211,15 +211,12 @@ function parseDay(
     }
   } else if (runResult.value == null) {
     // An other day may be strength, cross-training or a walk: no run, with the
-    // notes saying what the day is.
+    // notes saying what the day is. Missing notes are noted, not refused (ADR 0002).
     if (dayType !== "other") {
       return { ok: false, error: `${path} (${dayType}) requires a run object` };
     }
     if (!notes.value?.trim()) {
-      return {
-        ok: false,
-        error: `${path} (other) with no run needs notes saying what the day is`,
-      };
+      repairs.push(`${path} (other) with no run has no notes saying what the day is`);
     }
   }
 

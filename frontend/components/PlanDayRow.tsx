@@ -48,7 +48,7 @@ export function PlanDayRow({
   const shoes = meaningful(run?.shoes);
   const target = meaningful(run?.paceOrHr);
   // Strength, cross-training or a walk: the notes say what it is, in place of figures.
-  const notRun = isNotARun(day) && notes != null;
+  const notRun = isNotARun(day);
   return (
     <li
       aria-current={isToday ? "date" : undefined}
@@ -78,7 +78,7 @@ export function PlanDayRow({
         </p>
       ) : notRun ? (
         <p className="m-0">
-          <span className="text-muted">Not a run · </span>
+          <span className="text-muted">{notes ? "Not a run · " : "Not a run"}</span>
           {notes}
         </p>
       ) : (

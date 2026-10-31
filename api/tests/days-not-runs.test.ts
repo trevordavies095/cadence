@@ -70,14 +70,18 @@ describe("a planned day that is not a run", () => {
     expect(checked.ok && checked.value.prescribedWeek.days[1]!.run).toBeUndefined();
   });
 
-  it("refuses an other day with no run and nothing saying what it is", () => {
+  it("accepts an other day with no run and no notes, and notes the gap", () => {
     for (const notes of [undefined, null, "  "]) {
       const checked = validateWeeklyReply(
         replyWithTuesday({ dayType: "other", run: null, notes }),
         NEXT_MONDAY,
       );
-      expect(checked.ok, String(notes)).toBe(false);
-      expect(!checked.ok && checked.error).toMatch(/other\) with no run needs notes/);
+      expect(checked.ok, String(notes)).toBe(true);
+      if (!checked.ok) continue;
+      expect(checked.value.prescribedWeek.days[1]).toMatchObject({ dayType: "other", run: null });
+      expect(checked.repairs ?? []).toEqual(
+        expect.arrayContaining([expect.stringMatching(/other\) with no run has no notes/)]),
+      );
     }
   });
 
