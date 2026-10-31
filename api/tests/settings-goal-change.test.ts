@@ -176,6 +176,23 @@ describe("changing the goal from Settings", () => {
     expect(await counts()).toEqual({ goals: [], proposals: [] });
   });
 
+  it("makes no correction when the goal cannot be stored", async () => {
+    const { port, calls } = countingPort();
+    const app = makeApp(port);
+    await installAboutYou(app);
+    await pool.query(
+      "ALTER TABLE training_goals ADD CONSTRAINT test_refuse_insert CHECK (false) NOT VALID",
+    );
+    try {
+      const res = await putGoal(app, { kind: "fitness" });
+      expect(res.status).toBe(500);
+    } finally {
+      await pool.query("ALTER TABLE training_goals DROP CONSTRAINT test_refuse_insert");
+    }
+    expect(calls()).toBe(0);
+    expect(await counts()).toEqual({ goals: [], proposals: [] });
+  });
+
   it("with no About you yet, only the goal is stored", async () => {
     const { port, calls } = countingPort();
     const app = makeApp(port);
