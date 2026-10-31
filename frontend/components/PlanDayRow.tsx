@@ -1,10 +1,6 @@
 import type { PrescribedDay, UnitPreference } from "@/lib/api";
+import { plannedRunLabel } from "@/lib/units";
 import { LabelValueList } from "./ui";
-
-export function formatDistance(meters: number, unit: UnitPreference): string {
-  if (unit === "metric") return `${(meters / 1000).toFixed(1)} km`;
-  return `${(meters / 1609.344).toFixed(1)} mi`;
-}
 
 export function weekdayLabel(date: string): string {
   const d = new Date(`${date}T12:00:00`);
@@ -70,7 +66,7 @@ export function PlanDayRow({
       </div>
       {run ? (
         <p className="m-0">
-          {formatDistance(run.distanceM, unit)}
+          {plannedRunLabel(run, unit)}
           {meaningful(run.structure) ? ` · ${run.structure}` : ""}
         </p>
       ) : (

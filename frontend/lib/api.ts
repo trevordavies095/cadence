@@ -105,7 +105,10 @@ export type UnitPreference = "metric" | "imperial";
 
 export type PrescribedRun = {
   type: string;
+  /** 0 when the run is prescribed by duration only. */
   distanceM: number;
+  /** Planned seconds, when the run is prescribed by time. */
+  durationS?: number | null;
   structure?: string | null;
   paceOrHr?: string | null;
   shoes?: string | null;
@@ -828,6 +831,8 @@ export type HomeWeekDay = {
   date: string;
   dayType: PrescribedDay["dayType"] | null;
   plannedDistanceM: number | null;
+  /** Planned seconds, when the day's run is prescribed by time. */
+  plannedDurationS?: number | null;
   actualDistanceM: number | null;
   state: HomeDayState;
   isToday: boolean;
@@ -839,7 +844,12 @@ export type HomeRead = {
   banner: HomeBanner | null;
   today: PrescribedDay | null;
   week: HomeWeekDay[];
-  totals: { actualDistanceM: number; plannedDistanceM: number };
+  totals: {
+    actualDistanceM: number;
+    plannedDistanceM: number;
+    /** Planned seconds on days with a duration and no distance. */
+    plannedDurationS?: number;
+  };
   units: UnitPreference;
   tempoUnavailable: boolean;
 };

@@ -1,5 +1,5 @@
 import type { HomeWeekDay, UnitPreference } from "@/lib/api";
-import { distanceLabel } from "@/lib/units";
+import { distanceLabel, durationLabel } from "@/lib/units";
 import { cx } from "./ui";
 
 const STATE_LABEL: Record<HomeWeekDay["state"], string> = {
@@ -40,6 +40,11 @@ export function WeekStrip({
             : d.state === "rest"
               ? null
               : d.plannedDistanceM;
+        // A day planned by time alone shows its minutes until it is run.
+        const minutes =
+          d.state !== "done" && d.state !== "rest" && !(distance != null && distance > 0)
+            ? (d.plannedDurationS ?? null)
+            : null;
         return (
           <li
             key={d.date}
@@ -52,7 +57,11 @@ export function WeekStrip({
             <span className="font-semibold">{name}</span>
             <span className="text-sm text-muted">{date}</span>
             <span className="tabular-nums">
-              {distance != null && distance > 0 ? distanceLabel(distance, unit) : "–"}
+              {distance != null && distance > 0
+                ? distanceLabel(distance, unit)
+                : minutes != null && minutes > 0
+                  ? durationLabel(minutes)
+                  : "–"}
             </span>
             <span
               className={cx(

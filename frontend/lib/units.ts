@@ -1,4 +1,4 @@
-import type { UnitPreference } from "./api";
+import type { PrescribedRun, UnitPreference } from "./api";
 
 const MI = 1609.344;
 
@@ -21,6 +21,17 @@ export function durationLabel(seconds: number): string {
   const m = Math.round((seconds % 3600) / 60);
   if (h > 0) return `${h} h ${String(m).padStart(2, "0")} min`;
   return `${m} min`;
+}
+
+/** What a planned run asks for: "8.0 km", "40 min", or "8.0 km, 45 min" when it has both. */
+export function plannedRunLabel(
+  run: Pick<PrescribedRun, "distanceM" | "durationS">,
+  unit: UnitPreference,
+): string {
+  const parts: string[] = [];
+  if (run.distanceM > 0) parts.push(distanceLabel(run.distanceM, unit));
+  if (run.durationS != null && run.durationS > 0) parts.push(durationLabel(run.durationS));
+  return parts.length > 0 ? parts.join(", ") : distanceLabel(run.distanceM, unit);
 }
 
 /** The local calendar date (YYYY-MM-DD) of an instant in a time zone. */

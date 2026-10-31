@@ -1,5 +1,6 @@
 import type { PrescribedDay, UnitPreference } from "@/lib/api";
-import { formatDistance, meaningful, weekdayLabel } from "./PlanDayRow";
+import { plannedRunLabel } from "@/lib/units";
+import { meaningful, weekdayLabel } from "./PlanDayRow";
 import { ButtonLink, Card, LabelValueList, Muted } from "./ui";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
@@ -16,7 +17,7 @@ export function sessionQuote(day: PrescribedDay, unit: UnitPreference): string {
   const parts = [
     weekdayLabel(day.date),
     DAY_TYPE_LABEL[day.dayType] ?? day.dayType,
-    day.run ? formatDistance(day.run.distanceM, unit) : null,
+    day.run ? plannedRunLabel(day.run, unit) : null,
   ].filter(Boolean);
   return `About today's session (${parts.join(", ")}): `;
 }
@@ -59,7 +60,7 @@ export function TodayCard({
         </p>
         <h2 className="m-0 text-2xl font-semibold">
           {run
-            ? `${DAY_TYPE_LABEL[today.dayType] ?? today.dayType} · ${formatDistance(run.distanceM, unit)}`
+            ? `${DAY_TYPE_LABEL[today.dayType] ?? today.dayType} · ${plannedRunLabel(run, unit)}`
             : (DAY_TYPE_LABEL[today.dayType] ?? "Rest day")}
         </h2>
       </div>
