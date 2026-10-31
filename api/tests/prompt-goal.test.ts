@@ -12,6 +12,11 @@ import { bannedTermsIn, bannerBannedTermsIn } from "../src/llm/vocabulary.js";
 import { trainingPhaseLine } from "../src/llm/goalLines.js";
 import { packetCoaching } from "../src/packet/assemble.js";
 import { buildModelPacket, type ModelPacket } from "../src/packet/index.js";
+import type {
+  TempoAthleteSettings,
+  TempoThresholds,
+  TempoUnitPreference,
+} from "../src/tempo/port.js";
 import { anthropicStreamResponse, anthropicToolMessage } from "./helpers.js";
 
 // Reviewed week Mon Oct 19 – Sun Oct 25; the weekly read plans Mon Oct 26.
@@ -217,5 +222,81 @@ describe("wording that rides along with the goal lines (#11)", () => {
     expect(bannedTermsIn("This is the end of your base phase.")).toEqual([]);
     expect(bannerBannedTermsIn("Your base phase is done")).toEqual(["phase"]);
     expect(bannerBannedTermsIn("Time for your weekly check-in")).toEqual([]);
+  });
+});
+
+describe("the phase line names the threshold (coaching-bias 15)", () => {
+  const goal: TrainingGoal = { kind: "speed", distance: "5k" };
+  const zones = { calculationMethod: "Custom", zones: [] };
+  const suggestion = {
+    suggestedThresholdPaceS: 254,
+    suggestedFrom: { distance: "5K", timeS: 1185, workoutDate: "2026-03-02", workoutId: "w1" },
+  };
+
+  function packetWith(
+    thresholds: TempoThresholds | undefined,
+    unitPreference: TempoUnitPreference = "metric",
+  ): ModelPacket {
+    const settings: TempoAthleteSettings = {
+      unitPreference,
+      heartRateZones: zones,
+      ...(thresholds ? { thresholds } : {}),
+    };
+    return buildModelPacket({
+      dossier: { versionId: 1, body: "You run five days a week." },
+      goal,
+      coaching: packetCoaching(goal, PLAN_WEEK_START, settings),
+    });
+  }
+
+  it("names the athlete-set threshold in both prompts", async () => {
+    const packet = packetWith({
+      thresholdPaceS: 250,
+      thresholdHeartRateBpm: 171,
+      ...suggestion,
+    });
+    const cap = capture();
+    for (const prompt of [await cap.weekly(packet), await cap.conversation(packet)]) {
+      expect(firstLines(prompt, 2)[1]).toBe(
+        "Training phase: build. Threshold pace 4:10/km (set in your running log).",
+      );
+    }
+  });
+
+  it("else the suggested threshold with its source", async () => {
+    const packet = packetWith({
+      thresholdPaceS: null,
+      thresholdHeartRateBpm: null,
+      ...suggestion,
+    });
+    const prompt = await capture().weekly(packet);
+    expect(firstLines(prompt, 2)[1]).toBe(
+      "Training phase: build. Threshold pace 4:14/km (suggested by your running log from your 5K on Mar 2).",
+    );
+  });
+
+  it("else nothing, with no thresholds or an older running log", async () => {
+    const cap = capture();
+    const none = packetWith({
+      thresholdPaceS: null,
+      thresholdHeartRateBpm: null,
+      suggestedThresholdPaceS: null,
+      suggestedFrom: null,
+    });
+    expect(firstLines(await cap.weekly(none), 2)[1]).toBe("Training phase: build.");
+    expect(firstLines(await cap.conversation(packetWith(undefined)), 2)[1]).toBe(
+      "Training phase: build.",
+    );
+  });
+
+  it("prints the pace in the athlete's unit", async () => {
+    const packet = packetWith(
+      { thresholdPaceS: 250, thresholdHeartRateBpm: null, ...suggestion },
+      "imperial",
+    );
+    const prompt = await capture().conversation(packet);
+    expect(firstLines(prompt, 2)[1]).toBe(
+      "Training phase: build. Threshold pace 6:42/mi (set in your running log).",
+    );
   });
 });

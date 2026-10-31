@@ -6,6 +6,7 @@
 import type { TrainingGoal } from "../goal/types.js";
 import type { PrescribedWeek } from "../llm/types.js";
 import type { RecapPhase } from "../recap/phase.js";
+import type { TempoUnitPreference } from "../tempo/port.js";
 
 export type ModelPacketRole = "athlete" | "coach" | "system";
 
@@ -92,6 +93,11 @@ export type ModelPacketCoaching = {
   weeksToRace?: number;
   /** Present (true) only once the race date is before the focus week's Monday. */
   racePassed?: boolean;
+  /**
+   * The athlete's distance unit from the running log; the prompt prints
+   * threshold paces in it. Present whenever the settings were read.
+   */
+  unitPreference?: TempoUnitPreference;
   /** Athlete-set threshold pace from the running log, seconds per km. */
   thresholdPaceS?: number;
   /** Athlete-set threshold heart rate from the running log. */

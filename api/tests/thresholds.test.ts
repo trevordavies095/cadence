@@ -167,7 +167,7 @@ describe("the packet's coaching block carries thresholds and max HR (coaching-bi
     delete process.env.TEMPO_EXPORT_PATH;
   });
 
-  async function chatPacket(getSettings: TempoPort["getSettings"]) {
+  async function chatPacket(getSettings: TempoPort["getSettings"], withGoal = true) {
     await acceptAndReady();
     const exportPort = createExportTempoPort({ exportPath: FIXTURE_ZIP });
     const app = createApp({
@@ -181,7 +181,7 @@ describe("the packet's coaching block carries thresholds and max HR (coaching-bi
       ["/settings/tempo", { baseUrl: BASE, apiKey: "tmp_thresholds" }],
       ["/settings/anthropic", { apiKey: "sk-ant-thresholds" }],
       ["/dossier", { body: "# About you\n\nEasy base building." }],
-      ["/goal", HALF],
+      ...(withGoal ? ([["/goal", HALF]] as const) : []),
     ] as const) {
       const res = await app.request(route, {
         method: "PUT",
@@ -218,6 +218,7 @@ describe("the packet's coaching block carries thresholds and max HR (coaching-bi
     expect(packet.coaching).toEqual({
       phase: "base",
       weeksToRace: 19,
+      unitPreference: "metric",
       thresholdPaceS: 250,
       thresholdHeartRateBpm: 171,
       suggestedThresholdPaceS: 254,
@@ -245,8 +246,16 @@ describe("the packet's coaching block carries thresholds and max HR (coaching-bi
     expect(packet.coaching).toEqual({
       phase: "base",
       weeksToRace: 19,
+      unitPreference: "metric",
       maxHeartRateBpm: 188,
     });
+  });
+
+  it("with no goal stored the settings are not read and coaching stays null", async () => {
+    const getSettings = vi.fn(async () => liveSettings);
+    const packet = await chatPacket(getSettings, false);
+    expect(packet.coaching).toBeNull();
+    expect(getSettings).not.toHaveBeenCalled();
   });
 
   it("a failing settings read still sends the reply, without the settings fields", async () => {

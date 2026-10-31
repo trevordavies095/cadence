@@ -6,6 +6,7 @@
  */
 import { goalDateLabel } from "../goal/sentence.js";
 import type { GoalDistance, GoalKind, TrainingGoal } from "../goal/types.js";
+import { thresholdPhrase } from "../packet/thresholdPhrase.js";
 import type { ModelPacketCoaching } from "../packet/types.js";
 
 const DAY_MS = 86_400_000;
@@ -84,12 +85,15 @@ export function athleteGoalLine(
 }
 
 /**
- * "Training phase: build." from the coaching block alone. The one place the
- * phase line is written, so later fields of the block (threshold pace) join it here.
+ * "Training phase: build." from the coaching block alone, with the threshold
+ * pace when the running log has one, in the athlete's unit:
+ * "Training phase: build. Threshold pace 4:10/km (set in your running log)."
  */
 export function trainingPhaseLine(coaching: ModelPacketCoaching | null): string {
   if (!coaching) return "Training phase: not set.";
-  return `Training phase: ${coaching.phase}.`;
+  const phase = `Training phase: ${coaching.phase}.`;
+  const threshold = thresholdPhrase(coaching, coaching.unitPreference ?? "metric");
+  return threshold ? `${phase} ${threshold}.` : phase;
 }
 
 /**

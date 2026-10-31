@@ -83,7 +83,9 @@ export function packetCoaching(
 function settingsCoaching(
   settings: TempoAthleteSettings,
 ): Partial<ModelPacketCoaching> {
-  const out: Partial<ModelPacketCoaching> = {};
+  const out: Partial<ModelPacketCoaching> = {
+    unitPreference: settings.unitPreference,
+  };
   const t = settings.thresholds;
   if (t) {
     if (t.thresholdPaceS !== null) out.thresholdPaceS = t.thresholdPaceS;
@@ -136,15 +138,21 @@ export async function assembleLeanLiveContext(
   const limit = resolveRecentHistoryLimit(input.recentHistoryLimit);
   const focusId = input.focusSession.id;
 
-  const [dossier, recentHistory, threadMessages, currentGoal, settings] =
+  // With no goal the coaching block is null, so the settings are not fetched.
+  const goalAndSettings = getCurrentGoal().then(async (current) => {
+    const goal = current?.goal ?? null;
+    return {
+      goal,
+      settings: goal ? await loadCoachingSettings(input.tempoPort) : null,
+    };
+  });
+  const [dossier, recentHistory, threadMessages, { goal, settings }] =
     await Promise.all([
       getCurrentDossier(),
       loadRecentWeekSummaries({ focusWeekSessionId: focusId, limit }),
       listThreadMessages(focusId),
-      getCurrentGoal(),
-      loadCoachingSettings(input.tempoPort),
+      goalAndSettings,
     ]);
-  const goal = currentGoal?.goal ?? null;
   const planWeek = input.includePlanWeek
     ? toPacketPlanWeek(input.focusSession)
     : undefined;

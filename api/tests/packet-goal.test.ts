@@ -101,6 +101,7 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
     expect(lastPacket.packet.coaching).toEqual({
       phase: "base",
       weeksToRace: 19,
+      unitPreference: "imperial",
       maxHeartRateBpm: 201,
     });
   });
@@ -119,6 +120,7 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
     expect(lastPacket.packet.coaching).toEqual({
       phase: "base",
       weeksToRace: 18,
+      unitPreference: "imperial",
       maxHeartRateBpm: 201,
     });
   });
@@ -127,7 +129,11 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
     const { app, id } = await ready(RETURN);
     const lastPacket = await chat(app, id);
     expect(lastPacket.packet.goal).toEqual(RETURN);
-    expect(lastPacket.packet.coaching).toEqual({ phase: "recovery", maxHeartRateBpm: 201 });
+    expect(lastPacket.packet.coaching).toEqual({
+      phase: "recovery",
+      unitPreference: "imperial",
+      maxHeartRateBpm: 201,
+    });
   });
 
   it("with no goal stored both fields are null in the conversation and the weekly read", async () => {
@@ -152,6 +158,7 @@ describe("the packet carries the goal (coaching-bias 10)", () => {
     expect(lastPacket.packet.coaching).toEqual({
       phase: "recovery",
       racePassed: true,
+      unitPreference: "imperial",
       maxHeartRateBpm: 201,
     });
   });
