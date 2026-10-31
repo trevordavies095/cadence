@@ -44,6 +44,8 @@ type RunRow = {
   drift: { driftBpm: number } | null;
   weather: string | null;
   shoe: { label: string } | null;
+  /** Quality and Race runs with two or more reps, already in the athlete's unit. */
+  repSummary?: string;
 };
 type Runs = { unit: UnitPreference; runs: RunRow[] };
 type Trends = {
@@ -309,6 +311,11 @@ export function YourWeek({
                       {r.runType ?? "Run"}
                       {r.shoe ? ` · ${r.shoe.label}` : ""}
                     </span>
+                    {r.repSummary ? (
+                      <span className="block font-normal tabular-nums">
+                        {r.repSummary}
+                      </span>
+                    ) : null}
                     <LabelValueList
                       size="compact"
                       className="mt-1 font-normal"
