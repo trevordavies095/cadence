@@ -84,12 +84,21 @@ const TREND_PACE =
 const TREND_HR = "- **Avg easy HR**: 130 → — → 138 → 135 █▁▁▃";
 const TREND_LONG =
   "- **Long-run distance** (max long-typed, else max run in week): 2.00 mi → — → 5.00 mi → 10.00 mi ▁▁▃█ (improving)";
-const NOTABLE_PR =
-  "- Best-effort PRs: no prior-week snapshot yet (next recap will compare against this run).";
+const NOTABLE_PR = [
+  "- New best: 5K 21:40 (was 22:05)",
+  "- New best: Half-Marathon 1:41:05 (was 1:43:20)",
+].join("\n");
 
 type Behavior = {
   workouts: Fixture[];
-  bestEfforts?: "ok" | "empty" | "500";
+  /**
+   * What Tempo's `since` call returns: "pr" (default) a 5K and a half
+   * marathon that beat earlier bests, "first" a first-ever 10K, "later" a
+   * best set by a run after this week, "empty" none, "500" a failure.
+   */
+  bestEfforts?: "pr" | "first" | "later" | "empty" | "500";
+  /** Records the `since` query of each best-efforts call. */
+  bestEffortsSince?: (string | null)[];
   /** Make only the Notable builder's shoe lookup throw (Run-by-run keeps working). */
   notableThrows?: boolean;
   /** Fail the multi-week Trends window (spans before and into this week). */
@@ -164,17 +173,49 @@ function buildTempo(b: Behavior) {
     if (p === "/settings/default-shoe") return ok({ defaultShoeId: null });
     if (p === "/shoes") return ok([]);
     if (p === "/stats/best-efforts") {
+      const since = url.searchParams.get("since");
+      b.bestEffortsSince?.push(since);
       if (b.bestEfforts === "500") return new Response("boom", { status: 500 });
+      // Without since Tempo returns all-time bests; Notable must not use them.
+      if (!since) {
+        return ok({
+          distances: [
+            {
+              distance: "5K",
+              distanceM: 5000,
+              timeS: 1200,
+              workoutId: W40_EASY.id,
+              workoutDate: "2026-09-29",
+              previousTimeS: null,
+            },
+          ],
+        });
+      }
       if (b.bestEfforts === "empty") return ok({ distances: [] });
+      const row = (
+        distance: string,
+        distanceM: number,
+        timeS: number,
+        previousTimeS: number | null,
+        workoutId = W43_LONG.id,
+      ) => ({
+        distance,
+        distanceM,
+        timeS,
+        workoutId,
+        workoutDate: "2026-10-24",
+        previousTimeS,
+      });
+      if (b.bestEfforts === "first") {
+        return ok({ distances: [row("10K", 10000, 2770, null)] });
+      }
+      if (b.bestEfforts === "later") {
+        return ok({ distances: [row("5K", 5000, 1290, 1325, id(9))] });
+      }
       return ok({
         distances: [
-          {
-            distance: "5K",
-            distanceM: 5000,
-            timeS: 1500,
-            workoutId: W43_EASY.id,
-            workoutDate: "2026-10-19",
-          },
+          row("Half-Marathon", 21097.5, 6065, 6200),
+          row("5K", 5000, 1300, 1325),
         ],
       });
     }
@@ -281,7 +322,7 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     );
     expect(md).not.toContain("Weeks:");
 
-    // Notable as tempo-cli prints it with no prior-week snapshot.
+    // Notable names each new best of the week, shortest distance first.
     expect(md).toContain(`## Notable\n\n${NOTABLE_PR}\n`);
 
     // Long run: tempo-cli text (no section heading, marathon-pace wording).
@@ -324,6 +365,7 @@ describe("full recap sections in tempo-cli order (#88)", () => {
       "- **Long-run distance** (max long-typed, else max run in week): — → — → 5.00 mi → 3.00 mi ▁▁█▁ (declining)",
     );
     expect(md).not.toContain("## Notable");
+    expect(md).not.toContain("New best");
     expect(md.indexOf("## Run-by-run")).toBeLessThan(md.indexOf("## Trends"));
     expect(md.indexOf("## Trends")).toBeLessThan(
       md.indexOf("## Subjective recap"),
@@ -367,7 +409,40 @@ describe("full recap sections in tempo-cli order (#88)", () => {
     expect(md).toContain("## Subjective recap");
   });
 
-  it("a failing best-efforts fetch drops only the PR line", async () => {
+  it("asks Tempo for bests set since this week's Monday", async () => {
+    const since: (string | null)[] = [];
+    const app = makeApp({ ...FULL, bestEffortsSince: since });
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    expect(since.length).toBeGreaterThan(0);
+    expect(new Set(since)).toEqual(new Set(["2026-10-19"]));
+  });
+
+  it("a first effort at a distance says so", async () => {
+    const app = makeApp({ ...FULL, bestEfforts: "first" });
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+      .reportMarkdown as string;
+    expect(md).toContain(
+      "## Notable\n\n- New best: 10K 46:10 (first time at this distance)\n",
+    );
+  });
+
+  it("a best set after this week stays out of this week's Notable", async () => {
+    const app = makeApp({
+      workouts: [W42_EASY, W43_EASY],
+      bestEfforts: "later",
+    });
+    const weekSessionId = await openWeek(app);
+    expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
+    const md = (await json(await app.request(`/weeks/${weekSessionId}/recap`)))
+      .reportMarkdown as string;
+    expect(md).not.toContain("New best");
+    expect(md).not.toContain("## Notable");
+  });
+
+  it("a failing best-efforts fetch drops only the new-best lines", async () => {
     const app = makeApp({ ...FULL, bestEfforts: "500" });
     const weekSessionId = await openWeek(app);
     expect((await saveSubjective(app, weekSessionId)).status).toBe(201);
@@ -446,7 +521,7 @@ describe("full recap sections reach the weekly reply (#88)", () => {
       "## Notable",
       "### Long run — ",
       "Long-run distance",
-      "no prior-week snapshot yet",
+      "New best: 5K 21:40 (was 22:05)",
     ]) {
       expect(sent).toContain(needle);
     }

@@ -179,6 +179,7 @@ function parseBestEffort(raw: unknown): TempoBestEffort | null {
         ? String(workoutIdRaw)
         : undefined;
   const workoutDate = asString(raw.workoutDate);
+  const previousTimeS = asNumber(raw.previousTimeS);
   if (
     !distance ||
     distanceM === undefined ||
@@ -196,6 +197,8 @@ function parseBestEffort(raw: unknown): TempoBestEffort | null {
     timeS: Math.trunc(timeS),
     workoutId,
     workoutDate,
+    previousTimeS:
+      typeof previousTimeS === "number" ? Math.trunc(previousTimeS) : null,
   };
 }
 

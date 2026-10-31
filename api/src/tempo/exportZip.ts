@@ -16,6 +16,7 @@ import {
   type ListWorkoutsQuery,
   type ListWorkoutsResult,
   type TempoAthleteSettings,
+  type BestEffortsQuery,
   type TempoBestEfforts,
   type TempoPort,
   type TempoShoe,
@@ -454,7 +455,11 @@ export function createExportTempoPort(
       return shoes.filter((s) => !s.isRetired);
     },
 
-    async getBestEfforts(): Promise<TempoBestEfforts> {
+    async getBestEfforts(
+      query: BestEffortsQuery = {},
+    ): Promise<TempoBestEfforts> {
+      // An export holds only all-time bests, so it cannot say what was new.
+      if (query.since) return { distances: [] };
       return parseBestEfforts((await getIndex()).bestEfforts);
     },
 

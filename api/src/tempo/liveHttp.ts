@@ -15,6 +15,7 @@ import {
   type ListWorkoutsQuery,
   type ListWorkoutsResult,
   type TempoAthleteSettings,
+  type BestEffortsQuery,
   type TempoBestEfforts,
   type TempoPort,
   type TempoTimeSeriesPoint,
@@ -328,8 +329,13 @@ export function createLiveTempoPort(options?: LiveTempoPortOptions): TempoPort {
       return parseShoesList(parsed);
     },
 
-    async getBestEfforts(): Promise<TempoBestEfforts> {
-      const parsed = await getJson(BEST_EFFORTS_PATH);
+    async getBestEfforts(
+      query: BestEffortsQuery = {},
+    ): Promise<TempoBestEfforts> {
+      const path = query.since
+        ? `${BEST_EFFORTS_PATH}?since=${encodeURIComponent(query.since)}`
+        : BEST_EFFORTS_PATH;
+      const parsed = await getJson(path);
       return parseBestEfforts(parsed);
     },
   };

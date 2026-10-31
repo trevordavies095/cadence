@@ -168,11 +168,25 @@ export type TempoBestEffort = {
   timeS: number;
   workoutId: string;
   workoutDate: string;
+  /**
+   * With `since`: the best before that date, null for a first effort at the
+   * distance. Always null without `since`.
+   */
+  previousTimeS?: number | null;
 };
 
 /** Body of Tempo GET /stats/best-efforts (export array normalized to same shape). */
 export type TempoBestEfforts = {
   distances: TempoBestEffort[];
+};
+
+/** Query for GET /stats/best-efforts. */
+export type BestEffortsQuery = {
+  /**
+   * yyyy-MM-dd (Tempo compares it with the workout's UTC start date): return
+   * only the distances whose best was set on or after it, with previousTimeS.
+   */
+  since?: string;
 };
 
 /**
@@ -238,7 +252,12 @@ export type TempoPort = {
   /** Unit preference, HR zones, and default shoe id. */
   getSettings(): Promise<TempoAthleteSettings>;
   listShoes(query?: ListShoesQuery): Promise<TempoShoe[]>;
-  getBestEfforts(): Promise<TempoBestEfforts>;
+  /**
+   * All-time bests per distance, or with `since` only the new bests set on
+   * or after that date. Export mode has no history and returns none for a
+   * `since` call.
+   */
+  getBestEfforts(query?: BestEffortsQuery): Promise<TempoBestEfforts>;
   /**
    * Sparse per-sample series (no GPS) for one workout. Live port only; export
    * mode attaches `timeSeries` on getWorkout instead. Returns [] on 404 and

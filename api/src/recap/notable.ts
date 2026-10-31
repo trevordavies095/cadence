@@ -1,5 +1,5 @@
 /**
- * Notable section: PR-ish best-effort deltas, shoe mileage warn, RE overload.
+ * Notable section: new bests of the week, shoe mileage warn, RE overload.
  * Empty sets degrade to a stable placeholder (section always present).
  */
 
@@ -14,20 +14,22 @@ const METERS_PER_MILE = 1609.344;
 export const NOTABLE_SHOE_MILEAGE_WARN_MI = 400;
 export const NOTABLE_RE_OVERLOAD_FACTOR = 1.3;
 
-export type BestEffortPr = {
-  key: string;
-  label: string;
-  previousSeconds: number;
-  currentSeconds: number;
+/** A best set during the week at one standard distance. */
+export type NewBest = {
+  distance: string;
+  distanceM: number;
+  timeS: number;
+  /** The best before this week; null for a first effort at the distance. */
+  previousTimeS: number | null;
+  workoutId: string;
+  workoutDate: string;
 };
 
 export type RecapNotableSnapshot = {
   bullets: string[];
   bestEfforts: {
     fetchOk: boolean;
-    /** Prior snapshot not persisted yet in MVP — PRs require a prior map. */
-    hadPriorCache: boolean;
-    prs: BestEffortPr[];
+    newBests: NewBest[];
   };
   shoesOverThreshold: { shoeId: string; label: string; mileageMi: number }[];
   overload: {
@@ -125,53 +127,36 @@ function formatSecondsAsClock(sec: number): string {
   return `${m}:${String(rs).padStart(2, "0")}`;
 }
 
-/**
- * Diff current best efforts against an optional prior map (seconds by distance key).
- * Without prior cache, returns no PRs (MVP has no week-over-week store yet).
- */
-export function diffBestEffortPrs(args: {
-  current: readonly TempoBestEffort[];
-  priorByKey?: ReadonlyMap<string, number>;
-}): BestEffortPr[] {
-  const prior = args.priorByKey;
-  if (!prior || prior.size === 0) return [];
-  const prs: BestEffortPr[] = [];
-  for (const row of args.current) {
-    const key = row.distance.trim().toLowerCase().replace(/\s+/g, " ");
-    if (!key) continue;
-    const prev = prior.get(key);
-    if (prev === undefined) continue;
-    if (row.timeS < prev) {
-      prs.push({
-        key,
-        label: row.distance,
-        previousSeconds: prev,
-        currentSeconds: row.timeS,
-      });
-    }
-  }
-  return prs.sort((a, b) => a.label.localeCompare(b.label));
+/** "New best: 5K 21:40 (was 22:05)" or "(first time at this distance)". */
+function formatNewBest(best: NewBest): string {
+  const was =
+    best.previousTimeS === null
+      ? "first time at this distance"
+      : `was ${formatSecondsAsClock(best.previousTimeS)}`;
+  return `New best: ${best.distance} ${formatSecondsAsClock(best.timeS)} (${was})`;
 }
 
 export function buildRecapNotableSnapshot(args: {
   bestEffortsFetchOk: boolean;
-  currentBestEfforts: readonly TempoBestEffort[];
-  priorBestEffortSecondsByKey?: ReadonlyMap<string, number>;
+  /** Tempo's bests set since the week's Monday (`since` call). */
+  newBestEfforts: readonly TempoBestEffort[];
   shoes: readonly TempoShoe[];
   weekWorkouts: readonly TempoWorkoutSummary[];
   weekRelativeEffort: number;
   threeWeekAvgRelativeEffort?: number;
 }): RecapNotableSnapshot {
-  const hadPriorCache =
-    !!args.priorBestEffortSecondsByKey &&
-    args.priorBestEffortSecondsByKey.size > 0;
-  const prs =
-    args.bestEffortsFetchOk && hadPriorCache
-      ? diffBestEffortPrs({
-          current: args.currentBestEfforts,
-          priorByKey: args.priorBestEffortSecondsByKey,
-        })
-      : [];
+  const newBests: NewBest[] = args.bestEffortsFetchOk
+    ? args.newBestEfforts
+        .map((e) => ({
+          distance: e.distance,
+          distanceM: e.distanceM,
+          timeS: e.timeS,
+          previousTimeS: e.previousTimeS ?? null,
+          workoutId: e.workoutId,
+          workoutDate: e.workoutDate,
+        }))
+        .sort((x, y) => x.distanceM - y.distanceM)
+    : [];
 
   const shoesOverThreshold = collectShoesOverMileageThreshold({
     shoes: args.shoes,
@@ -185,23 +170,7 @@ export function buildRecapNotableSnapshot(args: {
 
   const bullets: string[] = [];
 
-  if (args.bestEffortsFetchOk) {
-    if (!hadPriorCache) {
-      if (args.currentBestEfforts.length > 0) {
-        bullets.push(
-          "Best-effort PRs: no prior-week snapshot yet (next recap will compare against this run).",
-        );
-      }
-    } else if (prs.length === 0) {
-      bullets.push("No PRs");
-    } else {
-      for (const p of prs) {
-        bullets.push(
-          `PR'd **${p.label}** (was ${formatSecondsAsClock(p.previousSeconds)} → ${formatSecondsAsClock(p.currentSeconds)})`,
-        );
-      }
-    }
-  }
+  for (const best of newBests) bullets.push(formatNewBest(best));
 
   for (const s of shoesOverThreshold) {
     bullets.push(
@@ -219,8 +188,7 @@ export function buildRecapNotableSnapshot(args: {
     bullets,
     bestEfforts: {
       fetchOk: args.bestEffortsFetchOk,
-      hadPriorCache,
-      prs,
+      newBests,
     },
     shoesOverThreshold,
     overload,

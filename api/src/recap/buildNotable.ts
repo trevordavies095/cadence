@@ -13,6 +13,7 @@ import {
   type RecapGoal,
   type RecapPhase,
 } from "./phase.js";
+import { weeklyRecapQueryForWeek } from "./weeklyRecapParams.js";
 import { priorWeekWindows, type WeekWindow } from "./weekWindows.js";
 
 export type RecapNotableResult = {
@@ -37,8 +38,6 @@ export async function buildRecapNotable(args: {
   goal?: RecapGoal;
   /** Full-recap mode: omit the section when empty, never truncate bullets. */
   tempoParity?: boolean;
-  /** Optional prior best-effort seconds by normalized distance key. */
-  priorBestEffortSecondsByKey?: ReadonlyMap<string, number>;
 }): Promise<RecapNotableResult> {
   const { session, tempoPort } = args;
   const knobs = resolveRecapDepthKnobs({
@@ -53,8 +52,20 @@ export async function buildRecapNotable(args: {
     listAllWorkoutsInWindow(tempoPort, thisWindow),
     Promise.all(trailing.map((w) => listAllWorkoutsInWindow(tempoPort, w))),
     tempoPort.listShoes({ status: "all" }),
-    tempoPort.getBestEfforts().catch(() => null),
+    tempoPort
+      .getBestEfforts({
+        since: weeklyRecapQueryForWeek(session.start, session.timezone)
+          .referenceDate,
+      })
+      .catch(() => null),
   ]);
+
+  // Tempo reports the latest best on or after `since`, and compares dates in
+  // UTC; keep only bests set by this week's own runs.
+  const weekWorkoutIds = new Set(weekWorkouts.map((w) => w.id.toLowerCase()));
+  const newBestEfforts = (bestEfforts?.distances ?? []).filter((e) =>
+    weekWorkoutIds.has(e.workoutId.toLowerCase()),
+  );
 
   const thisAgg = aggregateWorkouts(weekWorkouts);
   const trailingAggs = trailingSets.map((items) => aggregateWorkouts(items));
@@ -68,8 +79,7 @@ export async function buildRecapNotable(args: {
 
   const notable = buildRecapNotableSnapshot({
     bestEffortsFetchOk: bestEfforts !== null,
-    currentBestEfforts: bestEfforts?.distances ?? [],
-    priorBestEffortSecondsByKey: args.priorBestEffortSecondsByKey,
+    newBestEfforts,
     shoes,
     weekWorkouts,
     weekRelativeEffort: thisAgg.relativeEffort,

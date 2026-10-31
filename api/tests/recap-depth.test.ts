@@ -166,9 +166,9 @@ describe("weekly recap long-run / trends / notable + phase knobs (#22)", () => {
     const notable = notableBody.notable as {
       bullets: string[];
       overload: { flagged: boolean };
-      bestEfforts: { prs: unknown[] };
+      bestEfforts: { newBests: unknown[] };
     };
-    expect(notable.bestEfforts.prs).toEqual([]);
+    expect(notable.bestEfforts.newBests).toEqual([]);
     expect(notable.overload.flagged).toBe(true);
     expect(notable.bullets.some((b) => b.includes("possible overload"))).toBe(
       true,
