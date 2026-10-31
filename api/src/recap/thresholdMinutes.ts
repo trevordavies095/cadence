@@ -5,6 +5,11 @@
  * A run with pace in its series counts the time within 5% of threshold pace.
  * A run with no pace (treadmill, no GPS) falls back to the time within 3 bpm
  * of threshold heart rate. A run with neither contributes nothing.
+ *
+ * GPS pace between two samples is too noisy for a 5% band, so each step is
+ * judged by a trailing 30-second window: pace is the distance gained over the
+ * last 30 s of elapsed time, heart rate the 30-second mean (shorter windows
+ * at the run's start).
  */
 import type { TempoTimeSeriesPoint } from "../tempo/port.js";
 
@@ -12,6 +17,8 @@ import type { TempoTimeSeriesPoint } from "../tempo/port.js";
 export const THRESHOLD_PACE_BAND = 0.05;
 /** Heart-rate band: within this many bpm of threshold heart rate. */
 export const THRESHOLD_HR_BAND_BPM = 3;
+/** Trailing window each step is judged over. */
+export const THRESHOLD_WINDOW_S = 30;
 
 /** The athlete-set thresholds; null when not set. Paces are seconds per km. */
 export type AthleteThresholds = {
@@ -32,31 +39,57 @@ export function hasAthleteThreshold(t: AthleteThresholds | null | undefined): bo
   return !!t && (usable(t.paceS) || usable(t.heartRateBpm));
 }
 
-type Interval = { dt: number; paceS: number | null; hr: number | null };
+/** One step between consecutive samples: [start, end], its speed and closing heart rate. */
+type Step = { start: number; end: number; speedMps: number | null; hr: number | null };
 
-/** Consecutive-sample intervals with the pace (distance over time) and the closing heart rate. */
-function intervals(series: readonly TempoTimeSeriesPoint[]): Interval[] {
+function steps(series: readonly TempoTimeSeriesPoint[]): Step[] {
   const points = series
     .filter((p) => finite(p.elapsedSeconds))
     .slice()
     .sort((a, b) => a.elapsedSeconds! - b.elapsedSeconds!);
-  const out: Interval[] = [];
+  const out: Step[] = [];
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1]!;
     const b = points[i]!;
-    const dt = b.elapsedSeconds! - a.elapsedSeconds!;
+    const start = a.elapsedSeconds!;
+    const end = b.elapsedSeconds!;
+    const dt = end - start;
     if (dt <= 0) continue;
-    let paceS: number | null = null;
+    let speedMps: number | null = null;
     if (finite(a.distanceM) && finite(b.distanceM)) {
       const dd = b.distanceM - a.distanceM;
-      if (dd > 0) paceS = dt / (dd / 1000);
-    } else if (finite(b.speedMps) && b.speedMps > 0) {
-      paceS = 1000 / b.speedMps;
+      if (dd >= 0) speedMps = dd / dt;
+    } else if (finite(b.speedMps) && b.speedMps >= 0) {
+      speedMps = b.speedMps;
     }
     const hr = finite(b.heartRateBpm) && b.heartRateBpm > 0 ? b.heartRateBpm : null;
-    out.push({ dt, paceS, hr });
+    out.push({ start, end, speedMps, hr });
   }
   return out;
+}
+
+/**
+ * Time-weighted mean of a step value over the trailing window ending at
+ * steps[i].end; null when no step in the window has the value.
+ */
+function trailingMean(
+  all: readonly Step[],
+  i: number,
+  value: (s: Step) => number | null,
+): number | null {
+  const windowStart = all[i]!.end - THRESHOLD_WINDOW_S;
+  let weighted = 0;
+  let time = 0;
+  for (let j = i; j >= 0; j--) {
+    const s = all[j]!;
+    if (s.end <= windowStart) break;
+    const v = value(s);
+    if (v === null) continue;
+    const overlap = s.end - Math.max(s.start, windowStart);
+    weighted += v * overlap;
+    time += overlap;
+  }
+  return time > 0 ? weighted / time : null;
 }
 
 export function withinPaceBand(paceS: number, thresholdPaceS: number): boolean {
@@ -73,24 +106,26 @@ export function thresholdSecondsForRun(
   thresholds: AthleteThresholds,
 ): number {
   if (!series || series.length < 2) return 0;
-  const iv = intervals(series);
-  const hasPace = iv.some((x) => x.paceS !== null);
+  const all = steps(series);
+  const hasPace = all.some((s) => s.speedMps !== null && s.speedMps > 0);
+  let inBand: (i: number) => boolean;
   if (hasPace && usable(thresholds.paceS)) {
     const t = thresholds.paceS;
-    return iv.reduce(
-      (s, x) => (x.paceS !== null && withinPaceBand(x.paceS, t) ? s + x.dt : s),
-      0,
-    );
-  }
-  // No pace in the series, or no threshold pace set: the heart-rate band.
-  if (usable(thresholds.heartRateBpm)) {
+    inBand = (i) => {
+      const speed = trailingMean(all, i, (s) => s.speedMps);
+      return speed !== null && speed > 0 && withinPaceBand(1000 / speed, t);
+    };
+  } else if (usable(thresholds.heartRateBpm)) {
+    // No pace in the series, or no threshold pace set: the heart-rate band.
     const t = thresholds.heartRateBpm;
-    return iv.reduce(
-      (s, x) => (x.hr !== null && withinHeartRateBand(x.hr, t) ? s + x.dt : s),
-      0,
-    );
+    inBand = (i) => {
+      const hr = trailingMean(all, i, (s) => s.hr);
+      return hr !== null && withinHeartRateBand(hr, t);
+    };
+  } else {
+    return 0;
   }
-  return 0;
+  return all.reduce((sum, s, i) => (inBand(i) ? sum + (s.end - s.start) : sum), 0);
 }
 
 /** The week's threshold seconds across its runs' series. */

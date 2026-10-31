@@ -59,6 +59,39 @@ describe("threshold seconds per run (#16)", () => {
     expect(thresholdSecondsForRun(hrInterval(166), T)).toBe(0);
   });
 
+  it("jittery GPS (±10% per sample around threshold pace) still counts: the 30 s window smooths it", () => {
+    const series: TempoTimeSeriesPoint[] = [];
+    let d = 0;
+    for (let t = 0; t <= 600; t++) {
+      series.push({ elapsedSeconds: t, distanceM: d, heartRateBpm: 150 });
+      const pace = 250 * (t % 2 === 0 ? 1.1 : 0.9);
+      d += 1000 / pace;
+    }
+    // Every step alone is 10% off; only the first (a 1 s window) stays out.
+    expect(thresholdSecondsForRun(series, T)).toBe(599);
+  });
+
+  it("jittery heart rate (166/174 around 170) counts on the 30 s mean", () => {
+    const series: TempoTimeSeriesPoint[] = [];
+    for (let t = 0; t <= 120; t++) {
+      series.push({ elapsedSeconds: t, heartRateBpm: t % 2 === 0 ? 166 : 174 });
+    }
+    // Only the first step (a 1 s window at 174) stays out.
+    expect(thresholdSecondsForRun(series, T)).toBe(119);
+  });
+
+  it("a short surge inside the window does not count until it fills the window", () => {
+    // 60 s at 5:33/km, then 60 s at threshold, in 10 s samples.
+    const series: TempoTimeSeriesPoint[] = [];
+    let d = 0;
+    for (let t = 0; t <= 120; t += 10) {
+      series.push({ elapsedSeconds: t, distanceM: d });
+      d += t < 60 ? 30 : 40;
+    }
+    // Steps ending at 70 and 80 still average in the slower running.
+    expect(thresholdSecondsForRun(series, T)).toBe(40);
+  });
+
   it("a run with pace ignores its heart rate when threshold pace is set", () => {
     expect(thresholdSecondsForRun(paceInterval(400, 170), T)).toBe(0);
   });

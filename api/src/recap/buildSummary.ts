@@ -1,5 +1,6 @@
 import { listAllWorkoutsInWindow } from "./listWindow.js";
 import type {
+  TempoAthleteSettings,
   TempoPort,
   TempoUnitPreference,
   TempoWorkoutSummary,
@@ -54,26 +55,32 @@ type PortWithOptionalSettings = TempoPort & {
   getExportSettings?: () => Promise<unknown>;
 };
 
+/** getSettings when the port has it; null when absent or failing. */
+async function readSettings(
+  port: TempoPort,
+): Promise<TempoAthleteSettings | null> {
+  if (typeof port.getSettings !== "function") return null;
+  try {
+    return (await port.getSettings()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Resolve display units without requiring unfinished TempoPort settings methods.
- * Prefer getSettings when present; else export settings; else metric.
+ * Prefer getSettings (or the settings already read) when present; else export
+ * settings; else metric.
  */
 export async function resolveRecapUnit(
   port: TempoPort,
+  /** Settings already read by the caller; read here when omitted. */
+  settings?: TempoAthleteSettings | null,
 ): Promise<TempoUnitPreference> {
   const p = port as PortWithOptionalSettings;
-  if (typeof p.getSettings === "function") {
-    try {
-      const settings = await p.getSettings();
-      if (
-        settings?.unitPreference === "imperial" ||
-        settings?.unitPreference === "metric"
-      ) {
-        return settings.unitPreference;
-      }
-    } catch {
-      // fall through
-    }
+  const s = settings !== undefined ? settings : await readSettings(port);
+  if (s?.unitPreference === "imperial" || s?.unitPreference === "metric") {
+    return s.unitPreference;
   }
   if (typeof p.getExportSettings === "function") {
     try {
@@ -89,18 +96,14 @@ export async function resolveRecapUnit(
   return "metric";
 }
 
-/** The athlete-set threshold pace and heart rate; null when neither is set or settings fail. */
-async function loadAthleteThresholds(
-  port: TempoPort,
-): Promise<AthleteThresholds | null> {
-  try {
-    const t = (await port.getSettings())?.thresholds;
-    if (!t) return null;
-    const out = { paceS: t.thresholdPaceS, heartRateBpm: t.thresholdHeartRateBpm };
-    return hasAthleteThreshold(out) ? out : null;
-  } catch {
-    return null;
-  }
+/** The athlete-set threshold pace and heart rate; null when neither is set. */
+function athleteThresholds(
+  settings: TempoAthleteSettings | null,
+): AthleteThresholds | null {
+  const t = settings?.thresholds;
+  if (!t) return null;
+  const out = { paceS: t.thresholdPaceS, heartRateBpm: t.thresholdHeartRateBpm };
+  return hasAthleteThreshold(out) ? out : null;
 }
 
 /**
@@ -109,9 +112,10 @@ async function loadAthleteThresholds(
  */
 async function weekThresholdSeconds(
   port: TempoPort,
+  settings: TempoAthleteSettings | null,
   workouts: readonly TempoWorkoutSummary[],
 ): Promise<number | undefined> {
-  const thresholds = await loadAthleteThresholds(port);
+  const thresholds = athleteThresholds(settings);
   if (!thresholds) return undefined;
   if (workouts.length === 0) return 0;
   const details = await loadRecapWorkoutDetails(port, workouts);
@@ -132,7 +136,13 @@ export async function buildRecapSummary(args: {
   knobs?: RecapDepthKnobs;
 }): Promise<RecapSummaryResult> {
   const { session, tempoPort } = args;
-  const unit = args.unit ?? (await resolveRecapUnit(tempoPort));
+  const wantsThresholds = args.knobs?.thresholds.thresholdMinutes === true;
+  // One settings read serves both the units and the athlete-set thresholds.
+  const settings =
+    args.unit === undefined || wantsThresholds
+      ? await readSettings(tempoPort)
+      : null;
+  const unit = args.unit ?? (await resolveRecapUnit(tempoPort, settings));
   const thisWindow: WeekWindow = { start: session.start, end: session.end };
   const { prev, trailing } = priorWeekWindows(thisWindow);
 
@@ -165,8 +175,8 @@ export async function buildRecapSummary(args: {
   }
   const rows = buildSummaryTableRows({ thisWeek, comparison, unit });
   // Only the goals that show the line pay for the series fetch.
-  const thresholdSeconds = args.knobs?.thresholds.thresholdMinutes
-    ? await weekThresholdSeconds(tempoPort, thisItems)
+  const thresholdSeconds = wantsThresholds
+    ? await weekThresholdSeconds(tempoPort, settings, thisItems)
     : undefined;
   const goalLines = args.knobs
     ? buildSummaryGoalLines({
