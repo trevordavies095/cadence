@@ -14,8 +14,7 @@ import { longRunVerdictIn, mentionsMarathon, replayCheckFailures } from "../scri
 const api = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURE = path.join(api, "tests/fixtures/replay-packets");
 
-function dryRun(packets: string) {
-  const out = mkdtempSync(path.join(tmpdir(), "replay-out-"));
+function dryRun(packets: string, out = mkdtempSync(path.join(tmpdir(), "replay-out-"))) {
   const env = { ...process.env };
   delete env.ANTHROPIC_API_KEY;
   const run = spawnSync(
@@ -99,5 +98,43 @@ describe("replay dry run over a packet folder", () => {
     expect(run.stderr).toContain("02 (02-no-goal.json): no goal line: the packet has no goal");
     expect(run.report()).toContain("- 02 (02-no-goal.json): no goal line");
     expect(run.report()).not.toContain("- 01 (01-stay-fit.json):");
+  }, 30_000);
+
+  it("asks once more for a reply refused for its shape, notes the retry and lists it apart from failures", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "replay-packets-"));
+    const packet = (f: string) => JSON.parse(readFileSync(path.join(FIXTURE, f), "utf8")) as unknown;
+    writeFileSync(path.join(dir, "01-retried.json"), JSON.stringify({ packet: packet("01-stay-fit.json"), stubRefusals: 1 }));
+    writeFileSync(path.join(dir, "02-failed.json"), JSON.stringify({ packet: packet("02-10k.json"), stubRefusals: 2 }));
+    const run = dryRun(dir);
+    expect(run.status).toBe(0);
+    expect(run.stdout).toMatch(/01\.json done in \d+ s after asking once more/);
+    expect(run.stdout).toContain("02.json refused: stub refusal");
+
+    const saved = JSON.parse(readFileSync(path.join(run.out, "01.json"), "utf8")) as {
+      refusedAttempts: Array<{ attempt: number; error: string }>;
+      new: { analysis: string };
+    };
+    expect(saved.refusedAttempts).toHaveLength(1);
+    expect(saved.refusedAttempts[0]).toMatchObject({ attempt: 1, error: expect.stringContaining("analysis is required") });
+    expect(saved.new.analysis.length).toBeGreaterThan(0);
+    const failed = JSON.parse(readFileSync(path.join(run.out, "02.failed.json"), "utf8")) as {
+      refusedAttempts: unknown[];
+    };
+    expect(failed.refusedAttempts).toHaveLength(2);
+
+    const report = run.report();
+    const retried = report.slice(report.indexOf("## Retried replies"), report.indexOf("## Refused replies"));
+    expect(retried).toContain("- 01 (01-retried.json): Asked once more: attempt 1 refused");
+    expect(retried).not.toContain("02");
+    const refused = report.slice(report.indexOf("## Refused replies"));
+    expect(refused).toContain("- 02.failed.json (02-failed.json): stub refusal");
+    expect(refused).toContain("refused on all 2 attempts");
+    expect(refused).not.toContain("01");
+    expect(report).toContain("## 01 (01-retried.json)\n\nModel default.");
+
+    // Resumable: a re-run skips the reply saved after the retry and keeps its note.
+    const again = dryRun(dir, run.out);
+    expect(again.stdout).toContain("01.json exists, skipped");
+    expect(again.report()).toContain("- 01 (01-retried.json): Asked once more");
   }, 30_000);
 });

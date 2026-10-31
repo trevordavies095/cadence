@@ -28,6 +28,12 @@
  * .scratch/replay-packets/<folder name> (with -dry-run on a dry run).
  * Pass --out <dir> to write somewhere else, with either source.
  *
+ * A reply refused for its shape is asked for once more, as the app does (ADR
+ * 0002). The saved reply lists the refused attempt in `refusedAttempts`, and the
+ * report lists retried calls apart from failed ones. On a dry run, a wrapped
+ * packet's `stubRefusals` (a count) makes the stub refuse that many attempts
+ * first, so the retry can be tested offline; a live run ignores it.
+ *
  * Every report opens with three goal checks, each naming the read that failed:
  * a packet with no goal line (no goal, or the rebuilt prompt does not open with
  * "Athlete goal:"); "marathon" in a read whose goal is not a marathon; and a
@@ -41,6 +47,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { TrainingGoal } from "../src/goal/types.js";
 import { createAnthropicLlmPort, weeklyUserPromptFor } from "../src/llm/anthropic.js";
+import { askOnceMore } from "../src/llm/askOnceMore.js";
+import { LlmSchemaError } from "../src/llm/port.js";
 import { createStubLlmPort } from "../src/llm/stub.js";
 import type { PrescribedDay, WeeklyReply } from "../src/llm/types.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
@@ -102,6 +110,8 @@ type StoredCall = {
   model: string | undefined;
   packet: ModelPacket;
   old: Record<string, unknown> | null;
+  /** Dry run only: how many attempts the stub refuses for their shape first. */
+  stubRefusals?: number;
 };
 
 function storedWeeklyCalls(): StoredCall[] {
@@ -134,7 +144,8 @@ function folderCalls(dir: string): StoredCall[] {
     const wrapped = raw.packet && typeof raw.packet === "object";
     const packet = (wrapped ? raw.packet : raw) as ModelPacket;
     const model = wrapped && typeof raw.model === "string" ? raw.model : process.env.ANTHROPIC_MODEL?.trim() || undefined;
-    return { source: f, createdAt: null, model, packet, old: null };
+    const stubRefusals = wrapped && typeof raw.stubRefusals === "number" ? raw.stubRefusals : 0;
+    return { source: f, createdAt: null, model, packet, old: null, stubRefusals };
   });
 }
 
@@ -155,6 +166,16 @@ function memoryRecorder(rows: LlmCallRecord[]): LlmCallRecorder {
     async *exportAll() {},
   };
 }
+
+/** One attempt refused for its shape. */
+type Refusal = {
+  attempt: number;
+  error: string;
+  outcome: string | null;
+  stopReason: string | null;
+  outputTokens: number | null;
+  responseRaw: unknown;
+};
 
 async function replay(calls: StoredCall[]): Promise<void> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
@@ -177,10 +198,38 @@ async function replay(calls: StoredCall[]): Promise<void> {
           recorder: memoryRecorder(log),
         });
     const started = Date.now();
-    // The port writes its log row, with any repairs and token counts, only for a call with an id.
+    // Each attempt refused for its shape, with what the model sent for it.
+    const refusals: Refusal[] = [];
+    let stubRefusalsLeft = dryRun ? (call.stubRefusals ?? 0) : 0;
     let reply: WeeklyReply;
     try {
-      reply = await port.generateWeeklyReply(call.packet, { callId: randomUUID() });
+      // Asked once more when refused for its shape, as the app does (ADR 0002).
+      const result = await askOnceMore(async (attempt) => {
+        const logged = log.length;
+        try {
+          if (stubRefusalsLeft > 0) {
+            stubRefusalsLeft--;
+            throw new LlmSchemaError("stub refusal: analysis is required and must be non-empty");
+          }
+          // The port writes its log row, with any repairs and token counts, only for a call with an id.
+          return { ok: true as const, value: await port.generateWeeklyReply(call.packet, { callId: randomUUID() }) };
+        } catch (err) {
+          if (err instanceof LlmSchemaError) {
+            const row = log.length > logged ? log.at(-1) : undefined;
+            refusals.push({
+              attempt,
+              error: err.message,
+              outcome: row?.outcome ?? null,
+              stopReason: row?.stopReason ?? null,
+              outputTokens: row?.outputTokens ?? null,
+              responseRaw: row?.responseRaw ?? null,
+            });
+          }
+          throw err;
+        }
+      });
+      if (!result.ok) throw new LlmSchemaError(result.error);
+      reply = result.value;
     } catch (err) {
       // A refused reply is a finding, not a reason to stop: keep what the model sent and move on.
       const failed = log.at(-1);
@@ -197,6 +246,8 @@ async function replay(calls: StoredCall[]): Promise<void> {
             stopReason: failed?.stopReason ?? null,
             outputTokens: failed?.outputTokens ?? null,
             responseRaw: failed?.responseRaw ?? null,
+            // Every attempt refused for its shape, the last one included.
+            refusedAttempts: refusals,
           },
           null,
           2,
@@ -221,6 +272,8 @@ async function replay(calls: StoredCall[]): Promise<void> {
           repairs: row?.errorMessage ?? null,
           inputTokens: row?.inputTokens ?? null,
           outputTokens: row?.outputTokens ?? null,
+          // Attempts refused for their shape before this reply came back; empty when none.
+          refusedAttempts: refusals,
           old: call.old,
           new: reply,
         },
@@ -228,7 +281,8 @@ async function replay(calls: StoredCall[]): Promise<void> {
         2,
       ),
     );
-    console.log(`${path.basename(file)} done in ${Math.round((Date.now() - started) / 1000)} s`);
+    const retriedNote = refusals.length ? ` after asking once more (${refusals[0]!.error})` : "";
+    console.log(`${path.basename(file)} done in ${Math.round((Date.now() - started) / 1000)} s${retriedNote}`);
   }
 }
 
@@ -245,6 +299,8 @@ type Saved = {
   repairs: string | null;
   inputTokens: number | null;
   outputTokens: number | null;
+  /** Missing on replies saved before the replay asked once more. */
+  refusedAttempts?: Refusal[];
   /** Null for a packet from a folder: it has no earlier reply. */
   old: { analysis: string; prescribedWeek: { days: PrescribedDay[] } } | null;
   new: WeeklyReply;
@@ -291,6 +347,8 @@ function report(): ReplayCheckFailure[] {
   const files = numbered(".json");
   const sections: string[] = [];
   const checkFailures: ReplayCheckFailure[] = [];
+  // Replies that came back only when asked once more.
+  const retried: string[] = [];
   for (const file of files) {
     const s = JSON.parse(readFileSync(file, "utf8")) as Saved;
     const n = s.new;
@@ -310,6 +368,11 @@ function report(): ReplayCheckFailure[] {
     const goal = s.goal ?? null;
     const failed = replayCheckFailures({ label, goal, prompt: s.promptHead ?? "", readText: newText });
     checkFailures.push(...failed);
+    const refusals = s.refusedAttempts ?? [];
+    const retryNote = refusals.length
+      ? `Asked once more: ${refusals.map((r) => `attempt ${r.attempt} refused (${r.error}; stop reason ${r.stopReason})`).join("; ")}.`
+      : null;
+    if (retryNote) retried.push(`- ${label}: ${retryNote}`);
     const normalized = newText.replace(/[–—]/g, "-");
     const missing = old ? figures(old.analysis).filter((f) => !normalized.includes(f)) : [];
     const questions = old ? oldQuestions(old.analysis) : [];
@@ -338,7 +401,8 @@ function report(): ReplayCheckFailure[] {
       "",
       `Model ${s.model ?? "default"}. Outcome ${s.outcome}${s.repairs ? ` (${s.repairs})` : ""}. Tokens in ${s.inputTokens}, out ${s.outputTokens}.`,
       "",
-      `Goal: ${goal ? `${goal.kind}${goal.distance ? ` (${goal.distance})` : ""}` : "none"}. Goal checks: ${failed.length ? failed.map((f) => f.check).join(", ") : "passed"}.`,
+      ...(retryNote ? [retryNote, ""] : []),
+      `Goal: ${goal ?`${goal.kind}${goal.distance ? ` (${goal.distance})` : ""}` : "none"}. Goal checks: ${failed.length ? failed.map((f) => f.check).join(", ") : "passed"}.`,
       "",
       "| Check | Old | New |",
       "|---|---|---|",
@@ -384,6 +448,9 @@ function report(): ReplayCheckFailure[] {
     "",
     ...sections,
   ];
+  if (retried.length > 0) {
+    out.push("## Retried replies", "", "Refused for their shape, then came back when asked once more, as the app does.", "", ...retried, "");
+  }
   const refused = numbered(".failed.json").filter((f) => !existsSync(f.replace(/\.failed\.json$/, ".json")));
   if (refused.length > 0) {
     out.push("## Refused replies", "");
@@ -393,9 +460,13 @@ function report(): ReplayCheckFailure[] {
         originalCallAt: string | null;
         error: string;
         stopReason: string | null;
+        /** Missing on failures saved before the replay asked once more. */
+        refusedAttempts?: Refusal[];
       };
       const what = d.originalCallAt ? `week read on ${d.originalCallAt.slice(0, 10)}` : d.source;
-      out.push(`- ${path.basename(f)} (${what}): ${d.error}; stop reason ${d.stopReason}`);
+      const attempts = d.refusedAttempts?.length ?? 0;
+      const tries = attempts > 1 ? ` (refused on all ${attempts} attempts)` : "";
+      out.push(`- ${path.basename(f)} (${what}): ${d.error}; stop reason ${d.stopReason}${tries}`);
     }
     out.push("");
   }
