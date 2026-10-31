@@ -50,9 +50,9 @@ const WEEK: Run[] = [
   { runType: "Race", avgHeartRateBpm: 180, avgPaceS: 270, distanceM: 10000 },
 ];
 
-/** Easy family = Easy Run, Recovery, Walk-Run, untyped. */
-const EASY_AVG_HR = Math.round((130 + 120 + 112 + 146) / 4); // 127
-const EASY_AVG_PACE = (360 + 420 + 480 + 400) / 4; // equal durations → 415
+/** Easy family = Easy Run, Recovery, untyped. Walk-Run stands alone, as in Tempo. */
+const EASY_AVG_HR = Math.round((130 + 120 + 146) / 3); // 132
+const EASY_AVG_PACE = (360 + 420 + 400) / 3; // equal durations → 393.3
 
 function summaryItems(runs: Run[]) {
   return runs.map((r, i) => {
@@ -150,7 +150,7 @@ describe("run-type families", () => {
     expect(families).toEqual({
       "Easy Run": "easy",
       Recovery: "easy",
-      "Walk-Run": "easy",
+      "Walk-Run": "walk",
       "Long Run": "long",
       Workout: "quality",
       Threshold: "quality",
@@ -166,7 +166,7 @@ describe("run-type families", () => {
     expect(WEEK.map((r) => runTypeFamily(r.runType))).toEqual([
       "easy",
       "easy",
-      "easy",
+      "walk",
       "easy",
       "long",
       "quality",
@@ -200,7 +200,7 @@ describe("summary and trends agree on easy runs", () => {
     delete process.env.TEMPO_EXPORT_PATH;
   });
 
-  it("counts Easy Run, Recovery, Walk-Run and untyped runs, and nothing else, as easy", async () => {
+  it("counts Easy Run, Recovery and untyped runs, and nothing else, as easy", async () => {
     const { app, weekId } = await weekApp(WEEK);
 
     const sumRes = await app.request(
@@ -227,7 +227,7 @@ describe("summary and trends agree on easy runs", () => {
     expect(trends.longRunDistanceM[3]).toBe(20000);
   });
 
-  it("a week of only Walk-Run and untyped runs still has an easy HR in both", async () => {
+  it("leaves Walk-Run out of easy HR and easy pace in both, as Tempo does", async () => {
     const runs: Run[] = [
       { runType: "Walk-Run", avgHeartRateBpm: 150, avgPaceS: 480, distanceM: 4000 },
       { avgHeartRateBpm: 160, avgPaceS: 400, distanceM: 6000 },
@@ -239,7 +239,7 @@ describe("summary and trends agree on easy runs", () => {
     );
     const rows = sum.rows as Array<Record<string, string>>;
     expect(rows.find((r) => r.metric === "Avg easy-run HR")!.thisWeek).toBe(
-      "155",
+      "160",
     );
 
     const tr = await json(await app.request(`/weeks/${weekId}/recap/trends`));
@@ -247,8 +247,8 @@ describe("summary and trends agree on easy runs", () => {
       avgEasyHr: (number | null)[];
       easyPaceSecPerKm: (number | null)[];
     };
-    expect(trends.avgEasyHr[3]).toBe(155);
-    expect(trends.easyPaceSecPerKm[3]).toBeCloseTo(440, 6);
+    expect(trends.avgEasyHr[3]).toBe(160);
+    expect(trends.easyPaceSecPerKm[3]).toBeCloseTo(400, 6);
   });
 });
 
@@ -259,11 +259,10 @@ describe("drift label gate", () => {
       (t) => driftSeverityLabel(drift, driftCapForRun(t, caps)) !== undefined,
     );
 
-  it("labels drift only on easy-family and Long Run runs", () => {
+  it("labels drift only on easy-family and Long Run runs, never on Walk-Run", () => {
     expect(capped(25, RACE_CAPS)).toEqual([
       "Easy Run",
       "Recovery",
-      "Walk-Run",
       "Long Run",
       undefined,
     ]);
@@ -277,7 +276,7 @@ describe("drift label gate", () => {
     expect(driftCapForRun("Race", RACE_CAPS)).toBeNull();
     expect(driftCapForRun("Long Run", { easy: 10, long: null })).toBeNull();
     // 15 bpm: above the easy cap, under the long cap.
-    expect(capped(15, RACE_CAPS)).toEqual(["Easy Run", "Recovery", "Walk-Run", undefined]);
+    expect(capped(15, RACE_CAPS)).toEqual(["Easy Run", "Recovery", undefined]);
     expect(driftSeverityLabel(12, 10)).toBe("⚠ above target (target ≤10 bpm)");
     expect(driftSeverityLabel(22, 20)).toBe("⚠ above target (target ≤20 bpm)");
     expect(driftSeverityLabel(31, 20)).toBe("⚠⚠ well above target");

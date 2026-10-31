@@ -4,7 +4,9 @@
  * Tempo accepts exactly ten run types, case-sensitive. Labels are trusted as
  * the athlete set them: there is no heart-rate or pace gate on a label.
  * Untyped runs (missing, blank, or Tempo's `Unspecified` count key) belong to
- * the easy family. Unknown labels belong to no family.
+ * the easy family. Walk-Run stands alone, as in Tempo's own easy-run heart
+ * rate: walk breaks distort easy pace, easy heart rate and drift. Unknown
+ * labels belong to no family.
  */
 
 export const RUN_TYPES = [
@@ -23,7 +25,7 @@ export const RUN_TYPES = [
 export type RunType = (typeof RUN_TYPES)[number];
 
 /** Typed members of the easy family; untyped runs are easy too. */
-export const EASY_FAMILY = ["Easy Run", "Recovery", "Walk-Run"] as const;
+export const EASY_FAMILY = ["Easy Run", "Recovery"] as const;
 
 export const QUALITY_FAMILY = [
   "Workout",
@@ -36,7 +38,13 @@ export const QUALITY_FAMILY = [
 /** Tempo's key for untyped runs in its weekly run counts. */
 export const UNSPECIFIED_RUN_TYPE = "Unspecified";
 
-export type RunTypeFamily = "easy" | "quality" | "long" | "race" | "other";
+export type RunTypeFamily =
+  | "easy"
+  | "quality"
+  | "long"
+  | "race"
+  | "walk"
+  | "other";
 
 /** Trimmed label, or null when the run is untyped. */
 function label(runType: unknown): string | null {
@@ -51,7 +59,7 @@ function isOneOf(runType: unknown, list: readonly string[]): boolean {
   return s !== null && list.includes(s);
 }
 
-/** Easy Run, Recovery, Walk-Run, or untyped. */
+/** Easy Run, Recovery, or untyped. Walk-Run is not easy-family. */
 export function isEasyFamily(runType: unknown): boolean {
   return label(runType) === null || isOneOf(runType, EASY_FAMILY);
 }
@@ -69,11 +77,16 @@ export function isRace(runType: unknown): boolean {
   return label(runType) === "Race";
 }
 
+export function isWalkRun(runType: unknown): boolean {
+  return label(runType) === "Walk-Run";
+}
+
 /** Which family a run lands in; unknown labels are "other". */
 export function runTypeFamily(runType: unknown): RunTypeFamily {
   if (isEasyFamily(runType)) return "easy";
   if (isQualityFamily(runType)) return "quality";
   if (isLongRun(runType)) return "long";
   if (isRace(runType)) return "race";
+  if (isWalkRun(runType)) return "walk";
   return "other";
 }
