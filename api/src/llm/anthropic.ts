@@ -119,6 +119,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 /** The reason for a session, shown beside it on the plan. */
 const DAY_NOTES_DESCRIPTION = `Why this session, this week: one or two sentences, under ${DAY_NOTES_TARGET} characters. Shown beside the session.`;
 
+/** Day types; every type but rest and other carries a run. */
+const DAY_TYPE_DESCRIPTION =
+  "Every type but rest needs a run, except other: an other day with no run (run null) is strength, cross-training or a walk, and its notes must say what it is (\"30 min strength: squats, lunges, core\"). It is not counted or graded as a run.";
+
 /** A planned run, prescribed by distance, by duration, or by both. */
 export function prescribedRunJsonSchema(): Record<string, unknown> {
   return {
@@ -230,6 +234,7 @@ function weeklyReplyToolSchema() {
                 dayType: {
                   type: "string",
                   enum: ["rest", "easy", "quality", "long", "race", "other"],
+                  description: DAY_TYPE_DESCRIPTION,
                 },
                 run: prescribedRunJsonSchema(),
                 strength: { type: ["string", "null"] },
@@ -253,7 +258,7 @@ function weeklyReplyToolSchema() {
   };
 }
 
-function prescribedDayJsonSchema(): Record<string, unknown> {
+export function prescribedDayJsonSchema(): Record<string, unknown> {
   return {
     type: "object",
     additionalProperties: false,
@@ -266,6 +271,7 @@ function prescribedDayJsonSchema(): Record<string, unknown> {
       dayType: {
         type: "string",
         enum: ["rest", "easy", "quality", "long", "race", "other"],
+        description: DAY_TYPE_DESCRIPTION,
       },
       run: prescribedRunJsonSchema(),
       strength: { type: ["string", "null"] },

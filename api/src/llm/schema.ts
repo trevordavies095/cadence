@@ -210,7 +210,17 @@ function parseDay(
       };
     }
   } else if (runResult.value == null) {
-    return { ok: false, error: `${path} (${dayType}) requires a run object` };
+    // An other day may be strength, cross-training or a walk: no run, with the
+    // notes saying what the day is.
+    if (dayType !== "other") {
+      return { ok: false, error: `${path} (${dayType}) requires a run object` };
+    }
+    if (!notes.value?.trim()) {
+      return {
+        ok: false,
+        error: `${path} (other) with no run needs notes saying what the day is`,
+      };
+    }
   }
 
   const day: PrescribedDay = { date, dayType };
