@@ -594,7 +594,7 @@ function describeStopReason(body: unknown): string | null {
  * the key, when there is one, in both `x-api-key` and `Authorization: Bearer`,
  * so the athlete need not know which their server checks; no key, neither.
  */
-function messagesHeaders(
+export function messagesHeaders(
   provider: CoachProvider,
   apiKey: string | null,
 ): Record<string, string> {
@@ -610,6 +610,20 @@ function messagesHeaders(
     ...(apiKey ? { "x-api-key": apiKey, authorization: `Bearer ${apiKey}` } : {}),
     "anthropic-version": ANTHROPIC_VERSION,
   };
+}
+
+/**
+ * The thinking half of a request. Anthropic: adaptive thinking with readable
+ * summaries. Self-hosted: thinking enabled, with no `display`, since a local
+ * server may not know adaptive mode or summaries. Shared with the self-hosted
+ * connection test, so it asks the way a coach call does.
+ */
+export function thinkingParams(provider: CoachProvider, effort: AnthropicEffort) {
+  const thinking =
+    provider === "self_hosted"
+      ? ({ type: "enabled" } as const)
+      : ({ type: "adaptive", display: "summarized" } as const);
+  return { thinking, output_config: { effort } } as const;
 }
 
 async function callAnthropicMessages(options: {
@@ -797,19 +811,12 @@ export function createAnthropicLlmPort(
   const recorder = options?.recorder ?? createPostgresLlmCallRecorder();
   const appVersion = options?.appVersion ?? resolveAppVersion();
   /**
-   * Anthropic: adaptive thinking with readable summaries. Self-hosted: thinking
-   * enabled, with no `display`, since a local server may not know adaptive mode
-   * or summaries. tool_choice stays "auto": a forced tool skips the thinking
-   * block, so the prompt asks for the tool call.
+   * Thinking as thinkingParams sends it. tool_choice stays "auto": a forced
+   * tool skips the thinking block, so the prompt asks for the tool call.
    */
   function reasoningParams(target: CoachTarget) {
-    const thinking =
-      target.provider === "self_hosted"
-        ? ({ type: "enabled" } as const)
-        : ({ type: "adaptive", display: "summarized" } as const);
     return {
-      thinking,
-      output_config: { effort: target.effort },
+      ...thinkingParams(target.provider, target.effort),
       tool_choice: { type: "auto" },
       stream: true,
     } as const;

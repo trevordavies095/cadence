@@ -68,6 +68,8 @@ export type CreateAppOptions = {
   llmPort?: LlmPort;
   /** Injected fetch for the default Anthropic LlmPort and the model listing (tests). */
   llmFetch?: typeof globalThis.fetch;
+  /** Cap on a self-hosted Test connection probe (tests). Defaults to the self-hosted idle limit. */
+  selfHostedTestTimeoutMs?: number;
   /** LLM call log sink (tests inject a failing one). Defaults to Postgres. */
   llmCallRecorder?: LlmCallRecorder;
   /**
@@ -149,6 +151,7 @@ export function createApp(options?: CreateAppOptions): Hono {
       dataProtectionKey: options?.dataProtectionKey,
       sources,
       anthropicFetch: options?.llmFetch,
+      selfHostedTestTimeoutMs: options?.selfHostedTestTimeoutMs,
     }),
   );
   app.route("/", createTempoRoutes({ tempoPort }));
