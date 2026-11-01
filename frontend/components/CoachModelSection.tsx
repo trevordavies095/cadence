@@ -495,7 +495,7 @@ export function CoachModelSection({ offline, demo }: { offline: boolean; demo: b
               {selfHostedFallback ? <Muted>{selfHostedFallback}</Muted> : null}
               <Muted>
                 Self-hosted models have not been measured against the tested default and may coach
-                differently, follow the prompts less closely, or fail more often.
+                differently, follow Coach Cade’s guidance less closely, or fail more often.
               </Muted>
               {effortPicker}
               {adjusted ? <p className="m-0">{adjusted}</p> : null}

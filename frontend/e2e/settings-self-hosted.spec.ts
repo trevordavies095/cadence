@@ -121,7 +121,7 @@ const level = (page: Page, name: string) =>
 const LEVELS = ["Low", "Medium", "High", "Extra high", "Max"];
 
 const UNMEASURED =
-  "Self-hosted models have not been measured against the tested default and may coach differently, follow the prompts less closely, or fail more often.";
+  "Self-hosted models have not been measured against the tested default and may coach differently, follow Coach Cade’s guidance less closely, or fail more often.";
 const MAPPING = "Your server may map these levels onto its own, or ignore them.";
 
 test.describe("Self-hosted model server, in Settings", () => {
