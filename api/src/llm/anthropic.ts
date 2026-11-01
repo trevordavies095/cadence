@@ -535,7 +535,7 @@ type AnthropicMessagesRequest = {
     description: string;
     input_schema: Record<string, unknown>;
   }>;
-  thinking: { type: "adaptive"; display: "summarized" } | { type: "enabled"; budget_tokens: number };
+  thinking?: { type: "adaptive"; display: "summarized" };
   output_config: { effort: AnthropicEffort };
   tool_choice: { type: "auto" };
   stream: true;
@@ -694,26 +694,19 @@ export function messagesHeaders(
  * server may not know adaptive mode or summaries. Shared with the self-hosted
  * connection test, so it asks the way a coach call does.
  */
-/** Thinking budget for a self-hosted call: half of max_tokens, so the reply always has room. */
-export function selfHostedThinkingBudget(maxTokens: number): number {
-  return Math.floor(maxTokens / 2);
-}
-
 /**
- * Thinking for the provider. Self-hosted sends `enabled` with `budget_tokens`, which the
- * Messages spec requires for that type (vLLM refuses the request without it; oMLX ignores
- * it). Anthropic keeps adaptive thinking with summaries.
+ * Thinking for the provider. Anthropic gets adaptive thinking with summaries. A self-hosted
+ * call leaves `thinking` out and sends only the effort: the field is optional in the
+ * Messages spec, and servers disagree on it (vLLM refuses `enabled` without a budget, then
+ * refuses the budget unless the server has a reasoning config; Ollama has no adaptive mode).
+ * Reasoning models think by the server's own default, with the effort as a hint.
  */
-export function thinkingParams(
-  provider: CoachProvider,
-  effort: AnthropicEffort,
-  maxTokens: number = MAX_OUTPUT_TOKENS,
-) {
-  const thinking =
-    provider === "self_hosted"
-      ? ({ type: "enabled", budget_tokens: selfHostedThinkingBudget(maxTokens) } as const)
-      : ({ type: "adaptive", display: "summarized" } as const);
-  return { thinking, output_config: { effort } } as const;
+export function thinkingParams(provider: CoachProvider, effort: AnthropicEffort) {
+  if (provider === "self_hosted") return { output_config: { effort } } as const;
+  return {
+    thinking: { type: "adaptive", display: "summarized" } as const,
+    output_config: { effort },
+  } as const;
 }
 
 async function callAnthropicMessages(options: {

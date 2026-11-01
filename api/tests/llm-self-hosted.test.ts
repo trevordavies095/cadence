@@ -235,16 +235,15 @@ describe("a coach call to a self-hosted server", () => {
       authorization: `Bearer ${SERVER_KEY}`,
       "anthropic-version": "2023-06-01",
     });
-    expect(Object.keys(call.body)).toEqual(REQUEST_KEYS);
+    expect(Object.keys(call.body)).toEqual(REQUEST_KEYS.filter((k) => k !== "thinking"));
     expect(call.body).toMatchObject({
       model: MODEL,
       max_tokens: 64_000,
-      thinking: { type: "enabled", budget_tokens: 32000 },
       output_config: { effort: "high" },
       tool_choice: { type: "auto" },
       stream: true,
     });
-    expect(call.body.thinking).toEqual({ type: "enabled", budget_tokens: 32000 });
+    expect(call.body).not.toHaveProperty("thinking");
     expect((call.body.tools as Array<{ name: string }>)[0]!.name).toBe("submit_weekly_reply");
     expect(call.body.system).toMatch(/do not diagnose/i);
   });
@@ -265,7 +264,6 @@ describe("a coach call to a self-hosted server", () => {
     });
     expect(sent[0]!.body).toMatchObject({
       model: MODEL,
-      thinking: { type: "enabled", budget_tokens: 32000 },
       output_config: { effort: "low" },
     });
     const [row] = await logRows(app);

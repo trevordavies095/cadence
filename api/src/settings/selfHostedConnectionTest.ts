@@ -223,7 +223,7 @@ export async function testSelfHostedConnection(options: {
           model,
           max_tokens: PROBE_MAX_TOKENS,
           system: PROBE_SYSTEM_PROMPT,
-          ...thinkingParams("self_hosted", "low", PROBE_MAX_TOKENS),
+          ...thinkingParams("self_hosted", "low"),
           stream: true,
           messages: [{ role: "user", content: PROBE_USER_PROMPT }],
         }),

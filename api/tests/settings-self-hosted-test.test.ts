@@ -187,13 +187,13 @@ describe("Test connection: the probe", () => {
     const [probe] = probeCalls(server.calls);
     expect(probe.url).toBe(`${BASE_URL}/v1/messages`);
     expect(probe.method).toBe("POST");
+    expect(probe.body).not.toHaveProperty("thinking");
     expect(probe.headers.get("x-api-key")).toBe(SERVER_KEY);
     expect(probe.headers.get("authorization")).toBe(`Bearer ${SERVER_KEY}`);
     expect(probe.headers.get("anthropic-version")).toBe("2023-06-01");
     expect(probe.body).toMatchObject({
       model: MODEL,
       system: PROBE_SYSTEM_PROMPT,
-      thinking: { type: "enabled", budget_tokens: 2048 },
       output_config: { effort: "low" },
       stream: true,
       messages: [{ role: "user", content: PROBE_USER_PROMPT }],
