@@ -193,7 +193,7 @@ describe("Test connection: the probe", () => {
     expect(probe.body).toMatchObject({
       model: MODEL,
       system: PROBE_SYSTEM_PROMPT,
-      thinking: { type: "enabled" },
+      thinking: { type: "enabled", budget_tokens: 2048 },
       output_config: { effort: "low" },
       stream: true,
       messages: [{ role: "user", content: PROBE_USER_PROMPT }],
