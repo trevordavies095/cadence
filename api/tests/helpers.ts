@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { waitForReplyRunsIdle } from "../src/replyRun/inflight.js";
 import { acceptDisclaimer } from "../src/disclaimer/store.js";
 import { assertTestDatabaseName } from "./guardTestDatabase.js";
@@ -243,6 +244,35 @@ export function anthropicToolMessage(
     ...extra,
     content: [{ type: "tool_use", id: "toolu_test", name: toolName, input }],
   };
+}
+
+/**
+ * Replays a raw SSE stream recorded from a real model server (the smoke
+ * script's --record) as a 200 `text/event-stream` Response, byte for byte.
+ * `chunkBytes` splits the body into chunks of that size, so frames arrive cut
+ * mid-line as they do over a network; without it the body is one chunk.
+ */
+export function recordedStreamResponse(
+  file: string,
+  options: { chunkBytes?: number } = {},
+): Response {
+  const bytes = readFileSync(file);
+  const size = options.chunkBytes;
+  const body =
+    size && size > 0
+      ? new ReadableStream<Uint8Array>({
+          start(controller) {
+            for (let i = 0; i < bytes.length; i += size) {
+              controller.enqueue(new Uint8Array(bytes.subarray(i, i + size)));
+            }
+            controller.close();
+          },
+        })
+      : new Uint8Array(bytes);
+  return new Response(body, {
+    status: 200,
+    headers: { "content-type": "text/event-stream" },
+  });
 }
 
 /** Let any background weekly reply finish, then return the week's latest run. */

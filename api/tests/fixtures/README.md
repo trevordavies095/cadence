@@ -45,6 +45,17 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5433/ai_coach_test \
 
 It plays each season through the app on the offline stub (goal, About you, then a Sunday check-in each week), against a test database it clears. The exports regenerate byte for byte; the packets differ only in week-session ids and About you version numbers. `replay-seasons.test.ts` checks the packets against the scripts and runs the replay dry run over `season-packets/`.
 
+## `self-hosted/` (recorded model-server streams)
+
+`omlx-gpt-oss-weekly.sse` is the raw SSE body of one weekly reply from a real oMLX server, saved byte for byte by the smoke script's `--record`; `.json` beside it is the sidecar (server and version, model, effort, context length, date, hardware, tokens) and `.packet.json` the packet that was sent (the demo snapshot's last weekly call). `llm-self-hosted-recording.test.ts` replays it through `createApp` with `recordedStreamResponse` from `tests/helpers.ts`. Re-record with:
+
+```bash
+cd api
+SH_KEY=... npx tsx scripts/smoke-self-hosted.ts --base-url http://<server>:8000 --key-env SH_KEY \
+  --model <id> --effort high --only weekly --server oMLX --hardware "<machine>" \
+  --record tests/fixtures/self-hosted/omlx-<name>-weekly.sse
+```
+
 ## Full athlete export (local only)
 
 Keep real Tempo downloads under gitignored `.scratch/` (see repo root `.gitignore`). Example:
