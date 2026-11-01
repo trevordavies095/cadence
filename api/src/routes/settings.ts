@@ -24,6 +24,7 @@ import {
   saveCoachModel,
   type SavedCoachProvider,
 } from "../settings/coachModelStore.js";
+import { testSelfHostedConnection } from "../settings/selfHostedConnectionTest.js";
 import { createSelfHostedModelCatalogue } from "../settings/selfHostedModelCatalogue.js";
 import {
   deleteSelfHostedConnection,
@@ -47,7 +48,12 @@ export type SettingsRouteOptions = {
   sources: RuntimeSources;
   /** Injected fetch for the model listings, Anthropic's and the self-hosted server's (tests). */
   anthropicFetch?: typeof globalThis.fetch;
+  /** Cap on a self-hosted Test connection probe (tests). Defaults to the self-hosted idle limit. */
+  selfHostedTestTimeoutMs?: number;
 };
+
+// wired to resolveSelfHostedIdleTimeoutMs after ticket 05 merges
+const SELF_HOSTED_TEST_TIMEOUT_MS = 600_000;
 
 function protectorFrom(options: SettingsRouteOptions): SecretProtector {
   return new SecretProtector(options.dataProtectionKey);
@@ -251,6 +257,39 @@ export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
     await deleteSelfHostedConnection();
     selfHostedCatalogue.forget();
     return c.json(await getSelfHostedConnection());
+  });
+
+  // Test connection: `{ model }`. Lists the saved server's models, then sends the chosen
+  // model a prompt of about 40k tokens and checks it arrived whole. Self-hosted only, so
+  // it never spends money on an Anthropic key.
+  routes.post("/settings/self-hosted/test", async (c) => {
+    let body: { model?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "invalid_json" }, 400);
+    }
+    const model = body && typeof body.model === "string" ? body.model.trim() : "";
+    if (!model) return c.json({ error: "model_required" }, 400);
+    if ((await getSavedCoachModel())?.provider !== "self_hosted") {
+      return c.json({ error: "not_self_hosted" }, 400);
+    }
+    const connection = await getSelfHostedConnection();
+    if (!connection.baseUrl) {
+      return c.json({ error: "no_self_hosted_connection" }, 400);
+    }
+    const apiKey = connection.keyConfigured
+      ? await readSelfHostedApiKey(protectorFrom(options))
+      : null;
+    return c.json(
+      await testSelfHostedConnection({
+        baseUrl: connection.baseUrl,
+        apiKey,
+        model,
+        fetchImpl: options.anthropicFetch ?? globalThis.fetch.bind(globalThis),
+        timeoutMs: options.selfHostedTestTimeoutMs ?? SELF_HOSTED_TEST_TIMEOUT_MS,
+      }),
+    );
   });
 
   // Writes are accepted in stub and demo modes too: only the page hides the section,
