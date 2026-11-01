@@ -10,10 +10,12 @@ import {
   putSelfHostedConnection,
   resetCoachModel,
   saveCoachModel,
+  testSelfHostedConnection,
   type CoachEffort,
   type CoachModelSettings,
   type CoachProvider,
   type SelfHostedConnection,
+  type SelfHostedTestResult,
 } from "@/lib/api";
 import { ApiError, describeError, type UiError } from "@/lib/errors";
 
@@ -64,6 +66,7 @@ const SELF_HOSTED_ERRORS: Record<string, string> = {
   invalid_apiKey: "That key isn’t valid. Enter it again, or leave it blank.",
   no_self_hosted_connection: "Save your server’s address first.",
   unknown_model: "That model isn’t on your server’s list. Choose another one.",
+  model_required: "Choose a model first.",
 };
 
 function describeSelfHostedError(err: unknown, fallback: string): UiError {
@@ -172,6 +175,116 @@ function SelfHostedConnectionFields({
       ) : null}
       <ErrorNote error={error} />
     </form>
+  );
+}
+
+/** Where the per-server context settings are written up (ticket 12). */
+const SELF_HOSTED_DOCS = "https://github.com/trevordavies095/cadence/blob/develop/docs/self-hosted.md";
+
+/** The server's host as the athlete typed it, without the scheme. */
+function hostOf(baseUrl: string | null): string {
+  if (!baseUrl) return "your server’s address";
+  try {
+    return new URL(baseUrl).host;
+  } catch {
+    return baseUrl;
+  }
+}
+
+const tokensOf = (probe: SelfHostedTestResult["probe"]) =>
+  probe.reportedTokens == null ? null : `${probe.reportedTokens} of ${probe.sentTokens} tokens`;
+
+/** One test outcome in plain words: a listing failure, a cut, a whole message, or a probe failure. */
+function TestOutcome({ result, baseUrl }: { result: SelfHostedTestResult; baseUrl: string | null }) {
+  const { listing, probe } = result;
+  if (!listing.ok) {
+    const why =
+      listing.reason === "unauthorized"
+        ? "the server refused the key"
+        : listing.reason === "http_error"
+          ? "the server answered with an error"
+          : `nothing answered at ${hostOf(baseUrl)}`;
+    return <p className="m-0 text-danger">Couldn’t reach your server: {why}.</p>;
+  }
+  if (!probe.ok) {
+    const why =
+      probe.reason === "timeout"
+        ? "it took longer than the time limit"
+        : probe.reason === "unauthorized"
+          ? "the server refused the key"
+          : probe.reason === "unreachable"
+            ? "the connection dropped"
+            : "the server answered with an error";
+    return <p className="m-0 text-danger">Reached your server, but the test didn’t finish: {why}.</p>;
+  }
+  const tokens = tokensOf(probe);
+  if (probe.verdict === "cut") {
+    return (
+      <p className="m-0 text-warn">
+        Connected, but the test message was cut{tokens ? ` (${tokens} arrived)` : ""}. Raise your
+        server’s context length to at least 64k, then test again.{" "}
+        <a
+          href={SELF_HOSTED_DOCS}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline decoration-accent decoration-2 underline-offset-4"
+        >
+          How to set it on your server
+        </a>
+      </p>
+    );
+  }
+  return (
+    <p className="m-0 text-ok">
+      Connected. The full test message arrived{tokens ? ` (${tokens})` : ""}.
+    </p>
+  );
+}
+
+/**
+ * Test connection: reads the saved server's list, then sends the chosen model a long test
+ * message. Keyed on the server and model by its parent, so a change clears the result.
+ */
+function TestConnection({ model, connection, busy }: { model: string; connection: SelfHostedConnection; busy: boolean }) {
+  const [running, setRunning] = useState(false);
+  const [result, setResult] = useState<SelfHostedTestResult | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
+  // A test still running when the server or model changes must not report.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  async function onTest() {
+    setRunning(true);
+    setResult(null);
+    setError(null);
+    try {
+      const next = await testSelfHostedConnection(model);
+      if (mounted.current) setResult(next);
+    } catch (err) {
+      if (mounted.current) setError(describeSelfHostedError(err, "Couldn’t run the test. Try again."));
+    } finally {
+      if (mounted.current) setRunning(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div>
+        <Button disabled={busy || running || !connection.configured || !model} onClick={() => void onTest()}>
+          Test connection
+        </Button>
+      </div>
+      <div role="status" aria-label="Test connection result" className="flex flex-col gap-2 empty:hidden">
+        {running ? <Muted>Checking… this can take a minute or two on home hardware.</Muted> : null}
+        {result ? <TestOutcome result={result} baseUrl={connection.baseUrl} /> : null}
+      </div>
+      <ErrorNote error={error} />
+    </div>
   );
 }
 
@@ -493,6 +606,14 @@ export function CoachModelSection({ offline, demo }: { offline: boolean; demo: b
                 </Field>
               ) : null}
               {selfHostedFallback ? <Muted>{selfHostedFallback}</Muted> : null}
+              {connection ? (
+                <TestConnection
+                  key={`${connection.baseUrl}|${connection.updatedAt}|${connection.keyConfigured}|${model}`}
+                  model={model}
+                  connection={connection}
+                  busy={busy}
+                />
+              ) : null}
               <Muted>
                 Self-hosted models have not been measured against the tested default and may coach
                 differently, follow Coach Cade’s guidance less closely, or fail more often.

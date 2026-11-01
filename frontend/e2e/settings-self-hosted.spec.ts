@@ -328,3 +328,181 @@ test.describe("Self-hosted model server, in Settings", () => {
     await expect(level(page, "Medium")).toHaveAttribute("aria-checked", "true");
   });
 });
+
+const SENT = 40_473;
+const DOCS = "https://github.com/trevordavies095/cadence/blob/develop/docs/self-hosted.md";
+const PROGRESS = "Checking… this can take a minute or two on home hardware.";
+
+type Probe = {
+  ok: boolean;
+  verdict?: "ok" | "cut";
+  sentTokens: number;
+  reportedTokens: number | null;
+  wordFound: boolean;
+  reason?: string;
+};
+type TestResult = { listing: { ok: boolean; reason?: string }; probe: Probe };
+
+const passed = (reportedTokens: number | null): TestResult => ({
+  listing: { ok: true },
+  probe: { ok: true, verdict: "ok", sentTokens: SENT, reportedTokens, wordFound: true },
+});
+const cut = (reportedTokens: number | null): TestResult => ({
+  listing: { ok: true },
+  probe: { ok: true, verdict: "cut", sentTokens: SENT, reportedTokens, wordFound: false },
+});
+const unlisted = (reason: string): TestResult => ({
+  listing: { ok: false, reason },
+  probe: { ok: false, sentTokens: SENT, reportedTokens: null, wordFound: false, reason: "not_run" },
+});
+const unfinished = (reason: string): TestResult => ({
+  listing: { ok: true },
+  probe: { ok: false, sentTokens: SENT, reportedTokens: null, wordFound: false, reason },
+});
+
+/**
+ * Answers Test connection with the given results in turn (the last one repeats). Each
+ * answer waits for `release()` when `held` is set, so the progress state can be seen.
+ */
+async function answerTests(page: Page, results: TestResult[], held = false) {
+  const bodies: unknown[] = [];
+  let release: () => void = () => {};
+  let gate = Promise.resolve();
+  const hold = () => {
+    gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+  };
+  if (held) hold();
+  await page.route("**/api/settings/self-hosted/test", async (route) => {
+    bodies.push(route.request().postDataJSON());
+    const result = results[Math.min(bodies.length - 1, results.length - 1)];
+    await gate;
+    await route.fulfill({ json: result });
+  });
+  return {
+    bodies,
+    release: () => {
+      release();
+      if (held) hold();
+    },
+  };
+}
+
+const testButton = (page: Page) => section(page).getByRole("button", { name: "Test connection" });
+const testResult = (page: Page) => section(page).getByRole("status", { name: "Test connection result" });
+
+test.describe("Test connection, in Settings", () => {
+  test("is open only with a saved server and a chosen model, shows progress, then the outcome", async ({ page }) => {
+    await liveCoach(page);
+    const tests = await answerTests(page, [passed(SENT)], true);
+    await page.goto("/settings");
+    const s = section(page);
+    await provider(page, "Self-hosted").click();
+    await expect(testButton(page)).toBeDisabled();
+
+    await s.getByLabel("Base URL").fill(BASE_URL);
+    await s.getByRole("button", { name: "Save server" }).click();
+    await expect(s).toContainText("Model server saved.");
+    // A server alone is not enough: a model is needed too.
+    await expect(testButton(page)).toBeDisabled();
+
+    await s.getByLabel("Model").selectOption("qwen3-8b:thinking");
+    // Self-hosted need not be saved first.
+    await expect(testButton(page)).toBeEnabled();
+    await testButton(page).click();
+    await expect(testButton(page)).toBeDisabled();
+    await expect(testResult(page)).toHaveText(PROGRESS);
+    expect(bannedTermsIn(await s.innerText())).toEqual([]);
+
+    tests.release();
+    await expect(testResult(page)).toHaveText(`Connected. The full test message arrived (${SENT} of ${SENT} tokens).`);
+    await expect(s).not.toContainText(PROGRESS);
+    await expect(testButton(page)).toBeEnabled();
+    expect(tests.bodies).toEqual([{ model: "qwen3-8b:thinking" }]);
+    expect(bannedTermsIn(await s.innerText())).toEqual([]);
+  });
+
+  test("says each outcome in plain words", async ({ page }) => {
+    await liveCoach(page, { connection: connected(null) });
+    const outcomes: Array<{ result: TestResult; text: string }> = [
+      { result: passed(SENT), text: `Connected. The full test message arrived (${SENT} of ${SENT} tokens).` },
+      { result: passed(null), text: "Connected. The full test message arrived." },
+      {
+        result: cut(8192),
+        text: `Connected, but the test message was cut (8192 of ${SENT} tokens arrived). Raise your server’s context length to at least 64k, then test again. How to set it on your server`,
+      },
+      {
+        result: cut(null),
+        text: "Connected, but the test message was cut. Raise your server’s context length to at least 64k, then test again. How to set it on your server",
+      },
+      { result: unlisted("unreachable"), text: "Couldn’t reach your server: nothing answered at omlx.local:8000." },
+      { result: unlisted("unauthorized"), text: "Couldn’t reach your server: the server refused the key." },
+      { result: unlisted("http_error"), text: "Couldn’t reach your server: the server answered with an error." },
+      { result: unfinished("timeout"), text: "Reached your server, but the test didn’t finish: it took longer than the time limit." },
+      { result: unfinished("unauthorized"), text: "Reached your server, but the test didn’t finish: the server refused the key." },
+      { result: unfinished("unreachable"), text: "Reached your server, but the test didn’t finish: the connection dropped." },
+      { result: unfinished("http_error"), text: "Reached your server, but the test didn’t finish: the server answered with an error." },
+      { result: unfinished("invalid_response"), text: "Reached your server, but the test didn’t finish: the server answered with an error." },
+    ];
+    await answerTests(page, outcomes.map((o) => o.result));
+    await page.goto("/settings");
+    const s = section(page);
+    await provider(page, "Self-hosted").click();
+    await s.getByLabel("Model").selectOption("gemma-3-27b");
+
+    for (const { result, text } of outcomes) {
+      await testButton(page).click();
+      await expect(testResult(page)).toHaveText(text);
+      if (result.probe.verdict === "cut") {
+        await expect(testResult(page).getByRole("link", { name: "How to set it on your server" })).toHaveAttribute(
+          "href",
+          DOCS,
+        );
+      }
+      const shown = await s.innerText();
+      expect(bannedTermsIn(shown)).toEqual([]);
+      expect(shown).not.toMatch(/not_run|unreachable|unauthorized|http_error|invalid_response|timeout/);
+    }
+  });
+
+  test("the result is cleared when the model or the server changes", async ({ page }) => {
+    await liveCoach(page, { connection: connected(null) });
+    await answerTests(page, [cut(8192)]);
+    await page.goto("/settings");
+    const s = section(page);
+    await provider(page, "Self-hosted").click();
+    await s.getByLabel("Model").selectOption("gemma-3-27b");
+    await testButton(page).click();
+    await expect(testResult(page)).toContainText("Connected, but the test message was cut");
+
+    // Choosing a level is neither: the result stays.
+    await level(page, "High").click();
+    await expect(testResult(page)).toContainText("Connected, but the test message was cut");
+
+    await s.getByLabel("Model").selectOption("qwen3-8b");
+    await expect(s).not.toContainText("Connected, but the test message was cut");
+
+    await testButton(page).click();
+    await expect(testResult(page)).toContainText("Connected, but the test message was cut");
+    await s.getByLabel("Base URL").fill("http://studio.local:8000");
+    await s.getByRole("button", { name: "Save server" }).click();
+    await expect(s).toContainText("Model server saved.");
+    await expect(s).not.toContainText("Connected, but the test message was cut");
+  });
+
+  test("a refused test says so in words about the server", async ({ page }) => {
+    await liveCoach(page, { connection: connected(null) });
+    await page.route("**/api/settings/self-hosted/test", (route) =>
+      route.fulfill({ status: 400, json: { error: "no_self_hosted_connection" } }),
+    );
+    await page.goto("/settings");
+    const s = section(page);
+    await provider(page, "Self-hosted").click();
+    await s.getByLabel("Model").selectOption("gemma-3-27b");
+    await testButton(page).click();
+    await expect(s).toContainText("Save your server’s address first.");
+    await expect(s).not.toContainText("no_self_hosted_connection");
+    await expect(testButton(page)).toBeEnabled();
+  });
+});

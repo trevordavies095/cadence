@@ -547,6 +547,37 @@ export async function deleteSelfHostedConnection(): Promise<SelfHostedConnection
   return readJson(await fetch("/api/settings/self-hosted", { method: "DELETE" }));
 }
 
+/** Why the saved server's model list couldn't be read. */
+export type SelfHostedListingFailure = "unreachable" | "unauthorized" | "http_error";
+
+/**
+ * Test connection: the saved server's list is read, then a long test message goes to the
+ * chosen model. `verdict` is set only when that message got an answer; a failed listing
+ * leaves the probe `not_run`.
+ */
+export type SelfHostedTestResult = {
+  listing: { ok: boolean; reason?: SelfHostedListingFailure };
+  probe: {
+    ok: boolean;
+    verdict?: "ok" | "cut";
+    sentTokens: number;
+    reportedTokens: number | null;
+    wordFound: boolean;
+    reason?: SelfHostedListingFailure | "timeout" | "invalid_response" | "not_run";
+  };
+};
+
+/** Only ever calls the saved server; can take a minute or two on home hardware. */
+export async function testSelfHostedConnection(model: string): Promise<SelfHostedTestResult> {
+  return readJson(
+    await fetch("/api/settings/self-hosted/test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ model }),
+    }),
+  );
+}
+
 export async function fetchThread(
   weekSessionId?: string,
 ): Promise<{ messages: ThreadMessage[]; artifacts: ThreadArtifact[] }> {
