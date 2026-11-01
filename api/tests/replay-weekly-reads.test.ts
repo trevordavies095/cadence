@@ -3,7 +3,8 @@
  * checks, and the dry run with the offline stub over a packet folder, for the
  * weekly read and the other four coach operations. Never calls the live model.
  */
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { createServer } from "node:http";
 import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -108,7 +109,7 @@ describe("replay dry run over a packet folder", () => {
     expect(run.stderr).toBe("");
     expect(run.status).toBe(0);
     // No matrix flags: today's run, in the Anthropic folder at the tested default.
-    expect(run.files()).toEqual(["01.1.json", "02.1.json", "config.json"]);
+    expect(run.files()).toEqual(["01.1.json", "02.1.json", "config.json", "measures.json"]);
     const report = run.report();
     expect(report).toContain("from 2 replayed coach calls across 1 configuration");
     expect(report).toContain(`## ${DEFAULT_CONFIG}`);
@@ -206,7 +207,7 @@ describe("replay matrix", () => {
     expect(run.stderr).toBe("");
     expect(run.status).toBe(0);
     expect(readdirSync(run.out).sort()).toEqual(["report.md", SELF_HOSTED]);
-    expect(run.files(SELF_HOSTED)).toEqual(["01.1.json", "02.1.json", "config.json"]);
+    expect(run.files(SELF_HOSTED)).toEqual(["01.1.json", "02.1.json", "config.json", "measures.json"]);
     const config = run.config(SELF_HOSTED);
     expect(config).toMatchObject({
       configuration: SELF_HOSTED,
@@ -231,11 +232,11 @@ describe("replay matrix", () => {
   it("numbers repeats, and a second run writes nothing new", () => {
     const run = dryRun(FIXTURE, undefined, ["--repeats", "2"]);
     expect(run.status).toBe(0);
-    const files = ["01.1.json", "01.2.json", "02.1.json", "02.2.json", "config.json"];
+    const files = ["01.1.json", "01.2.json", "02.1.json", "02.2.json", "config.json", "measures.json"];
     expect(run.files()).toEqual(files);
     expect(run.config().repeats).toBe(2);
     const before = Object.fromEntries(
-      files.filter((f) => f !== "config.json").map((f) => [f, readFileSync(path.join(run.out, DEFAULT_CONFIG, f), "utf8")]),
+      files.filter((f) => f !== "config.json" && f !== "measures.json").map((f) => [f, readFileSync(path.join(run.out, DEFAULT_CONFIG, f), "utf8")]),
     );
 
     const again = dryRun(FIXTURE, run.out, ["--repeats", "2"]);
@@ -335,7 +336,7 @@ describe("replay over every coach operation", () => {
     const run = dryRun(fiveOperations());
     expect(run.stderr).toBe("");
     expect(run.status).toBe(0);
-    expect(run.files()).toEqual(["01.1.json", "02.1.json", "03.1.json", "04.1.json", "05.1.json", "config.json"]);
+    expect(run.files()).toEqual(["01.1.json", "02.1.json", "03.1.json", "04.1.json", "05.1.json", "config.json", "measures.json"]);
 
     const saved = (stem: string) => read(path.join(run.out, DEFAULT_CONFIG, `${stem}.json`));
     const reply = (stem: string) => saved(stem).new as Record<string, unknown>;
@@ -423,7 +424,7 @@ describe("replay over every coach operation", () => {
     expect(run.stdout).toMatch(/01\.1\.json done in \d+ s after asking once more/);
     expect(run.stdout).toContain("02.1.json refused: stub refusal: body is required");
     expect(run.stdout).toContain("05.1.json refused: stub refusal: proposedBody is required");
-    expect(run.files()).toEqual(["01.1.json", "02.1.failed.json", "03.1.json", "04.1.json", "05.1.failed.json", "config.json"]);
+    expect(run.files()).toEqual(["01.1.json", "02.1.failed.json", "03.1.json", "04.1.json", "05.1.failed.json", "config.json", "measures.json"]);
     const failed = read(path.join(run.out, DEFAULT_CONFIG, "02.1.failed.json"));
     expect(failed.operation).toBe("mid_week_chat");
     expect(failed.refusedAttempts).toHaveLength(1);
@@ -456,4 +457,185 @@ describe("replay over every coach operation", () => {
     expect(noInput.status).not.toBe(0);
     expect(noInput.stderr).toContain('01.json: dossier_audit needs an "input"');
   }, 30_000);
+});
+
+describe("replay measures", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const read = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Record<string, any>;
+  const packet = (f: string) => JSON.parse(readFileSync(path.join(FIXTURE, f), "utf8")) as Record<string, unknown>;
+  const usage = { inputTokens: 20_000, outputTokens: 4_000, cacheReadTokens: 1_000, cacheCreationTokens: 2_000 };
+  // Per million tokens: 20k in at $5, 1k cache read at $0.50, 2k cache write at $6.25, 4k out at $25.
+  const COST = 0.1 + 0.0005 + 0.0125 + 0.1;
+
+  /** A weekly read refused once then accepted, and one whose headline runs past its cap; both report usage. */
+  function tunedPackets(): string {
+    const dir = mkdtempSync(path.join(tmpdir(), "replay-measures-"));
+    writeFileSync(
+      path.join(dir, "01-retried.json"),
+      JSON.stringify({ packet: packet("01-stay-fit.json"), stubRefusals: 1, stubUsage: usage }),
+    );
+    writeFileSync(
+      path.join(dir, "02-long-headline.json"),
+      JSON.stringify({ packet: packet("02-10k.json"), stubPatch: { headline: "Steady week. ".repeat(30) }, stubUsage: usage }),
+    );
+    return dir;
+  }
+
+  it("writes measures.json with the retry, the cap hit by field and the cost, and puts every measure in the summary", () => {
+    const run = dryRun(tunedPackets());
+    expect(run.stderr).toBe("");
+    expect(run.status).toBe(0);
+    const m = read(path.join(run.out, DEFAULT_CONFIG, "measures.json"));
+    expect(m.schema).toEqual({ firstTry: 1, afterRetry: 1, failed: 0 });
+    expect(m.lengthCaps).toEqual({ hits: 1, byField: { headline: 1 } });
+    expect(m.softRepairs).toMatchObject({ count: 1, replies: 1, byField: { headline: 1 } });
+    expect(m.goalCheckFailures.count).toBe(0);
+    expect(m.bannedVocabulary.hits).toBe(0);
+    expect(m.planSanity).toMatchObject({ band: { low: 0.5, high: 1.6 }, weeklyReplies: 2, flaggedReplies: 0 });
+    expect(m.tokens.input).toEqual({ median: 20_000, n: 2 });
+    expect(m.tokens.thinking).toEqual({ median: null, n: 0 });
+    expect(m.latency.totalMs.n).toBe(2);
+    expect(m.latency.wallClockMs).toBeGreaterThanOrEqual(0);
+    // The stub's refusal reports no usage, so each reply costs one accepted attempt.
+    expect(m.cost.priceTakenOn).toBe("2026-11-01");
+    expect(m.cost.perReplyUsd["01.1"]).toBeCloseTo(COST, 6);
+    expect(m.cost.totalUsd).toBeCloseTo(2 * COST, 6);
+
+    const saved = read(path.join(run.out, DEFAULT_CONFIG, "01.1.json"));
+    expect(saved.timing.attempts).toHaveLength(2);
+    expect(saved.timing.ttftMs).toBeNull();
+    expect(saved.planCheck).toMatchObject({ weekStartMonday: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) });
+
+    const report = run.report();
+    expect(report).toContain(
+      "| Prompt cut | Soft repairs | Caps hit | Goal-check failures | Banned words | Plan sanity flags | Cost total | Cost per reply (median) |",
+    );
+    expect(report).toContain(`| ${DEFAULT_CONFIG} | anthropic |  | claude-opus-4-7 | xhigh | 1 |  | 2 | 1 | 1 | 0 |`);
+    expect(report).toContain("| 1 | 1 | 0 | 0 | 0 of 2 | $0.4260 | $0.2130 |");
+    expect(report).toContain("| Length caps hit | 1 (headline 1) |");
+    expect(report).toContain("within 0.5x to 1.6x of the packet's recent weekly distance");
+    expect(report).toContain("| Opus 4.7 (claude-opus-4-7) | $5 | $25 | $0.50 | $6.25 |");
+  }, 30_000);
+
+  it("leaves cost blank for a self-hosted configuration", () => {
+    const run = dryRun(tunedPackets(), undefined, [
+      "--provider",
+      "self_hosted",
+      "--base-url",
+      "http://macbook.local:8000",
+      "--model",
+      "gemma-4",
+      "--effort",
+      "high",
+    ]);
+    expect(run.status).toBe(0);
+    const config = "self_hosted--gemma-4--high";
+    const m = read(path.join(run.out, config, "measures.json"));
+    expect(m.cost).toBeNull();
+    expect(m.tokens.output).toEqual({ median: 4_000, n: 2 });
+    const report = run.report();
+    expect(report).toContain("| 1 | 1 | 0 | 0 | 0 of 2 |  |  |");
+    expect(report).toContain("| Cost | self-hosted: not priced |");
+  }, 30_000);
+
+  it("recomputes from the reply files on --report-only: a six-day plan trips sanity, a short input count trips the cut flag", () => {
+    const run = dryRun(FIXTURE);
+    expect(run.status).toBe(0);
+    const file = path.join(run.out, DEFAULT_CONFIG, "02.1.json");
+    const saved = read(file);
+    saved.new.prescribedWeek.days = saved.new.prescribedWeek.days.slice(0, 6);
+    saved.inputTokens = 7_000;
+    saved.estimatedInputTokens = 10_000;
+    saved.timing = { ttftMs: 2_500, totalMs: 9_000, attempts: [{ attempt: 1, ttftMs: 2_500, totalMs: 9_000 }] };
+    writeFileSync(file, JSON.stringify(saved));
+
+    const again = reportOnly(run.out);
+    expect(again.status).toBe(0);
+    const m = read(path.join(run.out, DEFAULT_CONFIG, "measures.json"));
+    expect(m.planSanity.flaggedReplies).toBe(1);
+    expect(m.planSanity.byCheck).toEqual({ "seven days": 1 });
+    expect(m.planSanity.flags[0]).toMatchObject({ reply: "02.1", check: "seven days", detail: "6 days" });
+    expect(m.promptCut).toMatchObject({ checked: 1, cut: ["02.1"], lowestRatio: 0.7 });
+    expect(m.latency.firstTokenMs).toEqual({ median: 2_500, worst: 2_500, n: 1 });
+    const report = again.report();
+    expect(report).toContain("- 02.1: seven days: 6 days");
+    expect(report).toContain("| 1 of 1 |");
+  }, 30_000);
+});
+
+describe("replay against a fake self-hosted server", () => {
+  const SH_FIXTURE = path.join(api, "tests/fixtures/self-hosted/omlx-gpt-oss-weekly");
+
+  it("saves time to first token, thinking characters and the server's usage from the stream", async () => {
+    const sse = readFileSync(`${SH_FIXTURE}.sse`);
+    const server = createServer((req, res) => {
+      req.resume();
+      req.on("end", () => {
+        if (req.method !== "POST" || !req.url?.endsWith("/messages")) {
+          res.writeHead(404).end();
+          return;
+        }
+        res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8" });
+        // Everything before the first delta at once, the rest a little later.
+        const cut = sse.indexOf("content_block_delta");
+        res.write(sse.subarray(0, cut));
+        setTimeout(() => res.end(sse.subarray(cut)), 30);
+      });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = (server.address() as { port: number }).port;
+    const packets = mkdtempSync(path.join(tmpdir(), "replay-sh-packets-"));
+    // The recorded packet predates goals; give it the demo athlete's marathon so the goal checks pass.
+    const recorded = JSON.parse(readFileSync(`${SH_FIXTURE}.packet.json`, "utf8")) as Record<string, unknown>;
+    const goal = { kind: "race", distance: "marathon", raceName: "Lakeshore Marathon", raceDate: "2026-11-15" };
+    writeFileSync(path.join(packets, "01-weekly.json"), JSON.stringify({ ...recorded, goal }));
+    const out = mkdtempSync(path.join(tmpdir(), "replay-sh-out-"));
+    let stderr = "";
+    let status: number | null;
+    try {
+      const env: NodeJS.ProcessEnv = { ...process.env };
+      delete env.ANTHROPIC_API_KEY;
+      const child = spawn(
+        path.join(api, "node_modules/.bin/tsx"),
+        [
+          "scripts/replay-weekly-reads.ts",
+          "--packets",
+          packets,
+          "--out",
+          out,
+          "--provider",
+          "self_hosted",
+          "--base-url",
+          `http://127.0.0.1:${port}`,
+          "--model",
+          "gpt-oss-20b-MXFP4-Q8",
+          "--effort",
+          "high",
+        ],
+        { cwd: api, env },
+      );
+      child.stderr.on("data", (d) => (stderr += String(d)));
+      status = await new Promise<number | null>((resolve) => child.on("close", resolve));
+    } finally {
+      server.close();
+    }
+    expect(stderr).toBe("");
+    expect(status).toBe(0);
+    const config = "self_hosted--gpt-oss-20b-MXFP4-Q8--high";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const saved = JSON.parse(readFileSync(path.join(out, config, "01.1.json"), "utf8")) as Record<string, any>;
+    expect(saved.timing.ttftMs).toBeGreaterThanOrEqual(0);
+    expect(saved.timing.totalMs).toBeGreaterThanOrEqual(saved.timing.ttftMs);
+    expect(saved.inputTokens).toBe(16_592);
+    expect(saved.thinkingTokens).toBeNull();
+    expect(saved.thinkingChars).toBeGreaterThan(0);
+    expect(saved.estimatedInputTokens).toBeGreaterThan(0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const m = JSON.parse(readFileSync(path.join(out, config, "measures.json"), "utf8")) as Record<string, any>;
+    expect(m.latency.firstTokenMs.n).toBe(1);
+    expect(m.tokens.thinking).toEqual({ median: null, n: 0 });
+    expect(m.tokens.thinkingChars.n).toBe(1);
+    expect(m.promptCut.checked).toBe(1);
+    expect(m.cost).toBeNull();
+  }, 60_000);
 });

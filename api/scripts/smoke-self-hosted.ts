@@ -72,6 +72,7 @@ import {
   testSelfHostedConnection,
 } from "../src/settings/selfHostedConnectionTest.js";
 import { normalizeSelfHostedBaseUrl, selfHostedEndpoint } from "../src/settings/selfHostedStore.js";
+import { bytesOf, createInstrumentedFetch, thinkingCharsOf, type Exchange } from "./instrumentedFetch.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SNAPSHOT = path.resolve(here, "../../demo/snapshot.sql");
@@ -227,82 +228,7 @@ function loadInputs(): Inputs {
 
 // ---- An instrumented fetch -------------------------------------------------------
 
-/** One HTTP exchange as the script saw it: timings, headers and (for Messages) the raw bytes. */
-type Exchange = {
-  url: string;
-  startedAt: number;
-  headersAt: number | null;
-  firstByteAt: number | null;
-  /** First content_block_delta: the first token the model sent. */
-  firstTokenAt: number | null;
-  endedAt: number | null;
-  status: number | null;
-  headers: Record<string, string>;
-  chunks: Uint8Array[];
-  error: string | null;
-};
-
-const exchanges: Exchange[] = [];
-
-const instrumentedFetch: typeof globalThis.fetch = async (input, init) => {
-  const ex: Exchange = {
-    url: String(input instanceof Request ? input.url : input),
-    startedAt: Date.now(),
-    headersAt: null,
-    firstByteAt: null,
-    firstTokenAt: null,
-    endedAt: null,
-    status: null,
-    headers: {},
-    chunks: [],
-    error: null,
-  };
-  exchanges.push(ex);
-  let response: Response;
-  try {
-    response = await globalThis.fetch(input, init);
-  } catch (err) {
-    ex.endedAt = Date.now();
-    ex.error = err instanceof Error ? err.message : String(err);
-    throw err;
-  }
-  ex.headersAt = Date.now();
-  ex.status = response.status;
-  response.headers.forEach((v, k) => {
-    ex.headers[k] = v;
-  });
-  if (!response.body) {
-    ex.endedAt = Date.now();
-    return response;
-  }
-  const decoder = new TextDecoder();
-  let tail = "";
-  const tee = new TransformStream<Uint8Array, Uint8Array>({
-    transform(chunk, controller) {
-      const now = Date.now();
-      ex.firstByteAt ??= now;
-      ex.chunks.push(chunk);
-      if (ex.firstTokenAt === null) {
-        const text = tail + decoder.decode(chunk, { stream: true });
-        if (text.includes("content_block_delta")) ex.firstTokenAt = now;
-        tail = text.slice(-32);
-      }
-      controller.enqueue(chunk);
-    },
-    flush() {
-      ex.endedAt = Date.now();
-    },
-  });
-  return new Response(response.body.pipeThrough(tee), {
-    status: response.status,
-    statusText: response.statusText,
-    headers: response.headers,
-  });
-};
-
-function bytesOf(ex: Exchange): Buffer {
-  return Buffer.concat(ex.chunks.map((c) => Buffer.from(c)));
-}
+const { fetch: instrumentedFetch, exchanges } = createInstrumentedFetch();
 
 // ---- Running a step ----------------------------------------------------------------
 
@@ -342,18 +268,6 @@ function timeoutKind(message: string): Row["timeout"] {
   if (/sent nothing for \d+ms/.test(message) || /idle for \d+ms/.test(message)) return "idle";
   if (/exceeded \d+ms overall/.test(message)) return "overall";
   return null;
-}
-
-function thinkingCharsOf(responseRaw: string | null): number | null {
-  if (!responseRaw) return null;
-  try {
-    const message = JSON.parse(responseRaw) as { content?: Array<{ type?: string; thinking?: string }> };
-    const blocks = (message.content ?? []).filter((b) => b?.type === "thinking");
-    if (!blocks.length) return null;
-    return blocks.reduce((n, b) => n + (b.thinking?.length ?? 0), 0);
-  } catch {
-    return null;
-  }
 }
 
 /**

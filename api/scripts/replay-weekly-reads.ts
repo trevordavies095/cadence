@@ -81,7 +81,21 @@
  * --report-only with --out <root> reads every configuration folder under the
  * root; every run (report-only or not) writes one report.md at the root with a
  * summary table across configurations (schema outcomes: first try, after
- * retry, failed) and a section per configuration.
+ * retry, failed, then every measure) and a section per configuration.
+ *
+ * Measures (scripts/replayMeasures.ts): every run, report-only included, writes
+ * a measures.json into each configuration folder, recomputed from its reply
+ * files: schema outcomes, soft repairs and length caps hit by field, goal-check
+ * failures, banned words, plan sanity for weekly reads (flagged within a
+ * documented band, not failed), latency (time to first token and total, median
+ * and worst, and the wall clock over every call), median tokens (thinking
+ * characters beside thinking tokens, which oMLX never reports), the prompt-cut
+ * flag by the probe's rule, and for Anthropic rows a cost from a dated price
+ * table. What only a live call can measure (time to first token, through the
+ * same instrumented fetch as the smoke script) is saved in each reply file's
+ * `timing`. On a dry run, a wrapped input's `stubPatch` lays fields over the
+ * stub's reply before the validator runs, and its `stubUsage` sets the usage
+ * the call reports, so the measures can be tested offline.
  *
  * A reply refused for its shape is asked for once more, as the app does (ADR
  * 0002). The saved reply lists the refused attempt in `refusedAttempts`, and the
@@ -116,7 +130,25 @@ import { anthropicCoachTarget, type CoachProvider, type CoachTarget } from "../s
 import { ANTHROPIC_EFFORT_LEVELS, parseAnthropicEffort, type AnthropicEffort } from "../src/llm/effort.js";
 import { goalPromptLines } from "../src/llm/goalLines.js";
 import { LlmSchemaError, type LlmCallOptions, type LlmPort } from "../src/llm/port.js";
-import { createStubLlmPort, resolvePlanWeekStartMonday } from "../src/llm/stub.js";
+import {
+  validateDossierAuditDraft,
+  validateDossierCorrectionDraft,
+  validateDossierV1Draft,
+  validateMidWeekChatReply,
+  validateWeeklyReply,
+  type SchemaResult,
+} from "../src/llm/schema.js";
+import {
+  buildStubDossierAudit,
+  buildStubDossierCorrection,
+  buildStubDossierV1,
+  buildStubMidWeekChatReply,
+  buildStubWeeklyReply,
+  createStubLlmPort,
+  recentWeeklyDistanceM,
+  resolvePlanWeekStartMonday,
+  resolveWeeklyPlanWeek,
+} from "../src/llm/stub.js";
 import type {
   DossierAuditInput,
   DossierCorrectionInput,
@@ -131,7 +163,21 @@ import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
 import type { ModelPacket } from "../src/packet/types.js";
 import { normalizeSelfHostedBaseUrl, selfHostedEndpoint, selfHostedHost } from "../src/settings/selfHostedStore.js";
+import { createInstrumentedFetch, thinkingCharsOf, timeToFirstTokenMs } from "./instrumentedFetch.js";
 import { replayCheckFailures, type ReplayCheckFailure } from "./replayChecks.js";
+import {
+  configurationMeasures,
+  estimatePromptTokens,
+  measuresNote,
+  measuresTable,
+  planSanity,
+  SUMMARY_MEASURE_HEADERS,
+  summaryMeasureCells,
+  type Measures,
+  type PlanExpectation,
+  type ReplyRecord,
+  type Usage,
+} from "./replayMeasures.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const SNAPSHOT = path.resolve(here, "../../demo/snapshot.sql");
@@ -280,6 +326,10 @@ type StoredCall = CoachInput & {
   old: Record<string, unknown> | null;
   /** Dry run only: how many attempts the stub refuses for their shape first. */
   stubRefusals?: number;
+  /** Dry run only: fields laid over the stub's reply before the operation's validator runs. */
+  stubPatch?: Record<string, unknown>;
+  /** Dry run only: the usage the stub's call-log row reports, for the token and cost measures. */
+  stubUsage?: Partial<Usage>;
 };
 
 /** The JSON after the line that introduces it in a logged user prompt. */
@@ -385,7 +435,11 @@ function folderCalls(dir: string): StoredCall[] {
     const wrapped = Boolean(raw.packet || raw.input);
     const model = wrapped && typeof raw.model === "string" ? raw.model : undefined;
     const stubRefusals = wrapped && typeof raw.stubRefusals === "number" ? raw.stubRefusals : 0;
-    return { ...inputFromFile(f, raw), source: f, createdAt: null, model, old: null, stubRefusals };
+    const object = (v: unknown) =>
+      wrapped && v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+    const stubPatch = object(raw.stubPatch);
+    const stubUsage = object(raw.stubUsage) as Partial<Usage> | undefined;
+    return { ...inputFromFile(f, raw), source: f, createdAt: null, model, old: null, stubRefusals, stubPatch, stubUsage };
   });
 }
 
@@ -414,8 +468,40 @@ type Refusal = {
   outcome: string | null;
   stopReason: string | null;
   outputTokens: number | null;
+  /** Missing on refusals saved before the measures (ticket 15). */
+  inputTokens?: number | null;
+  thinkingTokens?: number | null;
+  cacheReadTokens?: number | null;
+  cacheCreationTokens?: number | null;
   responseRaw: unknown;
 };
+
+/** One attempt's timing: time to first token (null on a dry run or when none came) and its wall-clock. */
+type AttemptTiming = { attempt: number; ttftMs: number | null; totalMs: number };
+
+/** A call's timing as its reply file saves it: only measurable while the call runs. */
+type Timing = {
+  /** The first attempt's time to first token. */
+  ttftMs: number | null;
+  /** The whole call, a retry included. */
+  totalMs: number;
+  attempts: AttemptTiming[];
+};
+
+/** The usage and size measures a reply file saves from the call log's last row. */
+function usageFields(row: LlmCallRecord | undefined) {
+  return {
+    inputTokens: row?.inputTokens ?? null,
+    outputTokens: row?.outputTokens ?? null,
+    thinkingTokens: row?.thinkingTokens ?? null,
+    cacheReadTokens: row?.cacheReadTokens ?? null,
+    cacheCreationTokens: row?.cacheCreationTokens ?? null,
+    // oMLX never reports thinking tokens; the thinking block's length stands in.
+    thinkingChars: thinkingCharsOf(row?.responseRaw ?? null),
+    // The harness's own count of the prompt sent, for the prompt-cut flag.
+    estimatedInputTokens: estimatePromptTokens(row?.request ?? null),
+  };
+}
 
 /**
  * The key the run sends, read before any call. A --key-env var that is unset
@@ -602,6 +688,68 @@ function askedFor(call: StoredCall): string | null {
   }
 }
 
+/**
+ * The dry run's port: the offline stub, logging into `log`. An input with a
+ * `stubPatch` gets the stub's reply with the patch laid over it, through the
+ * operation's own validator, so a reply over a cap is cut and noted as in the app.
+ */
+function dryRunPort(call: StoredCall, log: LlmCallRecord[]): LlmPort {
+  const recorder = memoryRecorder(log);
+  const stub = createStubLlmPort({ recorder });
+  const patch = call.stubPatch;
+  if (!patch) return stub;
+  async function patched<T>(
+    operation: Operation,
+    request: unknown,
+    draft: object,
+    validate: (raw: unknown) => SchemaResult<T>,
+    options?: LlmCallOptions,
+  ): Promise<T> {
+    const validated = validate({ ...draft, ...patch });
+    if (!validated.ok) throw new LlmSchemaError(validated.error);
+    await recorder.record({
+      id: options?.callId ?? randomUUID(),
+      operation,
+      provider: "stub",
+      serverHost: null,
+      model: null,
+      appVersion: "replay-dry-run",
+      weekSessionId: null,
+      parentCallId: null,
+      request,
+      responseRaw: JSON.stringify(validated.value),
+      httpStatus: null,
+      latencyMs: null,
+      stopReason: null,
+      inputTokens: null,
+      outputTokens: null,
+      thinkingTokens: null,
+      cacheReadTokens: null,
+      cacheCreationTokens: null,
+      outcome: validated.repairs ? "repaired" : "ok",
+      errorMessage: validated.repairs?.join("; ") ?? null,
+    });
+    return validated.value;
+  }
+  return {
+    generateWeeklyReply: (packet, o) =>
+      patched("weekly_reply", packet, buildStubWeeklyReply(packet), (d) => validateWeeklyReply(d, resolveWeeklyPlanWeek(packet).weekStartMonday), o),
+    generateMidWeekChatReply: (packet, o) =>
+      patched("mid_week_chat", packet, buildStubMidWeekChatReply(packet), (d) => validateMidWeekChatReply(d, resolvePlanWeekStartMonday(packet)), o),
+    generateDossierV1: (input, o) => patched("dossier_v1", input, buildStubDossierV1(input), validateDossierV1Draft, o),
+    generateDossierCorrection: (input, o) =>
+      patched("dossier_correction", input, buildStubDossierCorrection(input), validateDossierCorrectionDraft, o),
+    generateDossierAudit: (input, o) => patched("dossier_audit", input, buildStubDossierAudit(input), validateDossierAuditDraft, o),
+  };
+}
+
+/** What a weekly reply's plan is checked against, from its packet; null for other operations. */
+function planExpectation(call: StoredCall): PlanExpectation | null {
+  if (call.operation !== "weekly_reply") return null;
+  const { weekStartMonday, isoWeek } = resolveWeeklyPlanWeek(call.packet);
+  return { weekStartMonday, isoWeek, recentWeeklyM: recentWeeklyDistanceM(call.packet) };
+}
+
 /** Replays one input once into its reply file, skipped when the file exists. */
 async function replayOne(call: StoredCall, file: string, apiKey: string | null): Promise<void> {
   const failedFile = file.replace(/\.json$/, ".failed.json");
@@ -611,14 +759,23 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
   }
   const log: LlmCallRecord[] = [];
   const target = coachTargetFor(call, apiKey);
+  // Times each request from outside the adapter: time to first token is only measurable here.
+  const timed = createInstrumentedFetch({ keepBodies: false });
   const port = dryRun
-    ? createStubLlmPort()
+    ? dryRunPort(call, log)
     : createAnthropicLlmPort({
         // Built from flags; the replay never reads the saved setting (ADR 0004).
         resolveCoachTarget: async () => target,
         recorder: memoryRecorder(log),
+        fetchImpl: timed.fetch,
       });
   const started = Date.now();
+  const attemptTimings: AttemptTiming[] = [];
+  const timing = (): Timing => ({
+    ttftMs: attemptTimings[0]?.ttftMs ?? null,
+    totalMs: Date.now() - started,
+    attempts: attemptTimings,
+  });
   // Each attempt refused for its shape, with what the model sent for it.
   const refusals: Refusal[] = [];
   let stubRefusalsLeft = dryRun ? (call.stubRefusals ?? 0) : 0;
@@ -626,26 +783,43 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
   try {
     const ask = async (attempt: number): Promise<AskResult<CoachReply>> => {
       const logged = log.length;
+      const exchanged = timed.exchanges.length;
+      const attemptStarted = Date.now();
+      const newRow = () => {
+        const row = log.length > logged ? log.at(-1) : undefined;
+        // A dry run reports the input's stubUsage, so the token and cost measures can be tested offline.
+        if (row && dryRun && call.stubUsage) Object.assign(row, call.stubUsage);
+        return row;
+      };
       try {
         if (stubRefusalsLeft > 0) {
           stubRefusalsLeft--;
           throw new LlmSchemaError(`stub refusal: ${STUB_REFUSALS[call.operation]}`);
         }
         // The port writes its log row, with any repairs and token counts, only for a call with an id.
-        return { ok: true as const, value: await sendToPort(port, call, { callId: randomUUID() }) };
+        const value = await sendToPort(port, call, { callId: randomUUID() });
+        newRow();
+        return { ok: true as const, value };
       } catch (err) {
+        const row = newRow();
         if (err instanceof LlmSchemaError) {
-          const row = log.length > logged ? log.at(-1) : undefined;
           refusals.push({
             attempt,
             error: err.message,
             outcome: row?.outcome ?? null,
             stopReason: row?.stopReason ?? null,
             outputTokens: row?.outputTokens ?? null,
+            inputTokens: row?.inputTokens ?? null,
+            thinkingTokens: row?.thinkingTokens ?? null,
+            cacheReadTokens: row?.cacheReadTokens ?? null,
+            cacheCreationTokens: row?.cacheCreationTokens ?? null,
             responseRaw: row?.responseRaw ?? null,
           });
         }
         throw err;
+      } finally {
+        const messages = timed.exchanges.slice(exchanged).filter((ex) => ex.url.endsWith("/messages"));
+        attemptTimings.push({ attempt, ttftMs: timeToFirstTokenMs(messages.at(-1)), totalMs: Date.now() - attemptStarted });
       }
     };
     // The weekly read is asked for once more when refused for its shape, as the
@@ -668,7 +842,8 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
           error: err instanceof Error ? err.message : String(err),
           outcome: failed?.outcome ?? null,
           stopReason: failed?.stopReason ?? null,
-          outputTokens: failed?.outputTokens ?? null,
+          ...usageFields(failed),
+          timing: timing(),
           responseRaw: failed?.responseRaw ?? null,
           // Every attempt refused for its shape, the last one included.
           refusedAttempts: refusals,
@@ -697,8 +872,11 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
         asked: askedFor(call),
         outcome: row?.outcome ?? null,
         repairs: row?.errorMessage ?? null,
-        inputTokens: row?.inputTokens ?? null,
-        outputTokens: row?.outputTokens ?? null,
+        stopReason: row?.stopReason ?? null,
+        ...usageFields(row),
+        timing: timing(),
+        // What a weekly plan is checked against (week, recent distance); null for other operations.
+        planCheck: planExpectation(call),
         // Attempts refused for their shape before this reply came back; empty when none.
         refusedAttempts: refusals,
         old: call.old,
@@ -735,6 +913,17 @@ type Saved = {
   /** The original reply, from the snapshot's call log; null for an input from a folder. */
   old: Record<string, unknown> | null;
   new: CoachReply;
+} & SavedMeasures;
+
+/** The measure inputs a reply file saves; missing on files saved before the measures (ticket 15). */
+type SavedMeasures = {
+  thinkingTokens?: number | null;
+  cacheReadTokens?: number | null;
+  cacheCreationTokens?: number | null;
+  thinkingChars?: number | null;
+  estimatedInputTokens?: number | null;
+  timing?: Timing;
+  planCheck?: PlanExpectation | null;
 };
 
 /** What a refused reply's file holds. */
@@ -742,11 +931,64 @@ type SavedFailure = {
   operation?: Operation;
   source?: string;
   originalCallAt: string | null;
+  model?: string | null;
   error: string;
   stopReason: string | null;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
   /** Missing on failures saved before the replay asked once more. */
   refusedAttempts?: Refusal[];
-};
+} & SavedMeasures;
+
+/** A saved reply's or refusal's usage, for the measures. */
+function savedUsage(s: {
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  thinkingTokens?: number | null;
+  cacheReadTokens?: number | null;
+  cacheCreationTokens?: number | null;
+}): Usage {
+  return {
+    inputTokens: s.inputTokens ?? null,
+    outputTokens: s.outputTokens ?? null,
+    thinkingTokens: s.thinkingTokens ?? null,
+    cacheReadTokens: s.cacheReadTokens ?? null,
+    cacheCreationTokens: s.cacheCreationTokens ?? null,
+  };
+}
+
+/** One reply file's part of the measures. */
+function replyRecord(
+  id: string,
+  operation: Operation,
+  s: Saved | SavedFailure,
+  accepted: boolean,
+  extra: Pick<ReplyRecord, "goalCheckFailures" | "bannedTerms" | "plan">,
+): ReplyRecord {
+  const refusals = s.refusedAttempts ?? [];
+  const usage = savedUsage(s);
+  // A failure whose last attempt was refused for its shape already lists it among the
+  // refusals; one that ended another way (a timeout, a transport error) adds its usage.
+  const attempts = s.timing?.attempts.length ?? refusals.length;
+  const lastWasRefusal = !accepted && refusals.length > 0 && refusals.at(-1)!.attempt === attempts;
+  const attemptUsages = [...refusals.map(savedUsage), ...(lastWasRefusal ? [] : [usage])];
+  return {
+    id,
+    operation,
+    accepted,
+    retried: accepted && refusals.length > 0,
+    model: s.model ?? null,
+    repairs: accepted ? (s as Saved).repairs : null,
+    refusalErrors: refusals.map((r) => r.error),
+    usage,
+    attemptUsages,
+    thinkingChars: s.thinkingChars ?? null,
+    estimatedInputTokens: s.estimatedInputTokens ?? null,
+    ttftMs: s.timing?.ttftMs ?? null,
+    totalMs: s.timing?.totalMs ?? null,
+    ...extra,
+  };
+}
 
 /** Figures worth tracking: anything with a decimal point or colon, or two or more digits. */
 function figures(text: string): string[] {
@@ -788,9 +1030,6 @@ function numbered(dir: string, suffix: string): string[] {
     .map((x) => path.join(dir, x.f));
 }
 
-/** Schema outcomes for one configuration (ticket 15 adds the other measures). */
-type SchemaCounts = { firstTry: number; afterRetry: number; failed: number };
-
 /** One configuration's part of the report. */
 type ConfigurationReport = {
   folder: string;
@@ -799,7 +1038,8 @@ type ConfigurationReport = {
   lines: string[];
   checkFailures: ReplayCheckFailure[];
   replies: number;
-  schema: SchemaCounts;
+  /** Every measure, as written to its measures.json. */
+  measures: Measures;
 };
 
 /** One call's part of its section: every athlete-facing word, and the operation's own table and fields. */
@@ -993,6 +1233,7 @@ function reportConfiguration(dir: string): ConfigurationReport {
   const tally = (operation: Operation) => byOperation.set(operation, (byOperation.get(operation) ?? 0) + 1);
   // Replies that came back only when asked once more.
   const retried: string[] = [];
+  const records: ReplyRecord[] = [];
   for (const file of files) {
     const s = JSON.parse(readFileSync(file, "utf8")) as Saved;
     const operation = s.operation ?? "weekly_reply";
@@ -1010,6 +1251,13 @@ function reportConfiguration(dir: string): ConfigurationReport {
       ? `Asked once more: ${refusals.map((r) => `attempt ${r.attempt} refused (${r.error}; stop reason ${r.stopReason})`).join("; ")}.`
       : null;
     if (retryNote) retried.push(`- ${label}: ${retryNote}`);
+    records.push(
+      replyRecord(name, operation, s, true, {
+        goalCheckFailures: failed.map((f) => f.check),
+        bannedTerms: bannedTermsIn(section.readText),
+        plan: operation === "weekly_reply" ? planSanity((s.new as WeeklyReply).prescribedWeek, s.planCheck) : null,
+      }),
+    );
 
     const heading = s.originalCallAt
       ? `### ${name}: ${OPERATION_LABELS[operation]} on ${s.originalCallAt.slice(0, 10)}`
@@ -1036,7 +1284,12 @@ function reportConfiguration(dir: string): ConfigurationReport {
     tally(operation);
     const label = replyLabel(path.basename(f, ".failed.json"), operation, d);
     checkFailures.push({ label, check: "refused reply", detail: "no reply to check; replay it again" });
+    records.push(
+      replyRecord(path.basename(f, ".failed.json"), operation, d, false, { goalCheckFailures: [], bannedTerms: [], plan: null }),
+    );
   }
+  const measures = configurationMeasures(folder, config.provider, records);
+  writeFileSync(path.join(dir, "measures.json"), JSON.stringify(measures, null, 2));
   const lines: string[] = [
     `## ${folder}`,
     "",
@@ -1045,6 +1298,9 @@ function reportConfiguration(dir: string): ConfigurationReport {
     "",
     `Replies: ${operationCounts(byOperation) || "none"}.`,
     "",
+    "### Measures",
+    "",
+    ...measuresTable(measures),
     "### Goal checks",
     "",
     ...(checkFailures.length
@@ -1076,7 +1332,7 @@ function reportConfiguration(dir: string): ConfigurationReport {
     // Named with the configuration, for the report's opening list and the exit message.
     checkFailures: checkFailures.map((f) => ({ ...f, label: `${folder}/${f.label}` })),
     replies: files.length + refused.length,
-    schema: { firstTry: files.length - retried.length, afterRetry: retried.length, failed: refused.length },
+    measures,
   };
 }
 
@@ -1111,15 +1367,32 @@ function report(): ReplayCheckFailure[] {
     "",
     "## Configurations",
     "",
-    "Schema outcomes: replies accepted on the first try, accepted when asked once more, and refused on every attempt.",
+    "Schema outcomes: replies accepted on the first try, accepted when asked once more, and refused on every attempt. The other columns are the measures; each configuration's section breaks them down.",
     "",
-    "| Configuration | Provider | Host | Model | Effort | Repeats | Note | Replies | First try | After retry | Failed |",
-    "|---|---|---|---|---|---|---|---|---|---|---|",
-    ...parts.map(
-      ({ folder, config: c, replies, schema }) =>
-        `| ${folder} | ${c.provider} | ${cell(c.baseUrlHost)} | ${cell(c.model)} | ${c.effort} | ${c.repeats} | ${cell(c.note)} | ${replies} | ${schema.firstTry} | ${schema.afterRetry} | ${schema.failed} |`,
+    `| Configuration | Provider | Host | Model | Effort | Repeats | Note | Replies | First try | After retry | Failed | ${SUMMARY_MEASURE_HEADERS.join(" | ")} |`,
+    `|---|---|---|---|---|---|---|---|---|---|---|${SUMMARY_MEASURE_HEADERS.map(() => "---|").join("")}`,
+    ...parts.map(({ folder, config: c, replies, measures: m }) =>
+      [
+        "",
+        folder,
+        c.provider,
+        cell(c.baseUrlHost),
+        cell(c.model),
+        c.effort,
+        c.repeats,
+        cell(c.note),
+        replies,
+        m.schema.firstTry,
+        m.schema.afterRetry,
+        m.schema.failed,
+        ...summaryMeasureCells(m),
+        "",
+      ]
+        .join(" | ")
+        .trim(),
     ),
     "",
+    ...measuresNote(),
     "## Goal checks",
     "",
     ...(checkFailures.length
