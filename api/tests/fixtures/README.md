@@ -68,6 +68,18 @@ docker exec ai-coach-postgres psql -U postgres -c "DROP DATABASE ai_coach_test_d
 
 A fresh load of the same snapshot writes the same bytes. `replay-weekly-reads.test.ts` replays the folder with the stub and expects every check to pass.
 
+
+## `self-hosted/` (recorded model-server streams)
+
+`omlx-gpt-oss-weekly.sse` is the raw SSE body of one weekly reply from a real oMLX server, saved byte for byte by the smoke script's `--record`; `.json` beside it is the sidecar (server and version, model, effort, context length, date, hardware, tokens) and `.packet.json` the packet that was sent (the demo snapshot's last weekly call). `llm-self-hosted-recording.test.ts` replays it through `createApp` with `recordedStreamResponse` from `tests/helpers.ts`. Re-record with:
+
+```bash
+cd api
+SH_KEY=... npx tsx scripts/smoke-self-hosted.ts --base-url http://<server>:8000 --key-env SH_KEY \
+  --model <id> --effort high --only weekly --server oMLX --hardware "<machine>" \
+  --record tests/fixtures/self-hosted/omlx-<name>-weekly.sse
+```
+
 ## Full athlete export (local only)
 
 Keep real Tempo downloads under gitignored `.scratch/` (see repo root `.gitignore`). Example:
