@@ -227,6 +227,12 @@ export type PrivacyCopy = {
   sent: { heading: string; items: string[] };
   local: { heading: string; items: string[] };
   disclosure: string;
+  /** Who coaching context is sent to. */
+  provider: "anthropic" | "self_hosted";
+  /** The self-hosted model server's host; null for Anthropic. */
+  host: string | null;
+  /** Whether that host is on the athlete's own network; null when there is no host. */
+  onNetwork: boolean | null;
 };
 
 export type OnboardingFieldKey =

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DISCLAIMER_TEXT } from "../src/disclaimer/text.js";
+import { DISCLAIMER_TEXT, disclaimerTextFor } from "../src/disclaimer/text.js";
 import {
   buildStubDossierAudit,
   buildStubDossierCorrection,
@@ -14,7 +14,7 @@ import { buildProposedBodyFromSettingsBullets } from "../src/dossier/fromWeeklyR
 import { formatDayShort } from "../src/clock/weekRangeShort.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import { buildModelPacket } from "../src/packet/index.js";
-import { PRIVACY_COPY } from "../src/privacy/copy.js";
+import { PRIVACY_COPY, privacyCopyFor } from "../src/privacy/copy.js";
 import type { PrescribedWeek } from "../src/llm/types.js";
 
 const SKIP_NOTE = "Please skip Thursday, sore calf niggle after the long run.";
@@ -109,6 +109,8 @@ function texts(): Record<string, string> {
     "audit thread message": formatDossierAuditThreadBody(audit),
     disclaimer: DISCLAIMER_TEXT,
     "privacy copy": JSON.stringify(PRIVACY_COPY),
+    "disclaimer, self-hosted": disclaimerTextFor("self_hosted"),
+    "privacy copy, self-hosted": JSON.stringify(privacyCopyFor("self_hosted")),
   };
 }
 

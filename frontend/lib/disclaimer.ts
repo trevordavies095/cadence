@@ -4,6 +4,8 @@ export type DisclaimerState = {
   accepted: boolean;
   acceptedAt: string | null;
   version: string;
+  /** Who coaching context is sent to; the text names that recipient. */
+  provider?: "anthropic" | "self_hosted";
   text: string;
 };
 
@@ -23,22 +25,33 @@ export async function acceptDisclaimer(): Promise<DisclaimerState> {
   return (await res.json()) as DisclaimerState;
 }
 
-/** The disclaimer is four paragraphs; each gets a plain heading. Other shapes show without headings. */
-const SECTION_HEADINGS = [
-  "What this is",
-  "What may be sent to Anthropic",
-  "What stays with you",
-  "What you tell your coach",
-];
+/**
+ * The disclaimer is four paragraphs; each gets a plain heading. Other shapes show without
+ * headings. The second names who coaching context may be sent to.
+ */
+function sectionHeadings(provider: DisclaimerState["provider"]): string[] {
+  return [
+    "What this is",
+    provider === "self_hosted"
+      ? "What may be sent to the model server you configured"
+      : "What may be sent to Anthropic",
+    "What stays with you",
+    "What you tell your coach",
+  ];
+}
 
-export function disclaimerSections(text: string): { heading: string | null; body: string }[] {
+export function disclaimerSections(
+  text: string,
+  provider: DisclaimerState["provider"] = "anthropic",
+): { heading: string | null; body: string }[] {
+  const headings = sectionHeadings(provider);
   const paragraphs = text
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean);
-  const titled = paragraphs.length === SECTION_HEADINGS.length;
+  const titled = paragraphs.length === headings.length;
   return paragraphs.map((body, i) => ({
-    heading: titled ? SECTION_HEADINGS[i]! : null,
+    heading: titled ? headings[i]! : null,
     body,
   }));
 }

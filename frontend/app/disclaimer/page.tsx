@@ -88,7 +88,7 @@ export default function DisclaimerPage() {
       {ready && (
         <>
           <div className="flex flex-col gap-8">
-            {disclaimerSections(ready.text).map((section) => (
+            {disclaimerSections(ready.text, ready.provider).map((section) => (
               <section key={section.body} className="flex flex-col gap-1.5">
                 {section.heading && <SectionTitle>{section.heading}</SectionTitle>}
                 <p className="m-0 leading-relaxed">{section.body}</p>

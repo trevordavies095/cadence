@@ -153,6 +153,18 @@ export default function PrivacyPage() {
             <Muted>{state.data.intro}</Muted>
           </PageHead>
 
+          {state.data.host ? (
+            <section aria-label="Where coaching context goes">
+              <p className="m-0">
+                Coaching context is sent to the model server at{" "}
+                <span className="font-mono">{state.data.host}</span>.{" "}
+                {state.data.onNetwork
+                  ? "This stays on your network."
+                  : "This host is outside your network. Check it is the server you meant."}
+              </p>
+            </section>
+          ) : null}
+
           <section className="flex flex-col gap-2">
             <SectionTitle>{state.data.sent.heading}</SectionTitle>
             <ul className="m-0 flex flex-col gap-1.5 pl-5">

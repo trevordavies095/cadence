@@ -1,10 +1,16 @@
 import { pool } from "../db.js";
-import { DISCLAIMER_TEXT, DISCLAIMER_VERSION } from "./text.js";
+import {
+  getSavedCoachModel,
+  type SavedCoachProvider,
+} from "../settings/coachModelStore.js";
+import { DISCLAIMER_VERSION, disclaimerTextFor } from "./text.js";
 
 export type DisclaimerState = {
   accepted: boolean;
   acceptedAt: string | null;
   version: string;
+  /** Who coaching context is sent to; the text names that recipient. */
+  provider: SavedCoachProvider;
   text: string;
 };
 
@@ -21,23 +27,30 @@ export async function isDisclaimerAccepted(): Promise<boolean> {
 }
 
 export async function getDisclaimerState(): Promise<DisclaimerState> {
-  const result = await pool.query<Row>(
-    `SELECT accepted_at, disclaimer_version FROM disclaimer_acceptance WHERE id = 1`,
-  );
+  const [result, saved] = await Promise.all([
+    pool.query<Row>(
+      `SELECT accepted_at, disclaimer_version FROM disclaimer_acceptance WHERE id = 1`,
+    ),
+    getSavedCoachModel(),
+  ]);
+  const provider = saved?.provider ?? "anthropic";
+  const text = disclaimerTextFor(provider);
   const row = result.rows[0];
   if (!row) {
     return {
       accepted: false,
       acceptedAt: null,
       version: DISCLAIMER_VERSION,
-      text: DISCLAIMER_TEXT,
+      provider,
+      text,
     };
   }
   return {
     accepted: true,
     acceptedAt: row.accepted_at.toISOString(),
     version: row.disclaimer_version,
-    text: DISCLAIMER_TEXT,
+    provider,
+    text,
   };
 }
 
