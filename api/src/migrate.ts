@@ -24,6 +24,14 @@ export async function migrate(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS self_hosted_connection (
+      id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+      base_url text NOT NULL,
+      api_key_ciphertext bytea,
+      api_key_last4 text,
+      updated_at timestamptz NOT NULL DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS thread_messages (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       role text NOT NULL CHECK (role IN ('athlete', 'coach', 'system')),

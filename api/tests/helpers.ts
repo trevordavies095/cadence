@@ -21,6 +21,7 @@ export async function resetAppTables(): Promise<void> {
     DELETE FROM disclaimer_acceptance;
     DELETE FROM tempo_connection;
     DELETE FROM anthropic_connection;
+    DELETE FROM self_hosted_connection;
     DELETE FROM prescribed_weeks;
     DELETE FROM week_recaps;
     DELETE FROM week_subjective_answers;

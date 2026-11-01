@@ -22,6 +22,12 @@ import {
   getSavedCoachModel,
   saveCoachModel,
 } from "../settings/coachModelStore.js";
+import {
+  deleteSelfHostedConnection,
+  getSelfHostedConnection,
+  normalizeSelfHostedBaseUrl,
+  putSelfHostedConnection,
+} from "../settings/selfHostedStore.js";
 import type { RuntimeSources } from "../settings/sources.js";
 import {
   deleteTempoConnection,
@@ -147,6 +153,59 @@ export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
     await deleteAnthropicConnection();
     catalogue.forget();
     return c.json(await getAnthropicConnection());
+  });
+
+  // The self-hosted model server. Like the coach-model routes, writes are accepted in
+  // stub and demo modes; only the page hides the section.
+  routes.get("/settings/self-hosted", async (c) => {
+    return c.json(await getSelfHostedConnection());
+  });
+
+  routes.put("/settings/self-hosted", async (c) => {
+    let body: { baseUrl?: unknown; apiKey?: unknown };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "invalid_json" }, 400);
+    }
+    if (!body || typeof body !== "object") {
+      return c.json({ error: "invalid_json" }, 400);
+    }
+    if (typeof body.baseUrl !== "string" || !body.baseUrl.trim()) {
+      return c.json(
+        { error: "baseUrl_required", message: "Enter the model server's address." },
+        400,
+      );
+    }
+    const baseUrl = normalizeSelfHostedBaseUrl(body.baseUrl);
+    if (!baseUrl) {
+      return c.json(
+        {
+          error: "invalid_baseUrl",
+          message: "The address must be a full http:// or https:// URL.",
+        },
+        400,
+      );
+    }
+    if (body.apiKey !== undefined && typeof body.apiKey !== "string") {
+      return c.json(
+        { error: "invalid_apiKey", message: "The key must be text, or empty to remove it." },
+        400,
+      );
+    }
+    try {
+      return c.json(
+        await putSelfHostedConnection(baseUrl, body.apiKey, protectorFrom(options)),
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "encrypt_failed";
+      return c.json({ error: "encrypt_failed", message }, 500);
+    }
+  });
+
+  routes.delete("/settings/self-hosted", async (c) => {
+    await deleteSelfHostedConnection();
+    return c.json(await getSelfHostedConnection());
   });
 
   // Writes are accepted in stub and demo modes too: only the page hides the section,
