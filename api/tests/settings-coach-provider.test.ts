@@ -206,6 +206,54 @@ describe("the provider in the coach setting", () => {
   });
 });
 
+describe("asking for another provider's catalogue", () => {
+  const ask = async (app: App, provider: string) => app.request(`/settings/coach-model?provider=${provider}`);
+
+  it("lists the server's models while Anthropic is still saved, and saves nothing", async () => {
+    const app = appWith(fakeServers().fetchImpl);
+    await putChoice(app, { model: "claude-opus-4-7", effort: "high" });
+    await connect(app);
+
+    const res = await ask(app, "self_hosted");
+    expect(res.status).toBe(200);
+    const got = await json(res);
+    expect(got).toMatchObject({ provider: "self_hosted", saved: null, fallback: null });
+    expect(got.models.map((m: { id: string }) => m.id)).toEqual(["qwen3-8b", "qwen3-8b:thinking", "gemma-3-27b"]);
+    expect(await savedRows()).toEqual([{ provider: "anthropic", model: "claude-opus-4-7", effort: "high" }]);
+    // The saved provider's view is unchanged.
+    expect(await view(app)).toMatchObject({ provider: "anthropic", saved: { model: "claude-opus-4-7", effort: "high" } });
+  });
+
+  it("with no server saved, offers nothing, with no_connection", async () => {
+    const { fetchImpl, listings } = fakeServers();
+    const got = await json(await ask(appWith(fetchImpl), "self_hosted"));
+    expect(got).toMatchObject({ provider: "self_hosted", saved: null, models: [], fallback: "no_connection" });
+    expect(listings).toEqual([]);
+  });
+
+  it("asks for Anthropic's while self-hosted is saved, with no saved choice carried across", async () => {
+    const app = appWith(fakeServers().fetchImpl);
+    await connect(app);
+    await putChoice(app, { provider: "self_hosted", model: "qwen3-8b", effort: "low" });
+    expect(await json(await ask(app, "anthropic"))).toMatchObject({
+      provider: "anthropic",
+      saved: null,
+      effective: TESTED_COACH_MODEL,
+      fallback: "no_key",
+    });
+    expect(await json(await ask(app, "self_hosted"))).toMatchObject({
+      provider: "self_hosted",
+      saved: { model: "qwen3-8b", effort: "low" },
+    });
+  });
+
+  it("refuses an unknown provider", async () => {
+    const res = await ask(appWith(fakeServers().fetchImpl), "openai");
+    expect(res.status).toBe(400);
+    expect((await json(res)).error).toBe("invalid_provider");
+  });
+});
+
 describe("when the self-hosted listing is not there", () => {
   it("a failed listing offers only the saved model, and accepts it at any effort", async () => {
     const working = fakeServers();
