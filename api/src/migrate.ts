@@ -192,6 +192,16 @@ export async function migrate(): Promise<void> {
     ALTER TABLE llm_call_log
       ADD COLUMN IF NOT EXISTS thinking_tokens integer;
 
+    -- Calls to the athlete's own model server: provider 'self_hosted', with the
+    -- base URL's hostname. Anthropic and stub rows leave server_host null.
+    ALTER TABLE llm_call_log
+      DROP CONSTRAINT IF EXISTS llm_call_log_provider_check;
+    ALTER TABLE llm_call_log
+      ADD CONSTRAINT llm_call_log_provider_check
+      CHECK (provider IN ('anthropic', 'self_hosted', 'stub'));
+    ALTER TABLE llm_call_log
+      ADD COLUMN IF NOT EXISTS server_host text;
+
     -- Which LLM call produced this coach message (plain uuid, no FK).
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS llm_call_id uuid;

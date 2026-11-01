@@ -14,6 +14,7 @@ type Row = {
   created_at: Date;
   operation: string;
   provider: string;
+  server_host: string | null;
   model: string | null;
   app_version: string;
   week_session_id: string | null;
@@ -38,6 +39,7 @@ function toRow(row: Row): LlmCallRow {
     createdAt: row.created_at.toISOString(),
     operation: row.operation as LlmCallOperation,
     provider: row.provider as LlmCallRow["provider"],
+    serverHost: row.server_host,
     model: row.model,
     appVersion: row.app_version,
     weekSessionId: row.week_session_id,
@@ -57,13 +59,13 @@ function toRow(row: Row): LlmCallRow {
   };
 }
 
-const FULL_COLUMNS = `id::text, created_at, operation, provider, model, app_version,
+const FULL_COLUMNS = `id::text, created_at, operation, provider, server_host, model, app_version,
   week_session_id::text, parent_call_id::text, request,
   response_raw, http_status, latency_ms, stop_reason,
   input_tokens, output_tokens, thinking_tokens, cache_read_tokens,
   cache_creation_tokens, outcome, error_message`;
 
-const SUMMARY_COLUMNS = `id::text, created_at, operation, provider, model, app_version,
+const SUMMARY_COLUMNS = `id::text, created_at, operation, provider, server_host, model, app_version,
   week_session_id::text, parent_call_id::text,
   http_status, latency_ms, stop_reason,
   input_tokens, output_tokens, thinking_tokens, cache_read_tokens,
@@ -85,10 +87,11 @@ export function createPostgresLlmCallRecorder(): LlmCallRecorder {
             id, operation, provider, model, app_version, week_session_id,
             parent_call_id, request, response_raw, http_status, latency_ms,
             stop_reason, input_tokens, output_tokens, cache_read_tokens,
-            cache_creation_tokens, outcome, error_message, thinking_tokens
+            cache_creation_tokens, outcome, error_message, thinking_tokens,
+            server_host
           ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10, $11, $12, $13,
-            $14, $15, $16, $17, $18, $19
+            $14, $15, $16, $17, $18, $19, $20
           )
           `,
           [
@@ -111,6 +114,7 @@ export function createPostgresLlmCallRecorder(): LlmCallRecorder {
             row.outcome,
             row.errorMessage,
             row.thinkingTokens,
+            row.serverHost ?? null,
           ],
         );
       } catch (err) {
@@ -124,7 +128,7 @@ export function createPostgresLlmCallRecorder(): LlmCallRecorder {
     async get(id: string): Promise<LlmCallRow | null> {
       if (!UUID_RE.test(id)) return null;
       const result = await pool.query<Row>(
-        `SELECT id::text, created_at, operation, provider, model, app_version,
+        `SELECT id::text, created_at, operation, provider, server_host, model, app_version,
                 week_session_id::text, parent_call_id::text, request,
                 response_raw, http_status, latency_ms, stop_reason,
                 input_tokens, output_tokens, thinking_tokens, cache_read_tokens,

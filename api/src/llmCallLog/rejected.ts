@@ -24,6 +24,7 @@ export async function recordRouteRejection(
       id: randomUUID(),
       operation: input.operation,
       provider: parent?.provider ?? resolveLlmProvider(),
+      serverHost: parent?.serverHost ?? null,
       model: parent?.model ?? null,
       appVersion: parent?.appVersion ?? resolveAppVersion(),
       weekSessionId: parent?.weekSessionId ?? input.weekSessionId,
