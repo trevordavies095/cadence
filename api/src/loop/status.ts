@@ -8,7 +8,7 @@ import {
   type CheckInStatus,
 } from "../recap/checkInStatus.js";
 import { getLatestRun, type ReplyRun } from "../replyRun/store.js";
-import { getAnthropicConnection } from "../settings/anthropicStore.js";
+import { resolveCoachSetup } from "../settings/coachSetup.js";
 import type { RuntimeSources } from "../settings/sources.js";
 import { getTempoConnection } from "../settings/tempoStore.js";
 import {
@@ -45,7 +45,8 @@ export type LoopStatus = {
   flags: {
     setupComplete: boolean;
     tempoConfigured: boolean;
-    anthropicConfigured: boolean;
+    /** The saved provider has its connection (or the stub needs none). */
+    coachConfigured: boolean;
     onboardingComplete: boolean;
     /** The coach tidied its notes; waiting on the athlete, but never in the way. */
     auditPending: boolean;
@@ -144,17 +145,18 @@ export async function resolveLoopStatus(
   timezone: string,
   sources: RuntimeSources,
 ): Promise<LoopStatus> {
-  const [tempo, anthropic, dossier, pending] = await Promise.all([
+  const [tempo, coach, dossier, pending] = await Promise.all([
     getTempoConnection(),
-    getAnthropicConnection(),
+    resolveCoachSetup(sources),
     getCurrentDossier(),
     listPendingDossierProposals(),
   ]);
 
-  // An export zip or the stub model stands in for its saved connection (#6).
+  // An export zip stands in for the saved Tempo connection (#6); the coach rule
+  // (stub, Anthropic key or self-hosted server) lives in resolveCoachSetup.
   const tempoConfigured = tempo.configured || sources.tempo === "export";
-  const anthropicConfigured = anthropic.configured || sources.model === "stub";
-  const setupComplete = tempoConfigured && anthropicConfigured;
+  const coachConfigured = coach.configured;
+  const setupComplete = tempoConfigured && coachConfigured;
   const onboardingComplete = dossier != null;
   const onboardingReview = pending.some((p) => p.kind === "onboarding");
   const auditPending = pending.some((p) => p.kind === "audit");
@@ -216,7 +218,7 @@ export async function resolveLoopStatus(
   const flags: LoopStatus["flags"] = {
     setupComplete,
     tempoConfigured,
-    anthropicConfigured,
+    coachConfigured,
     onboardingComplete,
     auditPending,
     checkIn,

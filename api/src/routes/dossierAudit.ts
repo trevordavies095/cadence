@@ -10,10 +10,12 @@ import { createProposalFromAudit } from "../dossier/fromAudit.js";
 import { getCurrentDossier } from "../dossier/store.js";
 import {
   formatDossierAuditThreadBody,
+  LlmNotConfiguredError,
   LlmSchemaError,
   type LlmPort,
 } from "../llm/index.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
+import { coachNotConfiguredBody } from "../settings/coachSetup.js";
 import {
   createAthleteMessage,
   createCoachMessage,
@@ -109,6 +111,9 @@ export function createDossierAuditRoutes(
         { callId, weekSessionId },
       );
     } catch (err) {
+      if (err instanceof LlmNotConfiguredError) {
+        return c.json(await coachNotConfiguredBody(), 400);
+      }
       if (err instanceof LlmSchemaError) {
         return c.json({ error: err.code, message: err.message }, 502);
       }

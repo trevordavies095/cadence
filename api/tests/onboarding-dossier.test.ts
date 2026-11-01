@@ -166,11 +166,11 @@ describe("onboarding → stub LLM dossier v1 proposal + Accept", () => {
 
     const llm = body.llm as {
       mode: string;
-      anthropicConfigured: boolean;
+      coachConfigured: boolean;
       systemStance: string;
     };
     expect(llm.mode).toBe("stub");
-    expect(llm.anthropicConfigured).toBe(false);
+    expect(llm.coachConfigured).toBe(false);
     expect(llm.systemStance).toBe("coach_running_no_diagnose");
 
     const pending = await json(await app.request("/dossier/proposals"));

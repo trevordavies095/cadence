@@ -4,8 +4,9 @@ import {
   applyAthleteCorrection,
   loadCorrectionBase,
 } from "../dossier/athleteCorrection.js";
-import { LlmSchemaError, type LlmPort } from "../llm/index.js";
+import { LlmNotConfiguredError, LlmSchemaError, type LlmPort } from "../llm/index.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
+import { coachNotConfiguredBody } from "../settings/coachSetup.js";
 import { getWeekSessionById } from "../week/store.js";
 
 export type DossierCorrectionRouteOptions = {
@@ -76,6 +77,9 @@ export function createDossierCorrectionRoutes(
       });
       return c.json(result, 201);
     } catch (err) {
+      if (err instanceof LlmNotConfiguredError) {
+        return c.json(await coachNotConfiguredBody(), 400);
+      }
       if (err instanceof LlmSchemaError) {
         return c.json({ error: err.code, message: err.message }, 502);
       }
