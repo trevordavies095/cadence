@@ -74,6 +74,13 @@ import type {
 const DEFAULT_TIMEOUT_MS = 900_000;
 /** Abort when the stream goes quiet this long (pings keep a live stream active). */
 const DEFAULT_IDLE_TIMEOUT_MS = 60_000;
+/**
+ * Self-hosted silence limit: home hardware can read a 30k-token prompt for
+ * more than a minute before the first token.
+ */
+const DEFAULT_SELF_HOSTED_IDLE_TIMEOUT_MS = 600_000;
+/** How much of a non-JSON error body a self-hosted error message carries. */
+const SERVER_MESSAGE_MAX_CHARS = 200;
 /** Thinking tokens count toward max_tokens; leave generous room for the reply. */
 const MAX_OUTPUT_TOKENS = 64_000;
 const ANTHROPIC_VERSION = "2023-06-01";
@@ -93,6 +100,18 @@ export function resolveAnthropicTimeoutMs(
   return DEFAULT_TIMEOUT_MS;
 }
 
+/**
+ * Silence limit for a self-hosted call: SELF_HOSTED_IDLE_TIMEOUT_MS (positive
+ * integer milliseconds), else 10 minutes. Anthropic calls keep 60 seconds.
+ */
+export function resolveSelfHostedIdleTimeoutMs(
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  const raw = env.SELF_HOSTED_IDLE_TIMEOUT_MS?.trim();
+  if (raw && /^\d+$/.test(raw) && Number(raw) > 0) return Number(raw);
+  return DEFAULT_SELF_HOSTED_IDLE_TIMEOUT_MS;
+}
+
 export type AnthropicLlmPortOptions = {
   /** Override wrapping key (tests). Defaults to DATA_PROTECTION_SECRET_KEY. */
   dataProtectionKey?: string;
@@ -100,7 +119,11 @@ export type AnthropicLlmPortOptions = {
   fetchImpl?: typeof globalThis.fetch;
   /** Overall cap per call. Defaults to ANTHROPIC_TIMEOUT_MS or 15 minutes. */
   timeoutMs?: number;
-  /** Abort after this long without stream data. Defaults to 60 seconds. */
+  /**
+   * Abort after this long without stream data, for both providers. Defaults
+   * to 60 seconds for Anthropic and SELF_HOSTED_IDLE_TIMEOUT_MS or 10 minutes
+   * for a self-hosted server.
+   */
   idleTimeoutMs?: number;
   /**
    * The target for a call that is not handed one: URL, key, model and effort,
@@ -590,6 +613,59 @@ function describeStopReason(body: unknown): string | null {
 }
 
 /**
+ * The self-hosted server's own words from an error body: `error.message` when
+ * the body is an Anthropic-shaped error, else the start of the body.
+ */
+function serverErrorMessage(text: string | null): string | null {
+  const trimmed = text?.trim();
+  if (!trimmed) return null;
+  try {
+    const body: unknown = JSON.parse(trimmed);
+    if (isPlainObject(body) && isPlainObject(body.error)) {
+      const message = body.error.message;
+      if (typeof message === "string" && message.trim()) return message.trim();
+    }
+  } catch {
+    // Not JSON; fall through to the raw body.
+  }
+  return trimmed.slice(0, SERVER_MESSAGE_MAX_CHARS);
+}
+
+/**
+ * Wording for HTTP and transport failures. Anthropic: as it always was.
+ * Self-hosted: names the model server, so the athlete does not blame Anthropic.
+ */
+function failureWording(provider: CoachProvider) {
+  if (provider === "anthropic") {
+    return {
+      idle: (ms: number) => `Anthropic stream idle for ${ms}ms; aborted`,
+      overall: (ms: number) => `Anthropic call exceeded ${ms}ms overall; aborted`,
+      fetchFailed: (reason: string | null) => reason ?? "anthropic_fetch_failed",
+      http: (status: number, _text: string | null) =>
+        `Anthropic Messages API returned ${status}`,
+      streamError: (error: string) => `Anthropic stream error: ${error}`,
+      incomplete: "Anthropic stream ended before message_stop",
+    };
+  }
+  return {
+    idle: (ms: number) => `The model server sent nothing for ${ms}ms; aborted`,
+    overall: (ms: number) => `The model server call exceeded ${ms}ms overall; aborted`,
+    fetchFailed: (reason: string | null) =>
+      reason
+        ? `Could not reach the model server: ${reason}`
+        : "Could not reach the model server",
+    http: (status: number, text: string | null) => {
+      const said = serverErrorMessage(text);
+      return said
+        ? `The model server returned ${status}: ${said}`
+        : `The model server returned ${status}`;
+    },
+    streamError: (error: string) => `The model server sent a stream error: ${error}`,
+    incomplete: "The model server's stream ended before message_stop",
+  };
+}
+
+/**
  * Request headers. Anthropic: the key in `x-api-key`, as always. Self-hosted:
  * the key, when there is one, in both `x-api-key` and `Authorization: Bearer`,
  * so the athlete need not know which their server checks; no key, neither.
@@ -633,6 +709,7 @@ async function callAnthropicMessages(options: {
     toolName,
   } = options;
 
+  const wording = failureWording(provider);
   const startedAt = Date.now();
   const controller = new AbortController();
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -641,7 +718,7 @@ async function callAnthropicMessages(options: {
     idleTimer = setTimeout(
       () =>
         controller.abort(
-          new Error(`Anthropic stream idle for ${idleTimeoutMs}ms; aborted`),
+          new Error(wording.idle(idleTimeoutMs)),
         ),
       idleTimeoutMs,
     );
@@ -649,7 +726,7 @@ async function callAnthropicMessages(options: {
   const totalTimer = setTimeout(
     () =>
       controller.abort(
-        new Error(`Anthropic call exceeded ${timeoutMs}ms overall; aborted`),
+        new Error(wording.overall(timeoutMs)),
       ),
     timeoutMs,
   );
@@ -657,12 +734,10 @@ async function callAnthropicMessages(options: {
     clearTimeout(idleTimer);
     clearTimeout(totalTimer);
   };
-  const abortMessage = (err: unknown, fallback: string): string =>
+  const abortMessage = (err: unknown): string =>
     controller.signal.aborted && controller.signal.reason instanceof Error
       ? controller.signal.reason.message
-      : err instanceof Error
-        ? err.message
-        : fallback;
+      : wording.fetchFailed(err instanceof Error ? err.message : null);
 
   try {
     armIdle();
@@ -677,7 +752,7 @@ async function callAnthropicMessages(options: {
       });
     } catch (err) {
       throw failWith(
-        new LlmTransportError(abortMessage(err, "anthropic_fetch_failed"), {
+        new LlmTransportError(abortMessage(err), {
           cause: err,
         }),
         {
@@ -698,10 +773,7 @@ async function callAnthropicMessages(options: {
         // Error body unreadable; the status alone is still logged.
       }
       throw failWith(
-        new LlmHttpError(
-          response.status,
-          `Anthropic Messages API returned ${response.status}`,
-        ),
+        new LlmHttpError(response.status, wording.http(response.status, text)),
         {
           httpStatus: response.status,
           responseText: text,
@@ -729,7 +801,7 @@ async function callAnthropicMessages(options: {
       throw failWith(
         new LlmTransportError(
           message && !controller.signal.aborted
-            ? `Anthropic stream error: ${read.streamError}`
+            ? wording.streamError(read.streamError)
             : read.streamError,
         ),
         { ...base, ...partial },
@@ -743,7 +815,7 @@ async function callAnthropicMessages(options: {
     }
     if (!read.complete) {
       throw failWith(
-        new LlmTransportError("Anthropic stream ended before message_stop"),
+        new LlmTransportError(wording.incomplete),
         { ...base, ...partial },
       );
     }
@@ -785,7 +857,12 @@ export function createAnthropicLlmPort(
 ): LlmPort {
   const fetchImpl = options?.fetchImpl ?? globalThis.fetch.bind(globalThis);
   const timeoutMs = options?.timeoutMs ?? resolveAnthropicTimeoutMs();
-  const idleTimeoutMs = options?.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
+  /** The silence limit for one call: the option when given, else per provider. */
+  const idleTimeoutFor = (provider: CoachProvider): number =>
+    options?.idleTimeoutMs ??
+    (provider === "self_hosted"
+      ? resolveSelfHostedIdleTimeoutMs()
+      : DEFAULT_IDLE_TIMEOUT_MS);
   const resolveCoachTarget =
     options?.resolveCoachTarget ??
     createCoachTargetResolver({
@@ -842,7 +919,7 @@ export function createAnthropicLlmPort(
         apiKey: target.credentials.apiKey,
         apiUrl: target.messagesUrl,
         timeoutMs,
-        idleTimeoutMs,
+        idleTimeoutMs: idleTimeoutFor(target.provider),
         fetchImpl,
         toolName,
         requestBody,

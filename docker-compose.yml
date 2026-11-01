@@ -40,6 +40,8 @@ services:
       LLM_PROVIDER: "${LLM_PROVIDER:-}"
       # Overall cap per coach call in ms (blank = 15 min).
       ANTHROPIC_TIMEOUT_MS: "${ANTHROPIC_TIMEOUT_MS:-}"
+      # Self-hosted model server: abort after this many ms with no data (blank = 10 min).
+      SELF_HOSTED_IDLE_TIMEOUT_MS: "${SELF_HOSTED_IDLE_TIMEOUT_MS:-}"
       # Optional: mount a Tempo export and set TEMPO_EXPORT_PATH to the in-container path
       TEMPO_EXPORT_PATH: "${TEMPO_EXPORT_PATH:-}"
     ports:

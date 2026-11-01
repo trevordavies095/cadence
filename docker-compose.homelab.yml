@@ -50,6 +50,8 @@ services:
       ATHLETE_TIMEZONE: "${ATHLETE_TIMEZONE:?Set ATHLETE_TIMEZONE in .env.homelab, for example America/New_York}"
       LLM_PROVIDER: "${LLM_PROVIDER:-anthropic}"
       ANTHROPIC_TIMEOUT_MS: "${ANTHROPIC_TIMEOUT_MS:-}"
+      # Self-hosted model server: abort after this many ms with no data (blank = 10 min).
+      SELF_HOSTED_IDLE_TIMEOUT_MS: "${SELF_HOSTED_IDLE_TIMEOUT_MS:-}"
       DATABASE_CONNECT_TIMEOUT_MS: "${DATABASE_CONNECT_TIMEOUT_MS:-}"
       DATABASE_IDLE_TIMEOUT_MS: "${DATABASE_IDLE_TIMEOUT_MS:-}"
     depends_on:

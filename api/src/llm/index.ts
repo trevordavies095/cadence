@@ -1,6 +1,7 @@
 export {
   createAnthropicLlmPort,
   resolveAnthropicTimeoutMs,
+  resolveSelfHostedIdleTimeoutMs,
   resolveDefaultLlmPort,
   withCanonicalStance,
   type AnthropicLlmPortOptions,

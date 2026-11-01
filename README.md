@@ -221,7 +221,8 @@ Set `E2E_DATABASE_URL` to use a different server and `E2E_CLOCK_NOW` to pin anot
 | Host ports | `POSTGRES_HOST_PORT`, `API_HOST_PORT`, `FRONTEND_HOST_PORT` | Compose host ports, default `5433` / `5002` / `3001` |
 | Athlete timezone | `ATHLETE_TIMEZONE` | IANA name (e.g. `America/New_York`), default `UTC`. One timezone for every route and page: current week, week boundaries, loop status. An explicit `?timezone=` still overrides. An invalid name stops the API at startup. |
 | LLM provider | `LLM_PROVIDER` | `stub` (default; offline, CI) or `anthropic` (live, uses the encrypted Anthropic key) |
-| Coach call cap | `ANTHROPIC_TIMEOUT_MS` | Overall cap per live coach call, default `900000` (15 min). Calls stream; a call also aborts after 60 s with no data. |
+| Coach call cap | `ANTHROPIC_TIMEOUT_MS` | Overall cap per live coach call, default `900000` (15 min). Calls stream; an Anthropic call also aborts after 60 s with no data. |
+| Self-hosted idle limit | `SELF_HOSTED_IDLE_TIMEOUT_MS` | A self-hosted model server call aborts after this long with no data, default `600000` (10 min), so slow home hardware can read a long prompt. The overall cap still applies. |
 | Proxy timeout | `FRONTEND_PROXY_TIMEOUT_MS` | Frontend (Next) → API proxy timeout, default `960000` (16 min); keep it above the coach call cap |
 | App version | `APP_VERSION` | Stamped on every LLM call log row. `npm run dev` sets it to the git SHA; falls back to `CADENCE_GIT_COMMIT`, then `dev` |
 | Tempo export (offline) | `TEMPO_EXPORT_PATH` | Absolute path to a Tempo full-export `.zip`. When set, TempoPort reads workouts/splits/time-series from the zip instead of live Tempo HTTP (no API key). GPS/route geometry is never exposed on coach APIs. Keep exports gitignored (e.g. `.scratch/`). |
