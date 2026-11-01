@@ -180,6 +180,7 @@ function SelfHostedConnectionFields({
 
 /** Where the per-server context settings are written up (ticket 12). */
 const SELF_HOSTED_DOCS = "https://github.com/trevordavies095/cadence/blob/develop/docs/self-hosted.md";
+const MODEL_REPORT = "https://github.com/trevordavies095/cadence/blob/develop/docs/reports/local-models-2026-11.md";
 
 /** The server's host as the athlete typed it, without the scheme. */
 function hostOf(baseUrl: string | null): string {
@@ -615,12 +616,23 @@ export function CoachModelSection({ offline, demo }: { offline: boolean; demo: b
                 />
               ) : null}
               <Muted>
-                Self-hosted models have not been measured against the tested default and may coach
-                differently, follow Coach Cade’s guidance less closely, or fail more often.
+                Self-hosted models can coach differently from the tested default. See{" "}
+                <a
+                  href={MODEL_REPORT}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-accent decoration-2 underline-offset-4"
+                >
+                  how each model compared
+                </a>{" "}
+                before you choose.
               </Muted>
               {effortPicker}
               {adjusted ? <p className="m-0">{adjusted}</p> : null}
-              <Muted>Your server may map these levels onto its own, or ignore them.</Muted>
+              <Muted>
+                Your server may map these levels onto its own, ignore them, or refuse one. If a level
+                is refused, choose another.
+              </Muted>
               {actions}
             </form>
           ) : null}

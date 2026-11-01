@@ -120,9 +120,11 @@ const level = (page: Page, name: string) =>
   section(page).getByRole("radiogroup", { name: "Thinking level" }).getByRole("radio", { name, exact: true });
 const LEVELS = ["Low", "Medium", "High", "Extra high", "Max"];
 
-const UNMEASURED =
-  "Self-hosted models have not been measured against the tested default and may coach differently, follow Coach Cade’s guidance less closely, or fail more often.";
-const MAPPING = "Your server may map these levels onto its own, or ignore them.";
+const COMPARED =
+  "Self-hosted models can coach differently from the tested default. See how each model compared before you choose.";
+const REPORT = "https://github.com/trevordavies095/cadence/blob/develop/docs/reports/local-models-2026-11.md";
+const MAPPING =
+  "Your server may map these levels onto its own, ignore them, or refuse one. If a level is refused, choose another.";
 
 test.describe("Self-hosted model server, in Settings", () => {
   test("with the offline coach there is no provider to choose", async ({ page }) => {
@@ -161,8 +163,15 @@ test.describe("Self-hosted model server, in Settings", () => {
     await expect(s.getByLabel("API key")).toBeVisible();
     await expect(s).toContainText("Not configured — your server’s base URL is required.");
     await expect(s).toContainText("Save your server’s address to see its models.");
-    await expect(s).toContainText(UNMEASURED);
+    await expect(s).toContainText(COMPARED);
+    await expect(s).not.toContainText("not been measured");
+    const report = s.getByRole("link", { name: "how each model compared" });
+    await expect(report).toHaveAttribute("href", REPORT);
+    await expect(report).toHaveAttribute("target", "_blank");
+    await expect(report).toHaveAttribute("rel", "noopener noreferrer");
     await expect(s).toContainText(MAPPING);
+    await expect(s).not.toContainText(/recommended/i);
+    expect(bannedTermsIn(await s.innerText())).toEqual([]);
     await expect(s).not.toContainText("Cadence was built and tested on");
     expect(requests.some((r) => r.method === "GET" && r.url.endsWith("/api/settings/coach-model?provider=self_hosted"))).toBe(true);
     // Nothing chosen, every level open, nothing to save yet.
