@@ -37,6 +37,7 @@ import {
   type ThreadNote,
 } from "@/lib/api";
 import { CoachModelSection } from "@/components/CoachModelSection";
+import { ConfirmClear } from "@/components/ConfirmClear";
 import { GoalFields } from "@/components/GoalFields";
 import { NoteCard, toNote } from "@/components/NoteCard";
 import {
@@ -54,31 +55,6 @@ const APPEARANCE_CHOICES: { value: AppearancePreference; label: string }[] = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
 ];
-
-function ConfirmClear({
-  question,
-  consequence,
-  onConfirm,
-  onCancel,
-}: {
-  question: string;
-  consequence: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div role="alertdialog" aria-label={question} className="flex flex-col gap-2 border-l-4 border-ink bg-raised px-3 py-2">
-      <p className="m-0 font-semibold">{question}</p>
-      <p className="m-0 text-muted">{consequence}</p>
-      <div className="flex gap-3">
-        <Button onClick={onConfirm}>Remove</Button>
-        <Button variant="quiet" onClick={onCancel}>
-          Keep it
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 /**
  * What the athlete is training for, with Change. After the first answers this is the only

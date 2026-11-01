@@ -63,10 +63,12 @@ async function savedFor(provider: SavedCoachProvider) {
 
 /**
  * What Settings shows for Coach Cade's model: the provider, the choice, what is
- * in force, and what can be chosen from that provider's catalogue.
+ * in force, and what can be chosen from that provider's catalogue. `asked` names
+ * another provider's catalogue, for the page before anything is saved for it; its
+ * `saved` is then null, since nothing carries across providers.
  */
-async function coachModelView(catalogues: Catalogues) {
-  const provider = (await getSavedCoachModel())?.provider ?? "anthropic";
+async function coachModelView(catalogues: Catalogues, asked?: SavedCoachProvider) {
+  const provider = asked ?? (await getSavedCoachModel())?.provider ?? "anthropic";
   const saved = await savedFor(provider);
   const { models, fallback } = await catalogues[provider].load({ saved });
   return {
@@ -253,8 +255,14 @@ export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
 
   // Writes are accepted in stub and demo modes too: only the page hides the section,
   // and the demo season sets its effort through here.
+  // `?provider=` asks for that provider's catalogue rather than the saved one's, so the
+  // page can list a self-hosted server's models before a self-hosted model is saved.
   routes.get("/settings/coach-model", async (c) => {
-    return c.json(await coachModelView(catalogues));
+    const query = c.req.query("provider");
+    if (query === undefined) return c.json(await coachModelView(catalogues));
+    const asked = parseCoachProvider(query);
+    if (!asked) return c.json({ error: "invalid_provider" }, 400);
+    return c.json(await coachModelView(catalogues, asked));
   });
 
   // `{ provider, model, effort }`. An omitted provider is Anthropic, as before #54.
