@@ -1,5 +1,5 @@
 import type { ModelPacket } from "../packet/types.js";
-import type { CoachModel } from "./coachModel.js";
+import type { CoachTarget } from "./coachTarget.js";
 import type {
   DossierAuditDraft,
   DossierAuditInput,
@@ -18,10 +18,11 @@ export type LlmCallOptions = {
   /** Validated week session (the packet's own id may be synthetic). */
   weekSessionId?: string | null;
   /**
-   * Model and effort for this call. A run that may ask more than once passes the
-   * pair it resolved at the start, so a retry never switches model.
+   * Where and with what this call is sent: provider, URL, key, model, effort. A
+   * run that may ask more than once passes the target it resolved at the start
+   * (from resolveCoachTarget), so a retry never switches model, key or server.
    */
-  coachModel?: CoachModel;
+  coachTarget?: CoachTarget;
 };
 
 /**
@@ -30,6 +31,12 @@ export type LlmCallOptions = {
  * Stub for CI (#28); live adapter is #29.
  */
 export type LlmPort = {
+  /**
+   * The target the next call would be sent to, read from saved settings now.
+   * Live adapters only; a port that sends nowhere (the stub) has none.
+   */
+  resolveCoachTarget?: () => Promise<CoachTarget>;
+
   /**
    * Produce weekly analysis prose + structured prescribed week (+ optional
    * settings proposal bullets) from a redacted ModelPacket.

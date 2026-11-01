@@ -11,6 +11,16 @@ export {
   type CoachModel,
 } from "./coachModel.js";
 export {
+  ANTHROPIC_MESSAGES_URL,
+  anthropicCoachTarget,
+  createCoachTargetResolver,
+  type CoachCredentials,
+  type CoachProvider,
+  type CoachTarget,
+  type CoachTargetResolver,
+  type CoachTargetResolverOptions,
+} from "./coachTarget.js";
+export {
   ANTHROPIC_EFFORT_LEVELS,
   parseAnthropicEffort,
   type AnthropicEffort,

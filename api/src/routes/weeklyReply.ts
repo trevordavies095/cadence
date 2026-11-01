@@ -12,7 +12,6 @@ import {
   validateWeeklyReply,
 } from "../llm/index.js";
 import { askOnceMore } from "../llm/askOnceMore.js";
-import { resolveCoachModel } from "../llm/coachModel.js";
 import { recordRouteRejection, type LlmCallRecorder } from "../llmCallLog/index.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import {
@@ -281,14 +280,15 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       // A reply refused for its shape is asked for once more before the athlete
       // sees a failed read. Each attempt keeps its own call log row.
       const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
-      // One model and effort for the whole run, so a retry never switches model.
-      const coachModel = await resolveCoachModel();
+      // One target for the whole run (server, key, model, effort), so a retry
+      // never switches any of them (ADR 0002, ADR 0004).
+      const coachTarget = await llmPort.resolveCoachTarget?.();
       const checked = await askOnceMore(async (attempt) => {
         if (attempt > 1) callId = randomUUID();
         const reply = await llmPort.generateWeeklyReply(packet, {
           callId,
           weekSessionId: focusSession.id,
-          coachModel,
+          coachTarget,
         });
         const validated = validateWeeklyReply(reply, weekStartMonday);
         if (!validated.ok) {
