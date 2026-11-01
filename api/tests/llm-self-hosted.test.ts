@@ -9,6 +9,7 @@ import { buildStubWeeklyReply } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket, type ModelPacket } from "../src/packet/index.js";
 import { putAnthropicConnection } from "../src/settings/anthropicStore.js";
+import { coachSetupNudge } from "../src/settings/coachSetup.js";
 import { createExportTempoPort } from "../src/tempo/exportZip.js";
 import {
   acceptAndReady,
@@ -282,13 +283,13 @@ describe("a coach call to a self-hosted server", () => {
     expect(res.status).toBe(400);
     expect(await json(res)).toEqual({
       error: "llm_not_configured",
-      message: "Set up the model server in Settings",
+      message: coachSetupNudge("self_hosted"),
     });
 
     await unlockPlanCheckIn(app, weekSessionId);
     const weekly = await send(app, "/week/reply", "POST", { weekSessionId, packet: samplePacket() });
     expect(weekly.status).toBe(400);
-    expect((await json(weekly)).message).toBe("Set up the model server in Settings");
+    expect((await json(weekly)).message).toBe(coachSetupNudge("self_hosted"));
 
     expect(sent).toEqual([]);
     expect(await logRows(app)).toEqual([]);
