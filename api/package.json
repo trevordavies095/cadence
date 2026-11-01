@@ -10,7 +10,8 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "replay": "tsx scripts/replay-weekly-reads.ts"
+    "replay": "tsx scripts/replay-weekly-reads.ts",
+    "replay:analyse": "tsx scripts/replay-analysis.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.4",
