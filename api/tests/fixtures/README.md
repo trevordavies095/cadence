@@ -45,6 +45,29 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5433/ai_coach_test \
 
 It plays each season through the app on the offline stub (goal, About you, then a Sunday check-in each week), against a test database it clears. The exports regenerate byte for byte; the packets differ only in week-session ids and About you version numbers. `replay-seasons.test.ts` checks the packets against the scripts and runs the replay dry run over `season-packets/`.
 
+## `demo-operations/` (replay inputs from the demo)
+
+The three coach calls the demo snapshot's call log does not hold, as the app sends them for the demo athlete (fictional) at the snapshot's clock. The replay script replays them after the snapshot's own weekly, mid-week and About you calls, and they work as a `--packets` folder on their own. Each file names its `operation`:
+
+| File | Operation | What it is |
+|---|---|---|
+| `01-mid-week-attached-run.json` | `mid_week_chat` | A question about Tuesday's easy 6 with that run attached; the packet the mid-week chat sends, with both of the week's attached runs |
+| `02-about-you-audit.json` | `dossier_audit` | A tidy-up of About you as the snapshot holds it, with the athlete's goal beside the input |
+| `03-about-you-correction.json` | `dossier_correction` | A Fix something correction (the Thursday hill loop is closed, so Thursdays move to the canal path), with the goal beside the input |
+
+Written by `scripts/generate-demo-operation-fixtures.ts`, which drives the app's routes on the offline stub against a throwaway database holding the snapshot and keeps what reached the model port. Rebuild them when a packet or About you input changes:
+
+```bash
+cd api
+docker exec ai-coach-postgres psql -U postgres -c "CREATE DATABASE ai_coach_test_demo_ops"
+docker exec -i ai-coach-postgres psql -U postgres -q -d ai_coach_test_demo_ops < ../demo/snapshot.sql
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/ai_coach_test_demo_ops \
+  npx tsx scripts/generate-demo-operation-fixtures.ts
+docker exec ai-coach-postgres psql -U postgres -c "DROP DATABASE ai_coach_test_demo_ops"
+```
+
+A fresh load of the same snapshot writes the same bytes. `replay-weekly-reads.test.ts` replays the folder with the stub and expects every check to pass.
+
 ## Full athlete export (local only)
 
 Keep real Tempo downloads under gitignored `.scratch/` (see repo root `.gitignore`). Example:
