@@ -53,6 +53,7 @@ import {
   deleteThreadMessage,
   listThreadMessages,
 } from "../thread/store.js";
+import { coachNotConfiguredBody } from "../settings/coachSetup.js";
 import { getWeekSessionById, type WeekSession } from "../week/store.js";
 import type { PrescribedWeekArtifact } from "./thread.js";
 
@@ -402,7 +403,7 @@ export function createMidWeekChatRoutes(
         );
       } catch (err) {
         if (err instanceof LlmNotConfiguredError) {
-          return c.json({ error: err.code, message: err.message }, 400);
+          return c.json(await coachNotConfiguredBody(), 400);
         }
         if (err instanceof LlmHttpError) {
           return c.json(

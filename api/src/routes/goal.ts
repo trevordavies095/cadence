@@ -13,8 +13,9 @@ import {
 import { pool } from "../db.js";
 import { appendGoal, getCurrentGoal, type GoalVersion } from "../goal/store.js";
 import { parseTrainingGoal } from "../goal/types.js";
-import { LlmSchemaError, type LlmPort } from "../llm/index.js";
+import { LlmNotConfiguredError, LlmSchemaError, type LlmPort } from "../llm/index.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
+import { coachNotConfiguredBody } from "../settings/coachSetup.js";
 
 export type GoalRouteOptions = {
   clock: Clock;
@@ -94,6 +95,9 @@ export function createGoalRoutes(options: GoalRouteOptions): Hono {
       return c.json({ ...withSentence(saved), correction }, 201);
     } catch (err) {
       await client.query("ROLLBACK");
+      if (err instanceof LlmNotConfiguredError) {
+        return c.json(await coachNotConfiguredBody(), 400);
+      }
       if (err instanceof LlmSchemaError) {
         return c.json({ error: err.code, message: err.message }, 502);
       }

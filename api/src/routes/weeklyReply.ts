@@ -38,6 +38,7 @@ import {
 } from "../tempo/port.js";
 import { savePrescribedWeek } from "../prescribed/store.js";
 import { getWeekRecapBySessionId } from "../recap/recapStore.js";
+import { coachNotConfiguredBody } from "../settings/coachSetup.js";
 import { createCoachMessage } from "../thread/store.js";
 import { nextIsoWeekBounds } from "../clock/isoWeek.js";
 import { trackReplyRun } from "../replyRun/inflight.js";
@@ -389,7 +390,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       };
     } catch (err) {
       if (err instanceof LlmNotConfiguredError) {
-        return { status: 400, body: { error: err.code, message: err.message }, callId };
+        return { status: 400, body: await coachNotConfiguredBody(), callId };
       }
       if (err instanceof LlmHttpError) {
         return {

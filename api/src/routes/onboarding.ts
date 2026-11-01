@@ -5,6 +5,7 @@ import { createDossierProposal } from "../dossier/proposals.js";
 import { getCurrentDossier } from "../dossier/store.js";
 import {
   formatDossierProposalThreadBody,
+  LlmNotConfiguredError,
   LlmSchemaError,
   type LlmPort,
 } from "../llm/index.js";
@@ -13,8 +14,8 @@ import { buildOnboardingPrefills } from "../onboarding/prefills.js";
 import { resolveOnboardingGate } from "../onboarding/gate.js";
 import { parseOnboardingAnswers } from "../onboarding/questionnaire.js";
 import { saveOnboardingAnswers } from "../onboarding/store.js";
-import { getAnthropicConnection } from "../settings/anthropicStore.js";
-import { resolveLlmProvider } from "../settings/sources.js";
+import { coachNotConfiguredBody, resolveCoachSetup } from "../settings/coachSetup.js";
+import { resolveLlmProvider, type RuntimeSources } from "../settings/sources.js";
 import type { TempoPort } from "../tempo/port.js";
 import { createCoachMessage } from "../thread/store.js";
 import { getWeekSessionById } from "../week/store.js";
@@ -23,11 +24,12 @@ export type OnboardingRouteOptions = {
   tempoPort: TempoPort;
   llmPort: LlmPort;
   clock: Clock;
+  sources: RuntimeSources;
 };
 
 export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
   const routes = new Hono();
-  const { tempoPort, llmPort, clock } = options;
+  const { tempoPort, llmPort, clock, sources } = options;
 
   routes.use("/onboarding", requireDisclaimer);
   routes.use("/onboarding/*", requireDisclaimer);
@@ -109,7 +111,7 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
       parsed.goal,
     );
     const prefills = await buildOnboardingPrefills(tempoPort);
-    const anthropic = await getAnthropicConnection();
+    const coach = await resolveCoachSetup(sources);
 
     const callId = randomUUID();
     let draft;
@@ -123,6 +125,9 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
         { callId, weekSessionId },
       );
     } catch (err) {
+      if (err instanceof LlmNotConfiguredError) {
+        return c.json(await coachNotConfiguredBody(), 400);
+      }
       if (err instanceof LlmSchemaError) {
         return c.json({ error: err.code, message: err.message }, 502);
       }
@@ -157,7 +162,7 @@ export function createOnboardingRoutes(options: OnboardingRouteOptions): Hono {
         coachMessage,
         llm: {
           mode: resolveLlmProvider(),
-          anthropicConfigured: anthropic.configured,
+          coachConfigured: coach.configured,
           systemStance: "coach_running_no_diagnose" as const,
         },
       },
