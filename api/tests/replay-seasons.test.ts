@@ -103,6 +103,6 @@ describe("replay seasons", () => {
     const report = readFileSync(path.join(out, "report.md"), "utf8");
     expect(report).toContain("from 18 replayed weekly calls");
     expect(report).toMatch(/## Goal checks\n\nAll passed/);
-    expect(report).toContain("## 18 (3-return-w6.json)");
+    expect(report).toContain("### 18.1 (3-return-w6.json)");
   }, 60_000);
 });
