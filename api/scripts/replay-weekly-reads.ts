@@ -27,9 +27,44 @@
  * Each file is a model packet as the app builds it, with the athlete's goal in
  * its `goal` field, or `{ "packet": {...}, "model": "..." }` to pin the model
  * (otherwise --model, else the tested default). A packet has no old reply,
- * so its report shows the new reply only. Replies and the report go to
+ * so its report shows the new reply only. Replies and the report go under
  * .scratch/replay-packets/<folder name> (with -dry-run on a dry run).
  * Pass --out <dir> to write somewhere else, with either source.
+ *
+ * The output folder is a root holding one folder per configuration, named
+ * <provider>--<model>--<effort> (the model id with anything but letters, digits,
+ * dots, underscores and hyphens turned into "_"). Each holds a config.json
+ * (provider, base URL host, model, effort, repeats, note, started at, harness
+ * git commit) and one reply per input and repeat, <input id>.<repeat>.json,
+ * such as 01.1.json, or 01.1.failed.json when refused. Running several
+ * configurations into the same --out builds a matrix.
+ *
+ * Matrix flags (all optional; a run without them is an Anthropic run as above):
+ *
+ *   --provider anthropic|self_hosted  who serves the calls (default anthropic)
+ *   --base-url <url>    the model server, self_hosted only, such as
+ *                       http://macbook.local:8000 (a trailing /v1 is not doubled)
+ *   --key-env <VAR>     the env var holding the key, so it never appears on a
+ *                       command line. Anthropic defaults to ANTHROPIC_API_KEY;
+ *                       self_hosted sends no key without it. A named var that is
+ *                       unset or empty fails the run before any call.
+ *   --repeats <N>       replies per input (default 1)
+ *   --note "<text>"     free text for config.json, such as the hardware and server
+ *
+ * Self-hosted needs --base-url and --model, and every call uses that model
+ * (models pinned in packets are Anthropic ids). An Anthropic call pinned to a
+ * model keeps it, as before. The target is built from the flags only; the
+ * saved setting is never read (ADR 0004).
+ *
+ *   SH_KEY=... npm run replay -- --packets tests/fixtures/replay-packets \
+ *     --provider self_hosted --base-url http://macbook.local:8000 --key-env SH_KEY \
+ *     --model gemma-4 --effort high --repeats 2 --note "M4 Pro 24 GB, oMLX, 64k" \
+ *     --out ../.scratch/local-models
+ *
+ * --report-only with --out <root> reads every configuration folder under the
+ * root; every run (report-only or not) writes one report.md at the root with a
+ * summary table across configurations (schema outcomes: first try, after
+ * retry, failed) and a section per configuration.
  *
  * A reply refused for its shape is asked for once more, as the app does (ADR
  * 0002). The saved reply lists the refused attempt in `refusedAttempts`, and the
@@ -43,9 +78,10 @@
  * long-run verdict in a read whose goal is stay fit. A refused reply also fails,
  * since it leaves a read unchecked. The checks read every athlete-facing word:
  * headline, flags, answers, the read, the days, safety callouts and About you
- * proposals. The script exits non-zero when any check fails. The dry run over tests/fixtures/replay-packets runs in
+ * proposals. The script exits non-zero when any check fails, in any configuration. The dry run over tests/fixtures/replay-packets runs in
  * the API test suite (tests/replay-weekly-reads.test.ts).
  */
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -54,7 +90,7 @@ import type { TrainingGoal } from "../src/goal/types.js";
 import { createAnthropicLlmPort, weeklyUserPromptFor } from "../src/llm/anthropic.js";
 import { askOnceMore } from "../src/llm/askOnceMore.js";
 import { TESTED_COACH_MODEL } from "../src/llm/coachModel.js";
-import { anthropicCoachTarget } from "../src/llm/coachTarget.js";
+import { anthropicCoachTarget, type CoachProvider, type CoachTarget } from "../src/llm/coachTarget.js";
 import { ANTHROPIC_EFFORT_LEVELS, parseAnthropicEffort, type AnthropicEffort } from "../src/llm/effort.js";
 import { LlmSchemaError } from "../src/llm/port.js";
 import { createStubLlmPort } from "../src/llm/stub.js";
@@ -62,6 +98,7 @@ import type { PrescribedDay, WeeklyReply } from "../src/llm/types.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
 import type { ModelPacket } from "../src/packet/types.js";
+import { normalizeSelfHostedBaseUrl, selfHostedEndpoint, selfHostedHost } from "../src/settings/selfHostedStore.js";
 import { replayCheckFailures, type ReplayCheckFailure } from "./replayChecks.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -95,11 +132,59 @@ function flagEffort(): AnthropicEffort {
   return effort;
 }
 
-const MODEL = flagValue("--model", "a model id")?.trim() || TESTED_COACH_MODEL.model;
+/** --provider, anthropic when absent. */
+function flagProvider(): CoachProvider {
+  const raw = flagValue("--provider", "a provider") ?? "anthropic";
+  if (raw !== "anthropic" && raw !== "self_hosted") {
+    throw new Error(`Invalid --provider "${raw}": expected anthropic or self_hosted.`);
+  }
+  return raw;
+}
+
+/** --repeats, a whole number from 1; 1 when absent. */
+function flagRepeats(): number {
+  const raw = flagValue("--repeats", "a number");
+  if (raw === null) return 1;
+  const n = Number(raw);
+  if (!/^\d+$/.test(raw) || !Number.isInteger(n) || n < 1) {
+    throw new Error(`Invalid --repeats "${raw}": expected a whole number from 1.`);
+  }
+  return n;
+}
+
+const PROVIDER = flagProvider();
+const MODEL_FLAG = flagValue("--model", "a model id")?.trim() || null;
+const MODEL = MODEL_FLAG ?? TESTED_COACH_MODEL.model;
 const EFFORT = flagEffort();
+const REPEATS = flagRepeats();
+const NOTE = flagValue("--note", "some text");
+const KEY_ENV = flagValue("--key-env", "an environment variable name");
+
+/** The self-hosted server's base URL, checked; null for Anthropic. */
+function flagBaseUrl(): string | null {
+  const raw = flagValue("--base-url", "a URL");
+  if (PROVIDER === "anthropic") {
+    if (raw !== null) throw new Error("--base-url is for --provider self_hosted.");
+    return null;
+  }
+  if (raw === null) throw new Error("--provider self_hosted needs --base-url, such as http://macbook.local:8000.");
+  const baseUrl = normalizeSelfHostedBaseUrl(raw);
+  if (!baseUrl) throw new Error(`Invalid --base-url "${raw}": expected an http(s) URL.`);
+  if (!MODEL_FLAG) throw new Error("--provider self_hosted needs --model, the id the server lists.");
+  return baseUrl;
+}
+
+const BASE_URL = flagBaseUrl();
+
+/** The model id as a folder-name part: anything but letters, digits, ".", "_" and "-" becomes "_". */
+function folderSafe(model: string): string {
+  return model.replace(/[^A-Za-z0-9._-]/g, "_");
+}
+
+const CONFIGURATION = `${PROVIDER}--${folderSafe(MODEL)}--${EFFORT}`;
 
 const PACKETS = flagPath("--packets");
-const OUT =
+const ROOT =
   flagPath("--out") ??
   (PACKETS
     ? path.resolve(here, `../../.scratch/replay-packets/${path.basename(PACKETS)}${dryRun ? "-dry-run" : ""}`)
@@ -205,114 +290,229 @@ type Refusal = {
   responseRaw: unknown;
 };
 
-async function replay(calls: StoredCall[]): Promise<void> {
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!apiKey && !dryRun) {
-    throw new Error("Set ANTHROPIC_API_KEY to run the replay, or pass --dry-run or --report-only.");
+/**
+ * The key the run sends, read before any call. A --key-env var that is unset
+ * or empty fails here, dry run included. Without --key-env, Anthropic reads
+ * ANTHROPIC_API_KEY (required on a live run) and self-hosted sends no key.
+ */
+function runKey(): string | null {
+  if (KEY_ENV !== null) {
+    const key = process.env[KEY_ENV]?.trim();
+    if (!key) throw new Error(`--key-env ${KEY_ENV}: the environment variable ${KEY_ENV} is unset or empty.`);
+    return key;
   }
-  for (const [i, call] of calls.entries()) {
-    const file = path.join(OUT, `${String(i + 1).padStart(2, "0")}.json`);
-    const failedFile = file.replace(/\.json$/, ".failed.json");
-    if (existsSync(file)) {
-      console.log(`${path.basename(file)} exists, skipped`);
-      continue;
-    }
-    const log: LlmCallRecord[] = [];
-    const port = dryRun
-      ? createStubLlmPort()
-      : createAnthropicLlmPort({
-          // Built from flags; the replay never reads the saved setting (ADR 0004).
-          resolveCoachTarget: async () =>
-            anthropicCoachTarget({ model: call.model ?? MODEL, effort: EFFORT }, apiKey!),
-          recorder: memoryRecorder(log),
-        });
-    const started = Date.now();
-    // Each attempt refused for its shape, with what the model sent for it.
-    const refusals: Refusal[] = [];
-    let stubRefusalsLeft = dryRun ? (call.stubRefusals ?? 0) : 0;
-    let reply: WeeklyReply;
-    try {
-      // Asked once more when refused for its shape, as the app does (ADR 0002).
-      const result = await askOnceMore(async (attempt) => {
-        const logged = log.length;
-        try {
-          if (stubRefusalsLeft > 0) {
-            stubRefusalsLeft--;
-            throw new LlmSchemaError("stub refusal: analysis is required and must be non-empty");
-          }
-          // The port writes its log row, with any repairs and token counts, only for a call with an id.
-          return { ok: true as const, value: await port.generateWeeklyReply(call.packet, { callId: randomUUID() }) };
-        } catch (err) {
-          if (err instanceof LlmSchemaError) {
-            const row = log.length > logged ? log.at(-1) : undefined;
-            refusals.push({
-              attempt,
-              error: err.message,
-              outcome: row?.outcome ?? null,
-              stopReason: row?.stopReason ?? null,
-              outputTokens: row?.outputTokens ?? null,
-              responseRaw: row?.responseRaw ?? null,
-            });
-          }
-          throw err;
-        }
-      });
-      if (!result.ok) throw new LlmSchemaError(result.error);
-      reply = result.value;
-    } catch (err) {
-      // A refused reply is a finding, not a reason to stop: keep what the model sent and move on.
-      const failed = log.at(-1);
-      writeFileSync(
-        failedFile,
-        JSON.stringify(
-          {
-            source: call.source,
-            originalCallAt: call.createdAt,
-            model: call.model ?? null,
-            replayedAt: new Date().toISOString(),
-            error: err instanceof Error ? err.message : String(err),
-            outcome: failed?.outcome ?? null,
-            stopReason: failed?.stopReason ?? null,
-            outputTokens: failed?.outputTokens ?? null,
-            responseRaw: failed?.responseRaw ?? null,
-            // Every attempt refused for its shape, the last one included.
-            refusedAttempts: refusals,
-          },
-          null,
-          2,
-        ),
+  if (PROVIDER === "self_hosted") return null;
+  const key = process.env.ANTHROPIC_API_KEY?.trim() || null;
+  if (!key && !dryRun) {
+    throw new Error("Set ANTHROPIC_API_KEY (or name another variable with --key-env) to run the replay, or pass --dry-run or --report-only.");
+  }
+  return key;
+}
+
+/** The target one call is sent to, from flags only; the saved setting is never read (ADR 0004). */
+function coachTargetFor(call: StoredCall, apiKey: string | null): CoachTarget {
+  if (PROVIDER === "self_hosted") {
+    return {
+      provider: "self_hosted",
+      messagesUrl: selfHostedEndpoint(BASE_URL!, "messages"),
+      credentials: { apiKey },
+      model: MODEL,
+      effort: EFFORT,
+    };
+  }
+  return anthropicCoachTarget({ model: call.model ?? MODEL, effort: EFFORT }, apiKey);
+}
+
+/** What config.json records about a configuration. */
+type ConfigFile = {
+  configuration: string;
+  provider: CoachProvider;
+  /** The model server's host; null for Anthropic. */
+  baseUrlHost: string | null;
+  model: string;
+  effort: AnthropicEffort;
+  repeats: number;
+  note: string | null;
+  startedAt: string;
+  /** The harness's git commit, or null outside a checkout. */
+  harnessCommit: string | null;
+  dryRun: boolean;
+  /** The packet folder, or "demo snapshot". */
+  inputs: string;
+  /** When a later run added to this folder, oldest first. */
+  resumedAt?: string[];
+};
+
+function harnessCommit(): string | null {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], { cwd: here, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Writes the configuration's config.json, or updates it on a resumed run
+ * (keeping when it started). A folder holding a different configuration under
+ * the same name, such as another server's host, is refused.
+ */
+function writeConfig(dir: string): void {
+  const file = path.join(dir, "config.json");
+  const now = new Date().toISOString();
+  const fresh: ConfigFile = {
+    configuration: CONFIGURATION,
+    provider: PROVIDER,
+    baseUrlHost: BASE_URL ? selfHostedHost(BASE_URL) : null,
+    model: MODEL,
+    effort: EFFORT,
+    repeats: REPEATS,
+    note: NOTE,
+    startedAt: now,
+    harnessCommit: harnessCommit(),
+    dryRun,
+    inputs: PACKETS ?? "demo snapshot",
+  };
+  if (!existsSync(file)) {
+    writeFileSync(file, JSON.stringify(fresh, null, 2));
+    return;
+  }
+  const saved = JSON.parse(readFileSync(file, "utf8")) as ConfigFile;
+  for (const key of ["provider", "baseUrlHost", "model", "effort", "inputs"] as const) {
+    if (saved[key] !== fresh[key]) {
+      throw new Error(
+        `${file} holds ${key} ${JSON.stringify(saved[key])}, not ${JSON.stringify(fresh[key])}; pass another --out to keep both.`,
       );
-      console.log(`${path.basename(file)} refused: ${err instanceof Error ? err.message : err}; saved ${path.basename(failedFile)}`);
-      continue;
     }
-    const row = log.at(-1);
+  }
+  const updated: ConfigFile = {
+    ...fresh,
+    repeats: Math.max(saved.repeats, REPEATS),
+    note: NOTE ?? saved.note,
+    startedAt: saved.startedAt,
+    resumedAt: [...(saved.resumedAt ?? []), now],
+  };
+  writeFileSync(file, JSON.stringify(updated, null, 2));
+}
+
+/** One reply's file stem: the input id and the repeat, such as 01.2. */
+function replyStem(inputIndex: number, repeat: number): string {
+  return `${String(inputIndex + 1).padStart(2, "0")}.${repeat}`;
+}
+
+async function replay(calls: StoredCall[]): Promise<void> {
+  const apiKey = runKey();
+  const dir = path.join(ROOT, CONFIGURATION);
+  mkdirSync(dir, { recursive: true });
+  writeConfig(dir);
+  for (const [i, call] of calls.entries()) {
+    for (let repeat = 1; repeat <= REPEATS; repeat++) {
+      await replayOne(call, path.join(dir, `${replyStem(i, repeat)}.json`), apiKey);
+    }
+  }
+}
+
+/** Replays one input once into its reply file, skipped when the file exists. */
+async function replayOne(call: StoredCall, file: string, apiKey: string | null): Promise<void> {
+  const failedFile = file.replace(/\.json$/, ".failed.json");
+  if (existsSync(file)) {
+    console.log(`${path.basename(file)} exists, skipped`);
+    return;
+  }
+  const log: LlmCallRecord[] = [];
+  const target = coachTargetFor(call, apiKey);
+  const port = dryRun
+    ? createStubLlmPort()
+    : createAnthropicLlmPort({
+        // Built from flags; the replay never reads the saved setting (ADR 0004).
+        resolveCoachTarget: async () => target,
+        recorder: memoryRecorder(log),
+      });
+  const started = Date.now();
+  // Each attempt refused for its shape, with what the model sent for it.
+  const refusals: Refusal[] = [];
+  let stubRefusalsLeft = dryRun ? (call.stubRefusals ?? 0) : 0;
+  let reply: WeeklyReply;
+  try {
+    // Asked once more when refused for its shape, as the app does (ADR 0002).
+    const result = await askOnceMore(async (attempt) => {
+      const logged = log.length;
+      try {
+        if (stubRefusalsLeft > 0) {
+          stubRefusalsLeft--;
+          throw new LlmSchemaError("stub refusal: analysis is required and must be non-empty");
+        }
+        // The port writes its log row, with any repairs and token counts, only for a call with an id.
+        return { ok: true as const, value: await port.generateWeeklyReply(call.packet, { callId: randomUUID() }) };
+      } catch (err) {
+        if (err instanceof LlmSchemaError) {
+          const row = log.length > logged ? log.at(-1) : undefined;
+          refusals.push({
+            attempt,
+            error: err.message,
+            outcome: row?.outcome ?? null,
+            stopReason: row?.stopReason ?? null,
+            outputTokens: row?.outputTokens ?? null,
+            responseRaw: row?.responseRaw ?? null,
+          });
+        }
+        throw err;
+      }
+    });
+    if (!result.ok) throw new LlmSchemaError(result.error);
+    reply = result.value;
+  } catch (err) {
+    // A refused reply is a finding, not a reason to stop: keep what the model sent and move on.
+    const failed = log.at(-1);
     writeFileSync(
-      file,
+      failedFile,
       JSON.stringify(
         {
           source: call.source,
           originalCallAt: call.createdAt,
-          model: call.model ?? null,
+          model: target.model,
           replayedAt: new Date().toISOString(),
-          // What the goal checks read: the packet's goal and the rebuilt prompt's first line.
-          goal: call.packet.goal ?? null,
-          promptHead: weeklyUserPromptFor(call.packet).split("\n", 1)[0],
-          outcome: row?.outcome ?? null,
-          repairs: row?.errorMessage ?? null,
-          inputTokens: row?.inputTokens ?? null,
-          outputTokens: row?.outputTokens ?? null,
-          // Attempts refused for their shape before this reply came back; empty when none.
+          error: err instanceof Error ? err.message : String(err),
+          outcome: failed?.outcome ?? null,
+          stopReason: failed?.stopReason ?? null,
+          outputTokens: failed?.outputTokens ?? null,
+          responseRaw: failed?.responseRaw ?? null,
+          // Every attempt refused for its shape, the last one included.
           refusedAttempts: refusals,
-          old: call.old,
-          new: reply,
         },
         null,
         2,
       ),
     );
-    const retriedNote = refusals.length ? ` after asking once more (${refusals[0]!.error})` : "";
-    console.log(`${path.basename(file)} done in ${Math.round((Date.now() - started) / 1000)} s${retriedNote}`);
+    console.log(`${path.basename(file)} refused: ${err instanceof Error ? err.message : err}; saved ${path.basename(failedFile)}`);
+    return;
   }
+  const row = log.at(-1);
+  writeFileSync(
+    file,
+    JSON.stringify(
+      {
+        source: call.source,
+        originalCallAt: call.createdAt,
+        model: target.model,
+        replayedAt: new Date().toISOString(),
+        // What the goal checks read: the packet's goal and the rebuilt prompt's first line.
+        goal: call.packet.goal ?? null,
+        promptHead: weeklyUserPromptFor(call.packet).split("\n", 1)[0],
+        outcome: row?.outcome ?? null,
+        repairs: row?.errorMessage ?? null,
+        inputTokens: row?.inputTokens ?? null,
+        outputTokens: row?.outputTokens ?? null,
+        // Attempts refused for their shape before this reply came back; empty when none.
+        refusedAttempts: refusals,
+        old: call.old,
+        new: reply,
+      },
+      null,
+      2,
+    ),
+  );
+  const retriedNote = refusals.length ? ` after asking once more (${refusals[0]!.error})` : "";
+  console.log(`${path.basename(file)} done in ${Math.round((Date.now() - started) / 1000)} s${retriedNote}`);
 }
 
 // ---- The first-pass coverage report -------------------------------------------
@@ -362,18 +562,38 @@ function oldSessionReasons(analysis: string): string[] {
   return section ? [...section[1]!.matchAll(/^\s*[-*]\s+(.+)$/gm)].map((m) => m[1]!) : [];
 }
 
-/** Numbered files in the output folder, such as 01.json, in order. */
-function numbered(suffix: string): string[] {
-  const pattern = new RegExp(`^\\d+${suffix.replace(/\./g, "\\.")}$`);
-  return readdirSync(OUT)
-    .filter((f) => pattern.test(f))
-    .sort()
-    .map((f) => path.join(OUT, f));
+/**
+ * Reply files in a configuration folder, such as 01.1.json (or 01.1.failed.json
+ * for the suffix ".failed.json"), ordered by input then repeat.
+ */
+function numbered(dir: string, suffix: string): string[] {
+  const pattern = new RegExp(`^(\\d+)\\.(\\d+)${suffix.replace(/\./g, "\\.")}$`);
+  return readdirSync(dir)
+    .map((f) => ({ f, m: pattern.exec(f) }))
+    .filter((x): x is { f: string; m: RegExpExecArray } => x.m !== null)
+    .sort((x, y) => Number(x.m[1]) - Number(y.m[1]) || Number(x.m[2]) - Number(y.m[2]))
+    .map((x) => path.join(dir, x.f));
 }
 
-/** Builds the report and returns the goal checks that failed. */
-function report(): ReplayCheckFailure[] {
-  const files = numbered(".json");
+/** Schema outcomes for one configuration (ticket 15 adds the other measures). */
+type SchemaCounts = { firstTry: number; afterRetry: number; failed: number };
+
+/** One configuration's part of the report. */
+type ConfigurationReport = {
+  folder: string;
+  config: ConfigFile;
+  /** Its section, headed at level 2. */
+  lines: string[];
+  checkFailures: ReplayCheckFailure[];
+  replies: number;
+  schema: SchemaCounts;
+};
+
+/** One configuration folder's section: the per-call tables, goal checks, retried and refused replies. */
+function reportConfiguration(dir: string): ConfigurationReport {
+  const config = JSON.parse(readFileSync(path.join(dir, "config.json"), "utf8")) as ConfigFile;
+  const folder = path.basename(dir);
+  const files = numbered(dir, ".json");
   const sections: string[] = [];
   const checkFailures: ReplayCheckFailure[] = [];
   // Replies that came back only when asked once more.
@@ -425,8 +645,8 @@ function report(): ReplayCheckFailure[] {
     const banned = bannedTermsIn(newText);
 
     const heading = s.originalCallAt
-      ? `## ${name}: week read on ${s.originalCallAt.slice(0, 10)}`
-      : `## ${label}`;
+      ? `### ${name}: week read on ${s.originalCallAt.slice(0, 10)}`
+      : `### ${label}`;
     sections.push(
       heading,
       "",
@@ -464,7 +684,7 @@ function report(): ReplayCheckFailure[] {
       "",
     );
   }
-  const refused = numbered(".failed.json").filter((f) => !existsSync(f.replace(/\.failed\.json$/, ".json")));
+  const refused = numbered(dir, ".failed.json").filter((f) => !existsSync(f.replace(/\.failed\.json$/, ".json")));
   // A refused reply has no read to check, so it cannot pass the gate either.
   for (const f of refused) {
     const d = JSON.parse(readFileSync(f, "utf8")) as { source?: string; originalCallAt: string | null };
@@ -474,14 +694,13 @@ function report(): ReplayCheckFailure[] {
       : `${name} (${d.source ?? "unknown packet"})`;
     checkFailures.push({ label, check: "refused reply", detail: "no read to check; replay it again" });
   }
-  const out: string[] = [
-    "# Replay gate: first-pass report",
+  const lines: string[] = [
+    `## ${folder}`,
     "",
-    `Generated ${new Date().toISOString()} from ${files.length} replayed weekly calls${PACKETS ? ` in ${PACKETS}` : ""}.`,
+    `Provider ${config.provider}${config.baseUrlHost ? ` at ${config.baseUrlHost}` : ""}. Model ${config.model}, effort ${config.effort}. ${config.repeats} repeat${config.repeats === 1 ? "" : "s"} over ${config.inputs}${config.dryRun ? " (dry run, offline stub)" : ""}.`,
+    `Started ${config.startedAt}${config.resumedAt?.length ? `, resumed ${config.resumedAt.join(", ")}` : ""}. Harness commit ${config.harnessCommit ?? "unknown"}.${config.note ? ` Note: ${config.note}` : ""}`,
     "",
-    "The checks below only point at what to read. A figure listed as missing may be rounded, restated or deliberately dropped; each one is judged by a person before the gate passes.",
-    "",
-    "## Goal checks",
+    "### Goal checks",
     "",
     ...(checkFailures.length
       ? checkFailures.map((f) => `- ${f.label}: ${f.check}: ${f.detail}`)
@@ -490,10 +709,10 @@ function report(): ReplayCheckFailure[] {
     ...sections,
   ];
   if (retried.length > 0) {
-    out.push("## Retried replies", "", "Refused for their shape, then came back when asked once more, as the app does.", "", ...retried, "");
+    lines.push("### Retried replies", "", "Refused for their shape, then came back when asked once more, as the app does.", "", ...retried, "");
   }
   if (refused.length > 0) {
-    out.push("## Refused replies", "");
+    lines.push("### Refused replies", "");
     for (const f of refused) {
       const d = JSON.parse(readFileSync(f, "utf8")) as {
         source?: string;
@@ -506,16 +725,72 @@ function report(): ReplayCheckFailure[] {
       const what = d.originalCallAt ? `week read on ${d.originalCallAt.slice(0, 10)}` : d.source;
       const attempts = d.refusedAttempts?.length ?? 0;
       const tries = attempts > 1 ? ` (refused on all ${attempts} attempts)` : "";
-      out.push(`- ${path.basename(f)} (${what}): ${d.error}; stop reason ${d.stopReason}${tries}`);
+      lines.push(`- ${path.basename(f)} (${what}): ${d.error}; stop reason ${d.stopReason}${tries}`);
     }
-    out.push("");
+    lines.push("");
   }
-  writeFileSync(path.join(OUT, "report.md"), out.join("\n"));
-  console.log(`report written to ${path.join(OUT, "report.md")}`);
+  return {
+    folder,
+    config,
+    lines,
+    // Named with the configuration, for the report's opening list and the exit message.
+    checkFailures: checkFailures.map((f) => ({ ...f, label: `${folder}/${f.label}` })),
+    replies: files.length + refused.length,
+    schema: { firstTry: files.length - retried.length, afterRetry: retried.length, failed: refused.length },
+  };
+}
+
+/** Configuration folders under the output root: every folder holding a config.json, by name. */
+function configurationFolders(): string[] {
+  return readdirSync(ROOT, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && existsSync(path.join(ROOT, e.name, "config.json")))
+    .map((e) => path.join(ROOT, e.name))
+    .sort();
+}
+
+/** A markdown table cell. */
+function cell(text: string | null): string {
+  return (text ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
+}
+
+/** Builds one report.md at the root over every configuration and returns the goal checks that failed. */
+function report(): ReplayCheckFailure[] {
+  const folders = configurationFolders();
+  if (folders.length === 0) throw new Error(`No configuration folders (with a config.json) under ${ROOT}.`);
+  const parts = folders.map(reportConfiguration);
+  const checkFailures = parts.flatMap((p) => p.checkFailures);
+  const out: string[] = [
+    "# Replay gate: first-pass report",
+    "",
+    `Generated ${new Date().toISOString()} from ${parts.reduce((n, p) => n + p.replies, 0)} replayed weekly calls across ${parts.length} configuration${parts.length === 1 ? "" : "s"} in ${ROOT}.`,
+    "",
+    "The checks below only point at what to read. A figure listed as missing may be rounded, restated or deliberately dropped; each one is judged by a person before the gate passes.",
+    "",
+    "## Configurations",
+    "",
+    "Schema outcomes: replies accepted on the first try, accepted when asked once more, and refused on every attempt.",
+    "",
+    "| Configuration | Provider | Host | Model | Effort | Repeats | Note | Replies | First try | After retry | Failed |",
+    "|---|---|---|---|---|---|---|---|---|---|---|",
+    ...parts.map(
+      ({ folder, config: c, replies, schema }) =>
+        `| ${folder} | ${c.provider} | ${cell(c.baseUrlHost)} | ${cell(c.model)} | ${c.effort} | ${c.repeats} | ${cell(c.note)} | ${replies} | ${schema.firstTry} | ${schema.afterRetry} | ${schema.failed} |`,
+    ),
+    "",
+    "## Goal checks",
+    "",
+    ...(checkFailures.length
+      ? checkFailures.map((f) => `- ${f.label}: ${f.check}: ${f.detail}`)
+      : ["All passed: every packet has a goal line, no non-marathon read says marathon, no stay-fit read gives a long-run verdict, and no reply was refused."]),
+    "",
+    ...parts.flatMap((p) => p.lines),
+  ];
+  writeFileSync(path.join(ROOT, "report.md"), out.join("\n"));
+  console.log(`report written to ${path.join(ROOT, "report.md")}`);
   return checkFailures;
 }
 
-mkdirSync(OUT, { recursive: true });
+mkdirSync(ROOT, { recursive: true });
 if (!reportOnly) await replay(PACKETS ? folderCalls(PACKETS) : storedWeeklyCalls());
 const checkFailures = report();
 if (checkFailures.length > 0) {
