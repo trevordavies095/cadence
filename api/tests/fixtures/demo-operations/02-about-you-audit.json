@@ -1,0 +1,22 @@
+{
+  "operation": "dossier_audit",
+  "source": "demo snapshot at 2026-10-14T23:30:00.000Z: a tidy-up of About you",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Lakeshore Marathon",
+    "raceDate": "2026-11-15",
+    "target": "3:30"
+  },
+  "input": {
+    "currentDossier": {
+      "versionId": 2,
+      "body": "# About you\n\n## Stance\nUse only the athlete's volunteered information and Tempo-derived training context. Coach training decisions; do not diagnose medical conditions or prescribe treatment. If something sounds medical or outside coaching, urge the athlete to seek a qualified professional and keep training conservative.\n\n## Goal\nYou are training for the Lakeshore Marathon on Sun Nov 15, aiming for 3:30. This will be your fourth marathon, and your personal best is 3:41 from two years ago.\n\n## Schedule\nYou run five days a week: Tue, Wed, Thu, Sat and Sun. Mon and Fri are fixed rest days because of work travel.\n\nWeekday runs are early, around 6am before work, capped near an hour. Saturday is an easy hour and Sunday is the long run.\n\nTypical volume is 6 to 7 hours a week, with more on long-run weeks.\n\n## Running history\nYou have run three marathons already, best 3:41. You eased off in June and have built back to about 30 miles a week through July.\n\nRecent weeks show four easy runs of roughly 5 to 6 miles and a long run of about 10.8 miles on Sun Aug 2.\n\n## Injuries and constraints\nYou are healthy right now. You had shin splints in your first marathon block, so you prefer to ramp mileage up carefully.\n\nWork travel takes you away about one week in six. Mon and Fri rest days cannot move.\n\n## Preferences\nYou train mostly on flat paved loops and a canal path, with one hillier route on Thursdays. You want easy days to be properly easy and you are happy to work hard on quality days.\n\nYou like to know why a session is in the plan. Shoes: Brooks Ghost 16 for daily miles, Saucony Endorphin Speed 4 for workouts.\n\n## Current status\nYou are at about 30 miles a week with a long run near 11 miles. Units are miles. Heart rate zones are set custom, with easy running in 112 – 150 bpm.\n\n## Coach update (Oct 12 – 18)\n\n- Shoe preference update: use Saucony Endorphin Speed 4 for long runs and marathon-pace work for the rest of this block; Brooks Ghost 16 stays for daily easy miles. Hold the switch until the Achilles is clearly quiet (earliest the long run of Oct 25 – 26).\n"
+    },
+    "week": {
+      "isoWeek": "2026-W42"
+    },
+    "nowIso": "2026-10-14T23:30:00.000Z",
+    "intervalWeeks": 5
+  }
+}

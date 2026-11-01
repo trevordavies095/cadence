@@ -1,7 +1,7 @@
 /**
  * The weekly-read replay script (scripts/replay-weekly-reads.ts): its goal
- * checks, and the dry run with the offline stub over a packet folder. Never
- * calls the live model.
+ * checks, and the dry run with the offline stub over a packet folder, for the
+ * weekly read and the other four coach operations. Never calls the live model.
  */
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -13,6 +13,7 @@ import { longRunVerdictIn, mentionsMarathon, replayCheckFailures } from "../scri
 
 const api = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURE = path.join(api, "tests/fixtures/replay-packets");
+const DEMO_OPERATIONS = path.join(api, "tests/fixtures/demo-operations");
 
 /** The folder a run with no matrix flags writes into: Anthropic at the tested default. */
 const DEFAULT_CONFIG = "anthropic--claude-opus-4-7--xhigh";
@@ -109,7 +110,7 @@ describe("replay dry run over a packet folder", () => {
     // No matrix flags: today's run, in the Anthropic folder at the tested default.
     expect(run.files()).toEqual(["01.1.json", "02.1.json", "config.json"]);
     const report = run.report();
-    expect(report).toContain("from 2 replayed weekly calls across 1 configuration");
+    expect(report).toContain("from 2 replayed coach calls across 1 configuration");
     expect(report).toContain(`## ${DEFAULT_CONFIG}`);
     expect(report).toContain("### 01.1 (01-stay-fit.json)");
     expect(report).toContain("### 02.1 (02-10k.json)");
@@ -169,10 +170,10 @@ describe("replay dry run over a packet folder", () => {
     expect(retried).toContain("- 01.1 (01-retried.json): Asked once more: attempt 1 refused");
     expect(retried).not.toContain("02");
     const refused = report.slice(report.indexOf("### Refused replies"));
-    expect(refused).toContain("- 02.1.failed.json (02-failed.json): stub refusal");
+    expect(refused).toContain("- 02.1.failed.json (02-failed.json, weekly read): stub refusal");
     expect(refused).toContain("refused on all 2 attempts");
     expect(refused).not.toContain("01.1");
-    expect(report).toContain("### 01.1 (01-retried.json)\n\nModel claude-opus-4-7.");
+    expect(report).toContain("### 01.1 (01-retried.json): weekly read\n\nModel claude-opus-4-7.");
     // The summary counts one reply after a retry and one refused.
     expect(report).toContain(`| ${DEFAULT_CONFIG} | anthropic |  | claude-opus-4-7 | xhigh | 1 |  | 2 | 0 | 1 | 1 |`);
 
@@ -260,7 +261,7 @@ describe("replay matrix", () => {
     expect(run.stderr).toBe("");
     expect(run.status).toBe(0);
     const report = run.report();
-    expect(report).toContain("from 6 replayed weekly calls across 2 configurations");
+    expect(report).toContain("from 6 replayed coach calls across 2 configurations");
     expect(report).toContain("| Configuration | Provider | Host | Model | Effort | Repeats | Note | Replies | First try | After retry | Failed |");
     expect(report).toContain(`| ${DEFAULT_CONFIG} | anthropic |  | claude-opus-4-7 | xhigh | 2 |  | 4 | 4 | 0 | 0 |`);
     expect(report).toContain(`| ${SELF_HOSTED} | self_hosted | macbook.local | mlx-community/gemma-4:fast | high | 1 |  | 2 | 2 | 0 | 0 |`);
@@ -298,4 +299,161 @@ describe("replay matrix", () => {
       expect(run.stdout).not.toMatch(/done in/);
     }
   }, 60_000);
+});
+
+describe("replay over every coach operation", () => {
+  const read = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+  const goal = { kind: "race", distance: "10k", raceName: "Riverside 10K", raceDate: "2026-11-08" };
+  const firstDraft = {
+    operation: "dossier_v1",
+    input: {
+      goal,
+      answers: {
+        goal: "Riverside 10K on Nov 8, under 45 minutes.",
+        schedule: "Four runs a week: Tue, Thu, Sat and Sun.",
+        injuries_constraints: "None right now.",
+      },
+      prefills: { available: false },
+    },
+  };
+
+  /** A folder with one input of each operation, in operation order. */
+  function fiveOperations(extra: Record<string, Record<string, unknown>> = {}): string {
+    const dir = mkdtempSync(path.join(tmpdir(), "replay-operations-"));
+    copyFileSync(path.join(FIXTURE, "02-10k.json"), path.join(dir, "01-weekly.json"));
+    copyFileSync(path.join(DEMO_OPERATIONS, "01-mid-week-attached-run.json"), path.join(dir, "02-mid-week.json"));
+    writeFileSync(path.join(dir, "03-first-draft.json"), JSON.stringify(firstDraft));
+    copyFileSync(path.join(DEMO_OPERATIONS, "03-about-you-correction.json"), path.join(dir, "04-correction.json"));
+    copyFileSync(path.join(DEMO_OPERATIONS, "02-about-you-audit.json"), path.join(dir, "05-audit.json"));
+    for (const [file, patch] of Object.entries(extra)) {
+      writeFileSync(path.join(dir, file), JSON.stringify({ ...read(path.join(dir, file)), ...patch }));
+    }
+    return dir;
+  }
+
+  it("dispatches one input of each operation to its stub method and validator, with a report section for each", () => {
+    const run = dryRun(fiveOperations());
+    expect(run.stderr).toBe("");
+    expect(run.status).toBe(0);
+    expect(run.files()).toEqual(["01.1.json", "02.1.json", "03.1.json", "04.1.json", "05.1.json", "config.json"]);
+
+    const saved = (stem: string) => read(path.join(run.out, DEFAULT_CONFIG, `${stem}.json`));
+    const reply = (stem: string) => saved(stem).new as Record<string, unknown>;
+    expect(["01.1", "02.1", "03.1", "04.1", "05.1"].map((s) => saved(s).operation)).toEqual([
+      "weekly_reply",
+      "mid_week_chat",
+      "dossier_v1",
+      "dossier_correction",
+      "dossier_audit",
+    ]);
+    // Each reply has its own operation's shape, as the stub builds it for that method.
+    expect(reply("01.1")).toMatchObject({ analysis: expect.any(String), prescribedWeek: expect.anything() });
+    expect(reply("02.1").body).toContain("Attached run feedback");
+    expect(reply("02.1")).not.toHaveProperty("prescribedWeek");
+    for (const s of ["03.1", "04.1", "05.1"]) {
+      expect(reply(s)).toMatchObject({ summaryBullets: expect.any(Array), proposedBody: expect.stringContaining("## Stance") });
+    }
+    expect(reply("04.1").proposedBody).toContain("Thursday hill loop is closed");
+    expect((reply("05.1").summaryBullets as string[]).join(" ")).toMatch(/Next tidy-up/);
+    // The goal-line check reads the rebuilt prompt where the operation has one.
+    expect(saved("02.1").promptHead).toMatch(/^Athlete goal: /);
+    expect(saved("03.1").promptHead).toBeNull();
+    expect(saved("03.1").goal).toEqual(goal);
+
+    const report = run.report();
+    expect(report).toContain("from 5 replayed coach calls across 1 configuration");
+    expect(report).toContain(
+      "Replies: 1 weekly read, 1 mid-week reply, 1 About you first draft, 1 About you correction, 1 About you tidy-up.",
+    );
+    const headings = report.match(/^### \d\d\.1 .*$/gm);
+    expect(headings).toEqual([
+      "### 01.1 (01-weekly.json): weekly read",
+      "### 02.1 (02-mid-week.json): mid-week reply",
+      "### 03.1 (03-first-draft.json): About you first draft",
+      "### 04.1 (04-correction.json): About you correction",
+      "### 05.1 (05-audit.json): About you tidy-up",
+    ]);
+    const section = (n: number) => report.slice(report.indexOf(headings![n - 1]!), headings![n] ? report.indexOf(headings![n]!) : undefined);
+    expect(section(1)).toContain("| Read length (characters) |");
+    expect(section(2)).toContain("| Reply length (characters) |");
+    expect(section(2)).toContain("Athlete: Attaching Tuesday's easy 6.");
+    expect(section(2)).toMatch(/Reply:\n\n> .*Attached run feedback/);
+    expect(section(2)).toContain("About you suggestions:");
+    expect(section(2)).toContain("Plan changes:");
+    for (const n of [3, 4, 5]) {
+      expect(section(n)).toContain("| About you length (characters) |");
+      expect(section(n)).toMatch(/Summary:\n- /);
+      expect(section(n)).toContain("About you:\n\n> # About you");
+      expect(section(n)).toContain("(no goal line in this prompt, so not checked for one)");
+    }
+    for (const n of [1, 2, 3, 4, 5]) expect(section(n)).toContain("| Internal words | | none |");
+    expect(report).toMatch(/## Goal checks\n\nAll passed/);
+  }, 30_000);
+
+  it("applies the goal and vocabulary checks to the words of every operation", () => {
+    const fitness = { kind: "fitness" };
+    const dir = fiveOperations({
+      // A stay-fit athlete whose About you says marathon and long run is improving.
+      "04-correction.json": {
+        goal: fitness,
+        input: {
+          ...(read(path.join(DEMO_OPERATIONS, "03-about-you-correction.json")).input as Record<string, unknown>),
+          athleteMessage: "I want my marathon long runs back, my long run is improving every week. The recap is great.",
+        },
+      },
+    });
+    const run = dryRun(dir);
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain(`${DEFAULT_CONFIG}/04.1 (04-correction.json): marathon in a non-marathon read`);
+    expect(run.stderr).toContain("04.1 (04-correction.json): long-run verdict for stay fit");
+    expect(run.stderr).not.toContain("04.1 (04-correction.json): no goal line");
+    const report = run.report();
+    const correction = report.slice(report.indexOf("### 04.1"), report.indexOf("### 05.1"));
+    expect(correction).toMatch(/\| Internal words \| \| .*recap/);
+  }, 30_000);
+
+  it("asks once more only for the weekly read; another operation refused for its shape fails at once", () => {
+    const dir = fiveOperations({
+      "01-weekly.json": { packet: read(path.join(FIXTURE, "02-10k.json")), stubRefusals: 1 },
+      "02-mid-week.json": { stubRefusals: 1 },
+      "05-audit.json": { stubRefusals: 1 },
+    });
+    const run = dryRun(dir);
+    expect(run.status).not.toBe(0);
+    expect(run.stdout).toMatch(/01\.1\.json done in \d+ s after asking once more/);
+    expect(run.stdout).toContain("02.1.json refused: stub refusal: body is required");
+    expect(run.stdout).toContain("05.1.json refused: stub refusal: proposedBody is required");
+    expect(run.files()).toEqual(["01.1.json", "02.1.failed.json", "03.1.json", "04.1.json", "05.1.failed.json", "config.json"]);
+    const failed = read(path.join(run.out, DEFAULT_CONFIG, "02.1.failed.json"));
+    expect(failed.operation).toBe("mid_week_chat");
+    expect(failed.refusedAttempts).toHaveLength(1);
+
+    const report = run.report();
+    expect(report).toContain("- 02.1.failed.json (02-mid-week.json, mid-week reply): stub refusal: body is required");
+    expect(report).toContain("- 05.1.failed.json (05-audit.json, About you tidy-up): stub refusal: proposedBody is required");
+    expect(report).toContain(`| ${DEFAULT_CONFIG} | anthropic |  | claude-opus-4-7 | xhigh | 1 |  | 5 | 2 | 1 | 2 |`);
+    expect(run.stderr).toContain("02.1 (02-mid-week.json): refused reply");
+  }, 30_000);
+
+  it("replays the committed demo-operation inputs and passes every check", () => {
+    const run = dryRun(DEMO_OPERATIONS);
+    expect(run.stderr).toBe("");
+    expect(run.status).toBe(0);
+    const report = run.report();
+    expect(report).toContain("Replies: 1 mid-week reply, 1 About you correction, 1 About you tidy-up.");
+    expect(report).toMatch(/## Goal checks\n\nAll passed/);
+  }, 30_000);
+
+  it("refuses an input with an unknown operation, or an About you operation without its input", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "replay-operations-"));
+    writeFileSync(path.join(dir, "01.json"), JSON.stringify({ operation: "race_report", packet: {} }));
+    const unknown = dryRun(dir);
+    expect(unknown.status).not.toBe(0);
+    expect(unknown.stderr).toContain('01.json: unknown operation "race_report"');
+
+    writeFileSync(path.join(dir, "01.json"), JSON.stringify({ operation: "dossier_audit", packet: {} }));
+    const noInput = dryRun(dir);
+    expect(noInput.status).not.toBe(0);
+    expect(noInput.stderr).toContain('01.json: dossier_audit needs an "input"');
+  }, 30_000);
 });
