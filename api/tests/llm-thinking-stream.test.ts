@@ -5,6 +5,7 @@ import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
   buildStubMidWeekChatReply,
   buildStubWeeklyReply,
+  anthropicCoachTarget,
   createAnthropicLlmPort,
   LlmHttpError,
   LlmSchemaError,
@@ -12,7 +13,7 @@ import {
   parseAnthropicEffort,
   resolveAnthropicTimeoutMs,
   TESTED_COACH_MODEL,
-  type CoachModel,
+  type CoachTarget,
   type LlmPort,
 } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
@@ -73,7 +74,7 @@ type Flow = {
   name: string;
   tool: string;
   operation: string;
-  call: (port: LlmPort, callId: string, coachModel?: CoachModel) => Promise<unknown>;
+  call: (port: LlmPort, callId: string, coachTarget?: CoachTarget) => Promise<unknown>;
   okInput: () => unknown;
 };
 
@@ -82,16 +83,16 @@ const FLOWS: Flow[] = [
     name: "weekly reply",
     tool: WEEKLY_TOOL,
     operation: "weekly_reply",
-    call: (port, callId, coachModel) =>
-      port.generateWeeklyReply(samplePacket(), { callId, coachModel }),
+    call: (port, callId, coachTarget) =>
+      port.generateWeeklyReply(samplePacket(), { callId, coachTarget }),
     okInput: () => buildStubWeeklyReply(samplePacket()),
   },
   {
     name: "mid-week chat",
     tool: MIDWEEK_TOOL,
     operation: "mid_week_chat",
-    call: (port, callId, coachModel) =>
-      port.generateMidWeekChatReply(samplePacket(), { callId, coachModel }),
+    call: (port, callId, coachTarget) =>
+      port.generateMidWeekChatReply(samplePacket(), { callId, coachTarget }),
     okInput: () => buildStubMidWeekChatReply(samplePacket()),
   },
 ];
@@ -231,10 +232,11 @@ for (const flow of FLOWS) {
         anthropicStreamResponse(anthropicToolMessage(flow.tool, flow.okInput())),
       );
       const readCoachModel = vi.fn(async () => TESTED_COACH_MODEL);
-      await flow.call(portWith(fetchImpl, recorder, { readCoachModel }), "call-h", {
-        model: "claude-opus-5-5",
-        effort: "medium",
-      });
+      await flow.call(
+        portWith(fetchImpl, recorder, { readCoachModel }),
+        "call-h",
+        anthropicCoachTarget({ model: "claude-opus-5-5", effort: "medium" }, API_KEY),
+      );
       const init = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock
         .calls[0]![1] as RequestInit;
       const body = JSON.parse(String(init.body)) as Record<string, unknown>;

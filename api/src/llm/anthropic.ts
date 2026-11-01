@@ -1,4 +1,3 @@
-import { SecretProtector } from "../crypto/secretProtector.js";
 import { resolveAppVersion } from "../llmCallLog/appVersion.js";
 import { createPostgresLlmCallRecorder } from "../llmCallLog/recorder.js";
 import type {
@@ -8,9 +7,13 @@ import type {
   LlmCallRecorder,
 } from "../llmCallLog/types.js";
 import type { ModelPacket } from "../packet/types.js";
-import { readAnthropicApiKey } from "../settings/anthropicStore.js";
 import { resolveLlmProvider } from "../settings/sources.js";
-import { resolveCoachModel, type CoachModel } from "./coachModel.js";
+import type { CoachModel } from "./coachModel.js";
+import {
+  createCoachTargetResolver,
+  type CoachTarget,
+  type CoachTargetResolver,
+} from "./coachTarget.js";
 import type { AnthropicEffort } from "./effort.js";
 import { readMessageStream } from "./anthropicStream.js";
 import {
@@ -71,7 +74,6 @@ const DEFAULT_TIMEOUT_MS = 900_000;
 const DEFAULT_IDLE_TIMEOUT_MS = 60_000;
 /** Thinking tokens count toward max_tokens; leave generous room for the reply. */
 const MAX_OUTPUT_TOKENS = 64_000;
-const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 const WEEKLY_TOOL_NAME = "submit_weekly_reply";
 const MIDWEEK_TOOL_NAME = "submit_mid_week_chat_reply";
@@ -99,13 +101,16 @@ export type AnthropicLlmPortOptions = {
   /** Abort after this long without stream data. Defaults to 60 seconds. */
   idleTimeoutMs?: number;
   /**
-   * Model and effort for a call that is not handed a pair (defaults to
-   * resolveCoachModel). Read per call, like the key.
+   * The target for a call that is not handed one: URL, key, model and effort,
+   * resolved once per call. Defaults to createCoachTargetResolver, built from
+   * the three options below.
    */
+  resolveCoachTarget?: CoachTargetResolver;
+  /** Model and effort the default resolver reads (tests). Defaults to resolveCoachModel. */
   readCoachModel?: () => Promise<CoachModel>;
-  /** Override Messages API URL (tests). */
+  /** Messages API URL the default resolver uses (tests). */
   apiUrl?: string;
-  /** Override credential loader (defaults to decrypting anthropic_connection). */
+  /** Key loader the default resolver uses (defaults to decrypting anthropic_connection). */
   readApiKey?: () => Promise<string | null>;
   /** LLM call log sink. Defaults to the Postgres recorder. */
   recorder?: LlmCallRecorder;
@@ -746,6 +751,9 @@ async function callAnthropicMessages(options: {
   }
 }
 
+/** A target whose key is known to be present. */
+type KeyedTarget = CoachTarget & { credentials: { apiKey: string } };
+
 /**
  * Live LlmPort against Anthropic Messages API using the encrypted BYO key.
  * Weekly plan, mid-week chat/attach feedback and the About you drafts (onboarding,
@@ -757,14 +765,14 @@ export function createAnthropicLlmPort(
   const fetchImpl = options?.fetchImpl ?? globalThis.fetch.bind(globalThis);
   const timeoutMs = options?.timeoutMs ?? resolveAnthropicTimeoutMs();
   const idleTimeoutMs = options?.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
-  const apiUrl = options?.apiUrl?.trim() || ANTHROPIC_MESSAGES_URL;
-  const readApiKey =
-    options?.readApiKey ??
-    (() => {
-      const protector = new SecretProtector(options?.dataProtectionKey);
-      return readAnthropicApiKey(protector);
+  const resolveCoachTarget =
+    options?.resolveCoachTarget ??
+    createCoachTargetResolver({
+      dataProtectionKey: options?.dataProtectionKey,
+      readApiKey: options?.readApiKey,
+      readCoachModel: options?.readCoachModel,
+      messagesUrl: options?.apiUrl,
     });
-  const readCoachModel = options?.readCoachModel ?? resolveCoachModel;
   const recorder = options?.recorder ?? createPostgresLlmCallRecorder();
   const appVersion = options?.appVersion ?? resolveAppVersion();
   /**
@@ -780,9 +788,37 @@ export function createAnthropicLlmPort(
     } as const;
   }
 
-  /** The pair the call was handed, else the one in force now. */
-  async function coachModelFor(callOptions: LlmCallOptions | undefined): Promise<CoachModel> {
-    return callOptions?.coachModel ?? (await readCoachModel());
+  /**
+   * The target the call was handed, else the one in force now: read once, and
+   * the request is built from it and nothing else. No key, no call.
+   */
+  async function targetFor(
+    callOptions: LlmCallOptions | undefined,
+  ): Promise<KeyedTarget> {
+    const target = callOptions?.coachTarget ?? (await resolveCoachTarget());
+    const apiKey = target.credentials.apiKey;
+    if (!apiKey) {
+      throw new LlmNotConfiguredError();
+    }
+    return { ...target, credentials: { apiKey } };
+  }
+
+  /** The HTTP side of one call, sent to the target. */
+  function send(
+    target: KeyedTarget,
+    toolName: string,
+    requestBody: AnthropicMessagesRequest,
+  ) {
+    return () =>
+      callAnthropicMessages({
+        apiKey: target.credentials.apiKey,
+        apiUrl: target.messagesUrl,
+        timeoutMs,
+        idleTimeoutMs,
+        fetchImpl,
+        toolName,
+        requestBody,
+      });
   }
 
   /** Append one row; a failing recorder never changes the caller's outcome. */
@@ -903,52 +939,37 @@ export function createAnthropicLlmPort(
     userPrompt: string,
     validate: (raw: unknown) => { ok: true; value: T } | { ok: false; error: string },
   ): Promise<T> {
-    const apiKey = await readApiKey();
-    if (!apiKey) {
-      throw new LlmNotConfiguredError();
-    }
-    const coachModel = await coachModelFor(callOptions);
+    const target = await targetFor(callOptions);
     const requestBody: AnthropicMessagesRequest = {
-      model: coachModel.model,
+      model: target.model,
       max_tokens: MAX_OUTPUT_TOKENS,
       system,
       tools: [aboutYouToolSchema(toolDescription)],
-      ...reasoningParams(coachModel.effort),
+      ...reasoningParams(target.effort),
       messages: [{ role: "user", content: userPrompt }],
     };
     return attempt(
       operation,
       callOptions,
       requestBody,
-      () =>
-        callAnthropicMessages({
-          apiKey,
-          apiUrl,
-          timeoutMs,
-          idleTimeoutMs,
-          fetchImpl,
-          toolName: ABOUT_YOU_TOOL_NAME,
-          requestBody,
-        }),
+      send(target, ABOUT_YOU_TOOL_NAME, requestBody),
       validate,
     );
   }
 
   return {
+    resolveCoachTarget,
+
     async generateWeeklyReply(
       packet: ModelPacket,
       callOptions?: LlmCallOptions,
     ): Promise<WeeklyReply> {
-      const apiKey = await readApiKey();
-      if (!apiKey) {
-        throw new LlmNotConfiguredError();
-      }
-      const coachModel = await coachModelFor(callOptions);
+      const target = await targetFor(callOptions);
 
       const planWeek = resolveWeeklyPlanWeek(packet);
       const weekStartMonday = planWeek.weekStartMonday;
       const requestBody: AnthropicMessagesRequest = {
-        model: coachModel.model,
+        model: target.model,
         max_tokens: MAX_OUTPUT_TOKENS,
         system: weeklySystemPrompt(packet.goal),
         tools: [
@@ -959,7 +980,7 @@ export function createAnthropicLlmPort(
             input_schema: weeklyReplyToolSchema(),
           },
         ],
-        ...reasoningParams(coachModel.effort),
+        ...reasoningParams(target.effort),
         messages: [
           {
             role: "user",
@@ -975,16 +996,7 @@ export function createAnthropicLlmPort(
         "weekly_reply",
         callOptions,
         requestBody,
-        () =>
-          callAnthropicMessages({
-            apiKey,
-            apiUrl,
-            timeoutMs,
-            idleTimeoutMs,
-            fetchImpl,
-            toolName: WEEKLY_TOOL_NAME,
-            requestBody,
-          }),
+        send(target, WEEKLY_TOOL_NAME, requestBody),
         (input) => validateWeeklyReply(input, weekStartMonday),
       );
     },
@@ -993,15 +1005,11 @@ export function createAnthropicLlmPort(
       packet: ModelPacket,
       callOptions?: LlmCallOptions,
     ): Promise<MidWeekChatReply> {
-      const apiKey = await readApiKey();
-      if (!apiKey) {
-        throw new LlmNotConfiguredError();
-      }
-      const coachModel = await coachModelFor(callOptions);
+      const target = await targetFor(callOptions);
 
       const weekStartMonday = resolvePlanWeekStartMonday(packet);
       const requestBody: AnthropicMessagesRequest = {
-        model: coachModel.model,
+        model: target.model,
         max_tokens: MAX_OUTPUT_TOKENS,
         system: midWeekSystemPrompt(packet.goal),
         tools: [
@@ -1012,7 +1020,7 @@ export function createAnthropicLlmPort(
             input_schema: midWeekChatReplyToolSchema(),
           },
         ],
-        ...reasoningParams(coachModel.effort),
+        ...reasoningParams(target.effort),
         messages: [
           {
             role: "user",
@@ -1024,16 +1032,7 @@ export function createAnthropicLlmPort(
         "mid_week_chat",
         callOptions,
         requestBody,
-        () =>
-          callAnthropicMessages({
-            apiKey,
-            apiUrl,
-            timeoutMs,
-            idleTimeoutMs,
-            fetchImpl,
-            toolName: MIDWEEK_TOOL_NAME,
-            requestBody,
-          }),
+        send(target, MIDWEEK_TOOL_NAME, requestBody),
         (input) => validateMidWeekChatReply(input, weekStartMonday),
       );
     },

@@ -54,6 +54,7 @@ import type { TrainingGoal } from "../src/goal/types.js";
 import { createAnthropicLlmPort, weeklyUserPromptFor } from "../src/llm/anthropic.js";
 import { askOnceMore } from "../src/llm/askOnceMore.js";
 import { TESTED_COACH_MODEL } from "../src/llm/coachModel.js";
+import { anthropicCoachTarget } from "../src/llm/coachTarget.js";
 import { ANTHROPIC_EFFORT_LEVELS, parseAnthropicEffort, type AnthropicEffort } from "../src/llm/effort.js";
 import { LlmSchemaError } from "../src/llm/port.js";
 import { createStubLlmPort } from "../src/llm/stub.js";
@@ -220,8 +221,9 @@ async function replay(calls: StoredCall[]): Promise<void> {
     const port = dryRun
       ? createStubLlmPort()
       : createAnthropicLlmPort({
-          readCoachModel: async () => ({ model: call.model ?? MODEL, effort: EFFORT }),
-          readApiKey: async () => apiKey!,
+          // Built from flags; the replay never reads the saved setting (ADR 0004).
+          resolveCoachTarget: async () =>
+            anthropicCoachTarget({ model: call.model ?? MODEL, effort: EFFORT }, apiKey!),
           recorder: memoryRecorder(log),
         });
     const started = Date.now();
