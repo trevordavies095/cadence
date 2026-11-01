@@ -1058,6 +1058,7 @@ export function createStubLlmPort(options?: StubLlmPortOptions): LlmPort {
         id: callOptions.callId,
         operation,
         provider: "stub",
+        serverHost: null,
         model: null,
         appVersion,
         weekSessionId: callOptions.weekSessionId ?? null,

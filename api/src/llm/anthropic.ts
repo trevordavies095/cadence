@@ -7,10 +7,12 @@ import type {
   LlmCallRecorder,
 } from "../llmCallLog/types.js";
 import type { ModelPacket } from "../packet/types.js";
+import { selfHostedHost } from "../settings/selfHostedStore.js";
 import { resolveLlmProvider } from "../settings/sources.js";
 import type { CoachModel } from "./coachModel.js";
 import {
   createCoachTargetResolver,
+  type CoachProvider,
   type CoachTarget,
   type CoachTargetResolver,
 } from "./coachTarget.js";
@@ -510,7 +512,7 @@ type AnthropicMessagesRequest = {
     description: string;
     input_schema: Record<string, unknown>;
   }>;
-  thinking: { type: "adaptive"; display: "summarized" };
+  thinking: { type: "adaptive"; display: "summarized" } | { type: "enabled" };
   output_config: { effort: AnthropicEffort };
   tool_choice: { type: "auto" };
   stream: true;
@@ -587,8 +589,32 @@ function describeStopReason(body: unknown): string | null {
   return null;
 }
 
+/**
+ * Request headers. Anthropic: the key in `x-api-key`, as always. Self-hosted:
+ * the key, when there is one, in both `x-api-key` and `Authorization: Bearer`,
+ * so the athlete need not know which their server checks; no key, neither.
+ */
+function messagesHeaders(
+  provider: CoachProvider,
+  apiKey: string | null,
+): Record<string, string> {
+  if (provider === "anthropic") {
+    return {
+      "content-type": "application/json",
+      "x-api-key": apiKey ?? "",
+      "anthropic-version": ANTHROPIC_VERSION,
+    };
+  }
+  return {
+    "content-type": "application/json",
+    ...(apiKey ? { "x-api-key": apiKey, authorization: `Bearer ${apiKey}` } : {}),
+    "anthropic-version": ANTHROPIC_VERSION,
+  };
+}
+
 async function callAnthropicMessages(options: {
-  apiKey: string;
+  provider: CoachProvider;
+  apiKey: string | null;
   apiUrl: string;
   timeoutMs: number;
   idleTimeoutMs: number;
@@ -597,6 +623,7 @@ async function callAnthropicMessages(options: {
   toolName: string;
 }): Promise<AnthropicCallResult> {
   const {
+    provider,
     apiKey,
     apiUrl,
     timeoutMs,
@@ -643,11 +670,7 @@ async function callAnthropicMessages(options: {
     try {
       response = await fetchImpl(apiUrl, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": ANTHROPIC_VERSION,
-        },
+        headers: messagesHeaders(provider, apiKey),
         body: JSON.stringify(requestBody),
         signal: controller.signal,
         credentials: "omit",
@@ -751,8 +774,6 @@ async function callAnthropicMessages(options: {
   }
 }
 
-/** A target whose key is known to be present. */
-type KeyedTarget = CoachTarget & { credentials: { apiKey: string } };
 
 /**
  * Live LlmPort against Anthropic Messages API using the encrypted BYO key.
@@ -776,13 +797,19 @@ export function createAnthropicLlmPort(
   const recorder = options?.recorder ?? createPostgresLlmCallRecorder();
   const appVersion = options?.appVersion ?? resolveAppVersion();
   /**
-   * Adaptive thinking with readable summaries. tool_choice stays "auto": a
-   * forced tool skips the thinking block, so the prompt asks for the tool call.
+   * Anthropic: adaptive thinking with readable summaries. Self-hosted: thinking
+   * enabled, with no `display`, since a local server may not know adaptive mode
+   * or summaries. tool_choice stays "auto": a forced tool skips the thinking
+   * block, so the prompt asks for the tool call.
    */
-  function reasoningParams(effort: AnthropicEffort) {
+  function reasoningParams(target: CoachTarget) {
+    const thinking =
+      target.provider === "self_hosted"
+        ? ({ type: "enabled" } as const)
+        : ({ type: "adaptive", display: "summarized" } as const);
     return {
-      thinking: { type: "adaptive", display: "summarized" },
-      output_config: { effort },
+      thinking,
+      output_config: { effort: target.effort },
       tool_choice: { type: "auto" },
       stream: true,
     } as const;
@@ -790,27 +817,28 @@ export function createAnthropicLlmPort(
 
   /**
    * The target the call was handed, else the one in force now: read once, and
-   * the request is built from it and nothing else. No key, no call.
+   * the request is built from it and nothing else. Anthropic with no key, no
+   * call; a self-hosted server may need no key.
    */
   async function targetFor(
     callOptions: LlmCallOptions | undefined,
-  ): Promise<KeyedTarget> {
+  ): Promise<CoachTarget> {
     const target = callOptions?.coachTarget ?? (await resolveCoachTarget());
-    const apiKey = target.credentials.apiKey;
-    if (!apiKey) {
+    if (target.provider === "anthropic" && !target.credentials.apiKey) {
       throw new LlmNotConfiguredError();
     }
-    return { ...target, credentials: { apiKey } };
+    return target;
   }
 
   /** The HTTP side of one call, sent to the target. */
   function send(
-    target: KeyedTarget,
+    target: CoachTarget,
     toolName: string,
     requestBody: AnthropicMessagesRequest,
   ) {
     return () =>
       callAnthropicMessages({
+        provider: target.provider,
         apiKey: target.credentials.apiKey,
         apiUrl: target.messagesUrl,
         timeoutMs,
@@ -841,6 +869,7 @@ export function createAnthropicLlmPort(
   async function attempt<T>(
     operation: LlmCallOperation,
     callOptions: LlmCallOptions | undefined,
+    target: CoachTarget,
     requestBody: AnthropicMessagesRequest,
     call: () => Promise<AnthropicCallResult>,
     validate: (
@@ -853,7 +882,9 @@ export function createAnthropicLlmPort(
     const callId = callOptions?.callId;
     const base = {
       operation,
-      provider: "anthropic" as const,
+      provider: target.provider,
+      serverHost:
+        target.provider === "self_hosted" ? selfHostedHost(target.messagesUrl) : null,
       model: requestBody.model,
       appVersion,
       weekSessionId: callOptions?.weekSessionId ?? null,
@@ -945,12 +976,13 @@ export function createAnthropicLlmPort(
       max_tokens: MAX_OUTPUT_TOKENS,
       system,
       tools: [aboutYouToolSchema(toolDescription)],
-      ...reasoningParams(target.effort),
+      ...reasoningParams(target),
       messages: [{ role: "user", content: userPrompt }],
     };
     return attempt(
       operation,
       callOptions,
+      target,
       requestBody,
       send(target, ABOUT_YOU_TOOL_NAME, requestBody),
       validate,
@@ -980,7 +1012,7 @@ export function createAnthropicLlmPort(
             input_schema: weeklyReplyToolSchema(),
           },
         ],
-        ...reasoningParams(target.effort),
+        ...reasoningParams(target),
         messages: [
           {
             role: "user",
@@ -995,6 +1027,7 @@ export function createAnthropicLlmPort(
       return attempt(
         "weekly_reply",
         callOptions,
+        target,
         requestBody,
         send(target, WEEKLY_TOOL_NAME, requestBody),
         (input) => validateWeeklyReply(input, weekStartMonday),
@@ -1020,7 +1053,7 @@ export function createAnthropicLlmPort(
             input_schema: midWeekChatReplyToolSchema(),
           },
         ],
-        ...reasoningParams(target.effort),
+        ...reasoningParams(target),
         messages: [
           {
             role: "user",
@@ -1031,6 +1064,7 @@ export function createAnthropicLlmPort(
       return attempt(
         "mid_week_chat",
         callOptions,
+        target,
         requestBody,
         send(target, MIDWEEK_TOOL_NAME, requestBody),
         (input) => validateMidWeekChatReply(input, weekStartMonday),

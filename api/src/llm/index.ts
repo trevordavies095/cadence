@@ -14,6 +14,7 @@ export {
   ANTHROPIC_MESSAGES_URL,
   anthropicCoachTarget,
   createCoachTargetResolver,
+  SELF_HOSTED_NOT_CONFIGURED_MESSAGE,
   type CoachCredentials,
   type CoachProvider,
   type CoachTarget,

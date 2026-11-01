@@ -1,12 +1,25 @@
 import { SecretProtector } from "../crypto/secretProtector.js";
 import { readAnthropicApiKey } from "../settings/anthropicStore.js";
-import { resolveCoachModel, type CoachModel } from "./coachModel.js";
+import {
+  getSavedCoachModel,
+  type SavedCoachSetting,
+} from "../settings/coachModelStore.js";
+import {
+  getSelfHostedConnection,
+  readSelfHostedApiKey,
+  selfHostedEndpoint,
+} from "../settings/selfHostedStore.js";
+import { TESTED_COACH_MODEL, type CoachModel } from "./coachModel.js";
 import type { AnthropicEffort } from "./effort.js";
+import { LlmNotConfiguredError } from "./port.js";
 
 export const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
 
-/** Who serves a coach call. Only Anthropic for now. */
-export type CoachProvider = "anthropic";
+/** Who serves a coach call: Anthropic, or the athlete's own model server. */
+export type CoachProvider = "anthropic" | "self_hosted";
+
+/** The not-configured message when the provider is self-hosted and no server is saved. */
+export const SELF_HOSTED_NOT_CONFIGURED_MESSAGE = "Set up the model server in Settings";
 
 /** What a coach call authenticates with. A null key means none is saved. */
 export type CoachCredentials = { apiKey: string | null };
@@ -47,31 +60,65 @@ export function anthropicCoachTarget(
 }
 
 export type CoachTargetResolverOptions = {
-  /** Wrapping key for the saved Anthropic key. Defaults to DATA_PROTECTION_SECRET_KEY. */
+  /** Wrapping key for the saved Anthropic and self-hosted keys. Defaults to DATA_PROTECTION_SECRET_KEY. */
   dataProtectionKey?: string;
-  /** Override the saved-key loader (tests). */
+  /** Override the saved Anthropic key loader (tests). */
   readApiKey?: () => Promise<string | null>;
-  /** Override the saved model and effort reader (tests). Defaults to resolveCoachModel. */
+  /**
+   * Override the model and effort reader (tests). When given, the target is
+   * always Anthropic with this pair; the saved provider is not read.
+   */
   readCoachModel?: () => Promise<CoachModel>;
-  /** Override the Messages API URL (tests). */
+  /** Override the Anthropic Messages API URL (tests). */
   messagesUrl?: string;
 };
 
 /**
- * The target from saved settings: the saved Anthropic key and the saved coach
- * model, else the tested default. Read each time it is called, so a change in
- * Settings applies without a restart.
+ * A self-hosted target: the saved server's Messages path, its key (or none),
+ * and the saved model and effort. No saved server is not configured.
+ */
+async function selfHostedCoachTarget(
+  setting: SavedCoachSetting,
+  protector: SecretProtector,
+): Promise<CoachTarget> {
+  const connection = await getSelfHostedConnection();
+  if (!connection.configured || !connection.baseUrl) {
+    throw new LlmNotConfiguredError(SELF_HOSTED_NOT_CONFIGURED_MESSAGE);
+  }
+  return {
+    provider: "self_hosted",
+    messagesUrl: selfHostedEndpoint(connection.baseUrl, "messages"),
+    credentials: {
+      apiKey: connection.keyConfigured ? await readSelfHostedApiKey(protector) : null,
+    },
+    model: setting.model,
+    effort: setting.effort,
+  };
+}
+
+/**
+ * The target from saved settings. Provider self-hosted: the saved server and
+ * key with the saved model and effort. Otherwise Anthropic: the saved
+ * Anthropic key and the saved coach model, else the tested default. Read each
+ * time it is called, so a change in Settings applies without a restart.
  */
 export function createCoachTargetResolver(
   options?: CoachTargetResolverOptions,
 ): CoachTargetResolver {
-  const readApiKey =
-    options?.readApiKey ??
-    (() => readAnthropicApiKey(new SecretProtector(options?.dataProtectionKey)));
-  const readCoachModel = options?.readCoachModel ?? resolveCoachModel;
+  const protector = () => new SecretProtector(options?.dataProtectionKey);
+  const readApiKey = options?.readApiKey ?? (() => readAnthropicApiKey(protector()));
+  const readCoachModel = options?.readCoachModel;
   const messagesUrl = options?.messagesUrl?.trim() || ANTHROPIC_MESSAGES_URL;
   return async () => {
+    if (readCoachModel) {
+      const apiKey = await readApiKey();
+      return anthropicCoachTarget(await readCoachModel(), apiKey, messagesUrl);
+    }
+    const saved = await getSavedCoachModel();
+    if (saved?.provider === "self_hosted") {
+      return selfHostedCoachTarget(saved, protector());
+    }
     const apiKey = await readApiKey();
-    return anthropicCoachTarget(await readCoachModel(), apiKey, messagesUrl);
+    return anthropicCoachTarget(saved ?? TESTED_COACH_MODEL, apiKey, messagesUrl);
   };
 }
