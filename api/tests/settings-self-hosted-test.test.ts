@@ -273,16 +273,18 @@ describe("Test connection: the probe", () => {
   });
 });
 
-describe("Test connection: refused", () => {
-  it("for the Anthropic provider, with a server saved, and nothing is called", async () => {
+describe("Test connection: who may run it", () => {
+  it("is not refused while Anthropic is the saved provider, and only calls the saved server", async () => {
+    // The athlete tests a server and a model they have picked but not saved yet.
     const server = fakeServer();
     const app = await selfHostedApp(server);
     expect((await send(app, "/settings/coach-model", "DELETE")).status).toBe(200);
     server.arm();
     const res = await runTest(app);
-    expect(res.status).toBe(400);
-    expect(await json(res)).toEqual({ error: "not_self_hosted" });
-    expect(server.calls).toEqual([]);
+    expect(res.status).toBe(200);
+    expect((await json(res)).probe).toMatchObject({ ok: true, verdict: "ok" });
+    expect(server.calls.length).toBeGreaterThan(0);
+    expect(server.calls.every((c) => c.url.startsWith(BASE_URL))).toBe(true);
   });
 
   it("with no server saved", async () => {

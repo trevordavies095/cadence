@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { SecretProtector } from "../crypto/secretProtector.js";
 import { TESTED_COACH_MODEL } from "../llm/coachModel.js";
+import { resolveSelfHostedIdleTimeoutMs } from "../llm/anthropic.js";
 import { parseAnthropicEffort } from "../llm/effort.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import {
@@ -52,8 +53,6 @@ export type SettingsRouteOptions = {
   selfHostedTestTimeoutMs?: number;
 };
 
-// wired to resolveSelfHostedIdleTimeoutMs after ticket 05 merges
-const SELF_HOSTED_TEST_TIMEOUT_MS = 600_000;
 
 function protectorFrom(options: SettingsRouteOptions): SecretProtector {
   return new SecretProtector(options.dataProtectionKey);
@@ -260,8 +259,8 @@ export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
   });
 
   // Test connection: `{ model }`. Lists the saved server's models, then sends the chosen
-  // model a prompt of about 40k tokens and checks it arrived whole. Self-hosted only, so
-  // it never spends money on an Anthropic key.
+  // model a prompt of about 40k tokens and checks it arrived whole. It only ever calls the
+  // saved self-hosted server, never Anthropic, so it works before Self-hosted is saved.
   routes.post("/settings/self-hosted/test", async (c) => {
     let body: { model?: unknown };
     try {
@@ -271,9 +270,6 @@ export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
     }
     const model = body && typeof body.model === "string" ? body.model.trim() : "";
     if (!model) return c.json({ error: "model_required" }, 400);
-    if ((await getSavedCoachModel())?.provider !== "self_hosted") {
-      return c.json({ error: "not_self_hosted" }, 400);
-    }
     const connection = await getSelfHostedConnection();
     if (!connection.baseUrl) {
       return c.json({ error: "no_self_hosted_connection" }, 400);
@@ -287,7 +283,7 @@ export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
         apiKey,
         model,
         fetchImpl: options.anthropicFetch ?? globalThis.fetch.bind(globalThis),
-        timeoutMs: options.selfHostedTestTimeoutMs ?? SELF_HOSTED_TEST_TIMEOUT_MS,
+        timeoutMs: options.selfHostedTestTimeoutMs ?? resolveSelfHostedIdleTimeoutMs(),
       }),
     );
   });
