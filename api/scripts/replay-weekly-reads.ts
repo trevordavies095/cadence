@@ -116,6 +116,34 @@
  * and body. The script exits non-zero when any check fails, in any
  * configuration. The dry run over tests/fixtures/replay-packets runs in the API
  * test suite (tests/replay-weekly-reads.test.ts).
+ *
+ * Blind review packs (scripts/replayReview.ts): --review-pack sets a candidate
+ * configuration's replies (repeat 1) beside the baseline's, input by input,
+ * over one or more output roots, and makes no calls:
+ *
+ *   npm run replay -- --review-pack \
+ *     --roots ../.scratch/benchmark/snapshot,../.scratch/benchmark/seasons \
+ *     --baseline anthropic--claude-opus-4-7--xhigh \
+ *     --candidate self_hosted--gpt-oss-20b-MXFP4-Q8--high \
+ *     --candidate self_hosted--gpt-oss-120b--high --seed 1
+ *
+ * --roots takes a comma-separated list (--out alone names one root);
+ * --candidate repeats or takes a list; --seed defaults to 1. Each candidate
+ * gets a pack in <review>/<candidate>/, where <review> is --review <dir>, else
+ * a "review" folder beside the first root: README.md (how to score and the
+ * pairs), one <root folder name>-<input id>.md per pair (what the coach was
+ * given in plain words, then Reply A and Reply B as the athlete reads them,
+ * in an order drawn per pair from the seed, with nothing that names the
+ * model), key.json (which configuration is A, kept apart) and
+ * scores.template.json (the rubric, and an empty entry per pair). A side with
+ * no reply, or a refused one, is shown as such. The sample rule is
+ * pickSample's; --sample <root>/<id>,... (such as seasons/09,snapshot/10)
+ * names the inputs instead. The reviewer copies the template to scores.json
+ * and fills it; --report-only (with --review <dir>, else the "review" folder
+ * beside --out) adds the review results to report.md: per pack, the mean of
+ * each rubric item for baseline and candidate, the preference rate, and the
+ * two pairs with the largest margin each way, quoted. Missing, partial or
+ * malformed scores are reported, never fatal.
  */
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -165,6 +193,7 @@ import type { ModelPacket } from "../src/packet/types.js";
 import { normalizeSelfHostedBaseUrl, selfHostedEndpoint, selfHostedHost } from "../src/settings/selfHostedStore.js";
 import { createInstrumentedFetch, thinkingCharsOf, timeToFirstTokenMs } from "./instrumentedFetch.js";
 import { replayCheckFailures, type ReplayCheckFailure } from "./replayChecks.js";
+import { reviewResults, writeReviewPacks, type ReviewInput } from "./replayReview.js";
 import {
   configurationMeasures,
   estimatePromptTokens,
@@ -255,6 +284,28 @@ function flagBaseUrl(): string | null {
 }
 
 const BASE_URL = flagBaseUrl();
+
+const reviewPack = process.argv.includes("--review-pack");
+
+/** Every value of a flag that may repeat or take a comma-separated list, such as --candidate. */
+function flagValues(flag: string, what: string): string[] {
+  const values: string[] = [];
+  process.argv.forEach((arg, i) => {
+    if (arg !== flag) return;
+    const value = process.argv[i + 1];
+    if (!value || value.startsWith("--")) throw new Error(`${flag} needs ${what}`);
+    values.push(...value.split(",").map((v) => v.trim()).filter(Boolean));
+  });
+  return values;
+}
+
+/** --seed, a whole number; 1 when absent. */
+function flagSeed(): number {
+  const raw = flagValue("--seed", "a number");
+  if (raw === null) return 1;
+  if (!/^\d+$/.test(raw)) throw new Error(`Invalid --seed "${raw}": expected a whole number.`);
+  return Number(raw);
+}
 
 /** The model id as a folder-name part: anything but letters, digits, ".", "_" and "-" becomes "_". */
 function folderSafe(model: string): string {
@@ -890,6 +941,70 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
   console.log(`${path.basename(file)} done in ${Math.round((Date.now() - started) / 1000)} s${retriedNote}`);
 }
 
+// ---- Inputs for the review pack -------------------------------------------------
+
+/**
+ * A packet folder recorded in config.json, found again: as recorded, else at the
+ * same place under this checkout's api folder (a run made from another checkout).
+ */
+function inputsFolder(recorded: string): string | null {
+  if (existsSync(recorded)) return recorded;
+  const at = recorded.lastIndexOf(`${path.sep}api${path.sep}`);
+  if (at < 0) return null;
+  const local = path.resolve(here, "..", recorded.slice(at + 5));
+  return existsSync(local) ? local : null;
+}
+
+/** A configuration folder's inputs rebuilt from its config.json, in input-id order; null when they cannot be. */
+function loadReviewInputs(configDir: string): ReviewInput[] | null {
+  let calls: StoredCall[];
+  try {
+    const config = JSON.parse(readFileSync(path.join(configDir, "config.json"), "utf8")) as ConfigFile;
+    if (config.inputs === "demo snapshot") calls = storedDemoCalls();
+    else {
+      const folder = inputsFolder(config.inputs);
+      if (!folder) return null;
+      calls = folderCalls(folder);
+    }
+  } catch {
+    return null;
+  }
+  return calls.map((call, i) => {
+    const sent = "packet" in call ? { packet: call.packet, aboutYou: null } : { packet: null, aboutYou: call.input };
+    return {
+      id: String(i + 1).padStart(2, "0"),
+      operation: call.operation,
+      source: call.source,
+      goal: call.goal,
+      ...sent,
+      asked: askedFor(call),
+    };
+  });
+}
+
+/** Writes the blind review packs (--review-pack); no calls, no report. */
+function reviewPacks(): void {
+  const roots = flagValues("--roots", "a comma-separated list of output roots").map((r) => path.resolve(r));
+  if (roots.length === 0) roots.push(...flagValues("--out", "a folder").map((r) => path.resolve(r)));
+  if (roots.length === 0) throw new Error("--review-pack needs --roots <dir>,<dir> (or --out <dir>), the output roots holding the configuration folders.");
+  for (const r of roots) if (!existsSync(r)) throw new Error(`--roots: ${r} does not exist.`);
+  const baseline = flagValue("--baseline", "a configuration folder name");
+  if (!baseline) throw new Error("--review-pack needs --baseline <configuration folder name>, such as anthropic--claude-opus-4-7--xhigh.");
+  const candidates = flagValues("--candidate", "a configuration folder name");
+  if (candidates.length === 0) throw new Error("--review-pack needs at least one --candidate <configuration folder name>.");
+  const sample = flagValues("--sample", "a comma-separated list of <root>/<input id>");
+  const lines = writeReviewPacks({
+    roots,
+    baseline,
+    candidates,
+    seed: flagSeed(),
+    sample: sample.length ? sample : null,
+    reviewDir: flagPath("--review") ?? path.resolve(roots[0]!, "..", "review"),
+    loadInputs: loadReviewInputs,
+  });
+  for (const line of lines) console.log(line);
+}
+
 // ---- The first-pass coverage report -------------------------------------------
 
 type Saved = {
@@ -1399,6 +1514,8 @@ function report(): ReplayCheckFailure[] {
       ? checkFailures.map((f) => `- ${f.label}: ${f.check}: ${f.detail}`)
       : [GOAL_CHECKS_PASSED]),
     "",
+    // Blind scores joined to each pack's key; nothing when there is no review folder.
+    ...reviewResults(flagPath("--review") ?? path.resolve(ROOT, "..", "review")),
     ...parts.flatMap((p) => p.lines),
   ];
   writeFileSync(path.join(ROOT, "report.md"), out.join("\n"));
@@ -1406,11 +1523,15 @@ function report(): ReplayCheckFailure[] {
   return checkFailures;
 }
 
-mkdirSync(ROOT, { recursive: true });
-if (!reportOnly) await replay(PACKETS ? folderCalls(PACKETS) : storedDemoCalls());
-const checkFailures = report();
-if (checkFailures.length > 0) {
-  console.error(`${checkFailures.length} goal check${checkFailures.length === 1 ? "" : "s"} failed:`);
-  for (const f of checkFailures) console.error(`- ${f.label}: ${f.check}: ${f.detail}`);
-  process.exitCode = 1;
+if (reviewPack) {
+  reviewPacks();
+} else {
+  mkdirSync(ROOT, { recursive: true });
+  if (!reportOnly) await replay(PACKETS ? folderCalls(PACKETS) : storedDemoCalls());
+  const checkFailures = report();
+  if (checkFailures.length > 0) {
+    console.error(`${checkFailures.length} goal check${checkFailures.length === 1 ? "" : "s"} failed:`);
+    for (const f of checkFailures) console.error(`- ${f.label}: ${f.check}: ${f.detail}`);
+    process.exitCode = 1;
+  }
 }
