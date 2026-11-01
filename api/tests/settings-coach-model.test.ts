@@ -110,7 +110,7 @@ async function view(app: ReturnType<typeof createApp>) {
 }
 
 async function savedRows() {
-  const result = await pool.query("SELECT model, effort FROM coach_model_settings");
+  const result = await pool.query("SELECT provider, model, effort FROM coach_model_settings");
   return result.rows;
 }
 
@@ -133,6 +133,7 @@ describe("coach model setting", () => {
     await acceptAndReady();
     const { fetchImpl, listings } = fakeAnthropic();
     const got = await view(settingsApp(fetchImpl));
+    expect(got.provider).toBe("anthropic");
     expect(got.saved).toBeNull();
     expect(got.effective).toEqual(TESTED_COACH_MODEL);
     expect(got.tested).toEqual(TESTED_COACH_MODEL);
@@ -152,7 +153,7 @@ describe("coach model setting", () => {
     const body = await json(saved);
     expect(body.saved).toEqual({ model: "claude-opus-4-7", effort: "medium" });
     expect(body.effective).toEqual({ model: "claude-opus-4-7", effort: "medium" });
-    expect(await savedRows()).toEqual([{ model: "claude-opus-4-7", effort: "medium" }]);
+    expect(await savedRows()).toEqual([{ provider: "anthropic", model: "claude-opus-4-7", effort: "medium" }]);
 
     const cleared = await json(await app.request("/settings/coach-model", { method: "DELETE" }));
     expect(cleared.saved).toBeNull();
@@ -188,7 +189,7 @@ describe("coach model setting", () => {
     const app = settingsApp(fakeAnthropic().fetchImpl, { tempo: "export", model: "stub", demo: true });
     const res = await put(app, { model: "claude-opus-4-7", effort: "medium" });
     expect(res.status).toBe(200);
-    expect(await savedRows()).toEqual([{ model: "claude-opus-4-7", effort: "medium" }]);
+    expect(await savedRows()).toEqual([{ provider: "anthropic", model: "claude-opus-4-7", effort: "medium" }]);
   });
 });
 
@@ -281,7 +282,7 @@ describe("the models the athlete's key can use", () => {
   it("when the listing fails, offers only the tested default and the saved model, and refuses the rest", async () => {
     await acceptAndReady();
     await saveKey();
-    await saveCoachModel({ model: "claude-opus-4-6", effort: "high" });
+    await saveCoachModel({ provider: "anthropic", model: "claude-opus-4-6", effort: "high" });
     const app = settingsApp(fakeAnthropic({ listing: 503 }).fetchImpl);
 
     const got = await view(app);
@@ -300,7 +301,7 @@ describe("the models the athlete's key can use", () => {
   it("a saved model the listing no longer has is still shown, and a call to it fails with Anthropic's message", async () => {
     await acceptAndReady();
     await saveKey();
-    await saveCoachModel({ model: "claude-opus-4-5", effort: "high" });
+    await saveCoachModel({ provider: "anthropic", model: "claude-opus-4-5", effort: "high" });
     const fake = fakeAnthropic({
       listing: [OPUS_4_7, OPUS_5_5],
       reply: () => new Response('{"type":"error","error":{"type":"not_found_error","message":"model: claude-opus-4-5"}}', { status: 404 }),
@@ -371,7 +372,7 @@ describe("coach calls follow the saved setting", () => {
     const { app, weekSessionId, sent } = await liveApp(async (attempt) => {
       if (attempt > 1) return goodReply();
       // The athlete changes Settings while the first attempt is out; it comes back refused for its shape.
-      await saveCoachModel({ model: "claude-opus-4-7", effort: "low" });
+      await saveCoachModel({ provider: "anthropic", model: "claude-opus-4-7", effort: "low" });
       return anthropicStreamResponse(
         anthropicToolMessage("submit_weekly_reply", { headline: "", prescribedWeek: null }),
       );

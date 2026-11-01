@@ -164,11 +164,11 @@ describe("a refused weekly reply is asked for once more", () => {
 
   it("hands both attempts the one target, even if the key and model change in between", async () => {
     await putAnthropicConnection("sk-ant-first-key", new SecretProtector(TEST_DATA_PROTECTION_KEY));
-    await saveCoachModel({ model: "claude-opus-4-6", effort: "high" });
+    await saveCoachModel({ provider: "anthropic", model: "claude-opus-4-6", effort: "high" });
     const { port, coachTargets } = flakyPort(["throws"], async (attempt) => {
       if (attempt !== 1) return;
       await putAnthropicConnection("sk-ant-second-key", new SecretProtector(TEST_DATA_PROTECTION_KEY));
-      await saveCoachModel({ model: "claude-opus-5-5", effort: "low" });
+      await saveCoachModel({ provider: "anthropic", model: "claude-opus-5-5", effort: "low" });
     });
     expect((await askForReply(port)).status).toBe(200);
     expect(coachTargets).toHaveLength(2);
@@ -185,7 +185,7 @@ describe("a refused weekly reply is asked for once more", () => {
   it("sends both live attempts to the same URL, key, model and effort when Settings change in between", async () => {
     const protector = new SecretProtector(TEST_DATA_PROTECTION_KEY);
     await putAnthropicConnection("sk-ant-first-key", protector);
-    await saveCoachModel({ model: "claude-opus-4-6", effort: "high" });
+    await saveCoachModel({ provider: "anthropic", model: "claude-opus-4-6", effort: "high" });
     const packet = samplePacket();
     const sent: Array<{ url: string; key: string | null; body: string }> = [];
     const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -201,7 +201,7 @@ describe("a refused weekly reply is asked for once more", () => {
       }
       // Settings change while the first attempt is out; it comes back refused for its shape.
       await putAnthropicConnection("sk-ant-second-key", protector);
-      await saveCoachModel({ model: "claude-opus-5-5", effort: "low" });
+      await saveCoachModel({ provider: "anthropic", model: "claude-opus-5-5", effort: "low" });
       return anthropicStreamResponse(
         anthropicToolMessage("submit_weekly_reply", { headline: "", prescribedWeek: null }),
       );

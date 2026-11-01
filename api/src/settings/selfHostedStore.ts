@@ -42,6 +42,24 @@ export function normalizeSelfHostedBaseUrl(input: string): string | null {
   return trimmed.replace(/\/+$/, "");
 }
 
+/**
+ * An endpoint on the saved server: `selfHostedEndpoint(base, "models")` is
+ * base + `/v1/models`, without doubling a `/v1` the base URL already ends in.
+ */
+export function selfHostedEndpoint(baseUrl: string, path: "models" | "messages"): string {
+  const base = baseUrl.replace(/\/+$/, "");
+  return /\/v1$/i.test(base) ? `${base}/${path}` : `${base}/v1/${path}`;
+}
+
+/** The hostname of a saved base URL, or null when it cannot be read. */
+export function selfHostedHost(baseUrl: string): string | null {
+  try {
+    return new URL(baseUrl).hostname || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getSelfHostedConnection(): Promise<SelfHostedConnectionView> {
   const result = await pool.query<Row>(
     `SELECT base_url, api_key_ciphertext, api_key_last4, updated_at

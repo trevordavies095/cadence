@@ -19,8 +19,11 @@ export type CatalogueModel = {
 
 export type Catalogue = {
   models: CatalogueModel[];
-  /** Why only the fallback set is offered, or null when the list came from Anthropic. */
-  fallback: "no_key" | "unavailable" | null;
+  /**
+   * Why only the fallback set is offered, or null when the list came from the
+   * provider. `no_key` is Anthropic's; `no_connection` is the self-hosted one's.
+   */
+  fallback: "no_key" | "no_connection" | "unavailable" | null;
 };
 
 /** A model Anthropic lists, before the saved choice is merged in. */
@@ -88,7 +91,7 @@ function mergeCatalogue(listed: ListedModel[], saved: CoachModel | null): Catalo
 export type CoachModelCatalogue = {
   /** The models the athlete can choose now. */
   load(options: { saved: CoachModel | null }): Promise<Catalogue>;
-  /** Forget the cached listing (the Anthropic key changed). */
+  /** Forget the cached listing (the key or connection changed). */
   forget(): void;
 };
 

@@ -239,6 +239,16 @@ export async function migrate(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT NOW()
     );
 
+    -- Who serves Coach Cade: Anthropic or the athlete's own model server. Rows
+    -- saved before the provider existed are Anthropic.
+    ALTER TABLE coach_model_settings
+      ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'anthropic';
+    ALTER TABLE coach_model_settings
+      DROP CONSTRAINT IF EXISTS coach_model_settings_provider_check;
+    ALTER TABLE coach_model_settings
+      ADD CONSTRAINT coach_model_settings_provider_check
+      CHECK (provider IN ('anthropic', 'self_hosted'));
+
     -- The note a coach message produced, so the card shows under that reply.
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS dossier_proposal_id bigint;
