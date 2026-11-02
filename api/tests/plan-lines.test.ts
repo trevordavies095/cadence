@@ -210,7 +210,7 @@ describe("parsePlanLines: a line becomes a stored day", () => {
   it("covers every synonym in the table", () => {
     expect(synonymCases.map(([w]) => w).sort()).toEqual(
       [
-        "tempo", "intervals", "threshold", "hills", "workout", "fartlek", "strides-session",
+        "tempo", "intervals", "interval", "threshold", "hills", "hill", "workout", "fartlek", "strides-session",
         "recovery", "jog", "shakeout",
         "strength", "cross", "cross-training", "bike", "swim", "walk", "yoga",
         "off",
@@ -240,11 +240,46 @@ const failureCases: FailureCase[] = [
   { name: "a bare range", line: "Tue: easy 5 to 6", reason: "no distance unit" },
   { name: "a bare number on an other day", line: "Tue: strength 30", reason: "no distance unit" },
   { name: "a run day with no amount", line: "Tue: easy, keep it relaxed", reason: "no distance or duration" },
-  { name: "a race with no amount", line: "Tue: race, half marathon", reason: "no distance or duration" },
+  { name: "a race with no amount and no race name", line: "Tue: race, parkrun with friends", reason: "no distance or duration" },
   { name: "intensity only, no amount", line: "Tue: quality, 6x800 at 5k pace", reason: "no distance or duration" },
   { name: "a line with no type word", line: "Tue: 5 mi with friends", reason: "no day type word" },
   { name: "longer is not a type word", line: "Tue: longer, 7 mi", reason: "no day type word" },
 ];
+
+describe("parsePlanLines: decisions of 2026-11-02", () => {
+  it("files interval and hill as quality and keeps each word in the line", () => {
+    const a = parseOne("Tue: 6 x 800 m interval session, 7 mi");
+    const b = parseOne("Tue: hill repeats, 8 x 60 s, 6 mi");
+    expect(a.failure).toBeUndefined();
+    expect(b.failure).toBeUndefined();
+    expect(a.day.dayType).toBe("quality");
+    expect(b.day.dayType).toBe("quality");
+    expect(a.day.line).toContain("interval");
+    expect(b.day.line).toContain("hill");
+  });
+
+  it.each([
+    ["Sun: race, half marathon", 21098],
+    ["Sun: race, half-marathon. Go out easy.", 21098],
+    ["Sun: race, marathon", 42195],
+    ["Sun: long, marathon distance on tired legs is not the point", 42195],
+  ])("%s files its race distance", (line, distanceM) => {
+    const { day, failure } = parseOne(line, "2026-11-15");
+    expect(failure).toBeUndefined();
+    expect(day.run?.distanceM).toBe(distanceM);
+    expect(day.parsed).toBe(true);
+  });
+
+  it("a number on the line wins over the race name", () => {
+    const { day } = parseOne("Sun: long, 16 mi with the last 3 at marathon pace", "2026-11-15");
+    expect(day.run?.distanceM).toBe(mi(16));
+  });
+
+  it("a race name that is an intensity is not a distance", () => {
+    expect(parseOne("Tue: quality, marathon pace work").failure?.reason).toBe("no distance or duration");
+    expect(parseOne("Tue: quality, half marathon effort").failure?.reason).toBe("no distance or duration");
+  });
+});
 
 describe("parsePlanLines: a line that cannot be filed", () => {
   it.each(failureCases)("$name fails with \"$reason\"", ({ line, reason }) => {

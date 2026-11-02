@@ -66,12 +66,17 @@ import type { TempoUnitPreference } from "../tempo/port.js";
  * Decisions:
  * - 2026-11-02, plan-as-text spec: the initial table below. Hyphenated words
  *   also match with a space ("cross training", "strides session").
+ * - 2026-11-02, maintainer: the singulars "interval" and "hill". Both file as
+ *   quality because both are hard sessions; they are different workouts, and
+ *   the coach's own word stays in the stored line, so the plan still shows which.
  */
 export const PLAN_DAY_TYPE_SYNONYMS: Readonly<Record<string, DayType>> = {
   tempo: "quality",
   intervals: "quality",
+  interval: "quality",
   threshold: "quality",
   hills: "quality",
+  hill: "quality",
   workout: "quality",
   fartlek: "quality",
   "strides-session": "quality",
@@ -227,6 +232,25 @@ const COLON_RE = new RegExp(
 const BARE_NUMBER_RE = /(?<![\w.:/×])\d+(?:\.\d+)?(?![\w.:/%×])/;
 const ANY_DATE_RE = /\d{4}-\d{2}-\d{2}/g;
 
+/**
+ * A race named with no number is its distance (2026-11-02, maintainer):
+ * "race: half marathon" files 21.1 km. Only when the line has no number
+ * amount, and never when the name is an intensity ("marathon pace",
+ * "half-marathon effort"). Half marathon is matched before marathon.
+ */
+const RACE_NAME_DISTANCES_M: ReadonlyArray<readonly [RegExp, number]> = [
+  [/\bhalf[-\s]+marathon\b(?![-\s]+(?:pace|effort)\b)/i, 21098],
+  [/\bmarathon\b(?![-\s]+(?:pace|effort)\b)/i, 42195],
+];
+
+function raceNameAmount(text: string): { distanceM: number; end: number } | null {
+  for (const [re, distanceM] of RACE_NAME_DISTANCES_M) {
+    const m = re.exec(text);
+    if (m) return { distanceM, end: m.index + m[0].length };
+  }
+  return null;
+}
+
 type Amount = {
   distanceM: number | null;
   durationS: number | null;
@@ -378,6 +402,13 @@ function parseDayBody(date: string, line: string, body: string): LineOutcome {
 
   const first = firstAmount(body);
   if (!first) {
+    const race = raceNameAmount(body);
+    if (race) {
+      return parsedDay(
+        { type: dayType, distanceM: race.distanceM, durationS: null, structure: null, paceOrHr: null, shoes: null },
+        cleanNotes(body.slice(race.end)),
+      );
+    }
     if (BARE_NUMBER_RE.test(body.replace(ANY_DATE_RE, " "))) return { ok: false, reason: "no distance unit" };
     if (dayType === "other") return parsedDay(null, cleanNotes(afterType));
     return { ok: false, reason: "no distance or duration" };
