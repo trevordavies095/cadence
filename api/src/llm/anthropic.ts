@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { resolveAppVersion } from "../llmCallLog/appVersion.js";
 import { createPostgresLlmCallRecorder } from "../llmCallLog/recorder.js";
 import type {
@@ -876,6 +877,68 @@ async function callAnthropicMessages(options: {
   }
 }
 
+/** Attempts at most for one coach call: the reply, and once more if it is refused (ADR 0002). */
+export const COACH_CALL_ATTEMPTS = 2;
+
+/** One attempt as askAtMostTwice hands it to the code that sends it. */
+export type CoachAttempt = {
+  /** 1 or 2. */
+  attempt: number;
+  /** True when no attempt follows this one, whatever it ends with. */
+  last: boolean;
+  /** The caller's call id; see attemptRowId for which row it names. */
+  callId: string | undefined;
+  /** A fresh id: the row's when this attempt is refused for its shape and another follows. */
+  refusedCallId: string | undefined;
+  /** The refused attempt's row this one follows; null on the first. */
+  parentCallId: string | null;
+};
+
+/**
+ * The id an attempt's call log row is written under. The caller's call id
+ * names the reply it gets back (or the failure it is handed), so the messages
+ * it links stay on the attempt that counted; a refused attempt that is asked
+ * for again is written under its own id, and the next one links to it.
+ */
+export function attemptRowId(a: CoachAttempt, err: unknown): string | undefined {
+  return !a.last && err instanceof LlmSchemaError ? a.refusedCallId : a.callId;
+}
+
+/**
+ * The one attempt loop every coach call goes through: the five operations of
+ * the live adapter, and the replay harness's dry run. `once` sends one attempt;
+ * an attempt refused for its shape (LlmSchemaError: validation, the plan's
+ * dates, a missing tool call, a stop at the output cap) is sent once more,
+ * unchanged, and any other error is thrown at once. Two attempts at most; the
+ * last one's error is thrown as it came. `once` must send the same request each
+ * time: the target is resolved before the loop, never inside it (ADR 0004).
+ */
+export async function askAtMostTwice<T>(
+  callOptions: LlmCallOptions | undefined,
+  once: (attempt: CoachAttempt) => Promise<T>,
+): Promise<T> {
+  const callId = callOptions?.callId;
+  let parentCallId: string | null = null;
+  for (let n = 1; ; n++) {
+    const a: CoachAttempt = {
+      attempt: n,
+      last: n >= COACH_CALL_ATTEMPTS,
+      callId,
+      refusedCallId: callId ? randomUUID() : undefined,
+      parentCallId,
+    };
+    try {
+      const value = await once(a);
+      callOptions?.onAttempt?.({ attempt: n, callId: callId ?? null, error: null });
+      return value;
+    } catch (err) {
+      const rowId = attemptRowId(a, err) ?? null;
+      callOptions?.onAttempt?.({ attempt: n, callId: rowId, error: err });
+      if (a.last || !(err instanceof LlmSchemaError)) throw err;
+      parentCallId = rowId;
+    }
+  }
+}
 
 /**
  * Live LlmPort against Anthropic Messages API using the encrypted BYO key.
@@ -963,11 +1026,12 @@ export function createAnthropicLlmPort(
   }
 
   /**
-   * One attempt = one row, on every branch. A missing key throws before this
-   * runs, so it writes nothing.
+   * One attempt = one row, on every branch, under the id attemptRowId names. A
+   * missing key throws before this runs, so it writes nothing.
    */
   async function attempt<T>(
     operation: LlmCallOperation,
+    a: CoachAttempt,
     callOptions: LlmCallOptions | undefined,
     target: CoachTarget,
     requestBody: AnthropicMessagesRequest,
@@ -979,7 +1043,6 @@ export function createAnthropicLlmPort(
       | { ok: false; error: string },
   ): Promise<T> {
     const startedAt = Date.now();
-    const callId = callOptions?.callId;
     const base = {
       operation,
       provider: target.provider,
@@ -988,7 +1051,7 @@ export function createAnthropicLlmPort(
       model: requestBody.model,
       appVersion,
       weekSessionId: callOptions?.weekSessionId ?? null,
-      parentCallId: null,
+      parentCallId: a.parentCallId,
       request: requestBody,
     };
     let result: AnthropicCallResult | undefined;
@@ -998,10 +1061,10 @@ export function createAnthropicLlmPort(
       if (!validated.ok) {
         throw new LlmSchemaError(validated.error);
       }
-      if (callId) {
+      if (a.callId) {
         await safeRecord({
           ...base,
-          id: callId,
+          id: a.callId,
           responseRaw: result.responseText,
           httpStatus: result.httpStatus,
           latencyMs: result.latencyMs,
@@ -1017,7 +1080,8 @@ export function createAnthropicLlmPort(
       }
       return validated.value;
     } catch (err) {
-      if (callId) {
+      const rowId = attemptRowId(a, err);
+      if (rowId) {
         const meta: AnthropicFailureMeta =
           (err instanceof Error ? failureMeta.get(err) : undefined) ??
           (result
@@ -1043,7 +1107,7 @@ export function createAnthropicLlmPort(
               : "transport_error";
         await safeRecord({
           ...base,
-          id: callId,
+          id: rowId,
           responseRaw: meta.responseText,
           httpStatus: meta.httpStatus,
           latencyMs: meta.latencyMs,
@@ -1059,6 +1123,29 @@ export function createAnthropicLlmPort(
       }
       throw err;
     }
+  }
+
+  /**
+   * One coach call, every operation: the caller resolved the target once and
+   * built the request once from it, so a second attempt sends the identical
+   * body to the identical server with the identical key, model and effort.
+   */
+  function ask<T>(
+    operation: LlmCallOperation,
+    callOptions: LlmCallOptions | undefined,
+    target: CoachTarget,
+    toolName: string,
+    requestBody: AnthropicMessagesRequest,
+    validate: (
+      toolInput: unknown,
+    ) =>
+      | { ok: true; value: T; repairs?: string[] }
+      | { ok: false; error: string },
+  ): Promise<T> {
+    const call = send(target, toolName, requestBody);
+    return askAtMostTwice(callOptions, (a) =>
+      attempt(operation, a, callOptions, target, requestBody, call, validate),
+    );
   }
 
   /** One About you call: same key check, reasoning params, logging and validation as the coach replies. */
@@ -1079,12 +1166,12 @@ export function createAnthropicLlmPort(
       ...reasoningParams(target),
       messages: [{ role: "user", content: userPrompt }],
     };
-    return attempt(
+    return ask(
       operation,
       callOptions,
       target,
+      ABOUT_YOU_TOOL_NAME,
       requestBody,
-      send(target, ABOUT_YOU_TOOL_NAME, requestBody),
       validate,
     );
   }
@@ -1124,12 +1211,14 @@ export function createAnthropicLlmPort(
           },
         ],
       };
-      return attempt(
+      // The plan's dates are checked against the plan week here, so a plan for
+      // the wrong week is refused and asked for once more like any other.
+      return ask(
         "weekly_reply",
         callOptions,
         target,
+        WEEKLY_TOOL_NAME,
         requestBody,
-        send(target, WEEKLY_TOOL_NAME, requestBody),
         (input) => validateWeeklyReply(input, weekStartMonday),
       );
     },
@@ -1161,12 +1250,12 @@ export function createAnthropicLlmPort(
           },
         ],
       };
-      return attempt(
+      return ask(
         "mid_week_chat",
         callOptions,
         target,
+        MIDWEEK_TOOL_NAME,
         requestBody,
-        send(target, MIDWEEK_TOOL_NAME, requestBody),
         (input) => validateMidWeekChatReply(input, weekStartMonday),
       );
     },

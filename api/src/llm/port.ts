@@ -23,6 +23,22 @@ export type LlmCallOptions = {
    * (from resolveCoachTarget), so a retry never switches model, key or server.
    */
   coachTarget?: CoachTarget;
+  /**
+   * Told after each attempt the live adapter sends (two at most, ADR 0002): the
+   * attempt's number, the id its call log row was written under, and the error
+   * it ended with (null for the reply returned). The replay harness and the
+   * smoke script read the retry through it; the app's routes need not.
+   */
+  onAttempt?: (report: AttemptReport) => void;
+};
+
+/** One attempt of a coach call, as LlmCallOptions.onAttempt hears of it. */
+export type AttemptReport = {
+  attempt: number;
+  /** Id of the attempt's call log row; null when the call was given no callId. */
+  callId: string | null;
+  /** What the attempt threw; null when its reply was returned. */
+  error: unknown;
 };
 
 /**

@@ -994,7 +994,7 @@ function harnessChanges(a: Analysis): string[] {
       text: `**Retry prompt:** of ${retried} retried replies, attempt 2 fixed ${fixed}, repeated the same path and rule in ${same}, and failed on a new error in ${fresh}. Per model: ${a.retry
         .filter((r) => r.retried && !isBaseline(r.configuration))
         .map((r) => `${short(r.configuration)} ${r.fixed}/${r.samePathAndRule}/${r.newError}`)
-        .join("; ")} (fixed/same/new).\n   The retry re-sends the identical request (askOnceMore); sending the validator's error back with it is the obvious change to test.`,
+        .join("; ")} (fixed/same/new).\n   The retry re-sends the identical request (askAtMostTwice); sending the validator's error back with it is the obvious change to test.`,
     });
   }
   const noTool = a.outcomes.filter((o) => !isBaseline(o.configuration)).reduce((s, o) => s + (o.all.failedBy["no tool call"] ?? 0), 0);

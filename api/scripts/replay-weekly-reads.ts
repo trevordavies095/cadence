@@ -121,11 +121,13 @@
  * stub's reply before the validator runs, and its `stubUsage` sets the usage
  * the call reports, so the measures can be tested offline.
  *
- * A reply refused for its shape is asked for once more, as the app does (ADR
+ * A reply refused for its shape, of any operation, is asked for once more by the
+ * adapter's own loop (askAtMostTwice), as in the app (ADR
  * 0002). The saved reply lists the refused attempt in `refusedAttempts`, and the
  * report lists retried calls apart from failed ones. On a dry run, a wrapped
  * packet's `stubRefusals` (a count) makes the stub refuse that many attempts
- * first, so the retry can be tested offline; a live run ignores it.
+ * first, through that same loop, so the retry can be tested offline; a live run
+ * ignores it.
  *
  * Every report opens with three goal checks, each naming the reply that failed:
  * a packet with no goal line (no goal, or the rebuilt prompt does not open with
@@ -175,12 +177,11 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { TrainingGoal } from "../src/goal/types.js";
-import { createAnthropicLlmPort } from "../src/llm/anthropic.js";
-import { askOnceMore, type AskResult } from "../src/llm/askOnceMore.js";
+import { askAtMostTwice, createAnthropicLlmPort } from "../src/llm/anthropic.js";
 import { TESTED_COACH_MODEL } from "../src/llm/coachModel.js";
 import { anthropicCoachTarget, type CoachProvider, type CoachTarget } from "../src/llm/coachTarget.js";
 import { ANTHROPIC_EFFORT_LEVELS, parseAnthropicEffort, type AnthropicEffort } from "../src/llm/effort.js";
-import { LlmSchemaError, type LlmCallOptions, type LlmPort } from "../src/llm/port.js";
+import { LlmSchemaError, type AttemptReport, type LlmCallOptions, type LlmPort } from "../src/llm/port.js";
 import {
   validateDossierAuditDraft,
   validateDossierCorrectionDraft,
@@ -201,7 +202,10 @@ import {
   resolveWeeklyPlanWeek,
 } from "../src/llm/stub.js";
 import type {
+  DossierAuditInput,
+  DossierCorrectionInput,
   DossierV1Draft,
+  DossierV1Input,
   MidWeekChatReply,
   PrescribedDay,
   SafetyCallout,
@@ -209,6 +213,7 @@ import type {
 } from "../src/llm/types.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
+import type { ModelPacket } from "../src/packet/types.js";
 import { normalizeSelfHostedBaseUrl, selfHostedEndpoint, selfHostedHost } from "../src/settings/selfHostedStore.js";
 import { createInstrumentedFetch, thinkingCharsOf, timeToFirstTokenMs } from "./instrumentedFetch.js";
 import { replayCheckFailures, type ReplayCheckFailure } from "./replayChecks.js";
@@ -653,7 +658,7 @@ function askedFor(call: StoredCall): string | null {
  * `stubPatch` gets the stub's reply with the patch laid over it, through the
  * operation's own validator, so a reply over a cap is cut and noted as in the app.
  */
-function dryRunPort(call: StoredCall, log: LlmCallRecord[]): LlmPort {
+function dryRunStub(call: StoredCall, log: LlmCallRecord[]): LlmPort {
   const recorder = memoryRecorder(log);
   const stub = createStubLlmPort({ recorder });
   const patch = call.stubPatch;
@@ -703,6 +708,33 @@ function dryRunPort(call: StoredCall, log: LlmCallRecord[]): LlmPort {
   };
 }
 
+/**
+ * The dry run's port: dryRunStub's, through the live adapter's own attempt loop
+ * (askAtMostTwice), so the retry a dry run shows is the app's. An input's
+ * `stubRefusals` makes the first that many attempts refused for their shape.
+ */
+function dryRunPort(call: StoredCall, log: LlmCallRecord[]): LlmPort {
+  const inner = dryRunStub(call, log);
+  let refusalsLeft = call.stubRefusals ?? 0;
+  function retried<I, T>(send: (input: I, o: LlmCallOptions) => Promise<T>) {
+    return (input: I, o?: LlmCallOptions) =>
+      askAtMostTwice(o, async (a) => {
+        if (refusalsLeft > 0) {
+          refusalsLeft--;
+          throw new LlmSchemaError(`stub refusal: ${STUB_REFUSALS[call.operation]}`);
+        }
+        return send(input, { weekSessionId: o?.weekSessionId, callId: a.callId });
+      });
+  }
+  return {
+    generateWeeklyReply: retried((p: ModelPacket, o) => inner.generateWeeklyReply(p, o)),
+    generateMidWeekChatReply: retried((p: ModelPacket, o) => inner.generateMidWeekChatReply(p, o)),
+    generateDossierV1: retried((i: DossierV1Input, o) => inner.generateDossierV1(i, o)),
+    generateDossierCorrection: retried((i: DossierCorrectionInput, o) => inner.generateDossierCorrection(i, o)),
+    generateDossierAudit: retried((i: DossierAuditInput, o) => inner.generateDossierAudit(i, o)),
+  };
+}
+
 /** What a weekly reply's plan is checked against, from its packet; null for other operations. */
 function planExpectation(call: StoredCall): PlanExpectation | null {
   if (call.operation !== "weekly_reply") return null;
@@ -738,55 +770,37 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
   });
   // Each attempt refused for its shape, with what the model sent for it.
   const refusals: Refusal[] = [];
-  let stubRefusalsLeft = dryRun ? (call.stubRefusals ?? 0) : 0;
+  let exchanged = 0;
+  let attemptStarted = started;
+  // The port asks once more for a reply refused for its shape, as the app does
+  // (askAtMostTwice, ADR 0002), and reports each attempt here as it ends.
+  const onAttempt = (report: AttemptReport) => {
+    const row = report.callId ? log.find((r) => r.id === report.callId) : undefined;
+    // A dry run reports the input's stubUsage, so the token and cost measures can be tested offline.
+    if (row && dryRun && call.stubUsage) Object.assign(row, call.stubUsage);
+    if (report.error instanceof LlmSchemaError) {
+      refusals.push({
+        attempt: report.attempt,
+        error: report.error.message,
+        outcome: row?.outcome ?? null,
+        stopReason: row?.stopReason ?? null,
+        outputTokens: row?.outputTokens ?? null,
+        inputTokens: row?.inputTokens ?? null,
+        thinkingTokens: row?.thinkingTokens ?? null,
+        cacheReadTokens: row?.cacheReadTokens ?? null,
+        cacheCreationTokens: row?.cacheCreationTokens ?? null,
+        responseRaw: row?.responseRaw ?? null,
+      });
+    }
+    const messages = timed.exchanges.slice(exchanged).filter((ex) => ex.url.endsWith("/messages"));
+    attemptTimings.push({ attempt: report.attempt, ttftMs: timeToFirstTokenMs(messages.at(-1)), totalMs: Date.now() - attemptStarted });
+    exchanged = timed.exchanges.length;
+    attemptStarted = Date.now();
+  };
   let reply: CoachReply;
   try {
-    const ask = async (attempt: number): Promise<AskResult<CoachReply>> => {
-      const logged = log.length;
-      const exchanged = timed.exchanges.length;
-      const attemptStarted = Date.now();
-      const newRow = () => {
-        const row = log.length > logged ? log.at(-1) : undefined;
-        // A dry run reports the input's stubUsage, so the token and cost measures can be tested offline.
-        if (row && dryRun && call.stubUsage) Object.assign(row, call.stubUsage);
-        return row;
-      };
-      try {
-        if (stubRefusalsLeft > 0) {
-          stubRefusalsLeft--;
-          throw new LlmSchemaError(`stub refusal: ${STUB_REFUSALS[call.operation]}`);
-        }
-        // The port writes its log row, with any repairs and token counts, only for a call with an id.
-        const value = await sendToPort(port, call, { callId: randomUUID() });
-        newRow();
-        return { ok: true as const, value };
-      } catch (err) {
-        const row = newRow();
-        if (err instanceof LlmSchemaError) {
-          refusals.push({
-            attempt,
-            error: err.message,
-            outcome: row?.outcome ?? null,
-            stopReason: row?.stopReason ?? null,
-            outputTokens: row?.outputTokens ?? null,
-            inputTokens: row?.inputTokens ?? null,
-            thinkingTokens: row?.thinkingTokens ?? null,
-            cacheReadTokens: row?.cacheReadTokens ?? null,
-            cacheCreationTokens: row?.cacheCreationTokens ?? null,
-            responseRaw: row?.responseRaw ?? null,
-          });
-        }
-        throw err;
-      } finally {
-        const messages = timed.exchanges.slice(exchanged).filter((ex) => ex.url.endsWith("/messages"));
-        attemptTimings.push({ attempt, ttftMs: timeToFirstTokenMs(messages.at(-1)), totalMs: Date.now() - attemptStarted });
-      }
-    };
-    // The weekly read is asked for once more when refused for its shape, as the
-    // app does (ADR 0002); the app sends every other operation once.
-    const result = call.operation === "weekly_reply" ? await askOnceMore(ask) : await ask(1);
-    if (!result.ok) throw new LlmSchemaError(result.error);
-    reply = result.value;
+    // The port writes its log rows, with any repairs and token counts, only for a call with an id.
+    reply = await sendToPort(port, call, { callId: randomUUID(), onAttempt });
   } catch (err) {
     // A refused reply is a finding, not a reason to stop: keep what the model sent and move on.
     const failed = log.at(-1);

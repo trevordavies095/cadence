@@ -507,27 +507,32 @@ describe("replay over every coach operation", () => {
     expect(correction).toMatch(/\| Internal words \| \| .*recap/);
   }, 30_000);
 
-  it("asks once more only for the weekly read; another operation refused for its shape fails at once", () => {
+  it("asks once more for every operation, as the app does, and a reply refused twice fails", () => {
     const dir = fiveOperations({
       "01-weekly.json": { packet: read(path.join(FIXTURE, "02-10k.json")), stubRefusals: 1 },
       "02-mid-week.json": { stubRefusals: 1 },
-      "05-audit.json": { stubRefusals: 1 },
+      "05-audit.json": { stubRefusals: 2 },
     });
     const run = dryRun(dir);
     expect(run.status).not.toBe(0);
     expect(run.stdout).toMatch(/01\.1\.json done in \d+ s after asking once more/);
-    expect(run.stdout).toContain("02.1.json refused: stub refusal: body is required");
+    expect(run.stdout).toMatch(/02\.1\.json done in \d+ s after asking once more \(stub refusal: body is required/);
     expect(run.stdout).toContain("05.1.json refused: stub refusal: proposedBody is required");
-    expect(run.files()).toEqual(["01.1.json", "02.1.failed.json", "03.1.json", "04.1.json", "05.1.failed.json", "config.json", "measures.json"]);
-    const failed = read(path.join(run.out, DEFAULT_CONFIG, "02.1.failed.json"));
-    expect(failed.operation).toBe("mid_week_chat");
-    expect(failed.refusedAttempts).toHaveLength(1);
+    expect(run.files()).toEqual(["01.1.json", "02.1.json", "03.1.json", "04.1.json", "05.1.failed.json", "config.json", "measures.json"]);
+    const retried = read(path.join(run.out, DEFAULT_CONFIG, "02.1.json"));
+    expect(retried.operation).toBe("mid_week_chat");
+    expect(retried.refusedAttempts).toHaveLength(1);
+    expect((retried.timing as { attempts: unknown[] }).attempts).toHaveLength(2);
+    const failed = read(path.join(run.out, DEFAULT_CONFIG, "05.1.failed.json"));
+    expect(failed.operation).toBe("dossier_audit");
+    expect(failed.refusedAttempts).toHaveLength(2);
+    expect((failed.timing as { attempts: unknown[] }).attempts).toHaveLength(2);
 
     const report = run.report();
-    expect(report).toContain("- 02.1.failed.json (02-mid-week.json, mid-week reply): stub refusal: body is required");
+    expect(report).toContain("- 02.1 (02-mid-week.json): Asked once more: attempt 1 refused");
     expect(report).toContain("- 05.1.failed.json (05-audit.json, About you tidy-up): stub refusal: proposedBody is required");
-    expect(report).toContain(`| ${DEFAULT_CONFIG} | anthropic |  | claude-opus-4-7 | xhigh | 1 |  | 5 | 2 | 1 | 2 |`);
-    expect(run.stderr).toContain("02.1 (02-mid-week.json): refused reply");
+    expect(report).toContain(`| ${DEFAULT_CONFIG} | anthropic |  | claude-opus-4-7 | xhigh | 1 |  | 5 | 2 | 2 | 1 |`);
+    expect(run.stderr).toContain("05.1 (05-audit.json): refused reply");
   }, 30_000);
 
   it("replays the committed demo-operation inputs and passes every check", () => {

@@ -9,9 +9,10 @@
  *
  * Runs, one after another, through the live adapter with a target built from
  * the flags (the saved setting is never read, ADR 0004, and nothing is written
- * to a database):
+ * to a database), each asked once more by the adapter when its reply is refused
+ * for its shape, as in the app (ADR 0002):
  *
- *   weekly     the weekly reply, asked once more when refused for its shape (ADR 0002)
+ *   weekly     the weekly reply
  *   midweek    a mid-week chat with no attachment
  *   attached   a mid-week question about an attached run
  *   aboutyou   the About you first draft
@@ -60,10 +61,9 @@ import {
   resolveSelfHostedIdleTimeoutMs,
 } from "../src/llm/anthropic.js";
 import { readMessageStream } from "../src/llm/anthropicStream.js";
-import { askOnceMore } from "../src/llm/askOnceMore.js";
 import type { CoachTarget } from "../src/llm/coachTarget.js";
 import { ANTHROPIC_EFFORT_LEVELS, parseAnthropicEffort, type AnthropicEffort } from "../src/llm/effort.js";
-import { LlmSchemaError } from "../src/llm/port.js";
+import { LlmSchemaError, type AttemptReport, type LlmCallOptions } from "../src/llm/port.js";
 import type { DossierAuditInput, DossierCorrectionInput, DossierV1Input } from "../src/llm/types.js";
 import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
 import type { ModelPacket } from "../src/packet/types.js";
@@ -286,12 +286,14 @@ function streamSummary(ex: Exchange): string {
   return `${text.length} bytes; ${parts || "no events"}; last non-ping event ${lastEvent}; tail ${JSON.stringify(text.replace(/(event: ping\ndata: \{"type":"ping"\}\n\n)+$/, "").slice(-200))}`;
 }
 
-/** Runs one coach step: one call, or for the weekly reply up to two (ADR 0002). */
+/**
+ * Runs one coach step: one call through the adapter, which asks once more for
+ * a reply refused for its shape, as in the app (askAtMostTwice, ADR 0002).
+ */
 async function runCoachStep(
   step: Step,
   log: LlmCallRecord[],
-  ask: (callId: string) => Promise<unknown>,
-  retries: boolean,
+  ask: (options: LlmCallOptions) => Promise<unknown>,
 ): Promise<{ row: Row; lastExchange: Exchange | null }> {
   const started = Date.now();
   const firstExchange = exchanges.length;
@@ -300,19 +302,14 @@ async function runCoachStep(
   let attempts = 0;
   let outcome = "ok";
   let errorMessage: string | null = null;
-  const once = async (attempt: number) => {
-    attempts = attempt;
-    try {
-      return { ok: true as const, value: await ask(randomUUID()) };
-    } catch (err) {
-      if (err instanceof LlmSchemaError) notes.push(`attempt ${attempt} refused: ${err.message}`);
-      throw err;
+  const onAttempt = (report: AttemptReport) => {
+    attempts = report.attempt;
+    if (report.error instanceof LlmSchemaError) {
+      notes.push(`attempt ${report.attempt} refused: ${report.error.message}`);
     }
   };
   try {
-    // Only the weekly reply is asked once more, as the app does (ADR 0002).
-    const result = retries ? await askOnceMore(once) : await once(1);
-    if (!result.ok) throw new LlmSchemaError(result.error);
+    await ask({ callId: randomUUID(), onAttempt });
     outcome = attempts > 1 ? "retried" : "ok";
   } catch (err) {
     errorMessage = err instanceof Error ? err.message : String(err);
@@ -513,7 +510,7 @@ async function main(): Promise<void> {
     recorder: memoryRecorder(log),
     fetchImpl: instrumentedFetch,
   });
-  const opts = (callId: string) => ({ callId, coachTarget: target });
+  const opts = (o: LlmCallOptions): LlmCallOptions => ({ ...o, coachTarget: target });
 
   console.log(`# Smoke: ${MODEL} at ${EFFORT}`);
   console.log("");
@@ -541,15 +538,15 @@ async function main(): Promise<void> {
       probe = await runProbe();
       rows.push(probe.row);
     } else {
-      const ask: Record<Exclude<Step, "probe">, (id: string) => Promise<unknown>> = {
-        weekly: (id) => port.generateWeeklyReply(inputs.weekly.packet, opts(id)),
-        midweek: (id) => port.generateMidWeekChatReply(inputs.midweek, opts(id)),
-        attached: (id) => port.generateMidWeekChatReply(inputs.attached, opts(id)),
-        aboutyou: (id) => port.generateDossierV1(inputs.aboutYou, opts(id)),
-        correction: (id) => port.generateDossierCorrection(inputs.correction, opts(id)),
-        audit: (id) => port.generateDossierAudit(inputs.audit, opts(id)),
+      const ask: Record<Exclude<Step, "probe">, (o: LlmCallOptions) => Promise<unknown>> = {
+        weekly: (o) => port.generateWeeklyReply(inputs.weekly.packet, opts(o)),
+        midweek: (o) => port.generateMidWeekChatReply(inputs.midweek, opts(o)),
+        attached: (o) => port.generateMidWeekChatReply(inputs.attached, opts(o)),
+        aboutyou: (o) => port.generateDossierV1(inputs.aboutYou, opts(o)),
+        correction: (o) => port.generateDossierCorrection(inputs.correction, opts(o)),
+        audit: (o) => port.generateDossierAudit(inputs.audit, opts(o)),
       };
-      const { row, lastExchange } = await runCoachStep(step, log, ask[step], step === "weekly");
+      const { row, lastExchange } = await runCoachStep(step, log, ask[step]);
       rows.push(row);
       if (step === "weekly" && RECORD && lastExchange) record(lastExchange, row, inputs, facts);
     }

@@ -120,8 +120,9 @@ describe("LLM call log: route rejections (#70)", () => {
     weekSessionId: string,
     attempts = 1,
   ) {
-    // A weekly reply the route refuses is asked for once more: one parent and one
-    // rejected child per attempt. The last pair is checked in full.
+    // The asking once more lives in the live adapter, which this port is not: the
+    // route's final check refuses what came back, one parent and one rejected
+    // child per call. The last pair is checked in full.
     expect(seenCallIds).toHaveLength(attempts);
     const children = captured.filter((r) => r.outcome === "rejected_by_route");
     expect(children.map((c) => c.parentCallId)).toEqual(seenCallIds);
@@ -188,7 +189,6 @@ describe("LLM call log: route rejections (#70)", () => {
       seenCallIds,
       "weekly_reply",
       weekSessionId,
-      2,
     );
     expect(child.errorMessage).toBe(body.message);
     expect(await coachCount(app, weekSessionId)).toBe(0);
