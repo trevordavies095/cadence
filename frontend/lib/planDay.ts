@@ -22,6 +22,11 @@ export const NOT_FILED_EXPLANATION =
   "Coach Cade wrote this day; Cadence couldn’t read the details yet.";
 /** A date Coach Cade's plan left out. */
 export const NO_PLAN_GIVEN = "Coach Cade gave no plan for this day";
+/** The action on an unread day of the Plan page, while it runs, and when it fails. */
+export const ADD_DETAILS_LABEL = "Add the details";
+export const ADD_DETAILS_BUSY = "Asking Coach Cade";
+export const ADD_DETAILS_FAILED =
+  "Coach Cade couldn’t fill in this day. The plan above still stands.";
 
 export function weekdayLabel(date: string): string {
   const d = new Date(`${date}T12:00:00`);

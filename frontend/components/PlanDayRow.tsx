@@ -12,6 +12,7 @@ import {
   weekdayLabel,
 } from "@/lib/planDay";
 import { plannedRunLabel } from "@/lib/units";
+import { AddDetails } from "./AddDetails";
 import { LabelValueList } from "./ui";
 
 /** The small mark on a day Cadence could not read yet, with what it means beneath. */
@@ -56,10 +57,17 @@ export function PlanDayRow({
   day,
   unit,
   isToday,
+  onAddDetails,
 }: {
   day: PrescribedDay;
   unit: UnitPreference;
   isToday: boolean;
+  /**
+   * The Plan page's "Add the details" for an unread day: resolves true once
+   * the day is filled in (the page re-renders the row from the new plan),
+   * false when Coach Cade could not. Absent elsewhere (the change card).
+   */
+  onAddDetails?: (date: string) => Promise<boolean>;
 }) {
   const run = day.run;
   const strength = meaningful(day.strength);
@@ -100,7 +108,10 @@ export function PlanDayRow({
         )}
       </div>
       {notFiled ? (
-        <NotFiledBody day={day} />
+        <>
+          <NotFiledBody day={day} />
+          {onAddDetails ? <AddDetails onAdd={() => onAddDetails(day.date)} /> : null}
+        </>
       ) : sentence ? (
         <>
           {run ? (

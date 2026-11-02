@@ -604,6 +604,24 @@ export async function fetchPrescribedWeek(
   );
 }
 
+/**
+ * "Add the details": asks Coach Cade for one line for an unread day of the
+ * week's plan, on the model saved now. Resolves with the plan with that day
+ * filled in; throws when Coach Cade could not fill it in (nothing changed).
+ */
+export async function postPlanDayDetails(
+  weekSessionId: string,
+  date: string,
+): Promise<{ prescribed: PrescribedWeekRecord; day: PrescribedDay }> {
+  return readJson(
+    await fetch(`/api/weeks/${encodeURIComponent(weekSessionId)}/prescribed/details`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ date }),
+    }),
+  );
+}
+
 /** Plan for the ISO week after `weekSessionId` (null until one is generated). */
 export async function fetchNextWeekPrescribed(
   weekSessionId: string,

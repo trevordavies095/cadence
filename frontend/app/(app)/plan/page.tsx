@@ -25,6 +25,7 @@ import {
   fetchReplyRun,
   markReplyRunSeen,
   fetchWeekRecap,
+  postPlanDayDetails,
   postWeeklyReply,
   type CheckInStatus,
   type PrescribedWeekRecord,
@@ -123,6 +124,23 @@ export default function PlanPage() {
     return () => clearInterval(timer);
   }, [runPending, week]);
 
+  /** "Add the details" on an unread day: the row re-renders from the plan sent back. */
+  async function addDetails(
+    record: PrescribedWeekRecord,
+    date: string,
+  ): Promise<boolean> {
+    try {
+      const { prescribed } = await postPlanDayDetails(record.weekSessionId, date);
+      const replace = (p: PrescribedWeekRecord | null) =>
+        p && p.weekSessionId === prescribed.weekSessionId ? prescribed : p;
+      setThisPlan(replace);
+      setNextPlan(replace);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   const planUnlocked =
     checkInStatus === "finished" || checkInStatus === "skipped";
 
@@ -213,6 +231,7 @@ export default function PlanPage() {
                   day={day}
                   unit={unit}
                   isToday={day.date === todayYmd}
+                  onAddDetails={(date) => addDetails(selected, date)}
                 />
               ))}
             </ol>
