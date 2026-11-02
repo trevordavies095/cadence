@@ -38,7 +38,12 @@ export type HomeDayState =
   | "rest"
   | "missed"
   /** A past day with a planned run while Tempo could not be read. */
-  | "unknown";
+  | "unknown"
+  /**
+   * A day Coach Cade wrote that Cadence could not read, or a date the plan
+   * left out. Nothing is planned on it, so it is never missed.
+   */
+  | "not_filed";
 
 export type HomeWeekDay = {
   date: string;
@@ -51,6 +56,18 @@ export type HomeWeekDay = {
   actualDistanceM: number | null;
   state: HomeDayState;
   isToday: boolean;
+  /**
+   * False when Cadence could not read the day's structure from Coach Cade's
+   * line, or the plan gave no line for the date. True for every other day,
+   * including old stored plans without the field and weeks with no plan.
+   */
+  parsed: boolean;
+  /**
+   * On a day Cadence could not read, Coach Cade's line as written; null when
+   * the plan gave no line for the date. Always null on a day Cadence read (the
+   * Today card has the read day's line in `today`).
+   */
+  line: string | null;
 };
 
 export type HomeRead = {
@@ -217,8 +234,12 @@ export async function composeHome(options: {
 
   const week: HomeWeekDay[] = dates.map((date) => {
     const planned = planByDate.get(date) ?? null;
-    const plannedDistanceM = planned?.run?.distanceM ?? null;
-    const durationS = planned?.run?.durationS;
+    // Absent reads as parsed: plans stored before plans were text.
+    const parsed = planned?.parsed !== false;
+    // An unread day has nothing planned, whatever it carries.
+    const plannedRunSpec = parsed ? planned?.run : null;
+    const plannedDistanceM = plannedRunSpec?.distanceM ?? null;
+    const durationS = plannedRunSpec?.durationS;
     const plannedDurationS =
       typeof durationS === "number" && durationS > 0 ? durationS : null;
     const plannedRun = plannedDistanceM != null;
@@ -227,6 +248,7 @@ export async function composeHome(options: {
 
     let state: HomeDayState;
     if (actual != null && actual > 0) state = "done";
+    else if (!parsed) state = "not_filed";
     else if (isToday) state = "today";
     else if (date < todayYmd) {
       if (!plannedRun) state = "rest";
@@ -242,6 +264,8 @@ export async function composeHome(options: {
       actualDistanceM: actual,
       state,
       isToday,
+      parsed,
+      line: parsed ? null : (planned?.line ?? null),
     };
   });
 
