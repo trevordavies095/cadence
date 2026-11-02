@@ -225,6 +225,33 @@ describe("a refused weekly reply is asked for once more", () => {
     expect(sent[1]!.body).toBe(sent[0]!.body);
   });
 
+  it("asks once more when the first live reply stops at the output cap", async () => {
+    await putAnthropicConnection("sk-ant-first-key", new SecretProtector(TEST_DATA_PROTECTION_KEY));
+    const packet = samplePacket();
+    const bodies: Array<{ max_tokens: number }> = [];
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)) as { max_tokens: number });
+      if (bodies.length > 1) {
+        return anthropicStreamResponse(
+          anthropicToolMessage("submit_weekly_reply", buildStubWeeklyReply(packet)),
+        );
+      }
+      return anthropicStreamResponse({
+        stop_reason: "max_tokens",
+        usage: { input_tokens: 10, output_tokens: 20_000 },
+        content: [{ type: "text", text: "thinking ran long" }],
+      });
+    }) as unknown as typeof globalThis.fetch;
+    const port = createAnthropicLlmPort({
+      fetchImpl,
+      dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+      apiUrl: "http://fake-anthropic.test/v1/messages",
+    });
+
+    expect((await askForReply(port, packet)).status).toBe(200);
+    expect(bodies.map((b) => b.max_tokens)).toEqual([20_000, 20_000]);
+  });
+
   it("recovers when the route's own check refuses the first reply", async () => {
     const { port, calls } = flakyPort(["invalid"]);
     expect((await askForReply(port)).status).toBe(200);

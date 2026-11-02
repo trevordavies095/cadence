@@ -274,6 +274,33 @@ describe("LLM call log: failed calls (#69)", () => {
         expect(row.responseRaw).toContain("no tool here");
       });
 
+      it("records a reply that stops at the output cap as schema_invalid, naming the cap", async () => {
+        const fetchImpl = vi.fn(async () =>
+          anthropicStreamResponse({
+            stop_reason: "max_tokens",
+            usage: { input_tokens: 10, output_tokens: 20_000 },
+            content: [{ type: "text", text: "thinking ran long" }],
+          }),
+        ) as unknown as typeof globalThis.fetch;
+        const { recorder, ids } = capturingRecorder();
+        const { app, weekSessionId } = await liveApp(fetchImpl, recorder);
+
+        const res = await trigger(flow, app, weekSessionId);
+        expect(res.status).toBe(502);
+
+        // A weekly reply refused at the cap is asked for once more, like a schema refusal.
+        expect(fetchImpl).toHaveBeenCalledTimes(flow === "weekly" ? 2 : 1);
+        const row = await fetchRow(app, ids, flow === "weekly" ? 2 : 1);
+        expectCommon(row, weekSessionId);
+        expect(row).toMatchObject({
+          outcome: "schema_invalid",
+          stopReason: "max_tokens",
+          outputTokens: 20_000,
+          errorMessage: expect.stringContaining("output cap 20000 tokens"),
+        });
+        expect((row.request as { max_tokens: number }).max_tokens).toBe(20_000);
+      });
+
       it("records schema_invalid when adapter validation fails", async () => {
         const fetchImpl = vi.fn(async () =>
           anthropicStreamResponse({
