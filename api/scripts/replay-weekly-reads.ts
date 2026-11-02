@@ -31,6 +31,26 @@
  * .scratch/replay-packets/<folder name> (with -dry-run on a dry run).
  * Pass --out <dir> to write somewhere else, with either source.
  *
+ * Pass --only to replay some inputs and not the rest, on a live run or a dry
+ * run alike: a comma-separated list of <root>/<input id>, such as
+ * seasons/01,snapshot/12, or @<file>, a JSON list of
+ * `{ "input": "<root>/<id>", "why": "..." }` such as the checked-in
+ * regression set, tests/fixtures/regression-set.json (the inputs the
+ * 2026-11-01 benchmark found hard, plus the review sample, a reason each):
+ *
+ *   npm run replay -- --packets tests/fixtures/seasons/season-packets \
+ *     --out ../.scratch/benchmark-after/strict/seasons \
+ *     --only @tests/fixtures/regression-set.json
+ *
+ * A run's root is its output root's folder name, as the analysis and the
+ * review pack's --sample name inputs, so the gate's roots are snapshot (the
+ * demo snapshot run) and seasons (the season packets). Ids for another root
+ * are skipped without a word, so one file serves both runs. A malformed id,
+ * an id past this run's last input, a missing or malformed file, or a list
+ * naming no input of this run fails before any call. A filtered run writes
+ * into the configuration folder as usual, and the report and measures cover
+ * whatever replies are there. --report-only ignores --only.
+ *
  * Every input carries its operation, one of the five coach calls: weekly_reply,
  * mid_week_chat (with or without a run attached), and the three About you
  * drafts, dossier_v1 (the first draft), dossier_correction (Fix something) and
@@ -323,6 +343,72 @@ const ROOT =
     ? path.resolve(here, `../../.scratch/replay-packets/${path.basename(PACKETS)}${dryRun ? "-dry-run" : ""}`)
     : path.resolve(here, `../../.scratch/reading-flow/${dryRun ? "replay-dry-run" : "replay"}`));
 
+/** One --only name: the root folder's name and the input id. */
+const ONLY_NAME = /^([^/\s]+)\/(\d+)$/;
+
+/**
+ * --only's names, checked for shape: a comma-separated list of <root>/<input
+ * id>, or @<file> holding a JSON list of { input, why }. Null when absent, and
+ * on --report-only and --review-pack, which ignore it.
+ */
+function flagOnly(): string[] | null {
+  if (reportOnly || reviewPack) return null;
+  const raw = flagValue("--only", "a comma-separated list of <root>/<input id>, or @<file>");
+  if (raw === null) return null;
+  let names: string[];
+  if (raw.startsWith("@")) {
+    const file = path.resolve(raw.slice(1));
+    if (!existsSync(file)) throw new Error(`--only ${raw}: no file at ${file}.`);
+    let list: unknown;
+    try {
+      list = JSON.parse(readFileSync(file, "utf8"));
+    } catch (e) {
+      throw new Error(`--only ${raw}: ${file} is not JSON (${(e as Error).message}).`);
+    }
+    const entry = (e: unknown) =>
+      Boolean(e) && typeof e === "object" && typeof (e as { input?: unknown }).input === "string" && typeof (e as { why?: unknown }).why === "string";
+    if (!Array.isArray(list) || list.length === 0 || !list.every(entry)) {
+      throw new Error(`--only ${raw}: expected a non-empty JSON list of { "input": "<root>/<input id>", "why": "..." }.`);
+    }
+    names = (list as Array<{ input: string }>).map((e) => e.input.trim());
+  } else {
+    names = raw.split(",").map((n) => n.trim()).filter(Boolean);
+  }
+  for (const name of names) {
+    if (!ONLY_NAME.test(name)) throw new Error(`--only "${name}": expected <root folder name>/<input id>, such as seasons/09.`);
+  }
+  return names;
+}
+
+const ONLY = flagOnly();
+
+/** This run's root, as --only names it: the output root's folder name. */
+const ROOT_NAME = path.basename(ROOT);
+
+/**
+ * The input indexes --only picks out of this run's `count` inputs; ids for
+ * another root are skipped. An id past the last input, or a list naming no
+ * input of this run, is refused.
+ */
+function onlyIndexes(names: string[], count: number): Set<number> {
+  const picked = new Set<number>();
+  for (const name of names) {
+    const [, root, id] = ONLY_NAME.exec(name)!;
+    if (root !== ROOT_NAME) continue;
+    const index = Number(id) - 1;
+    if (index < 0 || index >= count) {
+      throw new Error(`--only "${name}": ${ROOT_NAME} has inputs 01 to ${String(count).padStart(2, "0")}.`);
+    }
+    picked.add(index);
+  }
+  if (picked.size === 0) {
+    throw new Error(
+      `--only names no input of this run: its inputs are ${ROOT_NAME}/<id>, after the output root's folder name (${ROOT}).`,
+    );
+  }
+  return picked;
+}
+
 // ---- Replaying --------------------------------------------------------------
 
 /** Keeps the call's log row in memory, for its repairs and token counts. */
@@ -492,12 +578,18 @@ function replyStem(inputIndex: number, repeat: number): string {
   return `${String(inputIndex + 1).padStart(2, "0")}.${repeat}`;
 }
 
-async function replay(calls: StoredCall[]): Promise<void> {
+/** Replays every input, or only those at `picked` (--only), keeping each input's own id. */
+async function replay(calls: StoredCall[], picked: Set<number> | null): Promise<void> {
   const apiKey = runKey();
   const dir = path.join(ROOT, CONFIGURATION);
   mkdirSync(dir, { recursive: true });
   writeConfig(dir);
+  if (picked) {
+    const ids = [...picked].sort((a, b) => a - b).map((i) => String(i + 1).padStart(2, "0"));
+    console.log(`--only: ${picked.size} of ${calls.length} inputs under ${ROOT_NAME} (${ids.join(", ")})`);
+  }
   for (const [i, call] of calls.entries()) {
+    if (picked && !picked.has(i)) continue;
     for (let repeat = 1; repeat <= REPEATS; repeat++) {
       await replayOne(call, path.join(dir, `${replyStem(i, repeat)}.json`), apiKey);
     }
@@ -1317,8 +1409,15 @@ function report(): ReplayCheckFailure[] {
 if (reviewPack) {
   reviewPacks();
 } else {
-  mkdirSync(ROOT, { recursive: true });
-  if (!reportOnly) await replay(PACKETS ? folderCalls(PACKETS) : storedDemoCalls());
+  if (!reportOnly) {
+    const calls = PACKETS ? folderCalls(PACKETS) : storedDemoCalls();
+    // Checked against this run's inputs before anything is written or sent.
+    const picked = ONLY ? onlyIndexes(ONLY, calls.length) : null;
+    mkdirSync(ROOT, { recursive: true });
+    await replay(calls, picked);
+  } else {
+    mkdirSync(ROOT, { recursive: true });
+  }
   const checkFailures = report();
   if (checkFailures.length > 0) {
     console.error(`${checkFailures.length} goal check${checkFailures.length === 1 ? "" : "s"} failed:`);
