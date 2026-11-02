@@ -13,7 +13,7 @@ import {
   validateMidWeekChatReply,
   validateWeeklyReply,
 } from "../src/llm/index.js";
-import { prescribedDayJsonSchema } from "../src/llm/anthropic.js";
+import { midWeekChatReplyToolSchema } from "../src/llm/anthropic.js";
 import { migrate } from "../src/migrate.js";
 import { savePrescribedWeek } from "../src/prescribed/store.js";
 import { gradePrescribedVsActual } from "../src/recap/buildGrading.js";
@@ -96,25 +96,19 @@ describe("a planned day that is not a run", () => {
 
   it("accepts a run-less day in a mid-week change", () => {
     const checked = validateMidWeekChatReply(
-      {
-        body: "Thursday is a swim instead.",
-        prescribedDayPatches: [
-          { date: "2026-10-29", dayType: "other", run: null, notes: "30 min easy swim." },
-        ],
-      },
+      { body: "Thursday is a swim instead.", changes: "Thu 2026-10-29: swim instead, relaxed." },
       NEXT_MONDAY,
     );
-    expect(checked.ok && checked.value.prescribedDayPatches).toEqual([
-      { date: "2026-10-29", dayType: "other", run: null, notes: "30 min easy swim." },
+    expect(checked.ok && checked.value.prescribedDayPatches).toMatchObject([
+      { date: "2026-10-29", dayType: "other", run: null, parsed: true },
     ]);
   });
 
-  it("tells Coach Cade an other day may have no run, with notes saying what it is", () => {
-    const schema = prescribedDayJsonSchema() as {
+  it("tells Coach Cade an other day is strength, cross-training or a walk, on the changes box", () => {
+    const schema = midWeekChatReplyToolSchema(NEXT_MONDAY, "imperial") as {
       properties: Record<string, { description?: string }>;
     };
-    expect(schema.properties.dayType!.description).toMatch(/other.*no run/i);
-    expect(schema.properties.dayType!.description).toMatch(/notes/);
+    expect(schema.properties.changes!.description).toMatch(/other \(strength, cross-training or a walk\)/);
   });
 });
 

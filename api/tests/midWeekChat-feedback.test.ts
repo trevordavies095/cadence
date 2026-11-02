@@ -8,7 +8,7 @@ import {
   buildStubMidWeekChatReply,
   createAnthropicLlmPort,
   createStubLlmPort,
-  validateMidWeekChatReply,
+  checkMidWeekChatReply,
   type MidWeekChatReply,
 } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
@@ -79,7 +79,7 @@ describe("mid-week attach coach feedback stub (#37)", () => {
     expect(a.body).toBe(b.body);
     expect(a.body).toContain(feedback!);
 
-    const validated = validateMidWeekChatReply(a);
+    const validated = checkMidWeekChatReply(a);
     expect(validated.ok).toBe(true);
   });
 

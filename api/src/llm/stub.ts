@@ -37,7 +37,7 @@ import type {
   DossierV1Draft,
   DossierV1Input,
   MidWeekChatReply,
-  PrescribedDay,
+  MidWeekChatReplyForm,
   ReadFlag,
   SafetyCallout,
   WeeklyReply,
@@ -639,13 +639,13 @@ const PLAN_CHANGE_RE =
   /\b(cut|skip|shorten|move|swap|patch|change)\b/i;
 
 /**
- * Deterministic remaining-day plan patch for stub/CI (issue #38).
- * When the athlete asks to change the plan and a prescribed week is present,
- * rest the first quality day (else first easy) from Wednesday onward.
+ * Deterministic remaining-day plan change for stub/CI (issue #38), as lines
+ * in the plan grammar. When the athlete asks to change the plan and a plan is
+ * present, rest the first quality day (else first easy) from Wednesday onward.
  */
-export function buildStubPrescribedDayPatches(
+export function buildStubPlanChangeLines(
   packet: ModelPacket,
-): PrescribedDay[] | undefined {
+): { date: string; line: string }[] | undefined {
   const plan = packet.prescribedWeek;
   if (!plan?.days?.length) return undefined;
   const lastAthlete = [...packet.thread]
@@ -654,9 +654,10 @@ export function buildStubPrescribedDayPatches(
   if (!lastAthlete?.body || !PLAN_CHANGE_RE.test(lastAthlete.body)) {
     return undefined;
   }
-  const weekStartMonday = resolvePlanWeekStartMonday(packet);
-  const fromWed = expectedPlanDates(weekStartMonday)[2]!;
-  const remaining = plan.days.filter((d) => d.date >= fromWed);
+  const dates = expectedPlanDates(resolvePlanWeekStartMonday(packet));
+  const fromWed = dates[2]!;
+  // Only this week's dates: a line for another week would be dropped.
+  const remaining = plan.days.filter((d) => d.date >= fromWed && dates.includes(d.date));
   const target =
     remaining.find((d) => d.dayType === "quality") ??
     remaining.find((d) => d.dayType === "easy") ??
@@ -665,15 +666,17 @@ export function buildStubPrescribedDayPatches(
   return [
     {
       date: target.date,
-      dayType: "rest",
-      run: null,
-      notes: "Changed this week: rest and recover. The quality session is moved out.",
+      line: `${weekdayShort(target.date)} ${target.date}: rest. Changed this week: rest and recover. The quality session is moved out.`,
     },
   ];
 }
 
-/** Pure builder for mid-week free chat + attach/plan patch (issues #35–#39). */
-export function buildStubMidWeekChatReply(packet: ModelPacket): MidWeekChatReply {
+/**
+ * The stub's mid-week reply as Coach Cade's form: text and lines, any changed
+ * days as plan lines that parse. Pure; used by the stub port and as a fake
+ * model reply in tests.
+ */
+export function buildStubMidWeekForm(packet: ModelPacket): MidWeekChatReplyForm {
   const lastAthlete = [...packet.thread]
     .reverse()
     .find((m) => m.role === "athlete");
@@ -688,26 +691,38 @@ export function buildStubMidWeekChatReply(packet: ModelPacket): MidWeekChatReply
   const attachNote =
     attachFeedback ??
     "No run attached. Say more if something needs to change.";
-  const patches = buildStubPrescribedDayPatches(packet);
-  const patchNote = patches?.length
-    ? `Updated the plan for ${patches.map((p) => formatDayShort(p.date)).join(", ")}. Only the days still to come change.`
+  const changes = buildStubPlanChangeLines(packet);
+  const changeNote = changes?.length
+    ? `Updated the plan for ${changes.map((c) => formatDayShort(c.date)).join(", ")}. Only the days still to come change.`
     : null;
-  const reply: MidWeekChatReply = {
+  const form: MidWeekChatReplyForm = {
     body: [
       "Quick check-in for this week.",
       heard,
       dossierNote,
       attachNote,
-      ...(patchNote ? [patchNote] : []),
+      ...(changeNote ? [changeNote] : []),
     ].join(" "),
   };
-  if (patches?.length) reply.prescribedDayPatches = patches;
+  if (changes?.length) form.changes = changes.map((c) => c.line).join("\n");
   const bullets = buildStubMidWeekSettingsBullets(packet);
-  if (bullets) reply.settingsProposalBullets = bullets;
+  if (bullets) form.settingsProposalBullets = bullets;
   const callouts = buildStubSafetyCallouts(packet);
-  if (callouts.length > 0) reply.safetyCallouts = callouts;
-  return reply;
+  if (callouts.length > 0) form.safetyCallouts = callouts.map(calloutLine);
+  return form;
 }
+
+/** The stub's mid-week reply as Cadence stores it: its form, read like any model's. */
+export function buildStubMidWeekChatReply(packet: ModelPacket): MidWeekChatReply {
+  const checked = validateMidWeekChatReply(
+    buildStubMidWeekForm(packet),
+    resolvePlanWeekStartMonday(packet),
+    { unit: packetUnit(packet) },
+  );
+  if (!checked.ok) throw new LlmSchemaError(checked.error);
+  return checked.value;
+}
+
 function formatDistanceHint(
   meters: number,
   unit?: "metric" | "imperial",
@@ -1116,9 +1131,9 @@ export function createStubLlmPort(options?: StubLlmPortOptions): LlmPort {
       packet: ModelPacket,
       callOptions?: LlmCallOptions,
     ): Promise<MidWeekChatReply> {
-      const draft = buildStubMidWeekChatReply(packet);
+      const draft = buildStubMidWeekForm(packet);
       const weekStartMonday = resolvePlanWeekStartMonday(packet);
-      const validated = validateMidWeekChatReply(draft, weekStartMonday);
+      const validated = validateMidWeekChatReply(draft, weekStartMonday, { unit: packetUnit(packet) });
       if (!validated.ok) {
         throw new LlmSchemaError(validated.error);
       }

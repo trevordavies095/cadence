@@ -65,7 +65,7 @@ export type LlmPort = {
   /**
    * Free-form mid-week chat reply from a redacted lean ModelPacket.
    * When packet.attachments are present, include coaching feedback on those runs (#37).
-   * May include prescribedDayPatches for remaining plan days (#38).
+   * May change remaining plan days, written as plan lines and read into days (#38).
    */
   generateMidWeekChatReply(
     packet: ModelPacket,

@@ -14,7 +14,7 @@ import {
   validateMidWeekChatReply,
   validateWeeklyReply,
 } from "../src/llm/index.js";
-import { prescribedRunJsonSchema } from "../src/llm/anthropic.js";
+import { midWeekChatReplyToolSchema } from "../src/llm/anthropic.js";
 import { migrate } from "../src/migrate.js";
 import { savePrescribedWeek } from "../src/prescribed/store.js";
 import { gradePrescribedVsActual } from "../src/recap/buildGrading.js";
@@ -86,26 +86,19 @@ describe("a planned run can be prescribed by duration", () => {
 
   it("accepts a timed day in a mid-week change", () => {
     const checked = validateMidWeekChatReply(
-      {
-        body: "Thursday is now 40 minutes easy.",
-        prescribedDayPatches: [
-          { date: "2026-10-29", dayType: "easy", run: { type: "easy", durationS: 2400 } },
-        ],
-      },
+      { body: "Thursday is now 40 minutes easy.", changes: "Thu 2026-10-29: easy, 40 min." },
       NEXT_MONDAY,
     );
-    expect(checked.ok && checked.value.prescribedDayPatches).toEqual([
-      { date: "2026-10-29", dayType: "easy", run: { type: "easy", distanceM: 0, durationS: 2400 } },
+    expect(checked.ok && checked.value.prescribedDayPatches).toMatchObject([
+      { date: "2026-10-29", dayType: "easy", run: { type: "easy", distanceM: 0, durationS: 2400 }, parsed: true },
     ]);
   });
 
-  it("offers Coach Cade a duration in seconds on the tool schema", () => {
-    const schema = prescribedRunJsonSchema() as {
-      properties: Record<string, { type: unknown; description?: string }>;
+  it("offers Coach Cade a time in minutes on the mid-week changes box", () => {
+    const schema = midWeekChatReplyToolSchema(NEXT_MONDAY, "imperial") as {
+      properties: Record<string, { description?: string }>;
     };
-    expect(schema.properties.durationS!.type).toEqual(["number", "null"]);
-    expect(schema.properties.durationS!.description).toMatch(/seconds/);
-    expect(schema.properties.distanceM!.description).toMatch(/0 when/);
+    expect(schema.properties.changes!.description).toMatch(/time in minutes/);
   });
 });
 
