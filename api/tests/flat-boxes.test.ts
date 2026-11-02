@@ -330,7 +330,7 @@ describe("the gate's markup failure is still refused, and the retry handles it",
     const { stored, rows, bodies } = await weekly([broken, good]);
     expect(bodies).toHaveLength(2);
     expect(rows.map((r) => r.outcome)).toEqual(["schema_invalid", "ok"]);
-    expect(rows[0]!.errorMessage).toMatch(/^plan is required/);
+    expect(rows[0]!.errorMessage).toMatch(/^flags contains tool-call markup/);
     expect(stored.readSections.flags).toEqual([
       { title: "Heart rate drift", detail: "Watch it on the easy days." },
     ]);

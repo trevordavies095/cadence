@@ -506,6 +506,29 @@ const IGNORED_LINE_QUOTE = 60;
  * - Flags, answers and notices become today's stored shapes, so the read page
  *   and the stored read sections do not change.
  */
+/**
+ * The first field holding tool-call markup, if any. Opus 4.7 sometimes leaks
+ * its own call syntax into a text box (`<parameter name="0">Workload spike...`,
+ * 6 of 20 first attempts in the 2026-11-02 gate). Such a box must never reach
+ * the athlete, so the reply is refused and the retry names the field.
+ */
+const TOOL_MARKUP_RE = /<\/?(?:parameter|invoke|function_calls|antml:[a-z_]+)\b/i;
+
+function fieldWithToolMarkup(raw: Record<string, unknown>): string | null {
+  for (const [key, value] of Object.entries(raw)) {
+    const texts = typeof value === "string" ? [value] : Array.isArray(value) ? value.filter((v) => typeof v === "string") : [];
+    if (texts.some((t) => TOOL_MARKUP_RE.test(t))) return key;
+  }
+  return null;
+}
+
+function toolMarkupError(field: string): SchemaErr {
+  return {
+    ok: false,
+    error: `${field} contains tool-call markup (<parameter ...>); write every box as plain text, one item per line`,
+  };
+}
+
 export function validateWeeklyReply(
   raw: unknown,
   weekStartMonday: string,
@@ -514,6 +537,8 @@ export function validateWeeklyReply(
   if (!isPlainObject(raw)) {
     return { ok: false, error: "weekly reply must be an object" };
   }
+  const markupField = fieldWithToolMarkup(raw);
+  if (markupField) return toolMarkupError(markupField);
   if (!DATE_RE.test(weekStartMonday)) {
     return { ok: false, error: "weekStartMonday must be YYYY-MM-DD" };
   }
@@ -1062,6 +1087,8 @@ export function validateMidWeekChatReply(
   if (!isPlainObject(raw)) {
     return { ok: false, error: "mid-week chat reply must be an object" };
   }
+  const markupField = fieldWithToolMarkup(raw);
+  if (markupField) return toolMarkupError(markupField);
   const repairs: string[] = [];
   const body = parseMidWeekBody(raw.body);
   if (!body.ok) return body;
