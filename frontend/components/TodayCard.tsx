@@ -1,6 +1,6 @@
 import type { PrescribedDay, UnitPreference } from "@/lib/api";
 import { plannedRunLabel } from "@/lib/units";
-import { isNotARun, meaningful, weekdayLabel } from "./PlanDayRow";
+import { isNotARun, meaningful, planSentence, weekdayLabel } from "./PlanDayRow";
 import { ButtonLink, Card, LabelValueList, Muted } from "./ui";
 
 const DAY_TYPE_LABEL: Record<string, string> = {
@@ -53,6 +53,7 @@ export function TodayCard({
   const note = meaningful(today.notes);
   // Strength, cross-training or a walk: the notes say what the day is.
   const notRun = isNotARun(today);
+  const sentence = planSentence(today);
 
   return (
     <Card className="flex flex-col gap-3" aria-label="Today">
@@ -69,17 +70,24 @@ export function TodayCard({
         </h2>
       </div>
 
-      {notRun && note ? <p className="m-0">{note}</p> : null}
+      {sentence ? (
+        // A day read from Coach Cade's line: the sentence says how to run it.
+        <p className="m-0">{sentence}</p>
+      ) : (
+        <>
+          {notRun && note ? <p className="m-0">{note}</p> : null}
 
-      {structure ? <p className="m-0">{structure}</p> : null}
-      <LabelValueList
-        items={[
-          ["Effort", target],
-          ["Shoes", shoes],
-          ["Strength", strength],
-        ]}
-      />
-      {note && !notRun ? <p className="m-0 text-muted">{note}</p> : null}
+          {structure ? <p className="m-0">{structure}</p> : null}
+          <LabelValueList
+            items={[
+              ["Effort", target],
+              ["Shoes", shoes],
+              ["Strength", strength],
+            ]}
+          />
+          {note && !notRun ? <p className="m-0 text-muted">{note}</p> : null}
+        </>
+      )}
 
       <div>
         <ButtonLink

@@ -46,9 +46,12 @@ export function CoachRead({
         <h3 className={EYEBROW}>Your questions</h3>
         {answers.map((a, i) => (
           <div key={`${a.question}-${i}`} className="flex flex-col gap-1">
-            <p className={`m-0 font-semibold ${MEASURE}`} data-part="question">
-              {a.question}
-            </p>
+            {/* Empty when Cadence cannot tell which question an answer is for: the answer stands alone. */}
+            {a.question.trim() ? (
+              <p className={`m-0 font-semibold ${MEASURE}`} data-part="question">
+                {a.question}
+              </p>
+            ) : null}
             <CoachText>{a.answer}</CoachText>
           </div>
         ))}

@@ -19,6 +19,32 @@ export function meaningful(text: string | null | undefined): string | null {
   return /^(none|rest|n\/a)\.?$/i.test(t) ? null : t;
 }
 
+const LIST_MARKER = /^(?:[-*•]+|\d{1,2}[.)])\s+/;
+/** A weekday name or abbreviation, or a YYYY-MM-DD date, opening the text. */
+const DAY_TOKEN =
+  /^(?:monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat|sunday|sun)(?![a-z])\.?|^\d{4}-\d{2}-\d{2}(?!\d)/i;
+
+/**
+ * The sentence Coach Cade wrote for a day Cadence read from its plan line, with
+ * the day and date it opens with left off (the row already shows them). Null
+ * for a day stored before plans were text, and for a day Cadence could not
+ * read, which keeps its non-running rendering.
+ */
+export function planSentence(day: Pick<PrescribedDay, "line" | "parsed">): string | null {
+  if (day.parsed === false) return null;
+  const line = day.line?.trim();
+  if (!line) return null;
+  const sentence = line
+    .replace(LIST_MARKER, "")
+    .replace(DAY_TOKEN, "")
+    .replace(/^[\s,]+/, "")
+    .replace(DAY_TOKEN, "")
+    .replace(/^[\s,:;()\-–—.]+/, "")
+    .trim();
+  const text = sentence || line;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /** A planned day that is not a run: an other day with no run, such as strength or a walk. */
 export function isNotARun(day: Pick<PrescribedDay, "dayType" | "run">): boolean {
   return day.dayType === "other" && day.run == null;
@@ -49,6 +75,10 @@ export function PlanDayRow({
   const target = meaningful(run?.paceOrHr);
   // Strength, cross-training or a walk: the notes say what it is, in place of figures.
   const notRun = isNotARun(day);
+  // A day read from Coach Cade's line: the amount Cadence read from it, then the
+  // sentence. Its notes are the rest of that sentence, so they are not shown
+  // again, and the Effort, Shoes and Strength rows are not filled for it.
+  const sentence = planSentence(day);
   return (
     <li
       aria-current={isToday ? "date" : undefined}
@@ -71,27 +101,42 @@ export function PlanDayRow({
           {DAY_TYPE_LABEL[day.dayType] ?? day.dayType}
         </span>
       </div>
-      {run ? (
-        <p className="m-0">
-          {plannedRunLabel(run, unit)}
-          {meaningful(run.structure) ? ` · ${run.structure}` : ""}
-        </p>
-      ) : notRun ? (
-        <p className="m-0">
-          <span className="text-muted">{notes ? "Not a run · " : "Not a run"}</span>
-          {notes}
-        </p>
+      {sentence ? (
+        <>
+          {run ? (
+            <p className="m-0" data-part="planned-amount">
+              {plannedRunLabel(run, unit)}
+            </p>
+          ) : null}
+          <p className="m-0" data-part="plan-line">
+            {sentence}
+          </p>
+        </>
       ) : (
-        <p className="m-0 text-muted">No run</p>
+        <>
+          {run ? (
+            <p className="m-0">
+              {plannedRunLabel(run, unit)}
+              {meaningful(run.structure) ? ` · ${run.structure}` : ""}
+            </p>
+          ) : notRun ? (
+            <p className="m-0">
+              <span className="text-muted">{notes ? "Not a run · " : "Not a run"}</span>
+              {notes}
+            </p>
+          ) : (
+            <p className="m-0 text-muted">No run</p>
+          )}
+          <LabelValueList
+            items={[
+              ["Effort", target],
+              ["Shoes", shoes],
+              ["Strength", strength],
+            ]}
+          />
+          {notes && !notRun ? <p className="m-0 text-muted">{notes}</p> : null}
+        </>
       )}
-      <LabelValueList
-        items={[
-          ["Effort", target],
-          ["Shoes", shoes],
-          ["Strength", strength],
-        ]}
-      />
-      {notes && !notRun ? <p className="m-0 text-muted">{notes}</p> : null}
     </li>
   );
 }
