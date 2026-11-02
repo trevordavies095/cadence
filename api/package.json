@@ -12,6 +12,7 @@
     "test": "vitest run",
     "replay": "tsx scripts/replay-weekly-reads.ts",
     "replay:analyse": "tsx scripts/replay-analysis.ts",
+    "replay:gate": "tsx scripts/replay-gate.ts",
     "replay:publish": "tsx scripts/replay-publish.ts"
   },
   "dependencies": {

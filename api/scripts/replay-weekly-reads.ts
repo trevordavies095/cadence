@@ -51,6 +51,10 @@
  * into the configuration folder as usual, and the report and measures cover
  * whatever replies are there. --report-only ignores --only.
  *
+ * The gate for a harness change runs the regression set on both roots and two
+ * configurations, then the analysis, in one command: npm run replay:gate
+ * (scripts/replay-gate.ts, whose header is the procedure).
+ *
  * Every input carries its operation, one of the five coach calls: weekly_reply,
  * mid_week_chat (with or without a run attached), and the three About you
  * drafts, dossier_v1 (the first draft), dossier_correction (Fix something) and
