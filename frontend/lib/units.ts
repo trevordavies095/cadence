@@ -17,10 +17,11 @@ export function paceLabel(secPerKm: number, unit: UnitPreference): string {
 }
 
 export function durationLabel(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.round((seconds % 3600) / 60);
-  if (h > 0) return `${h} h ${String(m).padStart(2, "0")} min`;
-  return `${m} min`;
+  const total = Math.max(0, Math.round(seconds / 60));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
 /** What a planned run asks for: "8.0 km", "40 min", or "8.0 km, 45 min" when it has both. */

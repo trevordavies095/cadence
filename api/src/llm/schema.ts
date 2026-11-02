@@ -368,6 +368,80 @@ export function validateSafetyCallouts(
 /**
  * Fail-closed validation for a full weekly LLM reply.
  */
+/** The ISO week id (YYYY-Www) of a calendar date YYYY-MM-DD: the week holding its Thursday. */
+export function isoWeekOfDate(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number) as [number, number, number];
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const weekday = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - weekday);
+  const yearStart = Date.UTC(date.getUTCFullYear(), 0, 1);
+  const week = Math.ceil(((date.getTime() - yearStart) / 86_400_000 + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+/** A JSON string parsed, or the value as it came when it is not a string or does not parse. */
+function parsedIfJson(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * The plan object as the model meant it, when it encoded the plan wrongly.
+ * Opus 4.7 sometimes flattens the {week, days} wrapper (6 of 120 replies in
+ * three baseline runs on 2026-11-02, 5 of them weekly reads lost):
+ *
+ * - the whole plan as a string of JSON (an object, or a one-item list holding it);
+ * - the days alone, as a string or an array, with the week beside them at the
+ *   top of the reply or nowhere;
+ * - tool-call markup (`<parameter name="week">…`) in prescribedWeek, with the
+ *   days sent as their own top-level field.
+ *
+ * Each recovery only moves what the model wrote into place; nothing is
+ * invented but the week id, which is the plan week the prompt names, used only
+ * when the model gave no valid one. The days are then checked as usual, so a
+ * recovered plan with the wrong dates or count is still refused. Each recovery
+ * is noted as a repair.
+ */
+function recoverPrescribedWeek(
+  raw: Record<string, unknown>,
+  weekStartMonday: string,
+  repairs: string[],
+): unknown {
+  let value = parsedIfJson(raw.prescribedWeek);
+  if (value !== raw.prescribedWeek) {
+    repairs.push("prescribedWeek arrived as a string of JSON and was parsed");
+  }
+  if (Array.isArray(value) && value.length === 1 && isPlainObject(value[0]) && "days" in value[0]) {
+    value = value[0];
+    repairs.push("prescribedWeek arrived inside a one-item list and was unwrapped");
+  }
+  let days: unknown;
+  if (Array.isArray(value)) {
+    days = value;
+    repairs.push("prescribedWeek arrived as the days alone");
+  } else if (!isPlainObject(value)) {
+    const topDays = parsedIfJson(raw.days);
+    if (!Array.isArray(topDays)) return value;
+    days = topDays;
+    repairs.push("prescribedWeek's days arrived as their own field and were moved into the plan");
+  } else {
+    return value;
+  }
+  const topWeek = raw.week;
+  const week =
+    typeof topWeek === "string" && ISO_WEEK_RE.test(topWeek)
+      ? topWeek
+      : DATE_RE.test(weekStartMonday)
+        ? isoWeekOfDate(weekStartMonday)
+        : null;
+  if (week === null) return value;
+  return { week, days };
+}
+
 export function validateWeeklyReply(
   raw: unknown,
   weekStartMonday: string,
@@ -399,20 +473,7 @@ export function validateWeeklyReply(
     };
   }
 
-  // The model sometimes sends the whole plan as a string of JSON. When that string
-  // parses to an object, take it and note the repair; when it does not, refuse.
-  let prescribedRaw = raw.prescribedWeek;
-  if (typeof prescribedRaw === "string") {
-    try {
-      const parsed: unknown = JSON.parse(prescribedRaw);
-      if (isPlainObject(parsed)) {
-        prescribedRaw = parsed;
-        repairs.push("prescribedWeek arrived as a string of JSON and was parsed");
-      }
-    } catch {
-      // Malformed: fall through and fail closed below.
-    }
-  }
+  const prescribedRaw = recoverPrescribedWeek(raw, weekStartMonday, repairs);
   const prescribed = validatePrescribedWeek(prescribedRaw, weekStartMonday);
   if (!prescribed.ok) return prescribed;
 

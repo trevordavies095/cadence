@@ -125,7 +125,7 @@ function texts(s: Summary): string[] {
   return s.goalLines.map((l) => (l.value === null ? l.label : `${l.label}: ${l.value}`));
 }
 
-const HARD = "Hard minutes (zones 4 and 5): 22 min, up 8";
+const HARD = "Hard minutes (zones 4 and 5): 22 min, up 8 min";
 
 describe("summary goal lines (#13)", () => {
   beforeAll(async () => {
@@ -207,7 +207,7 @@ describe("summary goal lines (#13)", () => {
     const { zoneSecondsZ4: _z4, zoneSecondsZ5: _z5, ...noBuckets } = STATS;
     const s = await summaryFor({ kind: "return" }, noBuckets, { zones: LOW_ZONES });
     // Both runs' 90 minutes of heart rate; no runs the week before, so no delta.
-    expect(texts(s)).toContain("Hard minutes (zones 4 and 5): 90 min");
+    expect(texts(s)).toContain("Hard minutes (zones 4 and 5): 1 h 30 min");
     expect(texts(s)).toContain("Hard minutes above zero this week");
   });
 

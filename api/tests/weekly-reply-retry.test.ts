@@ -9,6 +9,7 @@ import {
   createAnthropicLlmPort,
   createStubLlmPort,
   expectedPlanDates,
+  isoWeekOfDate,
   TESTED_COACH_MODEL,
   validateWeeklyReply,
   type LlmPort,
@@ -54,6 +55,49 @@ describe("a plan sent as a string", () => {
     if (!checked.ok) return;
     expect(checked.value.prescribedWeek.days).toHaveLength(7);
     expect(checked.repairs).toContain("prescribedWeek arrived as a string of JSON and was parsed");
+  });
+
+  it("is accepted when the string holds only the days, given the plan week, with the repair noted", () => {
+    const checked = validateWeeklyReply(reply(JSON.stringify(plan().days)), WEEK_START);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    expect(checked.value.prescribedWeek.week).toBe(isoWeekOfDate(WEEK_START));
+    expect(checked.value.prescribedWeek.days.map((d) => d.date)).toEqual(expectedPlanDates(WEEK_START));
+    expect(checked.repairs).toContain("prescribedWeek arrived as the days alone");
+  });
+
+  it("takes the week the model sent beside the days when it is a valid week id", () => {
+    const checked = validateWeeklyReply({ ...reply(JSON.stringify(plan().days)), week: "2026-W44" }, WEEK_START);
+    expect(checked.ok && checked.value.prescribedWeek.week).toBe("2026-W44");
+  });
+
+  it("recovers days sent as their own field when prescribedWeek holds tool-call markup", () => {
+    const checked = validateWeeklyReply(
+      { ...reply('\n<parameter name="week">2026-W44'), days: plan().days },
+      WEEK_START,
+    );
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    expect(checked.value.prescribedWeek.days).toHaveLength(7);
+    expect(checked.repairs).toContain("prescribedWeek's days arrived as their own field and were moved into the plan");
+  });
+
+  it("unwraps a plan sent as a one-item list holding the whole plan", () => {
+    const checked = validateWeeklyReply(reply(JSON.stringify([plan()])), WEEK_START);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    expect(checked.value.prescribedWeek.week).toBe("2026-W44");
+    expect(checked.repairs).toContain("prescribedWeek arrived inside a one-item list and was unwrapped");
+  });
+
+  it("still refuses recovered days when there are not seven, or the dates are wrong", () => {
+    expect(validateWeeklyReply(reply(JSON.stringify(plan().days.slice(0, 5))), WEEK_START).ok).toBe(false);
+    const late = plan().days.map((d, i) => ({ ...d, date: expectedPlanDates("2026-11-02")[i] }));
+    expect(validateWeeklyReply(reply(late), WEEK_START).ok).toBe(false);
+  });
+
+  it("still refuses markup with no days anywhere", () => {
+    expect(validateWeeklyReply(reply('\n<parameter name="week">2026-W44'), WEEK_START).ok).toBe(false);
   });
 
   it("is refused when the string is malformed", () => {
