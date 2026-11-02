@@ -26,8 +26,14 @@
  * Pass --weekly-packet <file> to send another weekly packet instead, such as a
  * season packet under tests/fixtures/seasons/season-packets.
  *
+ * Every reply tool is sent with `strict: true`. A step whose request the server
+ * refuses with an HTTP 400 naming `strict`, the tool or the schema is marked
+ * "strict rejected"; any other answer from the server counts as accepted
+ * (honoured or ignored, which the table cannot tell apart).
+ *
  * Prints a markdown table, one row per step: outcome (ok, retried, schema
- * failed, error), time to first token, total time, input/output/thinking
+ * failed, error, strict rejected), whether the strict request was accepted,
+ * time to first token, total time, input/output/thinking
  * tokens, whether a thinking block came back, the stop reason, and whether the
  * idle or overall limit fired. Then the refusal reasons and errors, the probe's
  * numbers, and the server's version when the listing, a response header or
@@ -261,8 +267,27 @@ type Row = {
   thinkingChars: number | null;
   stopReason: string | null;
   timeout: "idle" | "overall" | null;
+  /** Whether the server took the strict request; "n/a" for the probe, which sends no tool. */
+  strict: StrictVerdict;
   notes: string[];
 };
+
+type StrictVerdict = "accepted" | "rejected" | "no answer" | "n/a";
+
+/** An HTTP 400 whose message names `strict`, the tool or its schema: the server refused the strict request. */
+const STRICT_REJECTION = /strict|tool|schema/i;
+
+function isStrictRejection(ex: Exchange): boolean {
+  return ex.status === 400 && STRICT_REJECTION.test(bytesOf(ex).toString("utf8"));
+}
+
+/** Rejected when any Messages request was a strict 400; accepted when the server answered one otherwise. */
+function strictVerdict(stepExchanges: Exchange[]): StrictVerdict {
+  const messages = stepExchanges.filter((ex) => ex.url.endsWith("/messages"));
+  if (messages.some(isStrictRejection)) return "rejected";
+  if (messages.some((ex) => ex.status !== null && ex.status !== 400)) return "accepted";
+  return "no answer";
+}
 
 function timeoutKind(message: string): Row["timeout"] {
   if (/sent nothing for \d+ms/.test(message) || /idle for \d+ms/.test(message)) return "idle";
@@ -327,8 +352,12 @@ async function runCoachStep(
   const first = stepExchanges[0];
   const lastExchange = stepExchanges.at(-1) ?? null;
   for (const ex of stepExchanges) {
-    if (ex.status !== null && ex.status >= 400) notes.push(`HTTP ${ex.status}: ${bytesOf(ex).toString("utf8").slice(0, 300)}`);
+    if (ex.status === null || ex.status < 400) continue;
+    const said = `HTTP ${ex.status}: ${bytesOf(ex).toString("utf8").slice(0, 300)}`;
+    notes.push(isStrictRejection(ex) ? `strict rejected: ${said}` : said);
   }
+  const strict = strictVerdict(stepExchanges);
+  if (strict === "rejected") outcome = "strict rejected";
   if (outcome === "error" && lastExchange) notes.push(`stream seen: ${streamSummary(lastExchange)}`);
   return {
     row: {
@@ -343,6 +372,7 @@ async function runCoachStep(
       thinkingChars: thinkingCharsOf(last?.responseRaw ?? null),
       stopReason: last?.stopReason ?? null,
       timeout: errorMessage ? timeoutKind(errorMessage) : null,
+      strict,
       notes,
     },
     lastExchange,
@@ -410,6 +440,7 @@ async function runProbe(): Promise<ProbeReport> {
       thinkingChars,
       stopReason,
       timeout: probe.reason === "timeout" ? "overall" : null,
+      strict: "n/a",
       notes,
     },
     sentTokens: probe.sentTokens,
@@ -483,12 +514,12 @@ const num = (n: number | null) => (n === null ? "–" : String(n));
 
 function table(rows: Row[]): string {
   const lines = [
-    "| step | outcome | first token | total | input tok | output tok | thinking tok | thinking block | stop | timeout |",
-    "|---|---|---|---|---|---|---|---|---|---|",
+    "| step | outcome | strict | first token | total | input tok | output tok | thinking tok | thinking block | stop | timeout |",
+    "|---|---|---|---|---|---|---|---|---|---|---|",
   ];
   for (const r of rows) {
     lines.push(
-      `| ${r.step} | ${r.outcome} | ${secs(r.ttftMs)} | ${secs(r.totalMs)} | ${num(r.inputTokens)} | ${num(r.outputTokens)} | ${num(r.thinkingTokens)} | ${r.thinkingChars === null ? "none" : `${r.thinkingChars} chars`} | ${r.stopReason ?? "–"} | ${r.timeout ?? "no"} |`,
+      `| ${r.step} | ${r.outcome} | ${r.strict} | ${secs(r.ttftMs)} | ${secs(r.totalMs)} | ${num(r.inputTokens)} | ${num(r.outputTokens)} | ${num(r.thinkingTokens)} | ${r.thinkingChars === null ? "none" : `${r.thinkingChars} chars`} | ${r.stopReason ?? "–"} | ${r.timeout ?? "no"} |`,
     );
   }
   return lines.join("\n");

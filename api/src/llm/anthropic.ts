@@ -363,6 +363,7 @@ function aboutYouToolSchema(description: string) {
         },
       },
     },
+    strict: true as const,
   };
 }
 
@@ -530,6 +531,8 @@ type AnthropicMessagesRequest = {
     name: string;
     description: string;
     input_schema: Record<string, unknown>;
+    /** Always true: the server may enforce the schema, ignore the flag, or reject it. */
+    strict: true;
   }>;
   thinking?: { type: "adaptive"; display: "summarized" };
   output_config: { effort: AnthropicEffort };
@@ -1097,6 +1100,7 @@ export function createAnthropicLlmPort(
             description:
               "Submit the weekly coaching analysis and structured 7-day prescribed week.",
             input_schema: weeklyReplyToolSchema(),
+            strict: true,
           },
         ],
         ...reasoningParams(target),
@@ -1138,6 +1142,7 @@ export function createAnthropicLlmPort(
             description:
               "Submit the mid-week coach reply (attached-run feedback and optional remaining-day plan patches when present).",
             input_schema: midWeekChatReplyToolSchema(),
+            strict: true,
           },
         ],
         ...reasoningParams(target),
