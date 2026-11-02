@@ -9,11 +9,40 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { GPT_OSS_READS_VALID_MIN, GPT_OSS_STRUCTURED_DAYS_MIN, judge, readBaselineBand, type GateNumbers } from "../scripts/replayGateRule.js";
 
 const api = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OPUS = "anthropic--claude-opus-4-7--xhigh";
 const GPT_OSS = "self_hosted--gpt-oss-20b-MXFP4-Q8--high";
 const regressionSet = JSON.parse(readFileSync(path.join(api, "tests/fixtures/regression-set.json"), "utf8")) as Array<{ input: string }>;
+const band = readBaselineBand(path.join(api, "tests/fixtures/baseline-band.json"));
+const n = regressionSet.length;
+const OPUS_NEEDS = `needs at least ${band.readsValid.low}/${n} valid (baseline band ${band.readsValid.low} to ${band.readsValid.high}) and 100% structured days`;
+const GPT_OSS_NEEDS = "needs at least 19/20 valid and 90% structured days";
+/** Weekly reads in the regression set, and the days they store. */
+const weeklyDays = 16 * 7;
+
+/** Marks the first `count` days of a saved weekly reply as not filed, and drops its saved summary so the analysis reads the days. */
+function unfile(file: string, count: number): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const saved = JSON.parse(readFileSync(file, "utf8")) as Record<string, any>;
+  saved.new.prescribedWeek.days = saved.new.prescribedWeek.days.map((d: Record<string, unknown>, i: number) =>
+    i < count ? { date: d.date, dayType: "other", run: null, notes: d.line, line: d.line, parsed: false } : d,
+  );
+  delete saved.plan;
+  writeFileSync(file, JSON.stringify(saved));
+}
+
+/** The weekly reads a configuration saved in a lever folder, by path. */
+function weeklyReplies(lever: string, config: string): string[] {
+  return ["snapshot", "seasons"].flatMap((root) => {
+    const dir = path.join(lever, root, config);
+    return readdirSync(dir)
+      .filter((f) => /^\d+\.\d+\.json$/.test(f))
+      .map((f) => path.join(dir, f))
+      .filter((f) => JSON.parse(readFileSync(f, "utf8")).operation === "weekly_reply");
+  });
+}
 
 /** A saved-run folder holding one live Opus run at `medianUsd` a reply; an empty one when omitted. */
 function savedRuns(medianUsd?: number): string {
@@ -64,10 +93,11 @@ describe("replay gate", () => {
 
     // The demo snapshot's goal-line failures end each snapshot replay non-zero; the gate goes on.
     expect(run.stdout).toContain("exited 1 for its goal checks only");
+    expect(run.stdout).toContain(`gate strict (dry run, offline stub): ${n} inputs (the regression set)`);
     const record = run.stdout.trim().split("\n").slice(-2);
     expect(record).toEqual([
-      `gate strict: opus ${regressionSet.length}/${regressionSet.length} valid, 0 repairs`,
-      `gate strict: gpt-oss-20b ${regressionSet.length}/${regressionSet.length} valid, 0 repairs`,
+      `gate strict: opus ${n}/${n} valid (${n} first try, 0 after retry), structured days 100% (${weeklyDays} of ${weeklyDays}), 0 repairs: PASS, ${OPUS_NEEDS}`,
+      `gate strict: gpt-oss-20b ${n}/${n} valid (${n} first try, 0 after retry), structured days 100% (${weeklyDays} of ${weeklyDays}), 0 repairs: PASS, ${GPT_OSS_NEEDS}`,
     ]);
 
     // A rerun resumes: every reply is already saved, and the record is the same.
@@ -77,6 +107,16 @@ describe("replay gate", () => {
     expect(again.stdout).toContain("going on, as --allow-cost was passed");
     expect(again.stdout.match(/exists, skipped/g)).toHaveLength(2 * regressionSet.length);
     expect(again.stdout.trim().split("\n").slice(-2)).toEqual(record);
+
+    // One day Opus could not file fails it; gpt-oss-20b stays above 90 percent with three.
+    unfile(weeklyReplies(lever, OPUS)[0]!, 1);
+    unfile(weeklyReplies(lever, GPT_OSS)[0]!, 3);
+    const failed = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns(), "--allow-cost"]);
+    expect(failed.status, failed.stderr).toBe(0);
+    expect(failed.stdout.trim().split("\n").slice(-2)).toEqual([
+      `gate strict: opus ${n}/${n} valid (${n} first try, 0 after retry), structured days 99.1% (${weeklyDays - 1} of ${weeklyDays}), 0 repairs: FAIL, ${OPUS_NEEDS}`,
+      `gate strict: gpt-oss-20b ${n}/${n} valid (${n} first try, 0 after retry), structured days 97.3% (${weeklyDays - 3} of ${weeklyDays}), 0 repairs: PASS, ${GPT_OSS_NEEDS}`,
+    ]);
   }, 300_000);
 
   it("refuses a run estimated above $5 before writing or calling anything, naming --allow-cost", () => {
@@ -93,14 +133,67 @@ describe("replay gate", () => {
 
   it("never refuses a self-hosted-only run, however dear the saved Opus runs", () => {
     const parent = mkdtempSync(path.join(tmpdir(), "replay-gate-self-hosted-"));
-    const run = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns(50), "--configs", "gpt-oss-20b"]);
+    // --only naming the regression set file is the regression set: the thresholds apply.
+    const run = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns(50), "--configs", "gpt-oss-20b", "--only", "@tests/fixtures/regression-set.json"]);
     expect(run.status, run.stderr).toBe(0);
     expect(run.stdout).toContain("gpt-oss-20b: $0 (self-hosted, bills nothing)");
     expect(run.stdout).toContain("total $0.00, cap $5.00");
     expect(run.stdout).not.toContain(OPUS);
     expect(readdirSync(path.join(parent, "strict-dry-run", "snapshot")).filter((f) => !f.endsWith(".md"))).toEqual([GPT_OSS]);
-    expect(run.stdout.trim().split("\n").at(-1)).toBe(`gate strict: gpt-oss-20b ${regressionSet.length}/${regressionSet.length} valid, 0 repairs`);
+    expect(run.stdout.trim().split("\n").at(-1)).toBe(
+      `gate strict: gpt-oss-20b ${n}/${n} valid (${n} first try, 0 after retry), structured days 100% (${weeklyDays} of ${weeklyDays}), 0 repairs: PASS, ${GPT_OSS_NEEDS}`,
+    );
+
+    // Twelve days not filed across four weekly reads: 100 of 112 is under 90 percent.
+    for (const file of weeklyReplies(path.join(parent, "strict-dry-run"), GPT_OSS).slice(0, 4)) unfile(file, 3);
+    const failed = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns(), "--configs", "gpt-oss-20b"]);
+    expect(failed.status, failed.stderr).toBe(0);
+    expect(failed.stdout.trim().split("\n").at(-1)).toBe(
+      `gate strict: gpt-oss-20b ${n}/${n} valid (${n} first try, 0 after retry), structured days 89.2% (${weeklyDays - 12} of ${weeklyDays}), 0 repairs: FAIL, ${GPT_OSS_NEEDS}`,
+    );
   }, 300_000);
+
+  it("prints the numbers with no verdict for an input set other than the regression set", () => {
+    const parent = mkdtempSync(path.join(tmpdir(), "replay-gate-other-set-"));
+    const run = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns(), "--configs", "gpt-oss-20b", "--only", "seasons/03,seasons/07"]);
+    expect(run.status, run.stderr).toBe(0);
+    expect(run.stdout).toContain("2 inputs (not the regression set: no verdict)");
+    // Only the root the set names is run.
+    expect(existsSync(path.join(parent, "strict-dry-run", "snapshot"))).toBe(false);
+    expect(run.stdout.trim().split("\n").at(-1)).toBe(
+      `gate strict: gpt-oss-20b 2/2 valid (2 first try, 0 after retry), structured days 100% (14 of 14), 0 repairs; no verdict: the thresholds apply to the ${n}-input regression set only`,
+    );
+  }, 120_000);
+
+  it("the pass rule: Opus at or above the band's low and 100% structured days; gpt-oss-20b at 19 of 20 and 90%", () => {
+    const numbers = (valid: number, daysParsed: number, over: Partial<GateNumbers> = {}): GateNumbers => ({
+      replies: 20,
+      firstTry: valid - 1,
+      afterRetry: 1,
+      daysParsed,
+      daysTotal: 112,
+      softRepairReplies: 2,
+      ...over,
+    });
+    const verdict = (short: string, x: GateNumbers, regressionSet = true) => judge({ lever: "x", short, numbers: x, band, regressionSet }).verdict;
+    expect(band.readsValid).toMatchObject({ low: 18, of: 20 });
+    expect(verdict("opus", numbers(band.readsValid.low, 112))).toBe("PASS");
+    expect(verdict("opus", numbers(20, 112))).toBe("PASS");
+    expect(verdict("opus", numbers(band.readsValid.low - 1, 112))).toBe("FAIL");
+    expect(verdict("opus", numbers(20, 111))).toBe("FAIL");
+    expect([GPT_OSS_READS_VALID_MIN, GPT_OSS_STRUCTURED_DAYS_MIN]).toEqual([19, 0.9]);
+    expect(verdict("gpt-oss-20b", numbers(19, Math.ceil(112 * 0.9)))).toBe("PASS");
+    expect(verdict("gpt-oss-20b", numbers(18, 112))).toBe("FAIL");
+    expect(verdict("gpt-oss-20b", numbers(20, Math.ceil(112 * 0.9) - 1))).toBe("FAIL");
+    // No valid weekly read: no structured days to speak of, so no pass.
+    expect(verdict("gpt-oss-20b", numbers(20, 0, { daysTotal: 0 }))).toBe("FAIL");
+    // A run short of the regression set's replies cannot pass.
+    expect(verdict("opus", numbers(18, 112, { replies: 19 }))).toBe("FAIL");
+    expect(verdict("opus", numbers(20, 112), false)).toBeNull();
+    expect(judge({ lever: "x", short: "gpt-oss-20b", numbers: numbers(19, 100), band, regressionSet: true }).line).toBe(
+      `gate x: gpt-oss-20b 19/20 valid (18 first try, 1 after retry), structured days 89.2% (100 of 112), 2 repairs: FAIL, ${GPT_OSS_NEEDS}`,
+    );
+  });
 
   it("refuses the before runs' folder, a missing or bad lever, and a live run with no server, before writing anything", () => {
     const tmp = mkdtempSync(path.join(tmpdir(), "replay-gate-refuse-"));

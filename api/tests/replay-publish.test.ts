@@ -163,6 +163,24 @@ describe("replay:publish", () => {
     }
   });
 
+  it("recognises the after-block marker and leaves it as it stands until its block is supplied", () => {
+    const file = path.join(tmp, "after.md");
+    const empty = "<!-- generated:after:start -->\n<!-- generated:after:end -->";
+    const text = `${doc()}\n## After the changes\n\n${empty}\n\nThe end.\n`;
+    writeFileSync(file, text);
+    const res = publish(file);
+    expect(res.status, res.stderr).toBe(0);
+    const out = readFileSync(file, "utf8");
+    expect(out).toContain(`## After the changes\n\n${empty}\n\nThe end.\n`);
+    expect(block(out, "after")).toBe("\n");
+    expect(block(out, "results")).toContain("Valid as sent, by kind of reply:");
+    expect(res.stderr).toContain("Rewrote 2 blocks in after.md: results, review.");
+    expect(res.stderr).toContain("Left as they stand (no block supplied yet): after.");
+    expect(res.stderr).not.toMatch(/Not in the report, skipped: .*after/);
+    // A report without the marker says it is not there, as for any block.
+    expect(publish(path.join(tmp, "report.md")).stderr).toMatch(/Not in the report, skipped: .*after/);
+  });
+
   it("refuses an unknown or unpaired marker and leaves the report as it was", () => {
     const unknown = path.join(tmp, "unknown.md");
     const text = "x\n<!-- generated:nonsense:start -->\nold\n<!-- generated:nonsense:end -->\n";

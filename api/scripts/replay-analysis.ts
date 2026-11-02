@@ -21,9 +21,13 @@
  * rule; what the retry did; a rescue simulation that reads each refused
  * attempt's tool input back from its saved stream, applies the candidate
  * repairs in scripts/replayRepairs.ts and re-runs the real validators from
- * src/llm/schema.ts; quality signals on valid replies; each weekly plan next to
- * the baseline's for the same input; which inputs fail where; and cost and
- * speed. The top of analysis.md ranks what to change in the harness from those
+ * src/llm/schema.ts (runs on the old nested forms only: on the plan-as-text
+ * form the parser is the repair); quality signals on valid replies; each
+ * weekly plan next to the baseline's for the same input, an unparsed day
+ * counted as no plan; which inputs fail where; and cost and speed. Section 1
+ * also reports the plan lines (scripts/replayPlanLines.ts): structured days of
+ * seven per configuration, unparsed days, bare numbers, dropped lines, days
+ * fixed by the retry, and the failures by the parser's reasons. The top of analysis.md ranks what to change in the harness from those
  * numbers. replies.csv has one row per reply attempt.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -37,6 +41,7 @@ import { comparePlans, pearson, planSummary, readTextOf, spread, weeklyShape, ty
 import { replayCheckFailures } from "./replayChecks.js";
 import { configurationInputs, OPERATIONS, promptHead, type Operation, type StoredCall } from "./replayInputs.js";
 import { attemptCostUsd, capHitsOf, planSanity, repairsOf, type PlanExpectation, type Usage } from "./replayMeasures.js";
+import { carriesPlanLines, PLAN_LINE_FAILURE_REASONS, planLineSummary, type PlanLineSummary } from "./replayPlanLines.js";
 import {
   CANDIDATE_REPAIRS,
   athleteUnit,
@@ -95,7 +100,19 @@ type Refusal = {
   responseRaw: unknown;
 };
 
-type Timing = { ttftMs: number | null; totalMs: number; attempts: Array<{ attempt: number; ttftMs: number | null; totalMs: number }> };
+/** One attempt's timing; live runs since plan-as-text ticket 08 add how its request was built, its row's outcome, repairs and tokens. */
+type AttemptTiming = {
+  attempt: number;
+  ttftMs: number | null;
+  totalMs: number;
+  request?: { kind: string; turns?: string[]; fixDates?: string[]; fixed?: string[] };
+  outcome?: string | null;
+  repairs?: string | null;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+};
+
+type Timing = { ttftMs: number | null; totalMs: number; attempts: AttemptTiming[] };
 
 /** A reply file or a failure file, with the fields both may hold. */
 type SavedReply = {
@@ -117,6 +134,8 @@ type SavedReply = {
   timing?: Timing;
   planCheck?: PlanExpectation | null;
   refusedAttempts?: Refusal[];
+  /** The plan-lines summary the replay saves since plan-as-text ticket 11; derived when missing. */
+  plan?: PlanLineSummary | null;
   new?: unknown;
 };
 
@@ -133,6 +152,8 @@ function causeOf(kind: ErrorKind): FailCause {
 type Attempt = {
   attempt: number;
   outcome: "accepted" | "refused" | "failed";
+  /** How the attempt's request was built (live runs since plan-as-text ticket 08), e.g. "first", "fix_lines". */
+  requestKind: string | null;
   error: string | null;
   normalised: NormalisedError | null;
   stopReason: string | null;
@@ -165,6 +186,10 @@ type Reply = {
   failCause: FailCause | null;
   attempts: Attempt[];
   ctx: RepairContext | null;
+  /** Whether this reply's run (its configuration folder in its root) carries the plan-as-text form. */
+  newForm: boolean;
+  /** What the plan lines came to (scripts/replayPlanLines.ts); null for About you and refused replies. */
+  planLines: PlanLineSummary | null;
 };
 
 const warnings: string[] = [];
@@ -248,11 +273,16 @@ function loadReplies(): { replies: Reply[]; configs: Map<string, { config: Confi
       entryConfig.dirs.push(dir);
       entryConfig.measures.push({ root: rootName, m: measures, files: stems.size });
       configs.set(configuration, entryConfig);
-      for (const [stem, e] of [...stems].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))) {
-        // A reply file wins over a failure file for the same stem, as the replay report reads them.
-        const file = e.ok ?? e.failed!;
-        const saved = readJson(path.join(dir, file)) as SavedReply | null;
-        if (!saved) continue;
+      const read = [...stems]
+        .sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }))
+        .flatMap(([stem, e]) => {
+          // A reply file wins over a failure file for the same stem, as the replay report reads them.
+          const file = e.ok ?? e.failed!;
+          const saved = readJson(path.join(dir, file)) as SavedReply | null;
+          return saved ? [{ stem, e, file, saved }] : [];
+        });
+      const newForm = read.some(({ stem, saved }) => savedCarriesPlanLines(saved, saved.operation ?? calls?.[Number(stem.split(".")[0]) - 1]?.operation ?? "weekly_reply"));
+      for (const { stem, e, file, saved } of read) {
         const [inputId, repeatText] = stem.split(".") as [string, string];
         const call = calls?.[Number(inputId) - 1] ?? null;
         const operation = saved.operation ?? call?.operation ?? "weekly_reply";
@@ -272,6 +302,7 @@ function loadReplies(): { replies: Reply[]; configs: Map<string, { config: Confi
             call: matched,
             saved,
             accepted: Boolean(e.ok),
+            newForm,
           }),
         );
       }
@@ -291,6 +322,7 @@ function buildReply(r: {
   call: StoredCall | null;
   saved: SavedReply;
   accepted: boolean;
+  newForm: boolean;
 }): Reply {
   const { saved, accepted } = r;
   const refusals = [...(saved.refusedAttempts ?? [])].sort((a, b) => a.attempt - b.attempt);
@@ -300,6 +332,11 @@ function buildReply(r: {
   const finalIsRefusal = !accepted && lastRefusal !== undefined && (timings.length === 0 || lastRefusal.attempt === timings.length) && (saved.error === undefined || saved.error === lastRefusal.error || timings.length > 0);
   const made = Math.max(timings.length, refusals.length + (accepted || !finalIsRefusal ? 1 : 0));
   const ctx = contextFor(r.operation, r.call, saved);
+  // A reply accepted with plan lines that did not parse and then asked to fix
+  // them (fix_lines): the reply's own row, whose usage the file saves, is the
+  // attempt before the fix; the fix's tokens are in its timing entry.
+  const fixAt = accepted ? timings.find((t) => t.request?.kind === "fix_lines")?.attempt : undefined;
+  const counted = fixAt !== undefined ? fixAt - 1 : made;
   const attempts: Attempt[] = [];
   for (let n = 1; n <= made; n++) {
     const t = timings.find((x) => x.attempt === n);
@@ -309,13 +346,15 @@ function buildReply(r: {
       const extracted = extractAttempt(refusal.responseRaw, r.operation);
       const normalised = normaliseError(refusal.error);
       let reproduced: boolean | null = null;
-      if (ctx && normalised.kind === "schema" && extracted.toolInput !== null) {
+      // The checkers in replayRepairs.ts read the old nested forms; a run on the plan-as-text form is not re-validated.
+      if (ctx && !r.newForm && normalised.kind === "schema" && extracted.toolInput !== null) {
         const v = validateFor(r.operation, extracted.toolInput, ctx);
         reproduced = !v.ok && v.error === refusal.error;
       }
       attempts.push({
         attempt: n,
         outcome: "refused",
+        requestKind: t?.request?.kind ?? null,
         error: refusal.error,
         normalised,
         stopReason: refusal.stopReason,
@@ -332,16 +371,21 @@ function buildReply(r: {
       });
     } else {
       const final = n === made;
-      const usage = final ? usageOf(saved) : usageOf({});
+      const own = n === counted;
+      const isFix = n === fixAt;
+      const usage = own ? usageOf(saved) : isFix ? usageOf({ inputTokens: t?.inputTokens, outputTokens: t?.outputTokens }) : usageOf({});
       const failedHere = !accepted && final;
+      // A fix that failed leaves the first reply standing: that attempt failed, the reply did not.
+      const fixFailed = isFix && t?.outcome !== undefined && t.outcome !== null && t.outcome !== "ok" && t.outcome !== "repaired";
       attempts.push({
         attempt: n,
-        outcome: failedHere ? "failed" : "accepted",
-        error: failedHere ? (saved.error ?? "unknown error") : null,
+        outcome: failedHere || fixFailed ? "failed" : "accepted",
+        requestKind: t?.request?.kind ?? null,
+        error: failedHere ? (saved.error ?? "unknown error") : fixFailed ? (t?.repairs ?? t?.outcome ?? "the fix failed") : null,
         normalised: failedHere ? normaliseError(saved.error ?? "unknown error") : null,
-        stopReason: final ? (saved.stopReason ?? null) : null,
+        stopReason: own ? (saved.stopReason ?? null) : null,
         usage,
-        thinkingChars: final ? (saved.thinkingChars ?? null) : null,
+        thinkingChars: own ? (saved.thinkingChars ?? null) : null,
         ttftMs: t?.ttftMs ?? null,
         totalMs: t?.totalMs ?? null,
         costUsd: attemptCostUsd(r.model, usage),
@@ -365,7 +409,22 @@ function buildReply(r: {
     failCause,
     attempts,
     ctx,
+    planLines: accepted ? (saved.plan !== undefined ? saved.plan : planLineSummary(r.operation, saved)) : null,
   };
+}
+
+/**
+ * Whether a saved reply carries the plan-as-text form (tickets 06 and 10): a
+ * `plan` summary, a stored day with a line or parsed flag, or a refused
+ * attempt whose tool input has a plan or changes box.
+ */
+function savedCarriesPlanLines(saved: SavedReply, operation: Operation): boolean {
+  if (saved.plan) return true;
+  if (saved.new !== undefined && carriesPlanLines(operation, saved.new)) return true;
+  return (saved.refusedAttempts ?? []).some((a) => {
+    const input = extractAttempt(a.responseRaw, operation).toolInput as Record<string, unknown> | null;
+    return Boolean(input) && typeof input === "object" && (typeof input!.plan === "string" || typeof input!.changes === "string");
+  });
 }
 
 /** A final attempt that was not a refusal failed outside the validator: classified by its text, else transport. */
@@ -554,6 +613,54 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
     return { configuration: c, all: outcomeRow(rs), byOperation: Object.fromEntries(opsOf(rs).map((o) => [o, outcomeRow(rs.filter((r) => r.operation === o))])) };
   });
 
+  // 1b. Plan lines: structured days and the parser's failures, from each valid reply's summary.
+  const planLineRow = (rs: Reply[]) => {
+    const s = rs.map((r) => r.planLines).filter((x): x is PlanLineSummary => x !== null);
+    const sum = (f: (x: PlanLineSummary) => number) => s.reduce((n, x) => n + f(x), 0);
+    const daysTotal = sum((x) => x.daysTotal);
+    const daysParsed = sum((x) => x.daysParsed);
+    return {
+      replies: s.length,
+      daysTotal,
+      daysParsed,
+      unparsed: daysTotal - daysParsed,
+      /** Share of the stored days Cadence filed; null with no days. */
+      structuredShare: daysTotal ? daysParsed / daysTotal : null,
+      repliesAllParsed: s.filter((x) => x.daysParsed === x.daysTotal).length,
+      failedFirst: sum((x) => x.failures.length),
+      retried: s.filter((x) => x.retried).length,
+      retryAskedFor: sum((x) => x.retryAskedFor.length),
+      fixedByRetry: sum((x) => x.fixedByRetry.length),
+      bareNumbers: sum((x) => x.bareNumbers),
+      droppedLines: sum((x) => x.droppedLines.length),
+      ignoredLines: sum((x) => x.ignoredLines),
+    };
+  };
+  const planLines = configurations.map((c) => {
+    const valid = byConfig(c).filter((r) => r.outcome !== "failed");
+    return {
+      configuration: c,
+      form: byConfig(c).some((r) => r.newForm) ? (byConfig(c).every((r) => r.newForm) ? "plan lines" : "mixed") : "nested days",
+      weekly: planLineRow(valid.filter((r) => r.operation === "weekly_reply")),
+      midWeek: planLineRow(valid.filter((r) => r.operation === "mid_week_chat")),
+    };
+  });
+  const failuresByReason = configurations.flatMap((c) =>
+    (["weekly_reply", "mid_week_chat"] as const).flatMap((operation) => {
+      const s = byConfig(c)
+        .filter((r) => r.operation === operation)
+        .map((r) => r.planLines)
+        .filter((x): x is PlanLineSummary => x !== null);
+      return PLAN_LINE_FAILURE_REASONS.flatMap((reason) => {
+        const failed = s.flatMap((x) => x.failures.filter((f) => f.reason === reason).map((f) => ({ f, fixed: x.fixedByRetry.includes(f.date) })));
+        const dropped = s.reduce((n, x) => n + x.droppedLines.filter((f) => f.reason === reason).length, 0);
+        if (failed.length === 0 && dropped === 0) return [];
+        const fixed = failed.filter((x) => x.fixed).length;
+        return [{ configuration: c, operation, reason, firstParse: failed.length, fixedByRetry: fixed, stillUnparsed: failed.length - fixed, droppedLines: dropped }];
+      });
+    }),
+  );
+
   // 2. Failure taxonomy.
   const refused = replies.flatMap((r) => r.attempts.filter((a) => a.outcome === "refused").map((a) => ({ r, a })));
   const taxonomy = (items: typeof refused) => {
@@ -604,17 +711,24 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
       sameKindOfError: sameRuleLabel,
       secondFailedOutsideValidator: rs.filter((r) => r.attempts[1]!.outcome === "failed").length,
       refusedAgain: second.length,
+      /** Every second request this configuration sent, by how it was built (live runs since ticket 08 save it). */
+      secondRequests: tally(byConfig(c).filter((r) => r.attempts.length >= 2).map((r) => r.attempts[1]!.requestKind ?? "not recorded")),
     };
   });
 
-  // 4. Rescue simulation.
+  // 4. Rescue simulation, for runs on the old nested forms only: on the
+  // plan-as-text form the parser is the repair, and the candidate repairs read
+  // shapes those runs no longer send.
+  const oldForm = replies.filter((r) => !r.newForm);
+  const skippedRuns = [...new Set(replies.filter((r) => r.newForm).map((r) => `${r.root}/${r.configuration}`))].sort();
+  const refusedOld = refused.filter(({ r }) => !r.newForm);
   const rescuable = (r: Reply) => r.attempts.some(workable);
-  const failedPopulation = replies.filter((r) => !isBaseline(r.configuration) && r.outcome === "failed" && rescuable(r));
+  const failedPopulation = oldForm.filter((r) => !isBaseline(r.configuration) && r.outcome === "failed" && rescuable(r));
   const overallTable = rescueTable(failedPopulation, null);
   const order = overallTable.cumulative.map((c) => c.id);
   const perModelTables = Object.fromEntries(candidates.map((c) => [c, rescueTable(failedPopulation.filter((r) => r.configuration === c), order)]));
   // Retries the repairs would have saved: replies accepted only after asking once more, rescued on attempt 1.
-  const retriedPopulation = replies.filter((r) => !isBaseline(r.configuration) && r.outcome === "after retry" && workable(r.attempts[0]!));
+  const retriedPopulation = oldForm.filter((r) => !isBaseline(r.configuration) && r.outcome === "after retry" && workable(r.attempts[0]!));
   const firstAttemptOnly = (r: Reply, set: string[]) => {
     const a = r.attempts[0]!;
     return workable(a) && attemptPasses(r, a, set).ok;
@@ -623,7 +737,7 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
     candidates.map((c) => [c, { retried: retriedPopulation.filter((r) => r.configuration === c).length, savedByAll: retriedPopulation.filter((r) => r.configuration === c && firstAttemptOnly(r, REPAIR_IDS)).length }]),
   );
   // Per attempt marks for the CSV, and what still fails.
-  for (const r of replies) {
+  for (const r of oldForm) {
     for (const a of r.attempts.filter(workable)) {
       a.rescuedAlone = REPAIR_IDS.filter((id) => attemptPasses(r, a, [id]).ok);
       const all = attemptPasses(r, a, REPAIR_IDS);
@@ -638,7 +752,7 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
       return { configuration: r.configuration, key: r.key, operation: r.operation, attempt: last.attempt, error: last.remainingError, normalised: last.remainingError ? normaliseError(last.remainingError) : null };
     });
   const stillFailingByError = tally(stillFailing.map((s) => (s.normalised ? `${s.normalised.path} ${s.normalised.rule}` : "(no context)")));
-  const notWorkable = replies.filter((r) => !isBaseline(r.configuration) && r.outcome === "failed" && !rescuable(r)).map((r) => ({ configuration: r.configuration, key: r.key, cause: r.failCause, error: r.attempts.at(-1)?.error ?? null }));
+  const notWorkable = oldForm.filter((r) => !isBaseline(r.configuration) && r.outcome === "failed" && !rescuable(r)).map((r) => ({ configuration: r.configuration, key: r.key, cause: r.failCause, error: r.attempts.at(-1)?.error ?? null }));
   const extraction = (() => {
     const atts = refused.map(({ a }) => a);
     return {
@@ -657,7 +771,7 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
   })();
   const enumSeen = (() => {
     const rows = new Map<string, { field: string; value: string; mapped: string | null; byConfiguration: Record<string, number> }>();
-    for (const { r, a } of refused) {
+    for (const { r, a } of refusedOld) {
       for (const s of enumValuesSeen(a.extracted?.toolInput)) {
         const k = `${s.field}\u0000${s.value}`;
         const row = rows.get(k) ?? { field: s.field, value: s.value, mapped: mapEnumValue(s.value, s.field !== "run.type"), byConfiguration: {} };
@@ -669,7 +783,7 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
   })();
   const shapeIssueCounts = (() => {
     const out: Record<string, Record<string, number>> = {};
-    for (const { r, a } of refused) {
+    for (const { r, a } of refusedOld) {
       if (a.extracted?.toolInput === null || a.extracted?.toolInput === undefined) continue;
       for (const k of shapeIssues(a.extracted.toolInput)) {
         out[k] ??= {};
@@ -680,7 +794,7 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
   })();
   const unknownKeyCounts = (() => {
     const out: Record<string, Record<string, number>> = {};
-    for (const { r, a } of refused) {
+    for (const { r, a } of refusedOld) {
       for (const k of new Set(unknownKeys(r.operation, a.extracted?.toolInput))) {
         out[k] ??= {};
         out[k][r.configuration] = (out[k][r.configuration] ?? 0) + 1;
@@ -804,6 +918,9 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
   }
   const planSummaryOf = (rows: PlanRow[]) => ({
     pairs: rows.length,
+    /** Unparsed days across the pairs, each side: left out of the ratios, "no plan" in the day types. */
+    unparsed: { candidate: rows.reduce((n, x) => n + x.comparison.unparsed.candidate, 0), baseline: rows.reduce((n, x) => n + x.comparison.unparsed.baseline, 0) },
+    pairsWithUnparsed: rows.filter((x) => x.comparison.unparsed.candidate + x.comparison.unparsed.baseline > 0).length,
     distanceRatio: spread(rows.map((x) => x.comparison.distanceRatio)),
     longRunRatio: spread(rows.map((x) => x.comparison.longRunRatio)),
     runDaysDiff: spread(rows.map((x) => x.comparison.runDays.candidate - x.comparison.runDays.baseline)),
@@ -833,6 +950,7 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
       if (c.dayTypeMatch < 0.5) out.push(`day types match on ${Math.round(c.dayTypeMatch * 7)}/7 days`);
       if (c.quality.candidate !== c.quality.baseline) out.push(c.quality.candidate ? "quality session the baseline does not plan" : "no quality session where the baseline plans one");
       if (x.candidate.answers < x.baseline.answers) out.push(`${x.candidate.answers} answers vs ${x.baseline.answers}`);
+      if (c.unparsed.candidate > 0) out.push(`${c.unparsed.candidate} of 7 days not filed (left out of the ratios)`);
       return out.length ? [{ configuration: x.configuration, key: x.key, repeat: x.repeat, source: x.source, distanceRatio: c.distanceRatio, issues: out }] : [];
     })
     .sort((a, b) => Math.abs((b.distanceRatio ?? 1) - 1) - Math.abs((a.distanceRatio ?? 1) - 1));
@@ -891,9 +1009,11 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
     configurations,
     candidates,
     outcomes,
+    planLines,
+    failuresByReason,
     failureTaxonomy,
     retry: retryRows,
-    rescue: { failedPopulation: failedPopulation.length, overall: overallTable, perModel: perModelTables, order, retriesSaved, stillFailing, stillFailingByError, notWorkable, extraction, enumSeen, unknownKeys: unknownKeyCounts, shapeIssues: shapeIssueCounts, details: rescueDetails },
+    rescue: { skippedRuns, failedPopulation: failedPopulation.length, overall: overallTable, perModel: perModelTables, order, retriesSaved, stillFailing, stillFailingByError, notWorkable, extraction, enumSeen, unknownKeys: unknownKeyCounts, shapeIssues: shapeIssueCounts, details: rescueDetails },
     quality,
     plans,
     planRows,
@@ -931,6 +1051,12 @@ export function fmt(n: number | null | undefined, digits = 2): string {
 
 export function secs(ms: number | null | undefined): string {
   return ms === null || ms === undefined ? "–" : `${(ms / 1000).toFixed(1)} s`;
+}
+
+/** Structured days of seven for a configuration's valid weekly reads, as the results table shows them. */
+export function structuredDaysCell(w: { replies: number; daysTotal: number; daysParsed: number }): string {
+  if (!w.replies || !w.daysTotal) return "–";
+  return `${((7 * w.daysParsed) / w.daysTotal).toFixed(1)} (${pct(w.daysParsed, w.daysTotal)})`;
 }
 
 export function spreadCells(s: Spread, f: (n: number | null) => string = (n) => fmt(n)): string {
@@ -994,7 +1120,7 @@ function harnessChanges(a: Analysis): string[] {
       text: `**Retry prompt:** of ${retried} retried replies, attempt 2 fixed ${fixed}, repeated the same path and rule in ${same}, and failed on a new error in ${fresh}. Per model: ${a.retry
         .filter((r) => r.retried && !isBaseline(r.configuration))
         .map((r) => `${short(r.configuration)} ${r.fixed}/${r.samePathAndRule}/${r.newError}`)
-        .join("; ")} (fixed/same/new).\n   The retry re-sends the identical request (askAtMostTwice); sending the validator's error back with it is the obvious change to test.`,
+        .join("; ")} (fixed/same/new).\n   Since plan-as-text ticket 08 the retry sends the reply back with the validator's message as an error tool result (a plain "call the tool" turn when no tool was called, the request unchanged when the reply was cut off); see the second requests by kind in section 3. On runs before that, it re-sent the identical request.`,
     });
   }
   const noTool = a.outcomes.filter((o) => !isBaseline(o.configuration)).reduce((s, o) => s + (o.all.failedBy["no tool call"] ?? 0), 0);
@@ -1044,14 +1170,52 @@ function markdown(a: Analysis): string {
 
   // 1.
   L.push("## 1. Outcomes", "");
+  L.push("Structured days (of seven): the days Cadence filed from the plan box, per valid weekly read, as the mean of seven and the share of all stored days. A run on the old nested form files every day by construction.", "");
+  const structured = (c: string) => structuredDaysCell(a.planLines.find((p) => p.configuration === c)!.weekly);
   L.push(
     ...table(
-      ["Configuration", "Operation", "Replies", "First try", "After retry", "Failed", ...FAIL_CAUSES],
+      ["Configuration", "Operation", "Replies", "First try", "After retry", "Failed", "Structured days (of seven)", ...FAIL_CAUSES],
       a.outcomes.flatMap((o) => [
-        [short(o.configuration), "all", o.all.replies, o.all.firstTry, o.all.afterRetry, o.all.failed, ...FAIL_CAUSES.map((c) => o.all.failedBy[c])],
-        ...Object.entries(o.byOperation).map(([op, x]) => ["", op, x.replies, x.firstTry, x.afterRetry, x.failed, ...FAIL_CAUSES.map((c) => x.failedBy[c])]),
+        [short(o.configuration), "all", o.all.replies, o.all.firstTry, o.all.afterRetry, o.all.failed, structured(o.configuration), ...FAIL_CAUSES.map((c) => o.all.failedBy[c])],
+        ...Object.entries(o.byOperation).map(([op, x]) => ["", op, x.replies, x.firstTry, x.afterRetry, x.failed, op === "weekly_reply" ? structured(o.configuration) : "", ...FAIL_CAUSES.map((c) => x.failedBy[c])]),
       ]),
     ),
+    "",
+  );
+  L.push("### Plan lines", "", "Per configuration, over valid replies: the weekly read's plan box (seven days) and mid-week replies' changes lines. First parse: dates that failed when the reply that counted was parsed, before the plan-lines retry; fixed: dates that retry filed. Bare numbers: a number with no unit. Dropped: lines for a date outside the plan week; ignored: lines with no day.", "");
+  L.push(
+    ...table(
+      ["Configuration", "Form", "Box", "Replies", "Days filed", "Unparsed days", "Replies fully filed", "Failed on first parse", "Plan-lines retries", "Days fixed by the retry", "Bare numbers", "Dropped lines", "Ignored lines"],
+      a.planLines.flatMap((p) =>
+        ([["plan (weekly)", p.weekly], ["changes (mid-week)", p.midWeek]] as const)
+          .filter(([, x]) => x.replies > 0)
+          .map(([box, x], i) => [
+            i === 0 ? short(p.configuration) : "",
+            i === 0 ? p.form : "",
+            box,
+            x.replies,
+            `${x.daysParsed} of ${x.daysTotal} (${pct(x.daysParsed, x.daysTotal)})`,
+            x.unparsed,
+            x.repliesAllParsed,
+            x.failedFirst,
+            x.retried,
+            `${x.fixedByRetry} of ${x.retryAskedFor}`,
+            x.bareNumbers,
+            x.droppedLines,
+            x.ignoredLines,
+          ]),
+      ),
+    ),
+    "",
+  );
+  L.push("### Plan-line failures by reason", "", "The parser's fixed reasons (src/prescribed/planLines.ts), over valid replies. A dropped line is one for a date outside the plan week.", "");
+  L.push(
+    ...(a.failuresByReason.length
+      ? table(
+          ["Configuration", "Box", "Reason", "Failed on first parse", "Fixed by the retry", "Still unparsed", "Lines dropped"],
+          a.failuresByReason.map((f) => [short(f.configuration), f.operation === "weekly_reply" ? "plan" : "changes", f.reason, f.firstParse, f.fixedByRetry, f.stillUnparsed, f.droppedLines]),
+        )
+      : ["No plan line failed in any configuration."]),
     "",
   );
 
@@ -1069,11 +1233,21 @@ function markdown(a: Analysis): string {
   }
 
   // 3.
-  L.push("## 3. Retry effectiveness", "", "Replies whose attempt 1 was refused and that were asked once more (the weekly read only; the app sends the same request again).", "");
+  L.push(
+    "## 3. Retry effectiveness",
+    "",
+    "Replies whose attempt 1 was refused and that were asked once more, every operation. Since plan-as-text ticket 08 the second request carries the validator's message as an error tool result (`error_result`), a plain call-the-tool turn when no tool was called (`no_tool_call`), or the first request again when the reply was cut off (`resend`); runs before that re-sent the identical request. A reply accepted with plan lines that did not parse is asked to fix those dates (`fix_lines`); that retry is no refusal and is counted under Plan lines in section 1.",
+    "",
+  );
   L.push(...table(["Configuration", "Retried", "Fixed", "Same path and rule", "New error", "Same kind of error", "Attempt 2 failed outside the validator"], a.retry.filter((r) => r.retried).map((r) => [short(r.configuration), r.retried, `${r.fixed} (${pct(r.fixed, r.retried)})`, r.samePathAndRule, r.newError, r.sameKindOfError, r.secondFailedOutsideValidator])), "");
+  L.push("Every second request, by how it was built (\"not recorded\": dry runs and runs before ticket 08):", "");
+  L.push(...table(["Configuration", "Second requests"], a.retry.filter((r) => Object.keys(r.secondRequests).length).map((r) => [short(r.configuration), Object.entries(r.secondRequests).map(([k, n]) => `${k} ${n}`).join(", ")])), "");
 
   // 4.
   L.push("## 4. Rescue simulation", "");
+  if (a.rescue.skippedRuns.length) {
+    L.push(`Skipped for runs on the plan-as-text form, where the parser is the repair: ${a.rescue.skippedRuns.map((x) => `\`${x}\``).join(", ")}. The figures below cover the other runs only.`, "");
+  }
   const ex = a.rescue.extraction;
   L.push(
     `Tool inputs read back from ${ex.refusedAttempts} refused attempts (${Object.entries(ex.byFormat).map(([f, n]) => `${f} ${n}`).join(", ")}); a tool input found in ${ex.toolInputFound}, unparsable tool JSON in ${ex.unparsedToolJson}, stray reply JSON in ${sumValues(ex.strayInputs)}. Re-running the validator on the extracted input reproduces the recorded error for ${ex.reproduced} of ${ex.checked} checked.`,
@@ -1154,11 +1328,12 @@ function markdown(a: Analysis): string {
   }
 
   // 6.
-  L.push("## 6. Plans against the baseline", "", `Weekly replies valid on both sides, same input, baseline repeat 1. Ratios are candidate over baseline; cells are median / p90 / worst.`, "");
+  L.push("## 6. Plans against the baseline", "", `Weekly replies valid on both sides, same input, baseline repeat 1. Ratios are candidate over baseline, over the days both sides filed; an unparsed day counts as no plan and is left out of the ratios. Cells are median / p90 / worst.`, "");
   const pRow = (c: string, label: string, p: (typeof a.plans)[number]["valid"]) => [
     short(c),
     label,
     p.pairs,
+    `${p.unparsed.candidate} / ${p.unparsed.baseline} (in ${p.pairsWithUnparsed} pairs)`,
     spreadCells(p.distanceRatio),
     spreadCells(p.longRunRatio),
     spreadCells(p.runDaysDiff),
@@ -1172,7 +1347,7 @@ function markdown(a: Analysis): string {
   ];
   L.push(
     ...table(
-      ["Configuration", "Replies", "Pairs", "Weekly distance ratio", "Long-run ratio", "Run days (cand - base)", "Day-type match (median)", "Same rest days", "Quality session", "Flags (median)", "Answers (median)", "Headline chars", "Analysis chars"],
+      ["Configuration", "Replies", "Pairs", "Unparsed days (cand / base)", "Weekly distance ratio", "Long-run ratio", "Run days (cand - base)", "Day-type match (median)", "Same rest days", "Quality session", "Flags (median)", "Answers (median)", "Headline chars", "Analysis chars"],
       a.plans.flatMap((p) => [pRow(p.configuration, "valid", p.valid), ...(p.rescued.pairs ? [pRow(p.configuration, "rescued", p.rescued)] : [])]),
     ),
     "",
@@ -1228,6 +1403,7 @@ const CSV_COLUMNS = [
   "reply_outcome",
   "fail_cause",
   "attempt_outcome",
+  "request_kind",
   "error",
   "error_path",
   "error_rule",
@@ -1272,6 +1448,7 @@ function csv(replies: Reply[]): string {
         reply_outcome: r.outcome,
         fail_cause: r.failCause,
         attempt_outcome: a.outcome,
+        request_kind: a.requestKind,
         error: a.error,
         error_path: a.normalised?.path,
         error_rule: a.normalised?.rule,

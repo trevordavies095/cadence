@@ -663,6 +663,56 @@ describe("replay measures", () => {
   }, 30_000);
 });
 
+describe("replay plan-lines summary", () => {
+  const read = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+
+  it("saves what the plan lines came to: a weekly plan box, a mid-week changes box, and none for About you", async () => {
+    const { buildStubWeeklyForm } = await import("../src/llm/index.js");
+    const packet = read(path.join(FIXTURE, "01-stay-fit.json"));
+    const lines = buildStubWeeklyForm(packet as unknown as Parameters<typeof buildStubWeeklyForm>[0]).plan.split("\n");
+    const thu = lines.findIndex((l) => /^Thu\b/.test(l));
+    const thuDate = lines[thu]!.match(/\d{4}-\d{2}-\d{2}/)![0];
+    // Thursday loses its unit; a line for the next Monday and a line with no day come along.
+    lines[thu] = `Thu ${thuDate}: easy 5, relaxed.`;
+    const plan = [...lines, "Mon 2026-11-02: easy, 3 mi.", "Note: keep the whole week relaxed."].join("\n");
+    const dir = mkdtempSync(path.join(tmpdir(), "replay-plan-lines-"));
+    writeFileSync(path.join(dir, "01-weekly.json"), JSON.stringify({ packet, stubPatch: { plan } }));
+    // The mid-week plan week starts 2026-10-12: one good line, one bare number, one outside the week.
+    const changes = ["Thu 2026-10-15: easy, 8 km. Keep it relaxed.", "Sat 2026-10-17: easy 10, steady.", "Mon 2026-10-19: easy, 5 km."].join("\n");
+    writeFileSync(path.join(dir, "02-mid-week.json"), JSON.stringify({ ...read(path.join(DEMO_OPERATIONS, "01-mid-week-attached-run.json")), stubPatch: { changes } }));
+    copyFileSync(path.join(DEMO_OPERATIONS, "03-about-you-correction.json"), path.join(dir, "03-correction.json"));
+    const run = dryRun(dir);
+    expect(run.status, run.stderr).toBe(0);
+    const saved = (stem: string) => read(path.join(run.out, DEFAULT_CONFIG, `${stem}.json`));
+
+    expect(saved("01.1").plan).toEqual({
+      box: "plan",
+      daysTotal: 7,
+      daysParsed: 6,
+      failures: [{ date: thuDate, reason: "no distance unit" }],
+      retried: false,
+      retryAskedFor: [],
+      fixedByRetry: [],
+      bareNumbers: 1,
+      droppedLines: [{ date: "2026-11-02", reason: "outside the plan week" }],
+      ignoredLines: 1,
+    });
+    expect(saved("02.1").plan).toEqual({
+      box: "changes",
+      daysTotal: 2,
+      daysParsed: 1,
+      failures: [{ date: "2026-10-17", reason: "no distance unit" }],
+      retried: false,
+      retryAskedFor: [],
+      fixedByRetry: [],
+      bareNumbers: 1,
+      droppedLines: [{ date: "2026-10-19", reason: "outside the plan week" }],
+      ignoredLines: 0,
+    });
+    expect(saved("03.1").plan).toBeNull();
+  }, 30_000);
+});
+
 describe("replay against a fake self-hosted server", () => {
   const SH_FIXTURE = path.join(api, "tests/fixtures/self-hosted/omlx-gpt-oss-weekly");
 
@@ -837,6 +887,17 @@ describe("replay of a plan fixed by the retry", () => {
     });
     // The saved reply's own outcome is the reply that counted: the first, accepted.
     expect(saved.outcome).toBe("repaired");
+    // The plan summary tells the day the retry filed from one that parsed first time.
+    expect(saved.plan).toMatchObject({
+      box: "plan",
+      daysTotal: 7,
+      daysParsed: 7,
+      failures: [{ date, reason: "no distance unit" }],
+      retried: true,
+      retryAskedFor: [date],
+      fixedByRetry: [date],
+      bareNumbers: 1,
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect(saved.new.prescribedWeek.days.every((d: any) => d.parsed === true)).toBe(true);
   }, 60_000);

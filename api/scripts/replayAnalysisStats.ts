@@ -69,7 +69,11 @@ export function planSummary(week: PrescribedWeek): PlanSummary {
 }
 
 export type PlanComparison = {
-  /** Candidate over baseline planned distance; null when the baseline plans none. */
+  /**
+   * Candidate over baseline planned distance, over the days both sides filed
+   * (an unparsed day on either side has no amount and is left out); null when
+   * the baseline plans none on those days.
+   */
   distanceRatio: number | null;
   longRunRatio: number | null;
   runDays: { candidate: number; baseline: number };
@@ -80,27 +84,52 @@ export type PlanComparison = {
   /** Share of days agreeing on rest or not rest. */
   restAgreement: number;
   quality: { candidate: boolean; baseline: boolean };
+  /** Days Cadence could not file (`parsed: false`) on each side: no plan for that day in the comparison. */
+  unparsed: { candidate: number; baseline: number };
 };
 
+/** A stored day Cadence could not file; rows without the flag read as parsed. */
+export function isUnparsed(d: PrescribedDay): boolean {
+  return d.parsed === false;
+}
+
+/** The week with only the days at `keep` (by position), for figures over the days both sides filed. */
+function onlyDays(week: PrescribedWeek, keep: (i: number) => boolean): PrescribedWeek {
+  return { ...week, days: (week.days ?? []).filter((_, i) => keep(i)) };
+}
+
+/**
+ * The candidate's week beside the baseline's, day by position. An unparsed
+ * day is "no plan": it matches no day type, is not a rest day, and both
+ * ratios are taken over the days filed on both sides.
+ */
 export function comparePlans(candidate: PrescribedWeek, baseline: PrescribedWeek): PlanComparison {
+  const cDays = candidate.days ?? [];
+  const bDays = baseline.days ?? [];
+  const bothFiled = (i: number) => !!cDays[i] && !!bDays[i] && !isUnparsed(cDays[i]!) && !isUnparsed(bDays[i]!);
   const c = planSummary(candidate);
   const b = planSummary(baseline);
+  const cFiled = planSummary(onlyDays(candidate, bothFiled));
+  const bFiled = planSummary(onlyDays(baseline, bothFiled));
+  const typeOf = (days: PrescribedDay[], i: number) => (days[i] === undefined ? undefined : isUnparsed(days[i]!) ? "no plan" : days[i]!.dayType);
   const n = Math.max(c.dayTypes.length, b.dayTypes.length, 1);
   let same = 0;
   let restSame = 0;
   for (let i = 0; i < n; i++) {
-    if (c.dayTypes[i] !== undefined && c.dayTypes[i] === b.dayTypes[i]) same++;
-    if ((c.dayTypes[i] === "rest") === (b.dayTypes[i] === "rest")) restSame++;
+    const [ct, bt] = [typeOf(cDays, i), typeOf(bDays, i)];
+    if (ct !== undefined && ct !== "no plan" && ct === bt) same++;
+    if ((ct === "rest") === (bt === "rest")) restSame++;
   }
   const restKey = (s: PlanSummary) => [...s.restDates].sort().join(",");
   return {
-    distanceRatio: b.totalM > 0 ? c.totalM / b.totalM : null,
-    longRunRatio: b.longM && c.longM !== null ? c.longM / b.longM : null,
+    distanceRatio: bFiled.totalM > 0 ? cFiled.totalM / bFiled.totalM : null,
+    longRunRatio: bFiled.longM && cFiled.longM !== null ? cFiled.longM / bFiled.longM : null,
     runDays: { candidate: c.runDays, baseline: b.runDays },
     dayTypeMatch: same / n,
     sameRestDays: restKey(c) === restKey(b),
     restAgreement: restSame / n,
     quality: { candidate: c.hasQuality, baseline: b.hasQuality },
+    unparsed: { candidate: cDays.filter(isUnparsed).length, baseline: bDays.filter(isUnparsed).length },
   };
 }
 
