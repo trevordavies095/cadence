@@ -164,7 +164,7 @@ describe("effort levels / timeout resolution", () => {
 
 for (const flow of FLOWS) {
   describe(`thinking + streaming adapter: ${flow.name}`, () => {
-    it("sends adaptive thinking, effort, auto tool choice, max_tokens 64000 and stream", async () => {
+    it("sends adaptive thinking, effort, auto tool choice, max_tokens 20000 and stream", async () => {
       const { recorder, rows } = memoryRecorder();
       const fetchImpl = fetchReturning(() =>
         anthropicStreamResponse(anthropicToolMessage(flow.tool, flow.okInput())),
@@ -182,7 +182,7 @@ for (const flow of FLOWS) {
       expect(body.thinking).toEqual({ type: "adaptive", display: "summarized" });
       expect(body.output_config).toEqual({ effort: "high" });
       expect(body.tool_choice).toEqual({ type: "auto" });
-      expect(body.max_tokens).toBe(64000);
+      expect(body.max_tokens).toBe(20000);
       expect(body.stream).toBe(true);
       expect(body).not.toHaveProperty("temperature");
       expect(body).not.toHaveProperty("budget_tokens");
