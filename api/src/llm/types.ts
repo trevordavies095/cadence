@@ -96,6 +96,17 @@ export type PrescribedDay = {
   strength?: string | null;
   /** Day-level coaching notes. */
   notes?: string | null;
+  /**
+   * The plan line Coach Cade wrote for this day, as written; null when the
+   * plan gave no line for the date. Absent on rows stored before plans were
+   * text.
+   */
+  line?: string | null;
+  /**
+   * Whether Cadence derived this day's structure from its line. False means
+   * the day carries only the line (or no line). Absent reads as parsed.
+   */
+  parsed?: boolean;
 };
 
 export type PrescribedWeek = {

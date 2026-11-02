@@ -120,6 +120,10 @@ export type PrescribedDay = {
   run?: PrescribedRun | null;
   strength?: string | null;
   notes?: string | null;
+  /** Coach Cade's sentence for the day, as written; null when none was given. */
+  line?: string | null;
+  /** False when Cadence could not derive the day's structure; absent reads as parsed. */
+  parsed?: boolean;
 };
 
 export type PrescribedWeek = {
