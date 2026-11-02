@@ -1,4 +1,7 @@
 export {
+  askAtMostTwice,
+  COACH_CALL_ATTEMPTS,
+  type CoachAttempt,
   createAnthropicLlmPort,
   resolveAnthropicTimeoutMs,
   resolveSelfHostedIdleTimeoutMs,
@@ -32,6 +35,7 @@ export {
   LlmNotConfiguredError,
   LlmSchemaError,
   LlmTransportError,
+  type AttemptReport,
   type LlmCallOptions,
   type LlmPort,
 } from "./port.js";

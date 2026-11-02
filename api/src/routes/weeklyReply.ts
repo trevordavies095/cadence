@@ -11,7 +11,6 @@ import {
   resolveWeeklyPlanWeek,
   validateWeeklyReply,
 } from "../llm/index.js";
-import { askOnceMore } from "../llm/askOnceMore.js";
 import { recordRouteRejection, type LlmCallRecorder } from "../llmCallLog/index.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import {
@@ -276,33 +275,26 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       await rememberLastOutboundPacket(packet);
     }
 
-    let callId = randomUUID();
+    const callId = randomUUID();
     try {
-      // A reply refused for its shape is asked for once more before the athlete
-      // sees a failed read. Each attempt keeps its own call log row.
-      const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
-      // One target for the whole run (server, key, model, effort), so a retry
-      // never switches any of them (ADR 0002, ADR 0004).
-      const coachTarget = await llmPort.resolveCoachTarget?.();
-      const checked = await askOnceMore(async (attempt) => {
-        if (attempt > 1) callId = randomUUID();
-        const reply = await llmPort.generateWeeklyReply(packet, {
-          callId,
-          weekSessionId: focusSession.id,
-          coachTarget,
-        });
-        const validated = validateWeeklyReply(reply, weekStartMonday);
-        if (!validated.ok) {
-          await recordRouteRejection(llmCallRecorder, {
-            parentCallId: callId,
-            operation: "weekly_reply",
-            weekSessionId: focusSession.id,
-            errorMessage: validated.error,
-          });
-        }
-        return validated;
+      // The adapter asks once more for a reply refused for its shape (the plan's
+      // dates included), on one target (ADR 0002, ADR 0004); callId names the
+      // attempt that came back. This is the final check, for any port.
+      const reply = await llmPort.generateWeeklyReply(packet, {
+        callId,
+        weekSessionId: focusSession.id,
       });
+      const checked = validateWeeklyReply(
+        reply,
+        resolveWeeklyPlanWeek(packet).weekStartMonday,
+      );
       if (!checked.ok) {
+        await recordRouteRejection(llmCallRecorder, {
+          parentCallId: callId,
+          operation: "weekly_reply",
+          weekSessionId: focusSession.id,
+          errorMessage: checked.error,
+        });
         return {
           status: 502,
           body: {

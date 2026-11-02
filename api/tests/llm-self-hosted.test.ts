@@ -322,6 +322,32 @@ describe("a coach call to a self-hosted server", () => {
       ["ok", "self_hosted", "omlx.local"],
       ["schema_invalid", "self_hosted", "omlx.local"],
     ]);
+    expect(sent[1]!.body).toEqual(sent[0]!.body);
+    expect(sent[1]!.headers).toEqual(sent[0]!.headers);
+  });
+
+  it("asks once more on the same server, model, effort and key when a mid-week reply is refused, and never a third time", async () => {
+    const refused = (toolName: string) =>
+      new Response(
+        anthropicSseEvents(anthropicToolMessage(toolName, { body: "" }), { thinking: false }).join(""),
+        { status: 200, headers: { "content-type": "text/event-stream" } },
+      );
+    const { fetchImpl, sent } = fakeServers({ respond: (toolName) => refused(toolName) });
+    const app = appWith(fetchImpl);
+    await useSelfHosted(app);
+    const weekSessionId = await openWeek(app);
+
+    const res = await chat(app, weekSessionId, { body: "How is my week going?" });
+    expect(res.status).toBe(502);
+    expect(sent).toHaveLength(2);
+    expect(sent.map((c) => c.url)).toEqual([`${BASE_URL}/v1/messages`, `${BASE_URL}/v1/messages`]);
+    expect(sent[1]!.body).toEqual(sent[0]!.body);
+    expect(sent[1]!.headers).toEqual(sent[0]!.headers);
+    const rows = await logRows(app);
+    expect(rows.map((r) => [r.outcome, r.provider, r.serverHost])).toEqual([
+      ["schema_invalid", "self_hosted", "omlx.local"],
+      ["schema_invalid", "self_hosted", "omlx.local"],
+    ]);
   });
 });
 

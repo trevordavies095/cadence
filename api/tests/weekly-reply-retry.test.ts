@@ -7,16 +7,14 @@ import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
   buildStubWeeklyReply,
   createAnthropicLlmPort,
-  createCoachTargetResolver,
   createStubLlmPort,
   expectedPlanDates,
-  LlmSchemaError,
   TESTED_COACH_MODEL,
   validateWeeklyReply,
-  type CoachTarget,
   type LlmPort,
   type WeeklyReply,
 } from "../src/llm/index.js";
+import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket, type ModelPacket } from "../src/packet/index.js";
 import { putAnthropicConnection } from "../src/settings/anthropicStore.js";
@@ -79,6 +77,22 @@ function samplePacket(): ModelPacket {
   });
 }
 
+/** The same plan a week late: every date outside the plan week. */
+function aWeekLate(reply: WeeklyReply): WeeklyReply {
+  const later = (ymd: string) => {
+    const d = new Date(`${ymd}T00:00:00.000Z`);
+    d.setUTCDate(d.getUTCDate() + 7);
+    return d.toISOString().slice(0, 10);
+  };
+  return {
+    ...reply,
+    prescribedWeek: {
+      ...reply.prescribedWeek,
+      days: reply.prescribedWeek.days.map((day) => ({ ...day, date: later(day.date) })),
+    },
+  };
+}
+
 describe("a refused weekly reply is asked for once more", () => {
   beforeAll(async () => {
     process.env.DATA_PROTECTION_SECRET_KEY = TEST_DATA_PROTECTION_KEY;
@@ -90,33 +104,51 @@ describe("a refused weekly reply is asked for once more", () => {
     delete process.env.TEMPO_EXPORT_PATH;
   });
 
+  type Answer = "good" | "refused" | "a week late";
+
   /**
-   * A stub whose first replies fail in the given ways, then answer normally. It
-   * resolves its target from saved settings, as the live adapter does, and
-   * `beforeAttempt` runs as each attempt starts.
+   * The live adapter against a fake server whose replies are `answers` in
+   * order, then good ones. Every request is kept, and the call log in memory.
+   * `beforeAnswer` runs while each request is out.
    */
-  function flakyPort(
-    failures: Array<"throws" | "invalid">,
-    beforeAttempt: (attempt: number) => Promise<void> = async () => {},
+  async function liveServer(
+    answers: Answer[],
+    beforeAnswer: (request: number) => Promise<void> = async () => {},
   ) {
-    const stub = createStubLlmPort();
-    let calls = 0;
-    const coachTargets: Array<CoachTarget | undefined> = [];
-    const port: LlmPort = {
-      ...stub,
-      resolveCoachTarget: createCoachTargetResolver({ dataProtectionKey: TEST_DATA_PROTECTION_KEY }),
-      async generateWeeklyReply(packet, options) {
-        coachTargets.push(options?.coachTarget);
-        const failure = failures[calls];
-        calls += 1;
-        await beforeAttempt(calls);
-        if (failure === "throws") throw new LlmSchemaError("prescribedWeek must be an object");
-        const reply = await stub.generateWeeklyReply(packet, options);
-        if (failure === "invalid") return { ...reply, headline: "" } as WeeklyReply;
-        return reply;
+    await putAnthropicConnection("sk-ant-first-key", new SecretProtector(TEST_DATA_PROTECTION_KEY));
+    const packet = samplePacket();
+    const sent: Array<{ url: string; key: string | null; body: string }> = [];
+    const rows: LlmCallRecord[] = [];
+    const recorder = {
+      record: async (row: LlmCallRecord) => {
+        rows.push(row);
       },
-    };
-    return { port, calls: () => calls, coachTargets };
+      get: async () => null,
+    } as unknown as LlmCallRecorder;
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      sent.push({
+        url: String(input),
+        key: new Headers(init?.headers).get("x-api-key"),
+        body: String(init?.body),
+      });
+      await beforeAnswer(sent.length);
+      const answer = answers[sent.length - 1] ?? "good";
+      const good = buildStubWeeklyReply(packet);
+      const toolInput =
+        answer === "good"
+          ? good
+          : answer === "a week late"
+            ? aWeekLate(good)
+            : { headline: "", prescribedWeek: null };
+      return anthropicStreamResponse(anthropicToolMessage("submit_weekly_reply", toolInput));
+    }) as unknown as typeof globalThis.fetch;
+    const port = createAnthropicLlmPort({
+      fetchImpl,
+      dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+      apiUrl: "http://fake-anthropic.test/v1/messages",
+      recorder,
+    });
+    return { port, packet, sent, rows };
   }
 
   async function askForReply(port: LlmPort, packet?: ModelPacket) {
@@ -141,76 +173,42 @@ describe("a refused weekly reply is asked for once more", () => {
   }
 
   it("answers on the first try without asking again", async () => {
-    const { port, calls } = flakyPort([]);
-    expect((await askForReply(port)).status).toBe(200);
-    expect(calls()).toBe(1);
+    const { port, packet, sent } = await liveServer([]);
+    expect((await askForReply(port, packet)).status).toBe(200);
+    expect(sent).toHaveLength(1);
   });
 
   it("recovers when the model's reply is refused the first time", async () => {
-    const { port, calls } = flakyPort(["throws"]);
-    const res = await askForReply(port);
+    const { port, packet, sent } = await liveServer(["refused"]);
+    const res = await askForReply(port, packet);
     expect(res.status).toBe(200);
     expect((await json(res)).prescribed).toBeTruthy();
-    expect(calls()).toBe(2);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]!.body).toBe(sent[0]!.body);
   });
 
   it("hands both attempts the one model and effort it resolved for the run", async () => {
-    const { port, coachTargets } = flakyPort(["throws"]);
-    expect((await askForReply(port)).status).toBe(200);
-    expect(coachTargets).toHaveLength(2);
-    expect(coachTargets[0]).toMatchObject(TESTED_COACH_MODEL);
-    expect(coachTargets[1]).toBe(coachTargets[0]);
-  });
-
-  it("hands both attempts the one target, even if the key and model change in between", async () => {
-    await putAnthropicConnection("sk-ant-first-key", new SecretProtector(TEST_DATA_PROTECTION_KEY));
-    await saveCoachModel({ provider: "anthropic", model: "claude-opus-4-6", effort: "high" });
-    const { port, coachTargets } = flakyPort(["throws"], async (attempt) => {
-      if (attempt !== 1) return;
-      await putAnthropicConnection("sk-ant-second-key", new SecretProtector(TEST_DATA_PROTECTION_KEY));
-      await saveCoachModel({ provider: "anthropic", model: "claude-opus-5-5", effort: "low" });
-    });
-    expect((await askForReply(port)).status).toBe(200);
-    expect(coachTargets).toHaveLength(2);
-    expect(coachTargets[0]).toEqual({
-      provider: "anthropic",
-      messagesUrl: "https://api.anthropic.com/v1/messages",
-      credentials: { apiKey: "sk-ant-first-key" },
-      model: "claude-opus-4-6",
-      effort: "high",
-    });
-    expect(coachTargets[1]).toBe(coachTargets[0]);
+    const { port, packet, sent } = await liveServer(["refused"]);
+    expect((await askForReply(port, packet)).status).toBe(200);
+    expect(sent).toHaveLength(2);
+    for (const call of sent) {
+      expect(JSON.parse(call.body)).toMatchObject({
+        model: TESTED_COACH_MODEL.model,
+        output_config: { effort: TESTED_COACH_MODEL.effort },
+      });
+    }
+    expect(sent[1]!.body).toBe(sent[0]!.body);
   });
 
   it("sends both live attempts to the same URL, key, model and effort when Settings change in between", async () => {
     const protector = new SecretProtector(TEST_DATA_PROTECTION_KEY);
-    await putAnthropicConnection("sk-ant-first-key", protector);
-    await saveCoachModel({ provider: "anthropic", model: "claude-opus-4-6", effort: "high" });
-    const packet = samplePacket();
-    const sent: Array<{ url: string; key: string | null; body: string }> = [];
-    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      sent.push({
-        url: String(input),
-        key: new Headers(init?.headers).get("x-api-key"),
-        body: String(init?.body),
-      });
-      if (sent.length > 1) {
-        return anthropicStreamResponse(
-          anthropicToolMessage("submit_weekly_reply", buildStubWeeklyReply(packet)),
-        );
-      }
+    const { port, packet, sent } = await liveServer(["refused"], async (request) => {
+      if (request !== 1) return;
       // Settings change while the first attempt is out; it comes back refused for its shape.
       await putAnthropicConnection("sk-ant-second-key", protector);
       await saveCoachModel({ provider: "anthropic", model: "claude-opus-5-5", effort: "low" });
-      return anthropicStreamResponse(
-        anthropicToolMessage("submit_weekly_reply", { headline: "", prescribedWeek: null }),
-      );
-    }) as unknown as typeof globalThis.fetch;
-    const port = createAnthropicLlmPort({
-      fetchImpl,
-      dataProtectionKey: TEST_DATA_PROTECTION_KEY,
-      apiUrl: "http://fake-anthropic.test/v1/messages",
     });
+    await saveCoachModel({ provider: "anthropic", model: "claude-opus-4-6", effort: "high" });
 
     expect((await askForReply(port, packet)).status).toBe(200);
     expect(sent).toHaveLength(2);
@@ -223,6 +221,66 @@ describe("a refused weekly reply is asked for once more", () => {
       });
     }
     expect(sent[1]!.body).toBe(sent[0]!.body);
+  });
+
+  it("logs both attempts on the one target, the second linked to the first, and links the read to the second", async () => {
+    const { port, packet, rows } = await liveServer(["refused"]);
+    const res = await askForReply(port, packet);
+    expect(res.status).toBe(200);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ outcome: "schema_invalid", parentCallId: null });
+    expect(rows[1]).toMatchObject({ outcome: "ok", parentCallId: rows[0]!.id });
+    expect(rows[1]!.model).toBe(rows[0]!.model);
+    expect(rows[1]!.request).toEqual(rows[0]!.request);
+    const body = await json(res);
+    expect((body.coachMessage as { llmCallId: string }).llmCallId).toBe(rows[1]!.id);
+  });
+
+  it("refuses a plan for the wrong week inside the adapter and asks for it once more", async () => {
+    const { port, packet, sent, rows } = await liveServer(["a week late"]);
+    const res = await askForReply(port, packet);
+    expect(res.status).toBe(200);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]!.body).toBe(sent[0]!.body);
+    expect(rows[0]).toMatchObject({
+      outcome: "schema_invalid",
+      errorMessage: expect.stringContaining(`date must be ${WEEK_START}`),
+    });
+    const days = (await json(res)).prescribed as { plan: { days: Array<{ date: string }> } };
+    expect(days.plan.days.map((d) => d.date)).toEqual(expectedPlanDates(WEEK_START));
+  });
+
+  it("reports a plan for the wrong week twice as a failure, after two requests", async () => {
+    const { port, packet, sent, rows } = await liveServer(["a week late", "a week late"]);
+    const res = await askForReply(port, packet);
+    expect(res.status).toBe(502);
+    expect((await json(res)).error).toBe("llm_schema_invalid");
+    expect(sent).toHaveLength(2);
+    expect(rows.map((r) => r.outcome)).toEqual(["schema_invalid", "schema_invalid"]);
+  });
+
+  it("the route's final check refuses a bad reply a port hands back, and does not ask again", async () => {
+    const stub = createStubLlmPort();
+    let calls = 0;
+    const port: LlmPort = {
+      ...stub,
+      async generateWeeklyReply(p, o) {
+        calls += 1;
+        return { ...(await stub.generateWeeklyReply(p, o)), headline: "" } as WeeklyReply;
+      },
+    };
+    const res = await askForReply(port);
+    expect(res.status).toBe(502);
+    expect((await json(res)).error).toBe("llm_schema_invalid");
+    expect(calls).toBe(1);
+  });
+
+  it("asks only once more, then reports the failure", async () => {
+    const { port, packet, sent } = await liveServer(["refused", "refused", "refused"]);
+    const res = await askForReply(port, packet);
+    expect(res.status).toBe(502);
+    expect((await json(res)).error).toBe("llm_schema_invalid");
+    expect(sent).toHaveLength(2);
   });
 
   it("asks once more when the first live reply stops at the output cap", async () => {
@@ -250,19 +308,5 @@ describe("a refused weekly reply is asked for once more", () => {
 
     expect((await askForReply(port, packet)).status).toBe(200);
     expect(bodies.map((b) => b.max_tokens)).toEqual([20_000, 20_000]);
-  });
-
-  it("recovers when the route's own check refuses the first reply", async () => {
-    const { port, calls } = flakyPort(["invalid"]);
-    expect((await askForReply(port)).status).toBe(200);
-    expect(calls()).toBe(2);
-  });
-
-  it("asks only once more, then reports the failure", async () => {
-    const { port, calls } = flakyPort(["throws", "throws", "throws"]);
-    const res = await askForReply(port);
-    expect(res.status).toBe(502);
-    expect((await json(res)).error).toBe("llm_schema_invalid");
-    expect(calls()).toBe(2);
   });
 });

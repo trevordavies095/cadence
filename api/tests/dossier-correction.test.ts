@@ -1,15 +1,23 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "../src/clock/clock.js";
 import { createApp } from "../src/app.js";
+import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
+  anthropicCoachTarget,
   buildStubDossierCorrection,
+  createAnthropicLlmPort,
   createStubLlmPort,
+  LlmSchemaError,
+  TESTED_COACH_MODEL,
+  type LlmCallOptions,
   type LlmPort,
   validateDossierCorrectionDraft,
 } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
+import { putAnthropicConnection } from "../src/settings/anthropicStore.js";
 import {
   acceptAndReady,
+  fakeCoachServer,
   json,
   resetAppTables,
   TEST_DATA_PROTECTION_KEY,
@@ -219,6 +227,74 @@ describe("athlete dossier correction → applied note (#18, #102)", () => {
     });
     expect(ok.status).toBe(201);
     expect(calls).toBe(1);
+  });
+
+  describe("through the live adapter, a draft refused for its shape is asked for once more", () => {
+    const input = {
+      athleteMessage: CORRECTION,
+      currentDossier: { versionId: 1, body: BASE_DOSSIER },
+      week: { isoWeek: "2026-W43" },
+    };
+    const refused = { summaryBullets: [], proposedBody: "" };
+
+    function livePort(answers: unknown[]) {
+      const server = fakeCoachServer("submit_about_you", answers);
+      const port = createAnthropicLlmPort({
+        fetchImpl: server.fetchImpl,
+        recorder: server.recorder,
+        resolveCoachTarget: async () => anthropicCoachTarget(TESTED_COACH_MODEL, "sk-ant-test"),
+        apiUrl: "http://fake-anthropic.test/v1/messages",
+      });
+      return { port, ...server };
+    }
+
+    it("applies the second draft of a correction, sent the identical request, both attempts logged and linked", async () => {
+      await acceptAndReady();
+      await putAnthropicConnection("sk-ant-test", new SecretProtector(TEST_DATA_PROTECTION_KEY));
+      const server = fakeCoachServer("submit_about_you", [refused, buildStubDossierCorrection(input)]);
+      const app = createApp({
+        dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+        clock: new FixedClock(new Date("2026-10-21T15:00:00.000Z")),
+        llmPort: createAnthropicLlmPort({
+          fetchImpl: server.fetchImpl,
+          recorder: server.recorder,
+          dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+          apiUrl: "http://fake-anthropic.test/v1/messages",
+        }),
+      });
+      await app.request("/dossier", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ body: BASE_DOSSIER }),
+      });
+      const res = await app.request("/dossier/corrections", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ body: CORRECTION }),
+      });
+      expect(res.status).toBe(201);
+      expect(((await json(res)).dossierProposal as { status: string }).status).toBe("accepted");
+      expect(server.bodies).toHaveLength(2);
+      expect(server.bodies[1]).toBe(server.bodies[0]);
+      expect(server.rows.map((r) => r.outcome)).toEqual(["schema_invalid", "ok"]);
+      expect(server.rows[1]!.parentCallId).toBe(server.rows[0]!.id);
+    });
+
+    it.each([
+      ["first draft", (port: LlmPort, o: LlmCallOptions) => port.generateDossierV1({ answers: { goal: "Run a strong 10K.", schedule: "Four days a week." }, prefills: { available: false } }, o)],
+      ["correction", (port: LlmPort, o: LlmCallOptions) => port.generateDossierCorrection(input, o)],
+      ["tidy-up", (port: LlmPort, o: LlmCallOptions) =>
+        port.generateDossierAudit({ currentDossier: input.currentDossier, week: null, nowIso: "2026-10-21T15:00:00.000Z", intervalWeeks: 4 }, o)],
+    ] as const)("the %s is sent twice at most, the identical request each time", async (_label, call) => {
+      const { port, bodies, rows } = livePort([refused]);
+      await expect(call(port, { callId: "about-you-1" })).rejects.toBeInstanceOf(LlmSchemaError);
+      expect(bodies).toHaveLength(2);
+      expect(bodies[1]).toBe(bodies[0]);
+      expect(rows.map((r) => r.outcome)).toEqual(["schema_invalid", "schema_invalid"]);
+      // The caller's id names the attempt it was handed; the first links nowhere.
+      expect(rows[1]).toMatchObject({ id: "about-you-1", parentCallId: rows[0]!.id });
+      expect(rows[0]!.parentCallId).toBeNull();
+    });
   });
 
   it("disclaimer gates dossier corrections", async () => {

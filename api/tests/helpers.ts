@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
 import { waitForReplyRunsIdle } from "../src/replyRun/inflight.js";
 import { acceptDisclaimer } from "../src/disclaimer/store.js";
 import { assertTestDatabaseName } from "./guardTestDatabase.js";
@@ -284,4 +285,33 @@ export async function settleReplyRun(
   const res = await app.request(`/weeks/${weekSessionId}/reply-run`);
   const body = (await res.json()) as { run: Record<string, unknown> | null };
   return body.run;
+}
+
+/**
+ * A fake coach server for the live adapter: answers each request with a call
+ * of `toolName`, its input from `answers` in order and the last one repeated.
+ * Keeps every request body and every call log row, so a test can count the
+ * attempts, compare what each sent and check how their rows are linked.
+ */
+export function fakeCoachServer(toolName: string, answers: unknown[]) {
+  const bodies: string[] = [];
+  const rows: LlmCallRecord[] = [];
+  const fetchImpl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    bodies.push(String(init?.body));
+    const answer = answers[Math.min(bodies.length, answers.length) - 1];
+    return anthropicStreamResponse(anthropicToolMessage(toolName, answer));
+  }) as typeof globalThis.fetch;
+  const recorder: LlmCallRecorder = {
+    async record(row) {
+      rows.push(row);
+    },
+    async get() {
+      return null;
+    },
+    async list() {
+      return [];
+    },
+    async *exportAll() {},
+  };
+  return { fetchImpl, recorder, bodies, rows };
 }

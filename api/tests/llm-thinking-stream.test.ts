@@ -324,7 +324,10 @@ for (const flow of FLOWS) {
       await expect(
         flow.call(portWith(fetchImpl, recorder), "call-4"),
       ).rejects.toBeInstanceOf(LlmSchemaError);
-      expect(rows).toHaveLength(1);
+      // Refused for its shape, so asked for once more (ADR 0002): two rows, the
+      // second written under the caller's id and linked to the first.
+      expect(rows).toHaveLength(2);
+      expect(rows[1]).toMatchObject({ id: "call-4", parentCallId: rows[0]!.id });
       expect(rows[0]).toMatchObject({
         outcome: "schema_invalid",
         stopReason: "end_turn",
@@ -346,7 +349,8 @@ for (const flow of FLOWS) {
       await expect(
         flow.call(portWith(fetchImpl, recorder), "call-5"),
       ).rejects.toBeInstanceOf(LlmSchemaError);
-      expect(rows).toHaveLength(1);
+      // Asked for once more, like any reply refused for its shape (ADR 0002).
+      expect(rows).toHaveLength(2);
       expect(rows[0]).toMatchObject({
         outcome: "schema_invalid",
         stopReason: "refusal",
