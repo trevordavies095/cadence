@@ -105,12 +105,14 @@ The overall cap is the one that matters on slow hardware. Some servers, oMLX amo
 
 Each model below was run through every coach operation (a weekly read, a mid-week message, a message with a run attached, an About you draft, a fix and a tidy-up) and the context test, with the smoke script in `api/scripts/smoke-self-hosted.ts`. Effort was `high` unless the row says otherwise.
 
+A row that says "works" means the server and model ran every operation. How often each model's replies were valid, and how its plans compare with the tested default, is in the [benchmark report](reports/local-models-2026-11.md).
+
 | Server | Version | Hardware | Model | Context | Date | Outcome |
 |---|---|---|---|---|---|---|
-| oMLX | 0.7.3 | MacBook Pro M4 Pro, 24 GB | gpt-oss-20b-MXFP4-Q8 | 131,072 | 2026-11-01 | Works. Every step passed. A weekly read took about 1 to 3 minutes. |
+| oMLX | 0.7.3 | MacBook Pro M4 Pro, 24 GB | gpt-oss-20b-MXFP4-Q8 | 131,072 | 2026-11-01 | Works, but in the benchmark only 14 of 35 replies were valid as sent (9 of 28 weekly plans). A weekly read took about 1 to 3 minutes. |
 | oMLX | 0.7.3 | MacBook Pro M4 Pro, 24 GB | gemma-4-26B-A4B-it-OptiQ-4bit-REAP-14B | 262,144 | 2026-11-01 | Works, but weekly plans are often refused for their format (a run with no type). A weekly read took about 4 to 10 minutes. |
 | oMLX | 0.7.3 | MacBook Pro M4 Pro, 24 GB | Qwen3.8-27B-lean-4bit-mlx | 262,144 | 2026-11-01 | Loads (13.7 GB), but cannot finish a weekly read inside the 15-minute cap at `high` or `medium`. |
-| vLLM | 0.32.0 | 1 × H100 80 GB | gpt-oss-120b | 65,536 | 2026-11-01 | Works. Every step ran; one About you draft was refused for its format. A weekly read took about a minute. |
+| vLLM | 0.32.0 | 1 × H100 80 GB | gpt-oss-120b | 65,536 | 2026-11-01 | Works. In the benchmark 27 of 35 replies were valid as sent; the 8 failures were weekly plans refused for their format. A weekly read took about a minute. |
 | vLLM | 0.32.0 | 1 × H100 80 GB | Qwen3.8-27B | 65,536 | 2026-11-01 | Works at `medium` and `xhigh`; the server refuses `high`. A weekly read took about 2 minutes at `medium` and 373 s at `xhigh`. |
 | vLLM | 0.32.0 | 1 × H100 80 GB | Gemma 4 26B-A4B | 65,536 | 2026-11-01 | Works, with thinking switched on. Weekly plans are often refused for their format. A weekly read took about 2 to 3 minutes. |
 | Ollama | – | – | – | – | – | Expected to work, not tested. |
@@ -135,7 +137,7 @@ oMLX serves MLX models on Apple silicon. It speaks the Messages endpoint nativel
 - **Version:** oMLX's own `GET /api/status` shows it. `/v1/models` and replies only say `server: uvicorn`.
 - **Quirks:** oMLX reports no thinking token counts. It sends pings while it works, so a stalled call runs to the 15-minute cap rather than the silence limit. Installing a model while a call runs made oMLX rescan its models and stall that call.
 
-Tested on oMLX 0.7.3, MacBook Pro M4 Pro 24 GB, 2026-11-01: gpt-oss-20b-MXFP4-Q8 (works), gemma-4-26B-A4B-it-OptiQ-4bit-REAP-14B (works, format refusals), Qwen3.8-27B-lean-4bit-mlx (too slow).
+Tested on oMLX 0.7.3, MacBook Pro M4 Pro 24 GB, 2026-11-01: gpt-oss-20b-MXFP4-Q8 (works; many weekly plans refused for format), gemma-4-26B-A4B-it-OptiQ-4bit-REAP-14B (works, format refusals), Qwen3.8-27B-lean-4bit-mlx (too slow).
 
 ## Ollama
 
@@ -200,4 +202,4 @@ vllm serve <model-path> --served-model-name gpt-oss-120b \
 - Qwen3.8 needs `--max-num-seqs 16`. Its hybrid layers need one cache block per sequence, and the default of 1024 fails at startup.
 - Gemma 4 does not think unless `enable_thinking` is set as above.
 
-Tested on vLLM 0.32.0, one H100 80 GB, 2026-11-01: gpt-oss-120b (works), Qwen3.8-27B (works; `high` refused, slow at `xhigh`), Gemma 4 26B-A4B (works, format refusals).
+Tested on vLLM 0.32.0, one H100 80 GB, 2026-11-01: gpt-oss-120b (works; some weekly plans refused for format), Qwen3.8-27B (works; `high` refused, slow at `xhigh`), Gemma 4 26B-A4B (works, format refusals).
