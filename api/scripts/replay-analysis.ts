@@ -551,13 +551,16 @@ function shapeIssues(input: unknown): string[] {
   const o = input as Record<string, unknown>;
   const out: string[] = [];
   const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+  // The flat forms (a `plan` or `changes` string) take these boxes as one string of lines; earlier forms took lists.
+  const flat = typeof o.plan === "string" || typeof o.changes === "string";
   for (const key of ["settingsProposalBullets", "safetyCallouts", "prescribedDayPatches"]) if (key in o && o[key] === null) out.push(`${key} null`);
   for (const key of ["flags", "answers"]) {
     const list = o[key];
-    if (Array.isArray(list) && list.some((x) => typeof x === "string")) out.push(`${key} entries as plain strings`);
+    if (!flat && Array.isArray(list) && list.some((x) => typeof x === "string")) out.push(`${key} entries as plain strings`);
     if (Array.isArray(list) && list.some((x) => isObj(x) && Object.values(x).some((v) => typeof v === "string" && !v.trim()))) out.push(`${key} entries with an empty field`);
   }
-  for (const key of ["settingsProposalBullets", "summaryBullets"]) if (typeof o[key] === "string") out.push(`${key} as a string`);
+  for (const key of flat ? ["summaryBullets"] : ["settingsProposalBullets", "summaryBullets"]) if (typeof o[key] === "string") out.push(`${key} as a string`);
+  if (flat) for (const key of ["flags", "answers", "settingsProposalBullets", "safetyCallouts"]) if (Array.isArray(o[key])) out.push(`${key} as a list`);
   const week = o.prescribedWeek;
   if (isObj(week) && !(typeof week.week === "string" && /^\d{4}-W\d{2}$/.test(week.week))) out.push("week id not YYYY-Www");
   const days: unknown[] = [...(isObj(week) && Array.isArray(week.days) ? week.days : []), ...(Array.isArray(o.prescribedDayPatches) ? o.prescribedDayPatches : [])];

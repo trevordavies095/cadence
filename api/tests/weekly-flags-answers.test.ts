@@ -27,13 +27,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP = path.join(__dirname, "fixtures", "tempo-export-mini.zip");
 const WEEK_START = "2026-10-26";
 const QUESTIONS = "## Questions for coach\n\n1. Is 3:30 still sensible?\n2. Heavy legs Monday after a 20-miler, normal?\n";
+const ONE_QUESTION = "## Questions for coach\n\n1. Is 3:30 still sensible?\n";
 
 /** A weekly form with no flags or answers unless `overrides` gives them. */
 function reply(overrides: Record<string, unknown>) {
   return weeklyForm(WEEK_START, { flags: undefined, answers: undefined, ...overrides });
 }
 
-/** Flags arrive as "title: detail" lines; answers as the answer alone. */
+/** Flags arrive as "title: detail", one per line; answers as one markdown string. */
 const flag = (title = "Sleep", detail = "Down to 6.8 hours. Protect it.") => `${title}: ${detail}`;
 const answer = (text = "Yes, with one caveat.") => text;
 const ASKED = ["Is 3:30 still sensible?"];
@@ -55,7 +56,7 @@ function packet(recapMarkdown: string) {
 
 describe("flags and answers are validated", () => {
   it("stores them in today's shapes when they fit, and treats missing ones as none", () => {
-    const checked = validateWeeklyReply(reply({ flags: [flag()], answers: [answer()] }), WEEK_START, {
+    const checked = validateWeeklyReply(reply({ flags: flag(), answers: answer() }), WEEK_START, {
       questions: ASKED,
     });
     expect(checked.ok && checked.value.flags).toEqual([
@@ -78,7 +79,7 @@ describe("flags and answers are validated", () => {
           "Pace: 8:30/mi on Thursday was quicker than planned.",
           "Watch the calf after Sunday",
           "Long run: ",
-        ],
+        ].join("\n"),
       }),
       WEEK_START,
     );
@@ -89,30 +90,31 @@ describe("flags and answers are validated", () => {
     ]);
   });
 
-  it("stores answers as strings, with the question only when each check-in question has its answer", () => {
-    const two = ["Is 3:30 still sensible?", "Heavy legs Monday, normal?"];
-    const paired = validateWeeklyReply(reply({ answers: ["Yes.", "Yes, after a 20."] }), WEEK_START, {
-      questions: two,
+  it("stores the answer box as one answer, with the question only when the check-in asked exactly one", () => {
+    const text = "**Yes.**\n\nAnd heavy legs after a 20 are normal.";
+    const paired = validateWeeklyReply(reply({ answers: text }), WEEK_START, {
+      questions: ["Is 3:30 still sensible?"],
     });
     expect(paired.ok && paired.value.answers).toEqual([
-      { question: two[0], answer: "Yes." },
-      { question: two[1], answer: "Yes, after a 20." },
+      { question: "Is 3:30 still sensible?", answer: text },
     ]);
-    // One check-in entry answered in two parts, or a question from the conversation:
-    // Cadence cannot tell which answer is for which question, so it names none.
-    const unpaired = validateWeeklyReply(reply({ answers: ["Yes.", "Yes, after a 20."] }), WEEK_START, {
-      questions: ["Is 3:30 still sensible, and are heavy legs normal?"],
-    });
-    expect(unpaired.ok && unpaired.value.answers).toEqual([
-      { question: "", answer: "Yes." },
-      { question: "", answer: "Yes, after a 20." },
-    ]);
+    // Two check-in questions, or none (a question from the conversation):
+    // Cadence cannot tell which part answers which question, so it names none.
+    for (const questions of [["Is 3:30 still sensible?", "Heavy legs Monday, normal?"], []]) {
+      const unpaired = validateWeeklyReply(reply({ answers: text }), WEEK_START, { questions });
+      expect(unpaired.ok && unpaired.value.answers).toEqual([{ question: "", answer: text }]);
+    }
+    // An empty or blank box is no answer.
+    for (const blank of ["", "  \n "]) {
+      const none = validateWeeklyReply(reply({ answers: blank }), WEEK_START, { questions: ASKED });
+      expect(none.ok && none.value.answers).toEqual([]);
+    }
   });
 
   it("cuts a long flag title or detail at a word and notes each cut", () => {
     const title = "word ".repeat(30).trim();
     const detail = "word ".repeat(80).trim();
-    const checked = validateWeeklyReply(reply({ flags: [flag(title, detail)] }), WEEK_START);
+    const checked = validateWeeklyReply(reply({ flags: flag(title, detail) }), WEEK_START);
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
     const [f] = checked.value.flags!;
@@ -127,26 +129,36 @@ describe("flags and answers are validated", () => {
 
   it("never cuts an answer, however long", () => {
     const long = "A careful answer. ".repeat(100).trim();
-    const checked = validateWeeklyReply(reply({ answers: [answer(long)] }), WEEK_START);
+    const checked = validateWeeklyReply(reply({ answers: answer(long) }), WEEK_START);
     expect(checked.ok && checked.value.answers![0]!.answer).toBe(long);
   });
 
-  it("fails closed on more than five flags or eight answers", () => {
-    const sixFlags = validateWeeklyReply(reply({ flags: Array(6).fill(flag()) }), WEEK_START);
-    expect(sixFlags.ok).toBe(false);
-    const nineAnswers = validateWeeklyReply(reply({ answers: Array(9).fill(answer()) }), WEEK_START);
-    expect(nineAnswers.ok).toBe(false);
-    expect(validateWeeklyReply(reply({ flags: Array(5).fill(flag()) }), WEEK_START).ok).toBe(true);
-    expect(validateWeeklyReply(reply({ answers: Array(8).fill(answer()) }), WEEK_START).ok).toBe(true);
+  it("keeps the first five flag lines and drops the rest, noting it", () => {
+    const six = validateWeeklyReply(
+      reply({ flags: [1, 2, 3, 4, 5, 6].map((n) => flag(`Flag ${n}`)).join("\n") }),
+      WEEK_START,
+    );
+    expect(six.ok && six.value.flags!.map((f) => f.title)).toEqual([
+      "Flag 1",
+      "Flag 2",
+      "Flag 3",
+      "Flag 4",
+      "Flag 5",
+    ]);
+    expect(six.ok && six.repairs).toEqual(["flags had 6 lines: the first 5 kept, 1 dropped"]);
+    const five = validateWeeklyReply(reply({ flags: Array(5).fill(flag()).join("\n") }), WEEK_START);
+    expect(five.ok && five.repairs).toBeUndefined();
   });
 
-  it("fails closed on a flag or answer that is not a string, or a box that is not a list", () => {
+  it("fails closed on a box that is neither a string nor a list of strings", () => {
     for (const bad of [
       { flags: [{ title: "Sleep", detail: "Short." }] },
-      { flags: "Sleep: short" },
+      { flags: 42 },
       { answers: [{ question: "Why?", answer: "Because." }] },
       { answers: [42] },
       { answers: {} },
+      { safetyCallouts: [{ title: "See a physio", body: "Now." }] },
+      { settingsProposalBullets: { a: "b" } },
     ]) {
       expect(validateWeeklyReply(reply(bad), WEEK_START).ok, JSON.stringify(bad)).toBe(false);
     }
@@ -165,36 +177,29 @@ describe("flags and answers are validated", () => {
     }
   });
 
-  it("drops an empty or blank entry in a list of lines and notes it, rather than refusing", () => {
+  it("drops blank lines in a box of lines without a note", () => {
     const checked = validateWeeklyReply(
       reply({
-        flags: ["", flag()],
-        answers: [answer(), "   "],
-        settingsProposalBullets: ["Long runs on Saturdays now.", ""],
-        safetyCallouts: [" ", "Caution: See a physio. The calf has hurt for a week."],
+        flags: `\n${flag()}\n   \n`,
+        answers: `${answer()}\n   `,
+        settingsProposalBullets: "Long runs on Saturdays now.\n\n",
+        safetyCallouts: " \nCaution: See a physio. The calf has hurt for a week.",
       }),
       WEEK_START,
     );
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
     expect(checked.value.flags).toHaveLength(1);
-    expect(checked.value.answers).toHaveLength(1);
+    expect(checked.value.answers).toEqual([{ question: "", answer: answer() }]);
     expect(checked.value.settingsProposalBullets).toEqual(["Long runs on Saturdays now."]);
     expect(checked.value.safetyCallouts).toHaveLength(1);
-    expect(checked.repairs).toEqual(
-      expect.arrayContaining([
-        "flags[0] was empty and was dropped",
-        "answers[1] was empty and was dropped",
-        "settingsProposalBullets[1] was empty and was dropped",
-        "safetyCallouts[0] was empty and was dropped",
-      ]),
-    );
+    expect(checked.repairs).toBeUndefined();
   });
 
   it("tells the model what flags and answers are", () => {
     expect(WEEKLY_SYSTEM_PROMPT).toMatch(/Flags are what you are watching, not a summary/);
-    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/a few-word title, a colon, and one line of detail/);
-    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/Write the answer only, not the question/);
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/one per line, each a few-word title, a colon, and one line of detail/);
+    expect(WEEKLY_SYSTEM_PROMPT).toMatch(/Write the answers only, not the questions/);
     expect(WEEKLY_SYSTEM_PROMPT).not.toMatch(/quoted exactly/);
     expect(WEEKLY_SYSTEM_PROMPT).toMatch(/do not restate the headline, flags or answers/i);
   });
@@ -215,12 +220,11 @@ describe("flags and answers are validated", () => {
 });
 
 describe("the stub's flags and answers", () => {
-  it("answers each check-in question, quoting it as the athlete wrote it", () => {
-    const { answers } = buildStubWeeklyReply(packet(`## Summary\nSteady week.\n\n${QUESTIONS}`));
-    expect(answers!.map((a) => a.question)).toEqual([
-      "Is 3:30 still sensible?",
-      "Heavy legs Monday after a 20-miler, normal?",
-    ]);
+  it("answers the check-in in one answer, quoting a single question as the athlete wrote it", () => {
+    const one = buildStubWeeklyReply(packet(`## Summary\nSteady week.\n\n${ONE_QUESTION}`)).answers;
+    expect(one!.map((a) => a.question)).toEqual(["Is 3:30 still sensible?"]);
+    const two = buildStubWeeklyReply(packet(`## Summary\nSteady week.\n\n${QUESTIONS}`)).answers;
+    expect(two!.map((a) => a.question)).toEqual([""]);
   });
 
   it("gives no answers when the athlete asked nothing", () => {
@@ -258,7 +262,7 @@ describe("flags and answers are stored with the plan", () => {
     const res = await app.request("/week/reply", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ weekSessionId: week.id, recapMarkdown: `## Summary\nSteady week.\n\n${QUESTIONS}` }),
+      body: JSON.stringify({ weekSessionId: week.id, recapMarkdown: `## Summary\nSteady week.\n\n${ONE_QUESTION}` }),
     });
     expect(res.status).toBe(200);
     const body = await json(res);
@@ -266,9 +270,6 @@ describe("flags and answers are stored with the plan", () => {
       readSections: { flags: unknown[]; answers: Array<{ question: string }> };
     }).readSections;
     expect(sections.flags.length).toBeGreaterThan(0);
-    expect(sections.answers.map((a) => a.question)).toEqual([
-      "Is 3:30 still sensible?",
-      "Heavy legs Monday after a 20-miler, normal?",
-    ]);
+    expect(sections.answers.map((a) => a.question)).toEqual(["Is 3:30 still sensible?"]);
   });
 });

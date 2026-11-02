@@ -186,7 +186,7 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
     const weekly = validateWeeklyReply(
       {
         ...buildStubWeeklyForm(samplePacket()),
-        safetyCallouts: [`Caution: Achilles. ${long}`],
+        safetyCallouts: `Caution: Achilles. ${long}`,
       },
       PLAN_WEEK_START,
     );
@@ -195,7 +195,7 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
 
     const mid = validateMidWeekChatReply({
       body: "Easy week.",
-      safetyCallouts: [`Caution: Achilles. ${long}`],
+      safetyCallouts: `Caution: Achilles. ${long}`,
     });
     expect(mid.ok).toBe(true);
     if (mid.ok) expect(mid.repairs).toHaveLength(1);

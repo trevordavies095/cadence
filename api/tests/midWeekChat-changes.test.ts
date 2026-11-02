@@ -293,7 +293,7 @@ describe("the mid-week form's validator", () => {
     const checked = validateMidWeekChatReply({
       body: "b",
       settingsProposalBullets: null,
-      safetyCallouts: ["", "Urgent: Chest pain. Stop and get it checked today."],
+      safetyCallouts: "\nUrgent: Chest pain. Stop and get it checked today.",
       allowPastDayPatches: null,
     });
     expect(checked.ok).toBe(true);
@@ -335,7 +335,7 @@ describe("what the model server is sent for a mid-week reply", () => {
     return sent[0]!;
   }
 
-  it("a tool with only string, list-of-string and boolean boxes, each described, a changes box and no day objects", async () => {
+  it("a tool with only string and boolean boxes, each described, a changes box and no day objects", async () => {
     const sent = await sentFor(packetFor("imperial"));
     const [tool] = sent.tools;
     expect(tool!.name).toBe(TOOL);
@@ -349,8 +349,7 @@ describe("what the model server is sent for a mid-week reply", () => {
     expect(schema.required).toEqual(["body"]);
     for (const [name, prop] of Object.entries(schema.properties)) {
       expect(prop.description, name).toMatch(/\w/);
-      if (prop.type === "array") expect(prop.items, name).toEqual({ type: "string" });
-      else expect(["string", "boolean"], name).toContain(prop.type);
+      expect(["string", "boolean"], name).toContain(prop.type);
     }
     expect(schema.properties.allowPastDayPatches!.type).toBe("boolean");
     expect(JSON.stringify(sent.tools)).not.toContain("prescribedDayPatches");

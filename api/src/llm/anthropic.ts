@@ -42,10 +42,10 @@ import {
   MAX_FLAG_DETAIL_LENGTH,
   MAX_FLAG_TITLE_LENGTH,
   MAX_HEADLINE_LENGTH,
-  MAX_READ_ANSWERS,
   MAX_READ_FLAGS,
   MAX_SAFETY_CALLOUT_BODY,
   MAX_SAFETY_CALLOUTS,
+  MAX_SETTINGS_PROPOSAL_BULLETS,
   expectedPlanDates,
   MAX_BULLET_LENGTH,
   MAX_DOSSIER_BODY_LENGTH,
@@ -181,8 +181,8 @@ export function examplePlanLine(weekStartMonday: string, unit: TempoUnitPreferen
 }
 
 /**
- * The weekly form: every box a string or a list of strings, each with a
- * description, nothing nested (.scratch/plan-as-text/spec.md, "The forms").
+ * The weekly form: every box a string (lists are lines in one string), each
+ * with a description, nothing nested (.scratch/plan-as-text/spec.md, "The forms").
  * Built per call: the plan box names the athlete's unit and the plan week.
  */
 export function weeklyReplyToolSchema(weekStartMonday: string, unit: TempoUnitPreference) {
@@ -197,18 +197,14 @@ export function weeklyReplyToolSchema(weekStartMonday: string, unit: TempoUnitPr
           `One or two plain sentences, at most ${MAX_HEADLINE_LENGTH} characters: what you would say if you could say only one thing about the week and the plan. No markdown, no label.`,
       },
       flags: {
-        type: "array",
-        maxItems: MAX_READ_FLAGS,
-        items: { type: "string" },
+        type: "string",
         description:
-          `What you are watching, not a summary of the week, shown under "Watching". One line each: a few-word title (at most ${MAX_FLAG_TITLE_LENGTH} characters), a colon, then one line of detail (at most ${MAX_FLAG_DETAIL_LENGTH} characters).`,
+          `What you are watching, not a summary of the week, shown under "Watching". One per line, at most ${MAX_READ_FLAGS} lines: a few-word title (at most ${MAX_FLAG_TITLE_LENGTH} characters), a colon, then one line of detail (at most ${MAX_FLAG_DETAIL_LENGTH} characters). Example line: Heart rate drift: it crept up on the long run, so watch it on Sunday.`,
       },
       answers: {
-        type: "array",
-        maxItems: MAX_READ_ANSWERS,
-        items: { type: "string" },
+        type: "string",
         description:
-          "One answer per question the athlete asked in the check-in or the conversation, check-in questions first, in the order asked. The answer only, in markdown if it needs more than a paragraph. Empty when they asked nothing.",
+          "Your answer to the questions the athlete asked in the check-in or the conversation, check-in questions first, in the order asked, in markdown. The answers only, not the questions. Leave it empty when they asked nothing.",
       },
       analysis: {
         type: "string",
@@ -221,15 +217,11 @@ export function weeklyReplyToolSchema(weekStartMonday: string, unit: TempoUnitPr
           `Next week's plan as seven lines, one per day Monday to Sunday, each written as ${planLineGrammar(unit)}. Example: ${examplePlanLine(weekStartMonday, unit)}`,
       },
       settingsProposalBullets: {
-        type: "array",
-        items: { type: "string" },
-        description:
-          "Optional soft-gate dossier/settings proposal bullets (short).",
+        type: "string",
+        description: SETTINGS_BULLET_LINES_DESCRIPTION,
       },
       safetyCallouts: {
-        type: "array",
-        maxItems: MAX_SAFETY_CALLOUTS,
-        items: { type: "string" },
+        type: "string",
         description: SAFETY_CALLOUT_LINES_DESCRIPTION,
       },
     },
@@ -241,11 +233,14 @@ function planLineGrammar(unit: TempoUnitPreference): string {
   return `"weekday date: day type, distance in ${unitWord(unit)} or time in minutes, then how to run it and why", where the day type is rest, easy, quality, long, race or other (strength, cross-training or a walk), a rest day needs no amount, and every number carries its unit`;
 }
 
-/** A notice as one line; the weekly and mid-week forms share it. */
-const SAFETY_CALLOUT_LINES_DESCRIPTION = `Notices when red flags appear: escalate to a professional, do not diagnose. One line each: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then one or two short sentences for the athlete, under ${MAX_SAFETY_CALLOUT_BODY} characters.`;
+/** Notices, one per line; the weekly and mid-week forms share it. */
+const SAFETY_CALLOUT_LINES_DESCRIPTION = `Notices when red flags appear: escalate to a professional, do not diagnose. One per line, at most ${MAX_SAFETY_CALLOUTS} lines: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then one or two short sentences for the athlete, under ${MAX_SAFETY_CALLOUT_BODY} characters. Example line: Caution: See a physio about the Achilles. Stop running if it hurts more each day.`;
+
+/** Suggested changes to what Coach Cade knows about the athlete, one per line; both forms share it. */
+const SETTINGS_BULLET_LINES_DESCRIPTION = `Optional. Suggested additions or changes to what you know about the athlete, which they accept or decline; never applied silently. One per line, at most ${MAX_SETTINGS_PROPOSAL_BULLETS} lines, each a short sentence under ${MAX_BULLET_LENGTH} characters.`;
 
 /**
- * The mid-week form: text, lines and one boolean, each with a description,
+ * The mid-week form: strings (lists are lines in one string) and one boolean, each with a description,
  * nothing nested (.scratch/plan-as-text/spec.md, "The forms"). Built per call:
  * the changes box names the athlete's unit and the plan week.
  */
@@ -271,15 +266,11 @@ export function midWeekChatReplyToolSchema(weekStartMonday: string, unit: TempoU
           "True only when the athlete asks to change a day that has already passed. Otherwise lines in changes for past days are ignored.",
       },
       settingsProposalBullets: {
-        type: "array",
-        items: { type: "string" },
-        description:
-          "Optional soft-gate dossier/settings proposal bullets when the mid-week note is a significant memory update. Never silent-apply.",
+        type: "string",
+        description: `${SETTINGS_BULLET_LINES_DESCRIPTION} Use it when the athlete's note is a significant memory update.`,
       },
       safetyCallouts: {
-        type: "array",
-        maxItems: MAX_SAFETY_CALLOUTS,
-        items: { type: "string" },
+        type: "string",
         description: SAFETY_CALLOUT_LINES_DESCRIPTION,
       },
     },
@@ -409,8 +400,9 @@ function buildWeeklyUserPrompt(
     "Prescribe one coherent week of running training for this athlete.",
     "The plan box is the plan: the athlete sees each line beside its day. The analysis explains the week; do not restate the plan in it day by day.",
     "Call the submit_weekly_reply tool exactly once with your full answer.",
-    "Include a headline (the one or two sentences you would say if you could say only one thing), flags (what you are watching), answers (one per question the athlete asked, the answer only), the analysis (your reasoning) and the plan.",
-    "When red flags appear, populate safetyCallouts (escalate; do not diagnose).",
+    "Include a headline (the one or two sentences you would say if you could say only one thing), flags (what you are watching, one per line), answers (your answer to what the athlete asked, the answer only), the analysis (your reasoning) and the plan.",
+    "Every box is plain text: write flags, safetyCallouts and settingsProposalBullets one per line, never as a list.",
+    "When red flags appear, write safetyCallouts, one notice per line (escalate; do not diagnose).",
     "Model packet (redacted; no identity PII or GPS):",
     JSON.stringify(packet),
   ]
@@ -448,8 +440,9 @@ function buildMidWeekUserPrompt(
     "Call the submit_mid_week_chat_reply tool exactly once with your full answer.",
     attachLine,
     ...planLines,
-    "When the athlete reports a significant memory update (new constraint, niggle, schedule change), populate settingsProposalBullets for soft-gate Accept — never mutate the dossier directly.",
-    "When red flags appear, populate safetyCallouts (escalate; do not diagnose).",
+    "When the athlete reports a significant memory update (new constraint, niggle, schedule change), write settingsProposalBullets, one per line, for soft-gate Accept — never mutate the dossier directly.",
+    "When red flags appear, write safetyCallouts, one notice per line (escalate; do not diagnose).",
+    "Every box is plain text: write settingsProposalBullets and safetyCallouts one per line, never as a list.",
     "Model packet (redacted; no identity PII or GPS):",
     JSON.stringify(packet),
   ].join("\n");

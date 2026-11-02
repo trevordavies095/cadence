@@ -9,7 +9,7 @@ import {
   MAX_SAFETY_CALLOUTS,
   SAFETY_ESCALATION_LINE,
 } from "./safety.js";
-import { parsePlanLines, type PlanLineFailure } from "../prescribed/planLines.js";
+import { parsePlanLines, splitLines, type PlanLineFailure } from "../prescribed/planLines.js";
 import type { TempoUnitPreference } from "../tempo/port.js";
 import type {
   DayType,
@@ -528,12 +528,7 @@ export function validateWeeklyReply(
   const plan = parsePlanBox(raw.plan, weekStartMonday, unit, repairs);
   if (!plan.ok) return plan;
 
-  const bulletLines =
-    raw.settingsProposalBullets === undefined || raw.settingsProposalBullets === null
-      ? null
-      : linesOf(raw.settingsProposalBullets, "settingsProposalBullets", MAX_SETTINGS_PROPOSAL_BULLETS, repairs);
-  if (bulletLines && !bulletLines.ok) return bulletLines;
-  const bullets = parseSettingsProposalBullets(bulletLines?.value);
+  const bullets = bulletsFromLines(raw.settingsProposalBullets, repairs);
   if (!bullets.ok) return bullets;
 
   const calloutObjects = calloutsFromLines(raw.safetyCallouts, repairs);
@@ -543,7 +538,7 @@ export function validateWeeklyReply(
 
   const flags = flagsFromLines(raw.flags, repairs);
   if (!flags.ok) return flags;
-  const answers = answersFromLines(raw.answers, context.questions ?? [], repairs);
+  const answers = answersFromText(raw.answers, context.questions ?? [], repairs);
   if (!answers.ok) return answers;
 
   const reply: WeeklyReply = {
@@ -703,45 +698,60 @@ function parsePlanBox(
 }
 
 /**
- * A list of lines. Absent or null is empty (some models send an optional box as
- * null); an entry that is not a string is refused; an empty or blank entry is
- * dropped and noted in `repairs`. The count is checked after the drop.
+ * A box of lines as Coach Cade sends it: one string, one item per line. Absent
+ * or null is absent. A list of strings (the form before every box was text) is
+ * joined with `joiner` and noted in `repairs`, so a model that still sends a
+ * list is not refused; anything else is refused.
  */
-function linesOf(
+function boxText(
   raw: unknown,
   field: string,
-  max: number,
   repairs: string[],
-): SchemaResult<string[]> {
-  if (raw === undefined || raw === null) return { ok: true, value: [] };
-  if (!Array.isArray(raw)) {
-    return { ok: false, error: `${field} must be a list of strings` };
+  joiner = "\n",
+): SchemaResult<string | null> {
+  if (raw === undefined || raw === null) return { ok: true, value: null };
+  if (typeof raw === "string") return { ok: true, value: raw };
+  if (Array.isArray(raw) && raw.every((item) => typeof item === "string")) {
+    repairs.push(`${field} sent as a list of ${raw.length}, read as lines`);
+    return { ok: true, value: raw.join(joiner) };
   }
-  const lines: string[] = [];
-  for (let i = 0; i < raw.length; i++) {
-    const item = raw[i];
-    if (typeof item !== "string") {
-      return { ok: false, error: `${field}[${i}] must be a string` };
-    }
-    if (item.trim().length > 0) lines.push(item.trim());
-    else repairs.push(`${field}[${i}] was empty and was dropped`);
-  }
-  if (lines.length > max) {
-    return { ok: false, error: `${field} must have at most ${max} items` };
-  }
-  return { ok: true, value: lines };
+  return { ok: false, error: `${field} must be a string, one per line` };
+}
+
+/**
+ * A box's lines, split as the plan box is (real and escaped newlines; see
+ * {@link splitLines}), trimmed, blank lines dropped.
+ */
+function linesOf(raw: unknown, field: string, repairs: string[]): SchemaResult<string[]> {
+  const text = boxText(raw, field, repairs);
+  if (!text.ok) return text;
+  if (text.value === null) return { ok: true, value: [] };
+  return {
+    ok: true,
+    value: splitLines(text.value)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0),
+  };
 }
 
 /**
  * "Title: detail" lines, split on the first colon. A line with no colon (or
- * nothing on one side of it) is all title, kept to the detail's length.
+ * nothing on one side of it) is all title, kept to the detail's length. Past
+ * {@link MAX_READ_FLAGS} lines the rest are dropped and noted.
  */
 function flagsFromLines(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[]> {
-  const lines = linesOf(raw, "flags", MAX_READ_FLAGS, repairs);
+  const lines = linesOf(raw, "flags", repairs);
   if (!lines.ok) return lines;
+  let kept = lines.value;
+  if (kept.length > MAX_READ_FLAGS) {
+    repairs.push(
+      `flags had ${kept.length} lines: the first ${MAX_READ_FLAGS} kept, ${kept.length - MAX_READ_FLAGS} dropped`,
+    );
+    kept = kept.slice(0, MAX_READ_FLAGS);
+  }
   return {
     ok: true,
-    value: lines.value.map((line, i) => {
+    value: kept.map((line, i) => {
       const colon = line.indexOf(":");
       const title = colon > 0 ? line.slice(0, colon).trim() : "";
       const detail = colon > 0 ? line.slice(colon + 1).trim() : "";
@@ -757,26 +767,48 @@ function flagsFromLines(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[
 }
 
 /**
- * One answer per string. Coach Cade sends answers only; the stored question is
- * the athlete's check-in question when there are exactly as many answers as
- * check-in questions (answered in order), and empty otherwise, since Cadence
- * cannot tell then which answer is for which question.
+ * The answer box: one markdown string, stored as one answer. Its question is
+ * the athlete's check-in question when they asked exactly one, and empty
+ * otherwise, since Cadence cannot tell which part answers which question.
+ * Empty, absent or null: no answer. A list (the earlier form) is joined into
+ * paragraphs and noted.
  */
-function answersFromLines(
+function answersFromText(
   raw: unknown,
   questions: readonly string[],
   repairs: string[],
 ): SchemaResult<ReadAnswer[]> {
-  const lines = linesOf(raw, "answers", MAX_READ_ANSWERS, repairs);
-  if (!lines.ok) return lines;
-  const paired = questions.length === lines.value.length;
+  const text = boxText(raw, "answers", repairs, "\n\n");
+  if (!text.ok) return text;
+  const answer = text.value?.trim() ?? "";
+  if (!answer) return { ok: true, value: [] };
   return {
     ok: true,
-    value: lines.value.map((answer, i) => ({
-      question: paired ? questions[i]!.trim() : "",
-      answer,
-    })),
+    value: [{ question: questions.length === 1 ? questions[0]!.trim() : "", answer }],
   };
+}
+
+const BULLET_MARKER_RE = /^[-*]\s+/;
+
+/**
+ * About you suggestion lines into the stored bullets: a leading "- " or "* "
+ * is stripped, then the stored check applies (count and length). Absent,
+ * null or no lines: absent.
+ */
+function bulletsFromLines(raw: unknown, repairs: string[]): SchemaResult<string[] | undefined> {
+  if (raw === undefined || raw === null) return { ok: true, value: undefined };
+  const lines = linesOf(raw, "settingsProposalBullets", repairs);
+  if (!lines.ok) return lines;
+  const bullets = lines.value
+    .map((line) => line.replace(BULLET_MARKER_RE, "").trim())
+    .filter((line) => line.length > 0);
+  if (bullets.length > MAX_SETTINGS_PROPOSAL_BULLETS) {
+    return {
+      ok: false,
+      error: `settingsProposalBullets must have at most ${MAX_SETTINGS_PROPOSAL_BULLETS} lines`,
+    };
+  }
+  return parseSettingsProposalBullets(bullets);
 }
 
 const CALLOUT_SEVERITY_RE = /^\s*(urgent|caution|info)\s*:\s*/i;
@@ -793,8 +825,11 @@ function calloutsFromLines(
   repairs: string[],
 ): SchemaResult<SafetyCallout[] | undefined> {
   if (raw === undefined || raw === null) return { ok: true, value: undefined };
-  const lines = linesOf(raw, "safetyCallouts", MAX_SAFETY_CALLOUTS, repairs);
+  const lines = linesOf(raw, "safetyCallouts", repairs);
   if (!lines.ok) return lines;
+  if (lines.value.length > MAX_SAFETY_CALLOUTS) {
+    return { ok: false, error: `safetyCallouts must have at most ${MAX_SAFETY_CALLOUTS} lines` };
+  }
   return {
     ok: true,
     value: lines.value.flatMap((line): SafetyCallout[] => {
@@ -1031,12 +1066,7 @@ export function validateMidWeekChatReply(
   const body = parseMidWeekBody(raw.body);
   if (!body.ok) return body;
 
-  const bulletLines =
-    raw.settingsProposalBullets === undefined || raw.settingsProposalBullets === null
-      ? null
-      : linesOf(raw.settingsProposalBullets, "settingsProposalBullets", MAX_SETTINGS_PROPOSAL_BULLETS, repairs);
-  if (bulletLines && !bulletLines.ok) return bulletLines;
-  const bullets = parseSettingsProposalBullets(bulletLines?.value);
+  const bullets = bulletsFromLines(raw.settingsProposalBullets, repairs);
   if (!bullets.ok) return bullets;
 
   const calloutObjects = calloutsFromLines(raw.safetyCallouts, repairs);

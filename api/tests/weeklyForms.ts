@@ -1,6 +1,7 @@
 /**
  * Fake weekly replies as Coach Cade sends them: the flat form, every box text
- * or a list of lines, with the plan as seven lines (plan-as-text ticket 06).
+ * (lists as one item per line), with the plan as seven lines (plan-as-text
+ * ticket 06).
  * Pure: no database, so unit tests and route tests share it.
  */
 import { expectedPlanDates, type WeeklyReplyForm } from "../src/llm/index.js";
@@ -66,8 +67,8 @@ export function recordedWeeklyReplyAsForm(sse: string): string {
     const form: WeeklyReplyForm = {
       headline: old.headline,
       analysis: old.analysis,
-      flags: (old.flags ?? []).map((f) => `${f.title}: ${f.detail}`),
-      answers: (old.answers ?? []).map((a) => a.answer),
+      flags: (old.flags ?? []).map((f) => `${f.title}: ${f.detail}`).join("\n"),
+      answers: (old.answers ?? []).map((a) => a.answer).join("\n\n"),
       plan: old.prescribedWeek.days.map(line).join("\n"),
     };
     event.delta.partial_json = JSON.stringify(form);
@@ -82,8 +83,8 @@ export function weeklyForm(
 ): WeeklyReplyForm & Record<string, unknown> {
   return {
     headline: "A steady week. Keep the easy days easy.",
-    flags: ["Heart rate drift: Watch it on the easy days."],
-    answers: [],
+    flags: "Heart rate drift: Watch it on the easy days.",
+    answers: "",
     analysis: "## Why this plan\nOne quality session carries the week.",
     plan: planLines(monday).join("\n"),
     ...overrides,

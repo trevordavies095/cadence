@@ -478,9 +478,17 @@ const MID_LINE_DAY_RE =
  * 2026-11-02, and a coach's sentence never means it literally.
  */
 function splitDayLines(text: string): string[] {
-  return text
-    .split(/\r?\n|\\(?:r\\)?n/)
-    .flatMap((line) => line.split(MID_LINE_DAY_RE));
+  return splitLines(text).flatMap((line) => line.split(MID_LINE_DAY_RE));
+}
+
+/**
+ * A box's lines: split on real newlines and on the escaped two-character
+ * newline (backslash and n), as the plan box is. Every text box of lines on
+ * Coach Cade's forms (flags, notices, About you suggestions) is split this
+ * way. Lines are returned as written, blank ones included.
+ */
+export function splitLines(text: string): string[] {
+  return text.split(/\r?\n|\\(?:r\\)?n/);
 }
 
 /**

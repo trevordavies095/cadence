@@ -259,7 +259,7 @@ describe("LLM call log (#68 tracer)", () => {
     const fetchImpl = vi.fn(async () =>
       anthropicResponse("submit_weekly_reply", {
         ...buildStubWeeklyForm(samplePacket()),
-        safetyCallouts: [LONG_CALLOUT_LINE],
+        safetyCallouts: LONG_CALLOUT_LINE,
       }),
     ) as unknown as typeof globalThis.fetch;
     const { app, weekSessionId } = await liveApp(fetchImpl);
@@ -280,7 +280,7 @@ describe("LLM call log (#68 tracer)", () => {
   });
 
   it("delivers a chat reply with an over-long callout and logs it as repaired (#4)", async () => {
-    const reply = { body: "Ease off this week.", safetyCallouts: [LONG_CALLOUT_LINE] };
+    const reply = { body: "Ease off this week.", safetyCallouts: LONG_CALLOUT_LINE };
     const fetchImpl = vi.fn(async () =>
       anthropicResponse("submit_mid_week_chat_reply", reply),
     ) as unknown as typeof globalThis.fetch;

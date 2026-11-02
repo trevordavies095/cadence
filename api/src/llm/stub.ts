@@ -473,14 +473,10 @@ function buildStubFlags(packet: ModelPacket): ReadFlag[] {
   return flags;
 }
 
-/** One plain answer per check-in question, in order; none when they asked nothing. */
-function buildStubAnswers(packet: ModelPacket): string[] {
-  return checkInQuestions(packet.recapMarkdown)
-    .slice(0, 8)
-    .map(
-      () =>
-        "Keep the week as planned and treat rest days as real rest. Ask me again during the week if it still feels off.",
-    );
+/** One plain answer to the check-in questions; none when they asked nothing. */
+function buildStubAnswer(packet: ModelPacket): string | undefined {
+  if (checkInQuestions(packet.recapMarkdown).length === 0) return undefined;
+  return "Keep the week as planned and treat rest days as real rest. Ask me again during the week if it still feels off.";
 }
 
 /** The stub's reasoning; the headline, flags and answers are shown above it. */
@@ -522,15 +518,18 @@ export function buildStubWeeklyForm(packet: ModelPacket): WeeklyReplyForm {
   const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
   const form: WeeklyReplyForm = {
     headline: buildStubHeadline(packet),
-    flags: buildStubFlags(packet).map((f) => `${f.title}: ${f.detail}`),
-    answers: buildStubAnswers(packet),
+    flags: buildStubFlags(packet)
+      .map((f) => `${f.title}: ${f.detail}`)
+      .join("\n"),
     analysis: buildStubAnalysis(packet),
     plan: buildStubPlan(packet, weekStartMonday),
   };
+  const answer = buildStubAnswer(packet);
+  if (answer) form.answers = answer;
   const bullets = buildStubSettingsBullets(packet);
-  if (bullets) form.settingsProposalBullets = bullets;
+  if (bullets) form.settingsProposalBullets = bullets.join("\n");
   const callouts = buildStubSafetyCallouts(packet);
-  if (callouts.length > 0) form.safetyCallouts = callouts.map(calloutLine);
+  if (callouts.length > 0) form.safetyCallouts = callouts.map(calloutLine).join("\n");
   return form;
 }
 
@@ -706,9 +705,9 @@ export function buildStubMidWeekForm(packet: ModelPacket): MidWeekChatReplyForm 
   };
   if (changes?.length) form.changes = changes.map((c) => c.line).join("\n");
   const bullets = buildStubMidWeekSettingsBullets(packet);
-  if (bullets) form.settingsProposalBullets = bullets;
+  if (bullets) form.settingsProposalBullets = bullets.join("\n");
   const callouts = buildStubSafetyCallouts(packet);
-  if (callouts.length > 0) form.safetyCallouts = callouts.map(calloutLine);
+  if (callouts.length > 0) form.safetyCallouts = callouts.map(calloutLine).join("\n");
   return form;
 }
 

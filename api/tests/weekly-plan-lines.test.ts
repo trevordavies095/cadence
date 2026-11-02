@@ -149,7 +149,7 @@ beforeEach(async () => {
 });
 
 describe("what the model server is sent for the weekly read", () => {
-  it("a tool with only string and list-of-string boxes, each described, a plan box and no nested plan", async () => {
+  it("a tool with only string boxes, each described, a plan box and no nested plan", async () => {
     const { app, weekSessionId, sent } = await liveApp(() => buildStubWeeklyForm(packet()));
     expect((await postReply(app, weekSessionId)).status).toBe(200);
     const [tool] = sent[0]!.tools;
@@ -162,8 +162,7 @@ describe("what the model server is sent for the weekly read", () => {
     expect(schema.required).toEqual(["headline", "analysis", "plan"]);
     for (const [name, prop] of Object.entries(schema.properties)) {
       expect(prop.description, name).toMatch(/\w/);
-      if (prop.type === "array") expect(prop.items, name).toEqual({ type: "string" });
-      else expect(prop.type, name).toBe("string");
+      expect(prop.type, name).toBe("string");
     }
     expect(JSON.stringify(sent[0]!.tools)).not.toContain("prescribedWeek");
     expect(sent[0]).not.toHaveProperty("strict");
@@ -303,13 +302,13 @@ describe("the read's other boxes in today's stored shapes", () => {
     const asked = "## Questions for coach\n\n1. Is 3:30 still sensible?\n";
     const { record, coachMessage } = await storedPlan(
       weeklyForm(PLAN_MONDAY, {
-        flags: ["Sleep: Down to 6.8 hours. Protect it.", "Watch the calf after Sunday"],
-        answers: ["Yes, with one caveat: keep the long run easy."],
+        flags: "Sleep: Down to 6.8 hours. Protect it.\nWatch the calf after Sunday",
+        answers: "Yes, with one caveat: keep the long run easy.",
         safetyCallouts: [
           "Urgent: Stop and get checked. Chest pain on a run needs a doctor today.",
           "Calf tightness is worth a physio visit. If it gets worse, stop running on it.",
           "Info: Ease the hills.",
-        ],
+        ].join("\n"),
       }),
       packet("imperial", { recapMarkdown: `## Summary\nSteady week.\n\n${asked}` }),
     );
@@ -360,8 +359,7 @@ describe("the offline coach's weekly form", () => {
         });
         const form = buildStubWeeklyForm(p);
         for (const [key, value] of Object.entries(form)) {
-          const ok = typeof value === "string" || (Array.isArray(value) && value.every((v) => typeof v === "string"));
-          expect(ok, key).toBe(true);
+          expect(typeof value, key).toBe("string");
         }
         expect(form.plan.split("\n")).toHaveLength(7);
         expect(form.plan).toMatch(goal?.kind === "return" ? / min\./ : unit === "metric" ? / km\./ : / mi\./);

@@ -301,15 +301,16 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
 });
 
 describe("safety callout limits in the tool schema", () => {
-  it("tells the model the same limits the validator enforces, on both forms", async () => {
+  it("tells the model the same limits the validator enforces, on both forms, in the description", async () => {
     const { MAX_SAFETY_CALLOUT_BODY, MAX_SAFETY_CALLOUTS } = await import("../src/llm/index.js");
     const { midWeekChatReplyToolSchema, weeklyReplyToolSchema } = await import("../src/llm/anthropic.js");
     for (const schema of [
       midWeekChatReplyToolSchema(WEEK_START, "imperial"),
       weeklyReplyToolSchema(PLAN_WEEK_START, "imperial"),
     ]) {
-      const box = schema.properties.safetyCallouts as { maxItems: number; description: string };
-      expect(box.maxItems).toBe(MAX_SAFETY_CALLOUTS);
+      const box = schema.properties.safetyCallouts as { type: string; description: string };
+      expect(box.type).toBe("string");
+      expect(box.description).toContain(`One per line, at most ${MAX_SAFETY_CALLOUTS} lines`);
       expect(box.description).toContain(`under ${MAX_SAFETY_CALLOUT_BODY} characters`);
     }
   });

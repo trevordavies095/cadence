@@ -161,17 +161,18 @@ export type ReadSections = {
  */
 export type WeeklyReplyForm = {
   headline: string;
-  /** "Title: detail" lines; a line with no colon is all title. */
-  flags?: string[];
-  /** One answer per question, in order. */
-  answers?: string[];
+  /** "Title: detail", one per line; a line with no colon is all title. At most five kept. */
+  flags?: string;
+  /** The answer to the athlete's questions, markdown; stored as one answer. */
+  answers?: string;
   /** The full read, markdown. */
   analysis: string;
   /** Seven lines, one per day, in the plan grammar. */
   plan: string;
-  settingsProposalBullets?: string[];
-  /** Lines with an optional leading "Urgent:", "Caution:" or "Info:". */
-  safetyCallouts?: string[];
+  /** One suggestion per line; a leading "- " or "* " is stripped. */
+  settingsProposalBullets?: string;
+  /** One notice per line, with an optional leading "Urgent:", "Caution:" or "Info:". */
+  safetyCallouts?: string;
 };
 
 /** The weekly reply as Cadence stores it. */
@@ -205,9 +206,10 @@ export type MidWeekChatReplyForm = {
    */
   changes?: string;
   allowPastDayPatches?: boolean;
-  settingsProposalBullets?: string[];
-  /** Lines with an optional leading "Urgent:", "Caution:" or "Info:". */
-  safetyCallouts?: string[];
+  /** One suggestion per line; a leading "- " or "* " is stripped. */
+  settingsProposalBullets?: string;
+  /** One notice per line, with an optional leading "Urgent:", "Caution:" or "Info:". */
+  safetyCallouts?: string;
 };
 
 /**

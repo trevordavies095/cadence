@@ -66,9 +66,9 @@ export const SAFETY_CALLOUT_PROMPT = [
   "Safety callouts:",
   "- Never diagnose injury, illness, or medical conditions; do not prescribe treatment.",
   "- Coach running from the athlete's volunteered context and Tempo-derived training data.",
-  "- When red flags appear (pain that worsens, chest pain, dizziness, sudden injury, illness), emit safetyCallouts and urge a qualified professional.",
-  "- Each callout needs a short title, athlete-facing body (escalate, do not diagnose), and optional severity (info|caution|urgent).",
-  `- Keep each callout body under ${MAX_SAFETY_CALLOUT_BODY} characters: one or two short paragraphs.`,
+  "- When red flags appear (pain that worsens, chest pain, dizziness, sudden injury, illness), write safetyCallouts and urge a qualified professional.",
+  "- Write safetyCallouts one per line: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then the athlete-facing body (escalate, do not diagnose).",
+  `- Keep each callout body under ${MAX_SAFETY_CALLOUT_BODY} characters: one or two short sentences.`,
   "- Keep the training plan/reply conservative when callouts are present.",
 ].join(" ");
 
@@ -150,28 +150,19 @@ export const MIDWEEK_REPLY_SHAPE_PROMPT = [
 /** How the weekly read is split into parts the pages lay out. */
 export const WEEKLY_READ_SHAPE_PROMPT = [
   "The headline is the sentence you would say if you could say only one thing about the week and the plan: one or two plain sentences, no label.",
-  "Flags are what you are watching, not a summary of the week: at most five, each one line with a few-word title, a colon, and one line of detail.",
+  "Flags are what you are watching, not a summary of the week: at most five, one per line, each a few-word title, a colon, and one line of detail.",
   "Choose flags by what the athlete needs to act on. A correction comes first: when the athlete ran a session differently from the plan, flag it, and explain in the analysis what happened and why it matters.",
-  "Answers are one per question the athlete asked in the weekly check-in or the conversation, check-in questions first, in the order asked. Write the answer only, not the question. When they asked nothing, leave answers empty.",
+  "Answers is your answer to the questions the athlete asked in the weekly check-in or the conversation, check-in questions first, in the order asked, in markdown. Write the answers only, not the questions. When they asked nothing, leave answers empty.",
   "The plan box is next week's plan: one line per day, the day, its type, the distance or time, how to run it, and one short sentence on why this session, this week. The athlete sees each line beside its day.",
   "The athlete reads the headline, then the flags, then the answers, then the analysis, and the analysis may be folded away. Make each flag and answer stand on its own: never point to something \"above\" or \"below\", or to a table in another part.",
   "The analysis holds your reasoning and explains the week. Do not restate the headline, flags or answers in it, and never repeat an answer's table or list there. Do not restate the plan day by day or describe each session in it, as a list or as a table; the plan lines already show them.",
 ].join(" ");
 
 /**
- * The weekly read's notices: the same rules as {@link SAFETY_CALLOUT_PROMPT},
- * written as lines with a leading severity word, since the weekly form has no
- * nested boxes.
+ * The weekly read's notices: the same rules as {@link SAFETY_CALLOUT_PROMPT};
+ * both forms take notices one per line with a leading severity word.
  */
-export const WEEKLY_SAFETY_CALLOUT_PROMPT = [
-  "Safety callouts:",
-  "- Never diagnose injury, illness, or medical conditions; do not prescribe treatment.",
-  "- Coach running from the athlete's volunteered context and Tempo-derived training data.",
-  "- When red flags appear (pain that worsens, chest pain, dizziness, sudden injury, illness), emit safetyCallouts and urge a qualified professional.",
-  "- Each callout is one line: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then the athlete-facing body (escalate, do not diagnose).",
-  `- Keep each callout body under ${MAX_SAFETY_CALLOUT_BODY} characters: one or two short sentences.`,
-  "- Keep the training plan/reply conservative when callouts are present.",
-].join(" ");
+export const WEEKLY_SAFETY_CALLOUT_PROMPT = SAFETY_CALLOUT_PROMPT;
 
 function joinPrompt(parts: Array<string | null>): string {
   return parts.filter((part): part is string => part !== null).join(" ");
@@ -217,7 +208,7 @@ export function midWeekSystemPrompt(goal: TrainingGoal | null | undefined): stri
     "When the athlete asks to change remaining plan days, write those days in the changes box, one line per day in the same form as the weekly plan, for those dates only (do not change past days unless allowPastDayPatches is true).",
     "The athlete sees each changed day as a card under your reply, showing your line for it. Put the session, paces and rules in the line, with the reason for it. In the reply, say only why you changed the week; do not repeat what the cards show.",
     "Do not rewrite the full week plan unless asked.",
-    "For significant memory updates, emit settingsProposalBullets (soft-gate); never silent-apply dossier changes.",
+    "For significant memory updates, write settingsProposalBullets, one per line (soft-gate); never silent-apply dossier changes.",
     "Think it through first, then call the submit_mid_week_chat_reply tool exactly once with your full answer. Do not write the answer as plain text.",
   ]);
 }
