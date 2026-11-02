@@ -38,7 +38,7 @@ type Sidecar = {
 const sidecar = JSON.parse(readFileSync(`${STEM}.json`, "utf8")) as Sidecar;
 const packet = JSON.parse(readFileSync(`${STEM}.packet.json`, "utf8")) as ModelPacket;
 
-const BASE_URL = "http://192.168.4.21:8000";
+const BASE_URL = "http://omlx.local:8000";
 
 function appWith(chunkBytes?: number) {
   const sent: Array<{ url: string; body: Record<string, unknown> }> = [];
@@ -120,7 +120,7 @@ describe(`the recorded ${sidecar.server} weekly reply (${sidecar.model} at ${sid
     expect(rows[0]).toMatchObject({
       operation: "weekly_reply",
       provider: "self_hosted",
-      serverHost: "192.168.4.21",
+      serverHost: "omlx.local",
       model: sidecar.model,
       inputTokens: sidecar.inputTokens,
       outputTokens: sidecar.outputTokens,
