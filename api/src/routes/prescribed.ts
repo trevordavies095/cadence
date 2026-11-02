@@ -204,6 +204,9 @@ export function createPrescribedRoutes(options: {
           date,
           line: day.line ?? null,
           reason: failureReason(day, weekStartMonday, unit),
+          otherDays: prescribed.plan.days
+            .filter((d) => d.date !== date && typeof d.line === "string" && d.line.trim() !== "")
+            .map((d) => d.line!.trim()),
         },
         {
           callId,

@@ -277,12 +277,15 @@ export function planDaySystemPrompt(unit: TempoUnitPreference): string {
   ].join("\n\n");
 }
 
-/** The plan day call's user turn: the plan week, the unit, the date, its line and the reason. Never the packet. */
+/** The plan day call's user turn: the plan week, the unit, the other days' lines, the date, its line and the reason. Never the packet. */
 export function planDayUserPrompt(input: PlanDayFixInput): string {
   const label = planDateLabel(input.date);
   return [
     `The plan week, Monday to Sunday: ${expectedPlanDates(input.weekStartMonday).join(", ")}.`,
     `Write distances in ${unitWord(input.unit)}.`,
+    input.otherDays?.length
+      ? `The rest of the week as you wrote it:\n${input.otherDays.join("\n")}`
+      : null,
     `The day to fill in: ${label}.`,
     input.line === null
       ? "No line was written for this date."

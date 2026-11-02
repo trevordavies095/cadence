@@ -258,6 +258,12 @@ export type PlanDayFixInput = {
   line: string | null;
   /** Why the line could not be read, re-read now; null when it cannot be told. */
   reason: string | null;
+  /**
+   * The other six days as written, for context: a day with no line is filled
+   * knowing what the rest of the week asks (no hard day after a hard day, an
+   * injury week stays easy). Days with no line are left out.
+   */
+  otherDays?: string[];
 };
 
 /** Coach Cade's new line for the date, read into a stored day (`parsed: true`). */

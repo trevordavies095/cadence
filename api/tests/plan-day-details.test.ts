@@ -164,6 +164,10 @@ describe("Add the details: one unread day asked for again", () => {
     expect(prompt).toContain("Why Cadence could not read it: no distance unit.");
     expect(prompt).toContain(DATES.join(", "));
     expect(prompt).toContain("Write distances in miles.");
+    // The other days' lines, for context; never this day's own line twice.
+    expect(prompt).toContain(`The rest of the week as you wrote it:\n${LINES[0]}`);
+    expect(prompt).toContain(LINES[6]!);
+    expect(prompt.split(THU_LINE).length - 1).toBe(1);
     expect(sent[0]!.raw).not.toMatch(/Model packet|recapMarkdown|dossier/i);
     expect(String(body.system)).toContain("Write one line for this date only");
   });
