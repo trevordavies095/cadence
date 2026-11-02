@@ -1,6 +1,6 @@
 # 0004: Coach Cade's model and effort are the athlete's setting, not server config
 
-**Status:** Accepted, 2026-11-01 (issue #52)
+**Status:** Accepted, 2026-11-01 (issue #52). See ADR 0005 for the provider.
 
 ## Context
 
