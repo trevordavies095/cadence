@@ -11,6 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { longRunVerdictIn, mentionsMarathon, replayCheckFailures } from "../scripts/replayChecks.js";
+import { recordedWeeklyReplyAsForm } from "./weeklyForms.js";
 
 const api = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURE = path.join(api, "tests/fixtures/replay-packets");
@@ -666,7 +667,8 @@ describe("replay against a fake self-hosted server", () => {
   const SH_FIXTURE = path.join(api, "tests/fixtures/self-hosted/omlx-gpt-oss-weekly");
 
   it("saves time to first token, thinking characters and the server's usage from the stream", async () => {
-    const sse = readFileSync(`${SH_FIXTURE}.sse`);
+    // The recording predates the plan box: its tool input is translated into the weekly form.
+    const sse = Buffer.from(recordedWeeklyReplyAsForm(readFileSync(`${SH_FIXTURE}.sse`, "utf8")), "utf8");
     const server = createServer((req, res) => {
       req.resume();
       req.on("end", () => {

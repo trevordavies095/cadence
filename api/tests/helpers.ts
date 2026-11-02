@@ -255,9 +255,11 @@ export function anthropicToolMessage(
  */
 export function recordedStreamResponse(
   file: string,
-  options: { chunkBytes?: number } = {},
+  /** `rewrite` changes the recorded text before it is sent (a recording made against an older form). */
+  options: { chunkBytes?: number; rewrite?: (sse: string) => string } = {},
 ): Response {
-  const bytes = readFileSync(file);
+  const raw = readFileSync(file);
+  const bytes = options.rewrite ? Buffer.from(options.rewrite(raw.toString("utf8")), "utf8") : raw;
   const size = options.chunkBytes;
   const body =
     size && size > 0

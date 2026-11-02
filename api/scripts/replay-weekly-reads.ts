@@ -195,7 +195,7 @@ import {
   buildStubDossierCorrection,
   buildStubDossierV1,
   buildStubMidWeekChatReply,
-  buildStubWeeklyReply,
+  buildStubWeeklyForm,
   createStubLlmPort,
   recentWeeklyDistanceM,
   resolvePlanWeekStartMonday,
@@ -212,6 +212,7 @@ import type {
   WeeklyReply,
 } from "../src/llm/types.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
+import { weeklyReplyContext } from "../src/llm/weeklyContext.js";
 import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
 import type { ModelPacket } from "../src/packet/types.js";
 import { normalizeSelfHostedBaseUrl, selfHostedEndpoint, selfHostedHost } from "../src/settings/selfHostedStore.js";
@@ -698,7 +699,7 @@ function dryRunStub(call: StoredCall, log: LlmCallRecord[]): LlmPort {
   }
   return {
     generateWeeklyReply: (packet, o) =>
-      patched("weekly_reply", packet, buildStubWeeklyReply(packet), (d) => validateWeeklyReply(d, resolveWeeklyPlanWeek(packet).weekStartMonday), o),
+      patched("weekly_reply", packet, buildStubWeeklyForm(packet), (d) => validateWeeklyReply(d, resolveWeeklyPlanWeek(packet).weekStartMonday, weeklyReplyContext(packet)), o),
     generateMidWeekChatReply: (packet, o) =>
       patched("mid_week_chat", packet, buildStubMidWeekChatReply(packet), (d) => validateMidWeekChatReply(d, resolvePlanWeekStartMonday(packet)), o),
     generateDossierV1: (input, o) => patched("dossier_v1", input, buildStubDossierV1(input), validateDossierV1Draft, o),

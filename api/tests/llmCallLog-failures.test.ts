@@ -4,7 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
-import { buildStubWeeklyReply } from "../src/llm/index.js";
+import { buildStubWeeklyForm } from "../src/llm/index.js";
 import { resolveAppVersion } from "../src/llmCallLog/appVersion.js";
 import type {
   LlmCallRecord,
@@ -384,7 +384,7 @@ describe("LLM call log: failed calls (#69)", () => {
             type: "tool_use",
             id: "t",
             name: "submit_weekly_reply",
-            input: buildStubWeeklyReply(samplePacket()),
+            input: buildStubWeeklyForm(samplePacket()),
           },
         ],
       }),

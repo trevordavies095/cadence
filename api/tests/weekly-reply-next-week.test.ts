@@ -5,9 +5,9 @@ import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
-  buildStubWeeklyReply,
+  buildStubWeeklyForm,
   expectedPlanDates,
-  type WeeklyReply,
+  type WeeklyReplyForm,
 } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket } from "../src/packet/index.js";
@@ -50,14 +50,14 @@ function packetFor(reviewedIsoWeek: string) {
 }
 
 /** Plan for 2026-W44 (the correct next week). */
-function nextWeekReply(analysis?: string): WeeklyReply {
-  const reply = buildStubWeeklyReply(packetFor("2026-W43"));
+function nextWeekReply(analysis?: string): WeeklyReplyForm {
+  const reply = buildStubWeeklyForm(packetFor("2026-W43"));
   return analysis ? { ...reply, analysis } : reply;
 }
 
 /** Plan dated for the reviewed week itself (wrong). */
-function reviewedWeekReply(): WeeklyReply {
-  return buildStubWeeklyReply(packetFor("2026-W42"));
+function reviewedWeekReply(): WeeklyReplyForm {
+  return buildStubWeeklyForm(packetFor("2026-W42"));
 }
 
 function anthropicResponse(input: unknown): Response {
@@ -72,7 +72,7 @@ type Weeks = { weeks: Array<{ id: string; isoWeek: string; archived: boolean }> 
 
 describe("weekly reply plans next week (#78)", () => {
   let prevProvider: string | undefined;
-  let nextReply: WeeklyReply;
+  let nextReply: WeeklyReplyForm;
   let requests: Array<{ messages: Array<{ content: string }> }>;
 
   beforeAll(async () => {
@@ -135,7 +135,9 @@ describe("weekly reply plans next week (#78)", () => {
 
     expect(requests).toHaveLength(1);
     const content = requests[0]!.messages[0]!.content;
-    expect(content).toContain("Plan week ISO label: 2026-W44");
+    // The plan's week id is Cadence's; the model is given the dates, not asked for an id.
+    expect(content).not.toContain("Plan week ISO label");
+    expect(content).toContain("Plan week Monday (YYYY-MM-DD): 2026-10-26");
     expect(content).toContain(PLAN_DATES.join(", "));
     expect(PLAN_DATES[0]).toBe("2026-10-26");
     expect(PLAN_DATES[6]).toBe("2026-11-01");

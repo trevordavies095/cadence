@@ -6,7 +6,9 @@ import { createApp } from "../src/app.js";
 import { DISCLAIMER_TEXT } from "../src/disclaimer/text.js";
 import {
   buildStubMidWeekChatReply,
+  buildStubWeeklyForm,
   buildStubWeeklyReply,
+  checkWeeklyReply,
   COACH_SYSTEM_STANCE,
   createStubLlmPort,
   fitSafetyCalloutBody,
@@ -182,8 +184,8 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
     const long = "Keep it easy. ".repeat(100);
     const weekly = validateWeeklyReply(
       {
-        ...buildStubWeeklyReply(samplePacket()),
-        safetyCallouts: [{ title: "Achilles", body: long }],
+        ...buildStubWeeklyForm(samplePacket()),
+        safetyCallouts: [`Caution: Achilles. ${long}`],
       },
       PLAN_WEEK_START,
     );
@@ -224,7 +226,7 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
       /does not diagnose/,
     );
 
-    const checked = validateWeeklyReply(reply, PLAN_WEEK_START);
+    const checked = checkWeeklyReply(reply, PLAN_WEEK_START);
     expect(checked.ok).toBe(true);
 
     const mid = buildStubMidWeekChatReply(flagged);

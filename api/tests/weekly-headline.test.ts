@@ -23,20 +23,21 @@ import {
   TEST_DATA_PROTECTION_KEY,
   unlockPlanCheckIn,
 } from "./helpers.js";
+import { weeklyForm } from "./weeklyForms.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP = path.join(__dirname, "fixtures", "tempo-export-mini.zip");
 const WEEK_START = "2026-10-26";
 
 function reply(overrides: Record<string, unknown>) {
+  return weeklyForm(WEEK_START, { analysis: "## Flags\n- Sleep is short.", ...overrides });
+}
+
+/** A stored plan of seven rest days, as plans made before the headline were. */
+function restWeek() {
   return {
-    headline: "A steady week. Keep the easy days easy.",
-    analysis: "## Flags\n- Sleep is short.",
-    prescribedWeek: {
-      week: "2026-W44",
-      days: expectedPlanDates(WEEK_START).map((date) => ({ date, dayType: "rest", run: null })),
-    },
-    ...overrides,
+    week: "2026-W44",
+    days: expectedPlanDates(WEEK_START).map((date) => ({ date, dayType: "rest" as const, run: null })),
   };
 }
 
@@ -165,7 +166,7 @@ describe("the weekly headline is stored and shown", () => {
     const week = await json(await a.request("/weeks/current", { method: "POST" }));
     await savePrescribedWeek({
       weekSessionId: week.id as string,
-      plan: reply({}).prescribedWeek as never,
+      plan: restWeek(),
       analysis: "## Headline\nAn older read.",
       at: new Date("2026-10-21T15:00:00.000Z"),
     });
@@ -179,7 +180,7 @@ describe("the weekly headline is stored and shown", () => {
     const week = await json(await a.request("/weeks/current", { method: "POST" }));
     await savePrescribedWeek({
       weekSessionId: week.id as string,
-      plan: reply({}).prescribedWeek as never,
+      plan: restWeek(),
       analysis: "## Headline\nThe read's own first paragraph.",
       readSections: { headline: "The headline Coach Cade chose." },
       at: new Date("2026-10-21T15:00:00.000Z"),

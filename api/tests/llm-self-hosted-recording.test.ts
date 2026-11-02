@@ -15,6 +15,7 @@ import {
   TEST_DATA_PROTECTION_KEY,
   unlockPlanCheckIn,
 } from "./helpers.js";
+import { recordedWeeklyReplyAsForm } from "./weeklyForms.js";
 
 /**
  * The weekly reply recorded from a real oMLX server by the smoke script
@@ -48,7 +49,9 @@ function appWith(chunkBytes?: number) {
       return Response.json({ object: "list", data: [{ id: sidecar.model, object: "model" }] });
     }
     sent.push({ url, body: JSON.parse(String(init?.body)) as Record<string, unknown> });
-    return recordedStreamResponse(`${STEM}.sse`, { chunkBytes });
+    // The recording predates the plan box: its tool input is translated into the
+    // weekly form; the stream around it (thinking, usage) is as recorded.
+    return recordedStreamResponse(`${STEM}.sse`, { chunkBytes, rewrite: recordedWeeklyReplyAsForm });
   }) as unknown as typeof globalThis.fetch;
   const app = createApp({
     dataProtectionKey: TEST_DATA_PROTECTION_KEY,

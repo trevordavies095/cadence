@@ -4,7 +4,7 @@ import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import { pool } from "../src/db.js";
 import {
-  buildStubWeeklyReply,
+  buildStubWeeklyForm,
   createAnthropicLlmPort,
   TESTED_COACH_MODEL,
 } from "../src/llm/index.js";
@@ -116,7 +116,7 @@ async function savedRows() {
 
 const goodReply = () =>
   anthropicStreamResponse(
-    anthropicToolMessage("submit_weekly_reply", buildStubWeeklyReply(samplePacket())),
+    anthropicToolMessage("submit_weekly_reply", buildStubWeeklyForm(samplePacket())),
   );
 
 beforeAll(async () => {

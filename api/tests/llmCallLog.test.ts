@@ -6,7 +6,7 @@ import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
   buildStubMidWeekChatReply,
-  buildStubWeeklyReply,
+  buildStubWeeklyForm,
   type MidWeekChatReply,
   type WeeklyReply,
 } from "../src/llm/index.js";
@@ -115,7 +115,7 @@ describe("LLM call log (#68 tracer)", () => {
     const fetchImpl = vi.fn(async () =>
       anthropicResponse(
         "submit_weekly_reply",
-        buildStubWeeklyReply(samplePacket()),
+        buildStubWeeklyForm(samplePacket()),
       ),
     ) as unknown as typeof globalThis.fetch;
     const { app, weekSessionId } = await liveApp(fetchImpl);
@@ -172,7 +172,7 @@ describe("LLM call log (#68 tracer)", () => {
     const long = `${"Big week, steady legs, and the goal is still live. ".repeat(8)}End.`;
     const fetchImpl = vi.fn(async () =>
       anthropicResponse("submit_weekly_reply", {
-        ...buildStubWeeklyReply(samplePacket()),
+        ...buildStubWeeklyForm(samplePacket()),
         headline: long,
       }),
     ) as unknown as typeof globalThis.fetch;
@@ -239,6 +239,8 @@ describe("LLM call log (#68 tracer)", () => {
       "If it gets sharper, see a clinician.",
     severity: "caution",
   };
+  /** The same notice as a line of the weekly form: severity word, title sentence, body. */
+  const LONG_CALLOUT_LINE = `Caution: ${LONG_CALLOUT.title}. ${LONG_CALLOUT.body}`;
 
   async function expectRepairedRow(
     app: ReturnType<typeof createApp>,
@@ -256,8 +258,8 @@ describe("LLM call log (#68 tracer)", () => {
   it("delivers a weekly reply with an over-long callout and logs it as repaired (#4)", async () => {
     const fetchImpl = vi.fn(async () =>
       anthropicResponse("submit_weekly_reply", {
-        ...buildStubWeeklyReply(samplePacket()),
-        safetyCallouts: [LONG_CALLOUT],
+        ...buildStubWeeklyForm(samplePacket()),
+        safetyCallouts: [LONG_CALLOUT_LINE],
       }),
     ) as unknown as typeof globalThis.fetch;
     const { app, weekSessionId } = await liveApp(fetchImpl);

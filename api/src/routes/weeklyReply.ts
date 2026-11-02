@@ -9,7 +9,7 @@ import {
   LlmTransportError,
   type LlmPort,
   resolveWeeklyPlanWeek,
-  validateWeeklyReply,
+  checkWeeklyReply,
 } from "../llm/index.js";
 import { recordRouteRejection, type LlmCallRecorder } from "../llmCallLog/index.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
@@ -284,7 +284,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         callId,
         weekSessionId: focusSession.id,
       });
-      const checked = validateWeeklyReply(
+      const checked = checkWeeklyReply(
         reply,
         resolveWeeklyPlanWeek(packet).weekStartMonday,
       );

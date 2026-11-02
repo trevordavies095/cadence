@@ -5,7 +5,7 @@ import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import { pool } from "../src/db.js";
-import { buildStubWeeklyReply } from "../src/llm/index.js";
+import { buildStubWeeklyForm } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket, type ModelPacket } from "../src/packet/index.js";
 import { putAnthropicConnection } from "../src/settings/anthropicStore.js";
@@ -65,7 +65,7 @@ function samplePacket(): ModelPacket {
 
 /** A reply each tool's validator accepts. */
 function replyFor(toolName: string): unknown {
-  if (toolName === "submit_weekly_reply") return buildStubWeeklyReply(samplePacket());
+  if (toolName === "submit_weekly_reply") return buildStubWeeklyForm(samplePacket());
   if (toolName === "submit_mid_week_chat_reply") {
     return { body: "Good week. Keep Thursday easy." };
   }

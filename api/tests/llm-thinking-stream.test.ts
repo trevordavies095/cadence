@@ -4,6 +4,7 @@ import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
   buildStubMidWeekChatReply,
+  buildStubWeeklyForm,
   buildStubWeeklyReply,
   anthropicCoachTarget,
   createAnthropicLlmPort,
@@ -76,6 +77,8 @@ type Flow = {
   operation: string;
   call: (port: LlmPort, callId: string, coachTarget?: CoachTarget) => Promise<unknown>;
   okInput: () => unknown;
+  /** What the port hands back for okInput: the weekly form is read into the stored shape. */
+  okReply: () => unknown;
 };
 
 const FLOWS: Flow[] = [
@@ -85,7 +88,8 @@ const FLOWS: Flow[] = [
     operation: "weekly_reply",
     call: (port, callId, coachTarget) =>
       port.generateWeeklyReply(samplePacket(), { callId, coachTarget }),
-    okInput: () => buildStubWeeklyReply(samplePacket()),
+    okInput: () => buildStubWeeklyForm(samplePacket()),
+    okReply: () => buildStubWeeklyReply(samplePacket()),
   },
   {
     name: "mid-week chat",
@@ -94,6 +98,7 @@ const FLOWS: Flow[] = [
     call: (port, callId, coachTarget) =>
       port.generateMidWeekChatReply(samplePacket(), { callId, coachTarget }),
     okInput: () => buildStubMidWeekChatReply(samplePacket()),
+    okReply: () => buildStubMidWeekChatReply(samplePacket()),
   },
 ];
 
@@ -266,7 +271,7 @@ for (const flow of FLOWS) {
       const { recorder, rows } = memoryRecorder();
       const fetchImpl = fetchReturning(() => anthropicStreamResponse(message));
       const reply = await flow.call(portWith(fetchImpl, recorder), "call-2");
-      expect(reply).toEqual(input);
+      expect(reply).toEqual(flow.okReply());
 
       expect(rows).toHaveLength(1);
       const row = rows[0]!;
@@ -604,7 +609,7 @@ describe("thinking_tokens in the LLM call log (Postgres + routes)", () => {
   it("stores and exposes thinking_tokens for the weekly reply", async () => {
     const fetchImpl = vi.fn(async () =>
       anthropicStreamResponse(
-        thinkingMessage(WEEKLY_TOOL, buildStubWeeklyReply(samplePacket())),
+        thinkingMessage(WEEKLY_TOOL, buildStubWeeklyForm(samplePacket())),
       ),
     ) as unknown as typeof globalThis.fetch;
     const { app, weekSessionId } = await liveApp(fetchImpl);

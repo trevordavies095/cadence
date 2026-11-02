@@ -24,7 +24,7 @@ import {
   validateDossierCorrectionDraft,
   validateDossierV1Draft,
   validateMidWeekChatReply,
-  validateWeeklyReply,
+  checkWeeklyReply,
   type SchemaResult,
 } from "../src/llm/schema.js";
 import type { ModelPacket } from "../src/packet/types.js";
@@ -338,7 +338,9 @@ export function athleteUnit(packet: Pick<ModelPacket, "coaching" | "recapMarkdow
 export function validateFor(operation: Operation, input: unknown, ctx: Pick<RepairContext, "weekStartMonday">): SchemaResult<unknown> {
   switch (operation) {
     case "weekly_reply":
-      return validateWeeklyReply(input, ctx.weekStartMonday ?? "");
+      // The saved runs were made against the nested weekly form, before the plan
+      // box (plan-as-text ticket 06); checkWeeklyReply still reads that shape.
+      return checkWeeklyReply(input, ctx.weekStartMonday ?? "");
     case "mid_week_chat":
       return validateMidWeekChatReply(input, ctx.weekStartMonday ?? undefined);
     default: {

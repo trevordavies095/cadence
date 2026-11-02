@@ -137,7 +137,11 @@ export type SafetyCallout = {
 /** Something Coach Cade is watching: a short title and one line of detail. */
 export type ReadFlag = { title: string; detail: string };
 
-/** An answer to the athlete's own question, quoted as they wrote it. */
+/**
+ * An answer to the athlete's own question. `question` is the athlete's
+ * question as Cadence holds it, or empty when Cadence cannot tell which
+ * question the answer is for: Coach Cade sends the answers only.
+ */
 export type ReadAnswer = { question: string; answer: string };
 
 /** The parts of Coach Cade's read the pages lay out on their own, stored beside the full read. */
@@ -150,6 +154,27 @@ export type ReadSections = {
   answers: ReadAnswer[];
 };
 
+/**
+ * The weekly reply as Coach Cade sends it: every box plain text or a list of
+ * lines (.scratch/plan-as-text/spec.md, "The forms"). Cadence turns it into a
+ * {@link WeeklyReply}, deriving the plan's structure from its lines.
+ */
+export type WeeklyReplyForm = {
+  headline: string;
+  /** "Title: detail" lines; a line with no colon is all title. */
+  flags?: string[];
+  /** One answer per question, in order. */
+  answers?: string[];
+  /** The full read, markdown. */
+  analysis: string;
+  /** Seven lines, one per day, in the plan grammar. */
+  plan: string;
+  settingsProposalBullets?: string[];
+  /** Lines with an optional leading "Urgent:", "Caution:" or "Info:". */
+  safetyCallouts?: string[];
+};
+
+/** The weekly reply as Cadence stores it. */
 export type WeeklyReply = {
   /** The one or two sentences that matter most; opens the read on Plan. */
   headline: string;

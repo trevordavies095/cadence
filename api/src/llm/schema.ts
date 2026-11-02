@@ -9,6 +9,8 @@ import {
   MAX_SAFETY_CALLOUTS,
   SAFETY_ESCALATION_LINE,
 } from "./safety.js";
+import { parsePlanLines } from "../prescribed/planLines.js";
+import type { TempoUnitPreference } from "../tempo/port.js";
 import type {
   DayType,
   DossierAuditDraft,
@@ -22,6 +24,7 @@ import type {
   ReadFlag,
   RunType,
   SafetyCallout,
+  SafetyCalloutSeverity,
   WeeklyReply,
 } from "./types.js";
 
@@ -168,6 +171,8 @@ function parseDay(
   index: number,
   expectedDate: string,
   repairs: string[],
+  /** Keep the plan-line fields (`line`, `parsed`): stored plans only, never day patches. */
+  keepLine = false,
 ): SchemaResult<PrescribedDay> {
   const path = `prescribedWeek.days[${index}]`;
   if (!isPlainObject(value)) {
@@ -223,7 +228,13 @@ function parseDay(
   const day: PrescribedDay = { date, dayType };
   if (runResult.value !== undefined) day.run = runResult.value;
   if (strength.value !== undefined) day.strength = strength.value;
-  if (notes.value !== undefined) day.notes = fitDayNotes(notes.value, `${path}.notes`, repairs);
+  // A stored day read from a plan line keeps its notes as derived: the line holds the text.
+  const fromLine = keepLine && typeof value.line === "string";
+  if (notes.value !== undefined) {
+    day.notes = fromLine ? notes.value : fitDayNotes(notes.value, `${path}.notes`, repairs);
+  }
+  if (keepLine && (value.line === null || fromLine)) day.line = value.line as string | null;
+  if (keepLine && typeof value.parsed === "boolean") day.parsed = value.parsed;
   return { ok: true, value: day };
 }
 
@@ -287,7 +298,7 @@ export function validatePrescribedWeek(
   const repairs: string[] = [];
   for (let i = 0; i < 7; i++) {
     const expected = addDaysYmd(weekStartMonday, i);
-    const parsed = parseDay(daysRaw[i], i, expected, repairs);
+    const parsed = parseDay(daysRaw[i], i, expected, repairs, true);
     if (!parsed.ok) return parsed;
     days.push(parsed.value);
   }
@@ -303,6 +314,8 @@ export function validatePrescribedWeek(
  */
 export function validateSafetyCallouts(
   raw: unknown,
+  /** A weekly notice written as one sentence is all title; its stored body is empty. */
+  options?: { allowEmptyBody?: boolean },
 ): SchemaResult<SafetyCallout[] | undefined> {
   if (raw === undefined) return { ok: true, value: undefined };
   if (!Array.isArray(raw)) {
@@ -333,7 +346,10 @@ export function validateSafetyCallouts(
       title = cut;
     }
     const bodyRaw = item.body;
-    if (typeof bodyRaw !== "string" || bodyRaw.trim().length === 0) {
+    if (
+      typeof bodyRaw !== "string" ||
+      (bodyRaw.trim().length === 0 && !options?.allowEmptyBody)
+    ) {
       return { ok: false, error: `${path}.body must be a non-empty string` };
     }
     let body = bodyRaw.trim();
@@ -365,9 +381,6 @@ export function validateSafetyCallouts(
   return withRepairs(callouts, repairs.length > 0 ? repairs : undefined);
 }
 
-/**
- * Fail-closed validation for a full weekly LLM reply.
- */
 /** The ISO week id (YYYY-Www) of a calendar date YYYY-MM-DD: the week holding its Thursday. */
 export function isoWeekOfDate(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number) as [number, number, number];
@@ -379,108 +392,110 @@ export function isoWeekOfDate(ymd: string): string {
   return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
-/** A JSON string parsed, or the value as it came when it is not a string or does not parse. */
-function parsedIfJson(value: unknown): unknown {
-  if (typeof value !== "string") return value;
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return value;
+/** What Cadence knows beside Coach Cade's form when it reads it. */
+export type WeeklyReplyContext = {
+  /** The athlete's distance unit; labels the plan, never resolves a bare number. Default imperial. */
+  unit?: TempoUnitPreference;
+  /** The athlete's check-in questions, as they wrote them, in order. */
+  questions?: readonly string[];
+};
+
+/** How many characters of a dropped plan line the call log quotes. */
+const IGNORED_LINE_QUOTE = 60;
+
+/**
+ * Coach Cade's weekly form (every box text or lines, "The forms" in
+ * .scratch/plan-as-text/spec.md) turned into the reply Cadence stores.
+ *
+ * - The plan box is parsed line by line. A day that does not parse is stored
+ *   unparsed (`parsed: false`, its line in notes) and the reply stays valid;
+ *   each such date is noted as a repair, so the call log row reads `repaired`
+ *   and names it. A plan box that is missing, empty, or has no line for any
+ *   date of the plan week is refused.
+ * - The plan's week id is the plan week's, set here; Coach Cade is not asked for it.
+ * - Flags, answers and notices become today's stored shapes, so the read page
+ *   and the stored read sections do not change.
+ */
+export function validateWeeklyReply(
+  raw: unknown,
+  weekStartMonday: string,
+  context: WeeklyReplyContext = {},
+): SchemaResult<WeeklyReply> {
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: "weekly reply must be an object" };
   }
+  if (!DATE_RE.test(weekStartMonday)) {
+    return { ok: false, error: "weekStartMonday must be YYYY-MM-DD" };
+  }
+  const repairs: string[] = [];
+
+  const headline = parseHeadline(raw.headline, repairs);
+  if (!headline.ok) return headline;
+  const analysis = parseAnalysis(raw.analysis);
+  if (!analysis.ok) return analysis;
+
+  const plan = parsePlanBox(raw.plan, weekStartMonday, context.unit ?? "imperial", repairs);
+  if (!plan.ok) return plan;
+
+  const bulletLines =
+    raw.settingsProposalBullets === undefined || raw.settingsProposalBullets === null
+      ? null
+      : linesOf(raw.settingsProposalBullets, "settingsProposalBullets", MAX_SETTINGS_PROPOSAL_BULLETS, repairs);
+  if (bulletLines && !bulletLines.ok) return bulletLines;
+  const bullets = parseSettingsProposalBullets(bulletLines?.value);
+  if (!bullets.ok) return bullets;
+
+  const calloutObjects = calloutsFromLines(raw.safetyCallouts, repairs);
+  if (!calloutObjects.ok) return calloutObjects;
+  const callouts = validateSafetyCallouts(calloutObjects.value, { allowEmptyBody: true });
+  if (!callouts.ok) return callouts;
+
+  const flags = flagsFromLines(raw.flags, repairs);
+  if (!flags.ok) return flags;
+  const answers = answersFromLines(raw.answers, context.questions ?? [], repairs);
+  if (!answers.ok) return answers;
+
+  const reply: WeeklyReply = {
+    headline: headline.value,
+    flags: flags.value,
+    answers: answers.value,
+    analysis: analysis.value,
+    prescribedWeek: plan.value,
+  };
+  if (bullets.value !== undefined) {
+    reply.settingsProposalBullets = bullets.value;
+  }
+  if (callouts.value !== undefined && callouts.value.length > 0) {
+    reply.safetyCallouts = callouts.value;
+  }
+  repairs.push(...(callouts.repairs ?? []));
+  return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
 }
 
 /**
- * The plan object as the model meant it, when it encoded the plan wrongly.
- * Opus 4.7 sometimes flattens the {week, days} wrapper (6 of 120 replies in
- * three baseline runs on 2026-11-02, 5 of them weekly reads lost):
- *
- * - the whole plan as a string of JSON (an object, or a one-item list holding it);
- * - the days alone, as a string or an array, with the week beside them at the
- *   top of the reply or nowhere;
- * - tool-call markup (`<parameter name="week">…`) in prescribedWeek, with the
- *   days sent as their own top-level field.
- *
- * Each recovery only moves what the model wrote into place; nothing is
- * invented but the week id, which is the plan week the prompt names, used only
- * when the model gave no valid one. The days are then checked as usual, so a
- * recovered plan with the wrong dates or count is still refused. Each recovery
- * is noted as a repair.
+ * The final check on a weekly reply in the stored shape, as any port hands it
+ * to the route: the read's parts, a plan of seven days for the plan week, and
+ * the notices. It never reshapes; a reply that fails it is refused.
  */
-function recoverPrescribedWeek(
-  raw: Record<string, unknown>,
-  weekStartMonday: string,
-  repairs: string[],
-): unknown {
-  let value = parsedIfJson(raw.prescribedWeek);
-  if (value !== raw.prescribedWeek) {
-    repairs.push("prescribedWeek arrived as a string of JSON and was parsed");
-  }
-  if (Array.isArray(value) && value.length === 1 && isPlainObject(value[0]) && "days" in value[0]) {
-    value = value[0];
-    repairs.push("prescribedWeek arrived inside a one-item list and was unwrapped");
-  }
-  let days: unknown;
-  if (Array.isArray(value)) {
-    days = value;
-    repairs.push("prescribedWeek arrived as the days alone");
-  } else if (!isPlainObject(value)) {
-    const topDays = parsedIfJson(raw.days);
-    if (!Array.isArray(topDays)) return value;
-    days = topDays;
-    repairs.push("prescribedWeek's days arrived as their own field and were moved into the plan");
-  } else {
-    return value;
-  }
-  const topWeek = raw.week;
-  const week =
-    typeof topWeek === "string" && ISO_WEEK_RE.test(topWeek)
-      ? topWeek
-      : DATE_RE.test(weekStartMonday)
-        ? isoWeekOfDate(weekStartMonday)
-        : null;
-  if (week === null) return value;
-  return { week, days };
-}
-
-export function validateWeeklyReply(
+export function checkWeeklyReply(
   raw: unknown,
   weekStartMonday: string,
 ): SchemaResult<WeeklyReply> {
   if (!isPlainObject(raw)) {
     return { ok: false, error: "weekly reply must be an object" };
   }
-
-  const headlineRaw = raw.headline;
-  if (typeof headlineRaw !== "string" || headlineRaw.trim().length === 0) {
-    return { ok: false, error: "headline is required and must be non-empty" };
-  }
   const repairs: string[] = [];
-  let headline = headlineRaw.trim();
-  if (headline.length > MAX_HEADLINE_LENGTH) {
-    const cut = cutAtWord(headline, MAX_HEADLINE_LENGTH);
-    repairs.push(`headline cut from ${headline.length} to ${cut.length} chars`);
-    headline = cut;
-  }
+  const headline = parseHeadline(raw.headline, repairs);
+  if (!headline.ok) return headline;
+  const analysis = parseAnalysis(raw.analysis);
+  if (!analysis.ok) return analysis;
 
-  const analysis = raw.analysis;
-  if (typeof analysis !== "string" || analysis.trim().length === 0) {
-    return { ok: false, error: "analysis is required and must be non-empty" };
-  }
-  if (analysis.length > MAX_ANALYSIS_LENGTH) {
-    return {
-      ok: false,
-      error: `analysis must be at most ${MAX_ANALYSIS_LENGTH} characters`,
-    };
-  }
-
-  const prescribedRaw = recoverPrescribedWeek(raw, weekStartMonday, repairs);
-  const prescribed = validatePrescribedWeek(prescribedRaw, weekStartMonday);
+  const prescribed = validatePrescribedWeek(raw.prescribedWeek, weekStartMonday);
   if (!prescribed.ok) return prescribed;
 
   const bullets = parseSettingsProposalBullets(raw.settingsProposalBullets);
   if (!bullets.ok) return bullets;
-
-  const callouts = validateSafetyCallouts(raw.safetyCallouts);
+  const callouts = validateSafetyCallouts(raw.safetyCallouts, { allowEmptyBody: true });
   if (!callouts.ok) return callouts;
 
   const flags = parseReadFlags(raw.flags, repairs);
@@ -489,10 +504,10 @@ export function validateWeeklyReply(
   if (!answers.ok) return answers;
 
   const reply: WeeklyReply = {
-    headline,
+    headline: headline.value,
     flags: flags.value,
     answers: answers.value,
-    analysis: analysis.trim(),
+    analysis: analysis.value,
     prescribedWeek: prescribed.value,
   };
   if (bullets.value !== undefined) {
@@ -503,6 +518,183 @@ export function validateWeeklyReply(
   }
   repairs.push(...(prescribed.repairs ?? []), ...(callouts.repairs ?? []));
   return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+}
+
+function parseHeadline(raw: unknown, repairs: string[]): SchemaResult<string> {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: false, error: "headline is required and must be non-empty" };
+  }
+  let headline = raw.trim();
+  if (headline.length > MAX_HEADLINE_LENGTH) {
+    const cut = cutAtWord(headline, MAX_HEADLINE_LENGTH);
+    repairs.push(`headline cut from ${headline.length} to ${cut.length} chars`);
+    headline = cut;
+  }
+  return { ok: true, value: headline };
+}
+
+function parseAnalysis(raw: unknown): SchemaResult<string> {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: false, error: "analysis is required and must be non-empty" };
+  }
+  if (raw.length > MAX_ANALYSIS_LENGTH) {
+    return {
+      ok: false,
+      error: `analysis must be at most ${MAX_ANALYSIS_LENGTH} characters`,
+    };
+  }
+  return { ok: true, value: raw.trim() };
+}
+
+/**
+ * The plan box parsed into the stored week. Each date that failed, each
+ * dropped out-of-week line and each line with no day is noted in `repairs`.
+ */
+function parsePlanBox(
+  raw: unknown,
+  weekStartMonday: string,
+  unit: TempoUnitPreference,
+  repairs: string[],
+): SchemaResult<PrescribedWeek> {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: false, error: "plan is required: seven lines, one per day" };
+  }
+  const parsed = parsePlanLines({ text: raw, weekStartMonday, unit });
+  const dates = new Set(expectedPlanDates(weekStartMonday));
+  const withLine = parsed.days.filter((d) => d.line != null);
+  if (withLine.length === 0) {
+    return {
+      ok: false,
+      error: `plan has no line for any day from ${weekStartMonday} to ${addDaysYmd(weekStartMonday, 6)}`,
+    };
+  }
+  for (const f of parsed.failures) {
+    repairs.push(
+      dates.has(f.date)
+        ? `plan ${f.date} not filed: ${f.reason}`
+        : `plan line for ${f.date} dropped: ${f.reason}`,
+    );
+  }
+  for (const line of parsed.ignoredLines) {
+    const quoted =
+      line.length > IGNORED_LINE_QUOTE ? `${line.slice(0, IGNORED_LINE_QUOTE)}…` : line;
+    repairs.push(`plan line with no day ignored: ${JSON.stringify(quoted)}`);
+  }
+  return {
+    ok: true,
+    value: { week: isoWeekOfDate(weekStartMonday), days: parsed.days },
+  };
+}
+
+/**
+ * A list of lines. Absent or null is empty (some models send an optional box as
+ * null); an entry that is not a string is refused; an empty or blank entry is
+ * dropped and noted in `repairs`. The count is checked after the drop.
+ */
+function linesOf(
+  raw: unknown,
+  field: string,
+  max: number,
+  repairs: string[],
+): SchemaResult<string[]> {
+  if (raw === undefined || raw === null) return { ok: true, value: [] };
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: `${field} must be a list of strings` };
+  }
+  const lines: string[] = [];
+  for (let i = 0; i < raw.length; i++) {
+    const item = raw[i];
+    if (typeof item !== "string") {
+      return { ok: false, error: `${field}[${i}] must be a string` };
+    }
+    if (item.trim().length > 0) lines.push(item.trim());
+    else repairs.push(`${field}[${i}] was empty and was dropped`);
+  }
+  if (lines.length > max) {
+    return { ok: false, error: `${field} must have at most ${max} items` };
+  }
+  return { ok: true, value: lines };
+}
+
+/**
+ * "Title: detail" lines, split on the first colon. A line with no colon (or
+ * nothing on one side of it) is all title, kept to the detail's length.
+ */
+function flagsFromLines(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[]> {
+  const lines = linesOf(raw, "flags", MAX_READ_FLAGS, repairs);
+  if (!lines.ok) return lines;
+  return {
+    ok: true,
+    value: lines.value.map((line, i) => {
+      const colon = line.indexOf(":");
+      const title = colon > 0 ? line.slice(0, colon).trim() : "";
+      const detail = colon > 0 ? line.slice(colon + 1).trim() : "";
+      if (!title || !detail) {
+        return { title: fitText(line, MAX_FLAG_DETAIL_LENGTH, `flags[${i}]`, repairs), detail: "" };
+      }
+      return {
+        title: fitText(title, MAX_FLAG_TITLE_LENGTH, `flags[${i}].title`, repairs),
+        detail: fitText(detail, MAX_FLAG_DETAIL_LENGTH, `flags[${i}].detail`, repairs),
+      };
+    }),
+  };
+}
+
+/**
+ * One answer per string. Coach Cade sends answers only; the stored question is
+ * the athlete's check-in question when there are exactly as many answers as
+ * check-in questions (answered in order), and empty otherwise, since Cadence
+ * cannot tell then which answer is for which question.
+ */
+function answersFromLines(
+  raw: unknown,
+  questions: readonly string[],
+  repairs: string[],
+): SchemaResult<ReadAnswer[]> {
+  const lines = linesOf(raw, "answers", MAX_READ_ANSWERS, repairs);
+  if (!lines.ok) return lines;
+  const paired = questions.length === lines.value.length;
+  return {
+    ok: true,
+    value: lines.value.map((answer, i) => ({
+      question: paired ? questions[i]!.trim() : "",
+      answer,
+    })),
+  };
+}
+
+const CALLOUT_SEVERITY_RE = /^\s*(urgent|caution|info)\s*:\s*/i;
+const FIRST_SENTENCE_RE = /^([\s\S]+?[.!?])(?:\s+([\s\S]*))?$/;
+
+/**
+ * Notice lines into today's callout shape: a leading "Urgent:", "Caution:"
+ * or "Info:" sets the severity (else caution); the first sentence is the
+ * title and the rest the body. A first sentence too long for a title is cut
+ * for the title and kept whole in the body, so nothing is lost.
+ */
+function calloutsFromLines(
+  raw: unknown,
+  repairs: string[],
+): SchemaResult<SafetyCallout[] | undefined> {
+  if (raw === undefined || raw === null) return { ok: true, value: undefined };
+  const lines = linesOf(raw, "safetyCallouts", MAX_SAFETY_CALLOUTS, repairs);
+  if (!lines.ok) return lines;
+  return {
+    ok: true,
+    value: lines.value.flatMap((line): SafetyCallout[] => {
+      const severityMatch = CALLOUT_SEVERITY_RE.exec(line);
+      const severity = (severityMatch?.[1]?.toLowerCase() ?? "caution") as SafetyCalloutSeverity;
+      const text = severityMatch ? line.slice(severityMatch[0].length).trim() : line;
+      if (!text) return [];
+      const sentence = FIRST_SENTENCE_RE.exec(text);
+      const first = sentence ? sentence[1]!.trim() : text;
+      const rest = sentence ? (sentence[2] ?? "").trim() : "";
+      if (first.length > MAX_SAFETY_CALLOUT_TITLE) {
+        return [{ title: cutAtWord(first, MAX_SAFETY_CALLOUT_TITLE), body: text, severity }];
+      }
+      return [{ title: first, body: rest, severity }];
+    }),
+  };
 }
 
 /** A text field cut at a word past `max`, with the cut noted in `repairs`. */
@@ -517,7 +709,7 @@ function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
-/** What Coach Cade is watching. Count and shape fail closed; long text is cut and noted. */
+/** Stored flags: a non-empty title; the detail may be empty (a line with no colon). */
 function parseReadFlags(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[]> {
   if (raw === undefined || raw === null) return { ok: true, value: [] };
   if (!Array.isArray(raw)) return { ok: false, error: "flags must be an array" };
@@ -528,19 +720,19 @@ function parseReadFlags(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[
   for (let i = 0; i < raw.length; i++) {
     const item = raw[i];
     const title = isPlainObject(item) ? nonEmptyString(item.title) : null;
-    const detail = isPlainObject(item) ? nonEmptyString(item.detail) : null;
-    if (!title || !detail) {
-      return { ok: false, error: `flags[${i}] needs a non-empty title and detail` };
+    const detail = isPlainObject(item) && typeof item.detail === "string" ? item.detail.trim() : null;
+    if (!title || detail === null) {
+      return { ok: false, error: `flags[${i}] needs a non-empty title and a detail` };
     }
     flags.push({
-      title: fitText(title, MAX_FLAG_TITLE_LENGTH, `flags[${i}].title`, repairs),
+      title: fitText(title, MAX_FLAG_DETAIL_LENGTH, `flags[${i}].title`, repairs),
       detail: fitText(detail, MAX_FLAG_DETAIL_LENGTH, `flags[${i}].detail`, repairs),
     });
   }
   return { ok: true, value: flags };
 }
 
-/** Answers to the athlete's questions. Count and shape fail closed; length is free. */
+/** Stored answers: a non-empty answer; the question may be empty. */
 function parseReadAnswers(raw: unknown): SchemaResult<ReadAnswer[]> {
   if (raw === undefined || raw === null) return { ok: true, value: [] };
   if (!Array.isArray(raw)) return { ok: false, error: "answers must be an array" };
@@ -550,10 +742,11 @@ function parseReadAnswers(raw: unknown): SchemaResult<ReadAnswer[]> {
   const answers: ReadAnswer[] = [];
   for (let i = 0; i < raw.length; i++) {
     const item = raw[i];
-    const question = isPlainObject(item) ? nonEmptyString(item.question) : null;
+    const question =
+      isPlainObject(item) && typeof item.question === "string" ? item.question.trim() : null;
     const answer = isPlainObject(item) ? nonEmptyString(item.answer) : null;
-    if (!question || !answer) {
-      return { ok: false, error: `answers[${i}] needs a non-empty question and answer` };
+    if (question === null || !answer) {
+      return { ok: false, error: `answers[${i}] needs a question and a non-empty answer` };
     }
     answers.push({ question, answer });
   }

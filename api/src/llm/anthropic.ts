@@ -44,6 +44,8 @@ import {
   MAX_HEADLINE_LENGTH,
   MAX_READ_ANSWERS,
   MAX_READ_FLAGS,
+  MAX_SAFETY_CALLOUT_BODY,
+  MAX_SAFETY_CALLOUTS,
   expectedPlanDates,
   MAX_BULLET_LENGTH,
   MAX_DOSSIER_BODY_LENGTH,
@@ -55,6 +57,8 @@ import {
   validateWeeklyReply,
 } from "./schema.js";
 import { COACH_STANCE_SUMMARY } from "./stance.js";
+import type { TempoUnitPreference } from "../tempo/port.js";
+import { packetUnit, weeklyReplyContext } from "./weeklyContext.js";
 import {
   createStubLlmPort,
   resolvePlanWeekStartMonday,
@@ -192,11 +196,31 @@ export function prescribedRunJsonSchema(): Record<string, unknown> {
   };
 }
 
-function weeklyReplyToolSchema() {
+/** "miles" or "kilometres": the word the weekly form and prompt use for the athlete's unit. */
+function unitWord(unit: TempoUnitPreference): string {
+  return unit === "metric" ? "kilometres" : "miles";
+}
+
+/**
+ * One example plan line, dated the plan week's Tuesday, in the athlete's unit.
+ * The same line is in the tool description and the prompt.
+ */
+export function examplePlanLine(weekStartMonday: string, unit: TempoUnitPreference): string {
+  const tuesday = expectedPlanDates(weekStartMonday)[1]!;
+  const distance = unit === "metric" ? "8 km" : "5 mi";
+  return `Tue ${tuesday}: easy, ${distance}, heart rate under 150, flat route. Loosens the legs after the long run.`;
+}
+
+/**
+ * The weekly form: every box a string or a list of strings, each with a
+ * description, nothing nested (.scratch/plan-as-text/spec.md, "The forms").
+ * Built per call: the plan box names the athlete's unit and the plan week.
+ */
+export function weeklyReplyToolSchema(weekStartMonday: string, unit: TempoUnitPreference) {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["headline", "analysis", "prescribedWeek"],
+    required: ["headline", "analysis", "plan"],
     properties: {
       headline: {
         type: "string",
@@ -206,87 +230,26 @@ function weeklyReplyToolSchema() {
       flags: {
         type: "array",
         maxItems: MAX_READ_FLAGS,
+        items: { type: "string" },
         description:
-          "What you are watching, not a summary of the week. Shown as a short list under \"Watching\".",
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: ["title", "detail"],
-          properties: {
-            title: {
-              type: "string",
-              description: `A few words, at most ${MAX_FLAG_TITLE_LENGTH} characters.`,
-            },
-            detail: {
-              type: "string",
-              description: `One line, at most ${MAX_FLAG_DETAIL_LENGTH} characters.`,
-            },
-          },
-        },
+          `What you are watching, not a summary of the week, shown under "Watching". One line each: a few-word title (at most ${MAX_FLAG_TITLE_LENGTH} characters), a colon, then one line of detail (at most ${MAX_FLAG_DETAIL_LENGTH} characters).`,
       },
       answers: {
         type: "array",
         maxItems: MAX_READ_ANSWERS,
+        items: { type: "string" },
         description:
-          "One per question the athlete asked in the check-in or the conversation. Empty when they asked nothing.",
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: ["question", "answer"],
-          properties: {
-            question: {
-              type: "string",
-              description: "The athlete's question, quoted exactly as they wrote it.",
-            },
-            answer: {
-              type: "string",
-              description: "Your answer, in markdown if it needs more than a paragraph.",
-            },
-          },
-        },
+          "One answer per question the athlete asked in the check-in or the conversation, check-in questions first, in the order asked. The answer only, in markdown if it needs more than a paragraph. Empty when they asked nothing.",
       },
       analysis: {
         type: "string",
         description:
-          "The rest of your read in markdown: your reasoning about the week and the plan. The athlete sees the headline, flags and answers above it.",
+          "The rest of your read in markdown: your reasoning about the week and the plan. The athlete sees the headline, flags and answers above it, and the plan lines beside each day, so do not restate the plan day by day.",
       },
-      prescribedWeek: {
-        type: "object",
-        additionalProperties: false,
-        required: ["week", "days"],
-        properties: {
-          week: {
-            type: "string",
-            description: "ISO week id, e.g. 2026-W43",
-          },
-          days: {
-            type: "array",
-            minItems: 7,
-            maxItems: 7,
-            items: {
-              type: "object",
-              additionalProperties: false,
-              required: ["date", "dayType"],
-              properties: {
-                date: {
-                  type: "string",
-                  description: "Local calendar date YYYY-MM-DD",
-                },
-                dayType: {
-                  type: "string",
-                  enum: ["rest", "easy", "quality", "long", "race", "other"],
-                  description: DAY_TYPE_DESCRIPTION,
-                },
-                run: prescribedRunJsonSchema(),
-                strength: { type: ["string", "null"] },
-                notes: {
-                  type: ["string", "null"],
-                  description: DAY_NOTES_DESCRIPTION,
-                },
-              },
-            },
-          },
-        },
+      plan: {
+        type: "string",
+        description:
+          `Next week's plan as seven lines, one per day Monday to Sunday, each written as "weekday date: day type, distance in ${unitWord(unit)} or time in minutes, then how to run it and why", where the day type is rest, easy, quality, long, race or other (strength, cross-training or a walk), a rest day needs no amount, and every number carries its unit. Example: ${examplePlanLine(weekStartMonday, unit)}`,
       },
       settingsProposalBullets: {
         type: "array",
@@ -294,7 +257,13 @@ function weeklyReplyToolSchema() {
         description:
           "Optional soft-gate dossier/settings proposal bullets (short).",
       },
-      safetyCallouts: safetyCalloutsJsonSchema(),
+      safetyCallouts: {
+        type: "array",
+        maxItems: MAX_SAFETY_CALLOUTS,
+        items: { type: "string" },
+        description:
+          `Notices when red flags appear: escalate to a professional, do not diagnose. One line each: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then one or two short sentences for the athlete, under ${MAX_SAFETY_CALLOUT_BODY} characters.`,
+      },
     },
   };
 }
@@ -463,19 +432,21 @@ function buildDossierAuditUserPrompt(input: DossierAuditInput): string {
 function buildWeeklyUserPrompt(
   packet: ModelPacket,
   weekStartMonday: string,
-  planIsoWeek: string | null,
 ): string {
   const dates = expectedPlanDates(weekStartMonday);
   const reviewed = packet.week?.isoWeek?.trim();
+  const unit = packetUnit(packet);
   return [
     ...goalPromptLines(packet, weekStartMonday),
     reviewed ? `Reviewed week (already happened): ${reviewed}` : null,
-    `Plan week ISO label: ${planIsoWeek ?? reviewed ?? "unknown"}`,
     `Plan week Monday (YYYY-MM-DD): ${weekStartMonday}`,
-    `prescribedWeek.days must use these exact dates Mon–Sun: ${dates.join(", ")}`,
+    `The plan box has one line per day, for these dates Mon–Sun: ${dates.join(", ")}`,
+    `Write distances in ${unitWord(unit)}.`,
+    `Example plan line: ${examplePlanLine(weekStartMonday, unit)}`,
     "Prescribe one coherent week of running training for this athlete.",
+    "The plan box is the plan: the athlete sees each line beside its day. The analysis explains the week; do not restate the plan in it day by day.",
     "Call the submit_weekly_reply tool exactly once with your full answer.",
-    "Include a headline (the one or two sentences you would say if you could say only one thing), flags (what you are watching), answers (one per question the athlete asked, quoted as written) and the analysis (your reasoning).",
+    "Include a headline (the one or two sentences you would say if you could say only one thing), flags (what you are watching), answers (one per question the athlete asked, the answer only), the analysis (your reasoning) and the plan.",
     "When red flags appear, populate safetyCallouts (escalate; do not diagnose).",
     "Model packet (redacted; no identity PII or GPS):",
     JSON.stringify(packet),
@@ -486,8 +457,7 @@ function buildWeeklyUserPrompt(
 
 /** The weekly read's user prompt exactly as {@link createAnthropicLlmPort} sends it. */
 export function weeklyUserPromptFor(packet: ModelPacket): string {
-  const planWeek = resolveWeeklyPlanWeek(packet);
-  return buildWeeklyUserPrompt(packet, planWeek.weekStartMonday, planWeek.isoWeek);
+  return buildWeeklyUserPrompt(packet, resolveWeeklyPlanWeek(packet).weekStartMonday);
 }
 
 function buildMidWeekUserPrompt(
@@ -1185,8 +1155,8 @@ export function createAnthropicLlmPort(
     ): Promise<WeeklyReply> {
       const target = await targetFor(callOptions);
 
-      const planWeek = resolveWeeklyPlanWeek(packet);
-      const weekStartMonday = planWeek.weekStartMonday;
+      const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
+      const context = weeklyReplyContext(packet);
       const requestBody: AnthropicMessagesRequest = {
         model: target.model,
         max_tokens: MAX_OUTPUT_TOKENS,
@@ -1195,31 +1165,28 @@ export function createAnthropicLlmPort(
           {
             name: WEEKLY_TOOL_NAME,
             description:
-              "Submit the weekly coaching analysis and structured 7-day prescribed week.",
-            input_schema: weeklyReplyToolSchema(),
+              "Submit the weekly read and next week's plan as seven lines.",
+            input_schema: weeklyReplyToolSchema(weekStartMonday, context.unit ?? "imperial"),
           },
         ],
         ...reasoningParams(target),
         messages: [
           {
             role: "user",
-            content: buildWeeklyUserPrompt(
-              packet,
-              weekStartMonday,
-              planWeek.isoWeek,
-            ),
+            content: buildWeeklyUserPrompt(packet, weekStartMonday),
           },
         ],
       };
-      // The plan's dates are checked against the plan week here, so a plan for
-      // the wrong week is refused and asked for once more like any other.
+      // The plan box is parsed against the plan week here: days that do not
+      // parse are stored unparsed; a box with no line for the week is refused
+      // and asked for once more like any other refusal.
       return ask(
         "weekly_reply",
         callOptions,
         target,
         WEEKLY_TOOL_NAME,
         requestBody,
-        (input) => validateWeeklyReply(input, weekStartMonday),
+        (input) => validateWeeklyReply(input, weekStartMonday, context),
       );
     },
 

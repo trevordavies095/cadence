@@ -5,15 +5,14 @@ import { FixedClock } from "../src/clock/clock.js";
 import { createApp } from "../src/app.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
-  buildStubWeeklyReply,
+  buildStubWeeklyForm,
   createAnthropicLlmPort,
   createStubLlmPort,
   expectedPlanDates,
-  isoWeekOfDate,
   TESTED_COACH_MODEL,
-  validateWeeklyReply,
   type LlmPort,
   type WeeklyReply,
+  type WeeklyReplyForm,
 } from "../src/llm/index.js";
 import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/index.js";
 import { migrate } from "../src/migrate.js";
@@ -35,77 +34,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP = path.join(__dirname, "fixtures", "tempo-export-mini.zip");
 const WEEK_START = "2026-10-26";
 
-function plan() {
-  return {
-    week: "2026-W44",
-    days: expectedPlanDates(WEEK_START).map((date) => ({ date, dayType: "rest", run: null })),
-  };
-}
-
-describe("a plan sent as a string", () => {
-  const reply = (prescribedWeek: unknown) => ({
-    headline: "A steady week.",
-    analysis: "## Why this plan\nKeep it easy.",
-    prescribedWeek,
-  });
-
-  it("is parsed and accepted when the string is well-formed, with the repair noted", () => {
-    const checked = validateWeeklyReply(reply(JSON.stringify(plan())), WEEK_START);
-    expect(checked.ok).toBe(true);
-    if (!checked.ok) return;
-    expect(checked.value.prescribedWeek.days).toHaveLength(7);
-    expect(checked.repairs).toContain("prescribedWeek arrived as a string of JSON and was parsed");
-  });
-
-  it("is accepted when the string holds only the days, given the plan week, with the repair noted", () => {
-    const checked = validateWeeklyReply(reply(JSON.stringify(plan().days)), WEEK_START);
-    expect(checked.ok).toBe(true);
-    if (!checked.ok) return;
-    expect(checked.value.prescribedWeek.week).toBe(isoWeekOfDate(WEEK_START));
-    expect(checked.value.prescribedWeek.days.map((d) => d.date)).toEqual(expectedPlanDates(WEEK_START));
-    expect(checked.repairs).toContain("prescribedWeek arrived as the days alone");
-  });
-
-  it("takes the week the model sent beside the days when it is a valid week id", () => {
-    const checked = validateWeeklyReply({ ...reply(JSON.stringify(plan().days)), week: "2026-W44" }, WEEK_START);
-    expect(checked.ok && checked.value.prescribedWeek.week).toBe("2026-W44");
-  });
-
-  it("recovers days sent as their own field when prescribedWeek holds tool-call markup", () => {
-    const checked = validateWeeklyReply(
-      { ...reply('\n<parameter name="week">2026-W44'), days: plan().days },
-      WEEK_START,
-    );
-    expect(checked.ok).toBe(true);
-    if (!checked.ok) return;
-    expect(checked.value.prescribedWeek.days).toHaveLength(7);
-    expect(checked.repairs).toContain("prescribedWeek's days arrived as their own field and were moved into the plan");
-  });
-
-  it("unwraps a plan sent as a one-item list holding the whole plan", () => {
-    const checked = validateWeeklyReply(reply(JSON.stringify([plan()])), WEEK_START);
-    expect(checked.ok).toBe(true);
-    if (!checked.ok) return;
-    expect(checked.value.prescribedWeek.week).toBe("2026-W44");
-    expect(checked.repairs).toContain("prescribedWeek arrived inside a one-item list and was unwrapped");
-  });
-
-  it("still refuses recovered days when there are not seven, or the dates are wrong", () => {
-    expect(validateWeeklyReply(reply(JSON.stringify(plan().days.slice(0, 5))), WEEK_START).ok).toBe(false);
-    const late = plan().days.map((d, i) => ({ ...d, date: expectedPlanDates("2026-11-02")[i] }));
-    expect(validateWeeklyReply(reply(late), WEEK_START).ok).toBe(false);
-  });
-
-  it("still refuses markup with no days anywhere", () => {
-    expect(validateWeeklyReply(reply('\n<parameter name="week">2026-W44'), WEEK_START).ok).toBe(false);
-  });
-
-  it("is refused when the string is malformed", () => {
-    const broken = JSON.stringify(plan()).replace('"rest","run":null}', '"rest","run":null}}');
-    expect(validateWeeklyReply(reply(broken), WEEK_START).ok).toBe(false);
-  });
-});
-
 function samplePacket(): ModelPacket {
   return buildModelPacket({
     dossier: { versionId: 1, body: "Keep Achilles easy; cap quality." },
@@ -121,20 +49,14 @@ function samplePacket(): ModelPacket {
   });
 }
 
-/** The same plan a week late: every date outside the plan week. */
-function aWeekLate(reply: WeeklyReply): WeeklyReply {
+/** The same plan a week late: every line dated outside the plan week. */
+function aWeekLate(reply: WeeklyReplyForm): WeeklyReplyForm {
   const later = (ymd: string) => {
     const d = new Date(`${ymd}T00:00:00.000Z`);
     d.setUTCDate(d.getUTCDate() + 7);
     return d.toISOString().slice(0, 10);
   };
-  return {
-    ...reply,
-    prescribedWeek: {
-      ...reply.prescribedWeek,
-      days: reply.prescribedWeek.days.map((day) => ({ ...day, date: later(day.date) })),
-    },
-  };
+  return { ...reply, plan: reply.plan.replace(/\d{4}-\d{2}-\d{2}/g, later) };
 }
 
 describe("a refused weekly reply is asked for once more", () => {
@@ -177,7 +99,7 @@ describe("a refused weekly reply is asked for once more", () => {
       });
       await beforeAnswer(sent.length);
       const answer = answers[sent.length - 1] ?? "good";
-      const good = buildStubWeeklyReply(packet);
+      const good = buildStubWeeklyForm(packet);
       const toolInput =
         answer === "good"
           ? good
@@ -288,7 +210,7 @@ describe("a refused weekly reply is asked for once more", () => {
     expect(sent[1]!.body).toBe(sent[0]!.body);
     expect(rows[0]).toMatchObject({
       outcome: "schema_invalid",
-      errorMessage: expect.stringContaining(`date must be ${WEEK_START}`),
+      errorMessage: `plan has no line for any day from ${WEEK_START} to 2026-11-01`,
     });
     const days = (await json(res)).prescribed as { plan: { days: Array<{ date: string }> } };
     expect(days.plan.days.map((d) => d.date)).toEqual(expectedPlanDates(WEEK_START));
@@ -335,7 +257,7 @@ describe("a refused weekly reply is asked for once more", () => {
       bodies.push(JSON.parse(String(init?.body)) as { max_tokens: number });
       if (bodies.length > 1) {
         return anthropicStreamResponse(
-          anthropicToolMessage("submit_weekly_reply", buildStubWeeklyReply(packet)),
+          anthropicToolMessage("submit_weekly_reply", buildStubWeeklyForm(packet)),
         );
       }
       return anthropicStreamResponse({

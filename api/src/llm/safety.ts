@@ -150,12 +150,27 @@ export const MIDWEEK_REPLY_SHAPE_PROMPT = [
 /** How the weekly read is split into parts the pages lay out. */
 export const WEEKLY_READ_SHAPE_PROMPT = [
   "The headline is the sentence you would say if you could say only one thing about the week and the plan: one or two plain sentences, no label.",
-  "Flags are what you are watching, not a summary of the week: at most five, each a few-word title and one line of detail.",
+  "Flags are what you are watching, not a summary of the week: at most five, each one line with a few-word title, a colon, and one line of detail.",
   "Choose flags by what the athlete needs to act on. A correction comes first: when the athlete ran a session differently from the plan, flag it, and explain in the analysis what happened and why it matters.",
-  "Answers are one per question the athlete asked in the weekly check-in or the conversation, with the question quoted exactly as they wrote it. When they asked nothing, leave answers empty.",
-  "Put the reason for each session in that day's notes: one or two sentences on why this session, this week, under 200 characters. The athlete sees them beside the session.",
+  "Answers are one per question the athlete asked in the weekly check-in or the conversation, check-in questions first, in the order asked. Write the answer only, not the question. When they asked nothing, leave answers empty.",
+  "The plan box is next week's plan: one line per day, the day, its type, the distance or time, how to run it, and one short sentence on why this session, this week. The athlete sees each line beside its day.",
   "The athlete reads the headline, then the flags, then the answers, then the analysis, and the analysis may be folded away. Make each flag and answer stand on its own: never point to something \"above\" or \"below\", or to a table in another part.",
-  "The analysis holds your reasoning. Do not restate the headline, flags or answers in it, and never repeat an answer's table or list there. Do not list the days or describe each session in it, as a list or as a table; the day rows already show them.",
+  "The analysis holds your reasoning and explains the week. Do not restate the headline, flags or answers in it, and never repeat an answer's table or list there. Do not restate the plan day by day or describe each session in it, as a list or as a table; the plan lines already show them.",
+].join(" ");
+
+/**
+ * The weekly read's notices: the same rules as {@link SAFETY_CALLOUT_PROMPT},
+ * written as lines with a leading severity word, since the weekly form has no
+ * nested boxes.
+ */
+export const WEEKLY_SAFETY_CALLOUT_PROMPT = [
+  "Safety callouts:",
+  "- Never diagnose injury, illness, or medical conditions; do not prescribe treatment.",
+  "- Coach running from the athlete's volunteered context and Tempo-derived training data.",
+  "- When red flags appear (pain that worsens, chest pain, dizziness, sudden injury, illness), emit safetyCallouts and urge a qualified professional.",
+  "- Each callout is one line: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then the athlete-facing body (escalate, do not diagnose).",
+  `- Keep each callout body under ${MAX_SAFETY_CALLOUT_BODY} characters: one or two short sentences.`,
+  "- Keep the training plan/reply conservative when callouts are present.",
 ].join(" ");
 
 function joinPrompt(parts: Array<string | null>): string {
@@ -176,7 +191,7 @@ export function weeklySystemPrompt(goal: TrainingGoal | null | undefined): strin
     ATHLETE_WRITING_PROMPT,
     WEEKLY_READ_SHAPE_PROMPT,
     coachingBlock(goal),
-    SAFETY_CALLOUT_PROMPT,
+    WEEKLY_SAFETY_CALLOUT_PROMPT,
     "Think it through first, then call the submit_weekly_reply tool exactly once with your full answer. Do not write the answer as plain text.",
   ]);
 }

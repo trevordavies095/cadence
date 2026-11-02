@@ -4,7 +4,7 @@ import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import { appendGoal } from "../src/goal/store.js";
-import { buildStubWeeklyReply } from "../src/llm/index.js";
+import { buildStubWeeklyForm } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket } from "../src/packet/index.js";
 import { putAnthropicConnection } from "../src/settings/anthropicStore.js";
@@ -621,7 +621,7 @@ describe("full recap sections reach the weekly reply (#88)", () => {
       "sk-ant-test-key-fixture-xyz",
       new SecretProtector(TEST_DATA_PROTECTION_KEY),
     );
-    const stub = buildStubWeeklyReply(
+    const stub = buildStubWeeklyForm(
       buildModelPacket({
         dossier: null,
         recapMarkdown: null,

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { TrainingGoal } from "../src/goal/types.js";
 import {
   buildStubWeeklyReply,
-  validateWeeklyReply,
+  checkWeeklyReply,
   type PrescribedDay,
   type WeeklyReply,
 } from "../src/llm/index.js";
@@ -48,7 +48,7 @@ function reply(
   });
   const out = buildStubWeeklyReply(packet);
   // Every shape is a valid weekly reply for the plan week.
-  const checked = validateWeeklyReply(out, PLAN_MONDAY);
+  const checked = checkWeeklyReply(out, PLAN_MONDAY);
   expect(checked.ok, checked.ok ? "" : checked.error).toBe(true);
   return out;
 }
@@ -68,7 +68,9 @@ describe("the offline coach plans by goal (coaching-bias 20)", () => {
     ]);
     expect(r.prescribedWeek.days[6]!.dayType).toBe("long");
     expect(r.headline).toMatch(/looks workable\. Protect easy days and land the long run\./);
-    expect(r.prescribedWeek.days[6]!.notes).toBe("Fuel early; no heroics.");
+    // The reason ends the day's plan line; the notes are the rest of the line after the amount.
+    expect(r.prescribedWeek.days[6]!.notes).toMatch(/Fuel early; no heroics\.$/);
+    expect(r.prescribedWeek.days[6]!.line).toMatch(/^Sun 2026-11-01: long, \d+(\.5)? mi\. /);
     expect(r.flags?.map((f) => f.title)).toEqual(["Heart rate drift"]);
   });
 
@@ -100,8 +102,9 @@ describe("the offline coach plans by goal (coaching-bias 20)", () => {
     expect(count(r, "quality")).toBe(1);
     expect(count(r, "long")).toBe(1);
     const quality = r.prescribedWeek.days.find((d) => d.dayType === "quality")!;
-    expect(quality.run?.structure).toBeTruthy();
-    expect(quality.run?.paceOrHr).toBeTruthy();
+    // The workout and its effort are written in the line, not in separate fields.
+    expect(quality.line).toMatch(/5 x 3 min at 5K effort/);
+    expect(quality.line).toMatch(/hard but controlled/);
     expect(r.headline).toMatch(/quality session/);
     expect(r.flags?.map((f) => f.title)).not.toContain("Heart rate drift");
   });
@@ -114,7 +117,7 @@ describe("the offline coach plans by goal (coaching-bias 20)", () => {
         expect(d.dayType).toBe("easy");
         expect(d.run!.distanceM).toBe(0);
         expect(d.run!.durationS).toBe(15 * 60);
-        expect(d.run!.structure).toMatch(/walk-run/);
+        expect(d.line).toMatch(/walk-run/);
       }
       expect(count(r, "quality")).toBe(0);
       expect(count(r, "long")).toBe(0);
@@ -161,7 +164,7 @@ describe("the offline coach plans by goal (coaching-bias 20)", () => {
           coaching: packetCoaching(goal, planMonday, null, "2026-10-21"),
         });
         const r = buildStubWeeklyReply(packet);
-        const checked = validateWeeklyReply(r, planMonday);
+        const checked = checkWeeklyReply(r, planMonday);
         expect(checked.ok, checked.ok ? "" : checked.error).toBe(true);
         return runs(r)[0]!.run!.durationS! / 60;
       });

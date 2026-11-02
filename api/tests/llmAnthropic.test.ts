@@ -19,6 +19,7 @@ import {
   MIDWEEK_SYSTEM_PROMPT,
   WEEKLY_SYSTEM_PROMPT,
   buildStubMidWeekChatReply,
+  buildStubWeeklyForm,
   buildStubWeeklyReply,
   createAnthropicLlmPort,
   LlmHttpError,
@@ -27,10 +28,11 @@ import {
   LlmTransportError,
   resolveDefaultLlmPort,
   validateMidWeekChatReply,
-  validateWeeklyReply,
+  checkWeeklyReply,
   withCanonicalStance,
   type MidWeekChatReply,
   type WeeklyReply,
+  type WeeklyReplyForm,
 } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket, type ModelPacket } from "../src/packet/index.js";
@@ -70,7 +72,7 @@ function samplePacket(): ModelPacket {
   });
 }
 
-function anthropicToolResponse(reply: WeeklyReply): Response {
+function anthropicToolResponse(reply: WeeklyReplyForm | Record<string, unknown>): Response {
   return anthropicStreamResponse(
     anthropicToolMessage("submit_weekly_reply", reply),
   );
@@ -133,7 +135,7 @@ describe("Coach Cade's writing shape", () => {
 describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
   it("posts Messages API with stored key and returns validated weekly reply", async () => {
     const packet = samplePacket();
-    const expected = buildStubWeeklyReply(packet);
+    const expected = buildStubWeeklyForm(packet);
     let sawAuth = false;
     let sawToolChoice = false;
 
@@ -171,12 +173,13 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
     expect(sawToolChoice).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
 
-    const checked = validateWeeklyReply(reply, PLAN_WEEK_START);
+    const checked = checkWeeklyReply(reply, PLAN_WEEK_START);
     expect(checked.ok).toBe(true);
     if (checked.ok) {
       expect(checked.value.prescribedWeek.week).toBe(PLAN_ISO_WEEK);
       expect(checked.value.prescribedWeek.days).toHaveLength(7);
     }
+    expect(reply).toEqual(buildStubWeeklyReply(packet));
   });
 
   it("throws LlmNotConfiguredError when key is missing", async () => {
@@ -434,7 +437,7 @@ describe("resolveDefaultLlmPort + createApp LLM_PROVIDER", () => {
 
   it("selects anthropic when LLM_PROVIDER=anthropic", async () => {
     const fetchImpl = vi.fn(async () =>
-      anthropicToolResponse(buildStubWeeklyReply(samplePacket())),
+      anthropicToolResponse(buildStubWeeklyForm(samplePacket())),
     ) as unknown as typeof globalThis.fetch;
     const port = resolveDefaultLlmPort({
       env: { LLM_PROVIDER: "anthropic" },
@@ -522,7 +525,7 @@ describe("POST /week/reply live Anthropic error surfacing", () => {
     try {
       const fetchImpl = vi.fn(async (_url, init) => {
         expect(new Headers(init?.headers).get("x-api-key")).toBe(API_KEY);
-        return anthropicToolResponse(buildStubWeeklyReply(samplePacket()));
+        return anthropicToolResponse(buildStubWeeklyForm(samplePacket()));
       }) as unknown as typeof globalThis.fetch;
 
       const app = createApp({

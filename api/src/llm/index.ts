@@ -60,6 +60,8 @@ export {
   validatePrescribedWeek,
   validateSafetyCallouts,
   validateWeeklyReply,
+  checkWeeklyReply,
+  type WeeklyReplyContext,
   type SchemaErr,
   type SchemaOk,
   type SchemaResult,
@@ -80,6 +82,7 @@ export {
   weeklySystemPrompt,
 } from "./safety.js";
 export { coachingBlock } from "./coachingBlocks.js";
+export { checkInQuestions, packetUnit, weeklyReplyContext } from "./weeklyContext.js";
 export { COACH_STANCE_SUMMARY, COACH_SYSTEM_STANCE } from "./stance.js";
 export {
   buildStubAttachedRunFeedback,
@@ -89,6 +92,7 @@ export {
   buildStubMidWeekChatReply,
   buildStubPrescribedDayPatches,
   buildStubWeeklyReply,
+  buildStubWeeklyForm,
   createStubLlmPort,
   formatDossierAuditThreadBody,
   formatDossierCorrectionThreadBody,
@@ -112,4 +116,5 @@ export type {
   SafetyCallout,
   SafetyCalloutSeverity,
   WeeklyReply,
+  WeeklyReplyForm,
 } from "./types.js";
