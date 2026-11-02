@@ -69,6 +69,9 @@ import type { TempoUnitPreference } from "../tempo/port.js";
  * - 2026-11-02, maintainer: the singulars "interval" and "hill". Both file as
  *   quality because both are hard sessions; they are different workouts, and
  *   the coach's own word stays in the stored line, so the plan still shows which.
+ * - 2026-11-02, maintainer: "walk-run" and "run-walk" are easy runs, not
+ *   "other": a return-to-running walk-run is the week's running. Being longer,
+ *   they win over "walk" at the same position.
  */
 export const PLAN_DAY_TYPE_SYNONYMS: Readonly<Record<string, DayType>> = {
   tempo: "quality",
@@ -89,6 +92,8 @@ export const PLAN_DAY_TYPE_SYNONYMS: Readonly<Record<string, DayType>> = {
   bike: "other",
   swim: "other",
   walk: "other",
+  "walk-run": "easy",
+  "run-walk": "easy",
   yoga: "other",
   off: "rest",
 };
@@ -156,7 +161,7 @@ function escapeRegex(s: string): string {
 function wordAlternation(words: readonly string[]): string {
   return [...words]
     .sort((a, b) => b.length - a.length)
-    .map((w) => escapeRegex(w).replace(/-/g, "[-\\s]"))
+    .map((w) => escapeRegex(w).replace(/-/g, "[-\\s\u2010\u2011]"))
     .join("|");
 }
 
@@ -175,7 +180,7 @@ function firstTypeWord(body: string): { type: DayType; end: number } | null {
   TYPE_WORD_RE.lastIndex = 0;
   for (let m = TYPE_WORD_RE.exec(body); m; m = TYPE_WORD_RE.exec(body)) {
     const end = m.index + m[0].length;
-    const word = m[1]!.toLowerCase().replace(/\s+/g, "-");
+    const word = m[1]!.toLowerCase().replace(/[\s‐‑]+/g, "-");
     if (word === "race" && /^[-\s]pace\b/i.test(body.slice(end))) continue;
     return { type: TYPE_WORDS.get(word)!, end };
   }
@@ -312,6 +317,24 @@ function amountAt(text: string, at: number): Amount | null {
   return null;
 }
 
+/**
+ * A repeat pattern: two durations in a row, each with an optional word, joined
+ * by a slash, a comma or "and" ("3 min run / 1 min walk", "2 min on, 1 min
+ * off", "90 sec hard and 90 sec easy"). It describes how the session is run,
+ * not how long it is, so it is masked before amounts are read and stays in the
+ * sentence only (2026-11-02: a walk-run day stored "3 min" as its length). A
+ * single duration ("40 min easy", "2 h on trails") is never a pattern.
+ */
+const REP_PATTERN_RE = new RegExp(
+  String.raw`\d+(?:\.\d+)?\s*(?:minutes|minute|mins|min|seconds|second|secs|sec|s)\.?(?:\s+[a-z]+)?\s*(?:\/|,|\band\b)\s*\d+(?:\.\d+)?\s*(?:minutes|minute|mins|min|seconds|second|secs|sec|s)\.?(?:\s+[a-z]+)?`,
+  "gi",
+);
+
+/** `text` with every repeat pattern blanked out, so indices still line up. */
+function maskRepPatterns(text: string): string {
+  return text.replace(REP_PATTERN_RE, (m) => " ".repeat(m.length));
+}
+
 /** The first amount in `text`, scanning each number that starts a token. */
 function firstAmount(text: string, from = 0): Amount | null {
   const numberStart = /(?<![\w.:])\d/g;
@@ -400,7 +423,8 @@ function parseDayBody(date: string, line: string, body: string): LineOutcome {
 
   if (dayType === "rest") return parsedDay(null, cleanNotes(afterType));
 
-  const first = firstAmount(body);
+  const amounts = maskRepPatterns(body);
+  const first = firstAmount(amounts);
   if (!first) {
     const race = raceNameAmount(body);
     if (race) {
@@ -409,11 +433,11 @@ function parseDayBody(date: string, line: string, body: string): LineOutcome {
         cleanNotes(body.slice(race.end)),
       );
     }
-    if (BARE_NUMBER_RE.test(body.replace(ANY_DATE_RE, " "))) return { ok: false, reason: "no distance unit" };
+    if (BARE_NUMBER_RE.test(amounts.replace(ANY_DATE_RE, " "))) return { ok: false, reason: "no distance unit" };
     if (dayType === "other") return parsedDay(null, cleanNotes(afterType));
     return { ok: false, reason: "no distance or duration" };
   }
-  const amount = extendAmount(body, first);
+  const amount = extendAmount(amounts, first);
   const run: PrescribedRun = {
     type: dayType,
     distanceM: amount.distanceM ?? 0,

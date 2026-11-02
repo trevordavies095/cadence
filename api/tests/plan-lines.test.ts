@@ -212,7 +212,7 @@ describe("parsePlanLines: a line becomes a stored day", () => {
       [
         "tempo", "intervals", "interval", "threshold", "hills", "hill", "workout", "fartlek", "strides-session",
         "recovery", "jog", "shakeout",
-        "strength", "cross", "cross-training", "bike", "swim", "walk", "yoga",
+        "strength", "cross", "cross-training", "bike", "swim", "walk", "walk-run", "run-walk", "yoga",
         "off",
       ].sort(),
     );
@@ -278,6 +278,36 @@ describe("parsePlanLines: decisions of 2026-11-02", () => {
   it("a race name that is an intensity is not a distance", () => {
     expect(parseOne("Tue: quality, marathon pace work").failure?.reason).toBe("no distance or duration");
     expect(parseOne("Tue: quality, half marathon effort").failure?.reason).toBe("no distance or duration");
+  });
+});
+
+describe("parsePlanLines: walk-run days and repeat patterns", () => {
+  it.each([
+    "Mon 2026-11-09: walk-run, 2.5 km, 3 min run / 1 min walk, keep heart rate low.",
+    "Mon 2026-11-09: walk\u2011run, 2.5 km, 3 min run / 1 min walk, keep heart rate low.",
+    "Mon 2026-11-09: run-walk, 2.5 km, 3 min run / 1 min walk.",
+  ])("%s is an easy run of 2.5 km with no session length", (line) => {
+    const { day, failure } = parseOne(line, MONDAY);
+    expect(failure).toBeUndefined();
+    expect(day.dayType).toBe("easy");
+    expect(day.run).toEqual(run("easy", km(2.5), null));
+  });
+
+  it("a plain walk is still other", () => {
+    expect(parseOne("Mon 2026-11-09: walk, 30 min", MONDAY).day.dayType).toBe("other");
+  });
+
+  it("skips a repeat pattern to find the session's length", () => {
+    const { day } = parseOne("Tue: easy, 2 min on, 1 min off, 30 min in total");
+    expect(day.run).toEqual(run("easy", 0, 1800));
+  });
+
+  it("a session that is only a repeat pattern has no amount", () => {
+    expect(parseOne("Tue: easy, 3 min run / 1 min walk").failure?.reason).toBe("no distance or duration");
+  });
+
+  it("a distance followed by a real duration still sets both", () => {
+    expect(parseOne("Tue: easy, 5 mi, 45 min").day.run).toEqual(run("easy", mi(5), 2700));
   });
 });
 
