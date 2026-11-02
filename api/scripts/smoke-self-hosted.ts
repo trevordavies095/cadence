@@ -288,7 +288,8 @@ function streamSummary(ex: Exchange): string {
 
 /**
  * Runs one coach step: one call through the adapter, which asks once more for
- * a reply refused for its shape, as in the app (askAtMostTwice, ADR 0002).
+ * a reply refused for its shape or with plan lines it could not read, as in
+ * the app (askAtMostTwice, ADR 0002).
  */
 async function runCoachStep(
   step: Step,
@@ -304,6 +305,11 @@ async function runCoachStep(
   let errorMessage: string | null = null;
   const onAttempt = (report: AttemptReport) => {
     attempts = report.attempt;
+    // The retry's kind: fix_lines, error_result, no_tool_call or resend.
+    if (report.attempt > 1 && report.request) {
+      const fixed = report.request.fixed ? ` (fixed ${report.request.fixed.join(", ") || "none"})` : "";
+      notes.push(`attempt ${report.attempt} sent as ${report.request.kind}${fixed}`);
+    }
     if (report.error instanceof LlmSchemaError) {
       notes.push(`attempt ${report.attempt} refused: ${report.error.message}`);
     }

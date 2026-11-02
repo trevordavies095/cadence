@@ -317,3 +317,56 @@ export function fakeCoachServer(toolName: string, answers: unknown[]) {
   };
   return { fetchImpl, recorder, bodies, rows };
 }
+
+type SentTurn = { role: string; content: unknown };
+
+/**
+ * A retry's request against the first: everything but the turns identical
+ * (model, effort, thinking, system, tools, cap), the first turns kept, and the
+ * turns the retry added returned for the test to assert.
+ */
+export function retryTurns(firstBody: string, secondBody: string): SentTurn[] {
+  const first = JSON.parse(firstBody) as Record<string, unknown> & { messages: SentTurn[] };
+  const second = JSON.parse(secondBody) as Record<string, unknown> & { messages: SentTurn[] };
+  const { messages: firstTurns, ...firstRest } = first;
+  const { messages: secondTurns, ...secondRest } = second;
+  if (JSON.stringify(secondRest) !== JSON.stringify(firstRest)) {
+    throw new Error("the retry changed more than the turns");
+  }
+  if (JSON.stringify(secondTurns.slice(0, firstTurns.length)) !== JSON.stringify(firstTurns)) {
+    throw new Error("the retry dropped or changed the first request's turns");
+  }
+  return secondTurns.slice(firstTurns.length);
+}
+
+/**
+ * The turns a refused tool call's retry adds: the assistant turn as the fake
+ * server sent it (thinking with its signature, then the tool call), then an
+ * error tool result for that call whose content opens with `message`.
+ */
+export function expectedErrorRetryTurns(toolName: string, input: unknown, message: string) {
+  return [
+    {
+      role: "assistant",
+      content: [
+        {
+          type: "thinking",
+          thinking: "Weighing load, recent runs and the athlete's note.",
+          signature: "sig_test_fixture",
+        },
+        { type: "tool_use", id: "toolu_test", name: toolName, input },
+      ],
+    },
+    {
+      role: "user",
+      content: [
+        {
+          type: "tool_result",
+          tool_use_id: "toolu_test",
+          is_error: true,
+          content: `${message}.\n\nCall the tool again with your full answer, with this fixed.`,
+        },
+      ],
+    },
+  ];
+}

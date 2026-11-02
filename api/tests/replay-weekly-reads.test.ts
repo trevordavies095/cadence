@@ -740,3 +740,104 @@ describe("replay against a fake self-hosted server", () => {
     expect(m.cost).toBeNull();
   }, 60_000);
 });
+
+describe("replay of a plan fixed by the retry", () => {
+  /** A minimal Messages stream calling `tool` with `input`, no thinking (the self-hosted shape). */
+  function toolStream(tool: string, input: unknown): string {
+    const frame = (event: string, data: unknown) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    return [
+      frame("message_start", {
+        type: "message_start",
+        message: { id: "msg_fake", type: "message", role: "assistant", model: "m", content: [], stop_reason: null, usage: { input_tokens: 100, output_tokens: 1 } },
+      }),
+      frame("content_block_start", { type: "content_block_start", index: 0, content_block: { type: "tool_use", id: "toolu_fake", name: tool, input: {} } }),
+      frame("content_block_delta", { type: "content_block_delta", index: 0, delta: { type: "input_json_delta", partial_json: JSON.stringify(input) } }),
+      frame("content_block_stop", { type: "content_block_stop", index: 0 }),
+      frame("message_delta", { type: "message_delta", delta: { stop_reason: "tool_use" }, usage: { output_tokens: 50 } }),
+      frame("message_stop", { type: "message_stop" }),
+    ].join("");
+  }
+
+  it("saves the retry's turns, the dates it was asked to fix and fixed, and links the reply to the first attempt", async () => {
+    const { buildStubWeeklyForm } = await import("../src/llm/index.js");
+    const packet = JSON.parse(readFileSync(path.join(FIXTURE, "01-stay-fit.json"), "utf8")) as Parameters<typeof buildStubWeeklyForm>[0];
+    const good = buildStubWeeklyForm(packet);
+    const lines = good.plan.split("\n");
+    // Thursday's line loses its unit: a bare number Cadence will not guess at.
+    const thu = lines.findIndex((l) => /^Thu\b/.test(l));
+    const date = lines[thu]!.match(/\d{4}-\d{2}-\d{2}/)![0];
+    lines[thu] = `Thu ${date}: easy 5, relaxed.`;
+    const first = { ...good, plan: lines.join("\n") };
+    const bodies: Array<{ messages: Array<{ role: string; content: unknown }> }> = [];
+    const server = createServer((req, res) => {
+      let raw = "";
+      req.on("data", (d) => (raw += String(d)));
+      req.on("end", () => {
+        if (req.method !== "POST" || !req.url?.endsWith("/messages")) {
+          res.writeHead(404).end();
+          return;
+        }
+        bodies.push(JSON.parse(raw) as (typeof bodies)[number]);
+        res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8" });
+        res.end(toolStream("submit_weekly_reply", bodies.length === 1 ? first : { plan: good.plan }));
+      });
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = (server.address() as { port: number }).port;
+    const packets = mkdtempSync(path.join(tmpdir(), "replay-fix-packets-"));
+    copyFileSync(path.join(FIXTURE, "01-stay-fit.json"), path.join(packets, "01-stay-fit.json"));
+    const out = mkdtempSync(path.join(tmpdir(), "replay-fix-out-"));
+    try {
+      const env: NodeJS.ProcessEnv = { ...process.env };
+      delete env.ANTHROPIC_API_KEY;
+      const child = spawn(
+        path.join(api, "node_modules/.bin/tsx"),
+        [
+          "scripts/replay-weekly-reads.ts",
+          "--packets",
+          packets,
+          "--out",
+          out,
+          "--provider",
+          "self_hosted",
+          "--base-url",
+          `http://127.0.0.1:${port}`,
+          "--model",
+          "m",
+          "--effort",
+          "high",
+        ],
+        { cwd: api, env },
+      );
+      await new Promise<number | null>((resolve) => child.on("close", resolve));
+    } finally {
+      server.close();
+    }
+    expect(bodies).toHaveLength(2);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const saved = JSON.parse(readFileSync(path.join(out, "self_hosted--m--high", "01.1.json"), "utf8")) as Record<string, any>;
+    expect(saved.refusedAttempts).toEqual([]);
+    expect(saved.timing.attempts).toHaveLength(2);
+    expect(saved.timing.attempts[0]).toMatchObject({
+      attempt: 1,
+      request: { kind: "first", turns: ["user: text"] },
+      outcome: "repaired",
+      repairs: `plan ${date} not filed: no distance unit`,
+    });
+    expect(saved.timing.attempts[1]).toMatchObject({
+      attempt: 2,
+      request: {
+        kind: "fix_lines",
+        turns: ["user: text", "assistant: tool_use", "user: tool_result (error)"],
+        fixDates: [date],
+        fixed: [date],
+      },
+      outcome: "repaired",
+      repairs: `plan ${date} filed by the retry`,
+    });
+    // The saved reply's own outcome is the reply that counted: the first, accepted.
+    expect(saved.outcome).toBe("repaired");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(saved.new.prescribedWeek.days.every((d: any) => d.parsed === true)).toBe(true);
+  }, 60_000);
+});

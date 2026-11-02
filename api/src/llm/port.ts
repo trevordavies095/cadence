@@ -39,6 +39,32 @@ export type AttemptReport = {
   callId: string | null;
   /** What the attempt threw; null when its reply was returned. */
   error: unknown;
+  /** How the attempt's request was built; set by the live adapter, absent elsewhere. */
+  request?: AttemptRequest;
+};
+
+/**
+ * How an attempt's request was built. The first is the request as built; the
+ * second (ADR 0002, `.scratch/plan-as-text/spec.md` "Degradation ladder") is
+ * one of:
+ * - `fix_lines`: the first reply was accepted with plan lines that did not
+ *   parse; the failed dates and reasons go back as an error tool result.
+ * - `error_result`: the first reply's tool call was refused; the validator's
+ *   message goes back as an error tool result.
+ * - `no_tool_call`: the first reply called no tool; a plain "call the tool" turn.
+ * - `resend`: the first reply was cut off (output cap, a model refusal, no
+ *   message); the original request is sent again unchanged.
+ */
+export type AttemptRequestKind = "first" | "fix_lines" | "error_result" | "no_tool_call" | "resend";
+
+export type AttemptRequest = {
+  kind: AttemptRequestKind;
+  /** Each message's role and block types, e.g. "assistant: thinking, tool_use", "user: tool_result (error)". */
+  turns: string[];
+  /** fix_lines: the dates the retry was asked to fix. */
+  fixDates?: string[];
+  /** fix_lines: the dates the retry fixed, once its reply is read. */
+  fixed?: string[];
 };
 
 /**

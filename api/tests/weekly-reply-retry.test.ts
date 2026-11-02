@@ -24,8 +24,10 @@ import {
   acceptAndReady,
   anthropicStreamResponse,
   anthropicToolMessage,
+  expectedErrorRetryTurns,
   json,
   resetAppTables,
+  retryTurns,
   TEST_DATA_PROTECTION_KEY,
   unlockPlanCheckIn,
 } from "./helpers.js";
@@ -59,7 +61,10 @@ function aWeekLate(reply: WeeklyReplyForm): WeeklyReplyForm {
   return { ...reply, plan: reply.plan.replace(/\d{4}-\d{2}-\d{2}/g, later) };
 }
 
-describe("a refused weekly reply is asked for once more", () => {
+const REFUSED = { headline: "", prescribedWeek: null };
+const REFUSED_MESSAGE = "headline is required and must be non-empty";
+
+describe("a refused weekly reply is asked for once more, with the validator's message", () => {
   beforeAll(async () => {
     process.env.DATA_PROTECTION_SECRET_KEY = TEST_DATA_PROTECTION_KEY;
     await migrate();
@@ -105,7 +110,7 @@ describe("a refused weekly reply is asked for once more", () => {
           ? good
           : answer === "a week late"
             ? aWeekLate(good)
-            : { headline: "", prescribedWeek: null };
+            : REFUSED;
       return anthropicStreamResponse(anthropicToolMessage("submit_weekly_reply", toolInput));
     }) as unknown as typeof globalThis.fetch;
     const port = createAnthropicLlmPort({
@@ -150,7 +155,9 @@ describe("a refused weekly reply is asked for once more", () => {
     expect(res.status).toBe(200);
     expect((await json(res)).prescribed).toBeTruthy();
     expect(sent).toHaveLength(2);
-    expect(sent[1]!.body).toBe(sent[0]!.body);
+    expect(retryTurns(sent[0]!.body, sent[1]!.body)).toEqual(
+      expectedErrorRetryTurns("submit_weekly_reply", REFUSED, REFUSED_MESSAGE),
+    );
   });
 
   it("hands both attempts the one model and effort it resolved for the run", async () => {
@@ -161,9 +168,11 @@ describe("a refused weekly reply is asked for once more", () => {
       expect(JSON.parse(call.body)).toMatchObject({
         model: TESTED_COACH_MODEL.model,
         output_config: { effort: TESTED_COACH_MODEL.effort },
+        thinking: { type: "adaptive", display: "summarized" },
       });
     }
-    expect(sent[1]!.body).toBe(sent[0]!.body);
+    // Throws when anything but the turns differs.
+    retryTurns(sent[0]!.body, sent[1]!.body);
   });
 
   it("sends both live attempts to the same URL, key, model and effort when Settings change in between", async () => {
@@ -186,7 +195,7 @@ describe("a refused weekly reply is asked for once more", () => {
         output_config: { effort: "high" },
       });
     }
-    expect(sent[1]!.body).toBe(sent[0]!.body);
+    retryTurns(sent[0]!.body, sent[1]!.body);
   });
 
   it("logs both attempts on the one target, the second linked to the first, and links the read to the second", async () => {
@@ -197,7 +206,10 @@ describe("a refused weekly reply is asked for once more", () => {
     expect(rows[0]).toMatchObject({ outcome: "schema_invalid", parentCallId: null });
     expect(rows[1]).toMatchObject({ outcome: "ok", parentCallId: rows[0]!.id });
     expect(rows[1]!.model).toBe(rows[0]!.model);
-    expect(rows[1]!.request).toEqual(rows[0]!.request);
+    // The retry's row keeps the request it sent: the first turn, the reply, the error.
+    const turns = (r: LlmCallRecord) => (r.request as { messages: Array<{ role: string }> }).messages.map((m) => m.role);
+    expect(turns(rows[0]!)).toEqual(["user"]);
+    expect(turns(rows[1]!)).toEqual(["user", "assistant", "user"]);
     const body = await json(res);
     expect((body.coachMessage as { llmCallId: string }).llmCallId).toBe(rows[1]!.id);
   });
@@ -207,7 +219,10 @@ describe("a refused weekly reply is asked for once more", () => {
     const res = await askForReply(port, packet);
     expect(res.status).toBe(200);
     expect(sent).toHaveLength(2);
-    expect(sent[1]!.body).toBe(sent[0]!.body);
+    const late = aWeekLate(buildStubWeeklyForm(packet));
+    expect(retryTurns(sent[0]!.body, sent[1]!.body)).toEqual(
+      expectedErrorRetryTurns("submit_weekly_reply", late, `plan has no line for any day from ${WEEK_START} to 2026-11-01`),
+    );
     expect(rows[0]).toMatchObject({
       outcome: "schema_invalid",
       errorMessage: `plan has no line for any day from ${WEEK_START} to 2026-11-01`,
@@ -249,11 +264,15 @@ describe("a refused weekly reply is asked for once more", () => {
     expect(sent).toHaveLength(2);
   });
 
-  it("asks once more when the first live reply stops at the output cap", async () => {
+  it("asks once more, with the first request unchanged, when the first live reply stops at the output cap", async () => {
+    // The cut reply's assistant turn is incomplete (a tool call may stop mid-input),
+    // and Anthropic will not take it back, so the retry is the first request again.
     await putAnthropicConnection("sk-ant-first-key", new SecretProtector(TEST_DATA_PROTECTION_KEY));
     const packet = samplePacket();
     const bodies: Array<{ max_tokens: number }> = [];
+    const raw: string[] = [];
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      raw.push(String(init?.body));
       bodies.push(JSON.parse(String(init?.body)) as { max_tokens: number });
       if (bodies.length > 1) {
         return anthropicStreamResponse(
@@ -274,5 +293,6 @@ describe("a refused weekly reply is asked for once more", () => {
 
     expect((await askForReply(port, packet)).status).toBe(200);
     expect(bodies.map((b) => b.max_tokens)).toEqual([20_000, 20_000]);
+    expect(raw[1]).toBe(raw[0]);
   });
 });
