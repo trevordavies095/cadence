@@ -299,13 +299,18 @@ describe("safety callout limits in the tool schema", () => {
   it("tells the model the same limits the validator enforces", async () => {
     const { safetyCalloutsJsonSchema, MAX_SAFETY_CALLOUT_BODY, MAX_SAFETY_CALLOUT_TITLE, MAX_SAFETY_CALLOUTS } =
       await import("../src/llm/index.js");
+    // In the descriptions: strict mode refuses maxItems and maxLength.
     const schema = safetyCalloutsJsonSchema() as {
-      maxItems: number;
-      items: { properties: { title: { maxLength: number }; body: { maxLength: number } } };
+      description: string;
+      items: { properties: { title: { description: string }; body: { description: string } } };
     };
-    expect(schema.maxItems).toBe(MAX_SAFETY_CALLOUTS);
-    expect(schema.items.properties.title.maxLength).toBe(MAX_SAFETY_CALLOUT_TITLE);
-    expect(schema.items.properties.body.maxLength).toBe(MAX_SAFETY_CALLOUT_BODY);
+    expect(schema.description).toContain(`at most ${MAX_SAFETY_CALLOUTS}`);
+    expect(schema.items.properties.title.description).toContain(
+      `At most ${MAX_SAFETY_CALLOUT_TITLE} characters`,
+    );
+    expect(schema.items.properties.body.description).toContain(
+      `At most ${MAX_SAFETY_CALLOUT_BODY} characters`,
+    );
   });
 });
 
