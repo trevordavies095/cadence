@@ -238,7 +238,7 @@ describe("a coach call to a self-hosted server", () => {
     expect(Object.keys(call.body)).toEqual(REQUEST_KEYS.filter((k) => k !== "thinking"));
     expect(call.body).toMatchObject({
       model: MODEL,
-      max_tokens: 64_000,
+      max_tokens: 20_000,
       output_config: { effort: "high" },
       tool_choice: { type: "auto" },
       stream: true,
@@ -454,7 +454,7 @@ describe("Anthropic mode beside self-hosted", () => {
     expect(Object.keys(call.body)).toEqual(REQUEST_KEYS);
     expect(call.body).toMatchObject({
       model,
-      max_tokens: 64_000,
+      max_tokens: 20_000,
       output_config: { effort },
       tool_choice: { type: "auto" },
       stream: true,

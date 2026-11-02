@@ -147,7 +147,9 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
         stream?: boolean;
         system?: string;
         messages?: Array<{ content: string }>;
+        max_tokens?: number;
       };
+      expect(body.max_tokens).toBe(20_000);
       expect(body.tool_choice).toEqual({ type: "auto" });
       expect(body.stream).toBe(true);
       expect(body.system).toContain("submit_weekly_reply");

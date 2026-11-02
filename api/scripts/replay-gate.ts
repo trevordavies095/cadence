@@ -43,7 +43,9 @@
  *      does not answer turns the self-hosted replies into transport failures;
  *      the gate then says so and exits non-zero, and the record is not a result.
  *   3. Run the gate with the lever's name, as above. Opus costs about $3; the
- *      self-hosted side takes under an hour.
+ *      self-hosted side takes under an hour. The gate's estimate counts every
+ *      reply asked twice, so it can refuse a run that would cost less (see
+ *      "Caps on spend" below); read the estimate, then pass --allow-cost.
  *   4. Paste the two record lines into the lever's commit message, commit, and
  *      keep the lever's folder (.scratch/benchmark-after/<lever>): the next
  *      lever's gate is read against it, and the final report links them.
@@ -59,11 +61,37 @@
  * stub, no key is needed and nothing is sent. It writes into
  * <root>/<lever>-dry-run, so a stub reply can never be resumed into a live
  * gate; --base-url is optional there.
+ *
+ * --configs <short>[,<short>] runs only the named configurations (opus,
+ * gpt-oss-20b; default both), such as --configs gpt-oss-20b to iterate on the
+ * self-hosted side without paying for Opus.
+ *
+ * Caps on spend. Before any replay starts, the gate prints the output cap every
+ * call sends (MAX_OUTPUT_TOKENS in src/llm/anthropic.ts, 20,000 tokens) and an
+ * estimated cost (scripts/replayCost.ts), per configuration:
+ *
+ *   inputs selected (the regression set's, as --only hands the replay)
+ *     x the median cost per reply of that configuration's most recent saved
+ *       run: cost.medianUsd in the measures.json of the newest live
+ *       <configuration> folder (by config.json's startedAt / resumedAt) under
+ *       the saved-run folders, .scratch/benchmark and .scratch/benchmark-after
+ *       (--saved-runs <dir>[,<dir>] names others)
+ *     x 2, the most attempts a reply can take (a refused one is asked once more)
+ *
+ * With no saved run for an Anthropic configuration it uses the regression
+ * set's Opus figure, about $0.15 a reply, and says so. A self-hosted
+ * configuration is estimated at $0 and never refuses. When the total is above
+ * $5 the gate refuses to start: it says so, names --allow-cost, and exits
+ * non-zero having called no model. --allow-cost runs it anyway. A dry run
+ * prints and applies the same check, so the refusal can be rehearsed offline.
+ * The plain replay (npm run replay) has no such check.
  */
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { MAX_OUTPUT_TOKENS } from "../src/llm/anthropic.js";
+import { describeEstimate, estimateGateCost } from "./replayCost.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const api = path.resolve(here, "..");
@@ -74,16 +102,17 @@ const ROOTS = ["snapshot", "seasons"] as const;
 type Root = (typeof ROOTS)[number];
 
 /** The two configurations a gate runs; `short` names each in the record. */
-const CONFIGURATIONS = [
+const ALL_CONFIGURATIONS = [
   { short: "opus", folder: "anthropic--claude-opus-4-7--xhigh", provider: "anthropic", model: "claude-opus-4-7", effort: "xhigh" },
   { short: "gpt-oss-20b", folder: "self_hosted--gpt-oss-20b-MXFP4-Q8--high", provider: "self_hosted", model: "gpt-oss-20b-MXFP4-Q8", effort: "high" },
 ] as const;
-type Configuration = (typeof CONFIGURATIONS)[number];
-const BASELINE = CONFIGURATIONS[0].folder;
+type Configuration = (typeof ALL_CONFIGURATIONS)[number];
+const BASELINE = ALL_CONFIGURATIONS[0].folder;
 
 // ---- Flags --------------------------------------------------------------------------
 
 const dryRun = process.argv.includes("--dry-run");
+const allowCost = process.argv.includes("--allow-cost");
 
 function flagValue(flag: string, what: string): string | null {
   const i = process.argv.indexOf(flag);
@@ -98,11 +127,24 @@ if (!LEVER) throw new Error("--lever <name> is required, such as --lever strict.
 if (!/^[A-Za-z0-9._-]+$/.test(LEVER) || LEVER.startsWith(".")) {
   throw new Error(`Invalid --lever "${LEVER}": letters, digits, ".", "_" and "-" only, as it names a folder.`);
 }
+const configsFlag = flagValue("--configs", "configuration names, such as opus,gpt-oss-20b");
+const CONFIGURATIONS: Configuration[] = configsFlag
+  ? configsFlag.split(",").map((name) => {
+      const c = ALL_CONFIGURATIONS.find((x) => x.short === name);
+      if (!c) throw new Error(`Unknown configuration "${name}" in --configs: ${ALL_CONFIGURATIONS.map((x) => x.short).join(", ")}.`);
+      return c;
+    })
+  : [...ALL_CONFIGURATIONS];
 const BASE_URL = flagValue("--base-url", "the self-hosted server's URL") ?? (dryRun ? "http://gate-dry-run.invalid:8000" : null);
-if (!BASE_URL) throw new Error("--base-url <url> is required: the oMLX server serving gpt-oss-20b-MXFP4-Q8, such as http://macbook.local:8000.");
+if (!BASE_URL && CONFIGURATIONS.some((c) => c.provider === "self_hosted")) throw new Error("--base-url <url> is required: the oMLX server serving gpt-oss-20b-MXFP4-Q8, such as http://macbook.local:8000.");
 const KEY_ENV = flagValue("--key-env", "an environment variable name");
 const PARENT = path.resolve(flagValue("--root", "a folder") ?? path.resolve(api, "../.scratch/benchmark-after"));
 const LEVER_DIR = path.join(PARENT, dryRun ? `${LEVER}-dry-run` : LEVER);
+const SAVED_RUNS = (flagValue("--saved-runs", "one or more folders, comma-separated") ?? ["../.scratch/benchmark", "../.scratch/benchmark-after"].map((d) => path.resolve(api, d)).join(","))
+  .split(",")
+  .filter(Boolean)
+  .map((d) => path.resolve(d));
+
 
 /** The real path of `p`, through its nearest existing ancestor, so a symlink cannot hide where it lands. */
 function realish(p: string): string {
@@ -151,6 +193,30 @@ refuseMixedRuns();
 
 const regressionSet = JSON.parse(readFileSync(REGRESSION_SET, "utf8")) as Array<{ input: string; why: string }>;
 const idsOf = (root: Root) => regressionSet.map((e) => e.input).filter((i) => i.startsWith(`${root}/`)).map((i) => i.slice(root.length + 1));
+
+// ---- Caps on spend -------------------------------------------------------------------
+
+/** Prints the output cap and the estimate; refuses, before anything is written or called, above the cap. */
+function checkCost(): void {
+  const estimate = estimateGateCost(
+    CONFIGURATIONS.map((c) => ({ short: c.short, folder: c.folder, provider: c.provider, inputs: ROOTS.reduce((n, r) => n + idsOf(r).length, 0) })),
+    SAVED_RUNS,
+  );
+  console.log(`gate ${LEVER}: output cap ${MAX_OUTPUT_TOKENS} tokens per call (thinking included)`);
+  console.log(`gate ${LEVER}: estimated cost${dryRun ? " of the live run (this dry run sends nothing)" : ""}:`);
+  for (const line of describeEstimate(estimate)) console.log(line);
+  if (!estimate.refused) return;
+  if (allowCost) {
+    console.log(`gate ${LEVER}: the estimate is above the $${estimate.capUsd} cap; going on, as --allow-cost was passed.`);
+    return;
+  }
+  console.error(
+    `Refusing to start: the estimated cost $${estimate.totalUsd.toFixed(2)} is above the $${estimate.capUsd} cap. Pass --allow-cost to run it anyway. No model was called.`,
+  );
+  process.exit(1);
+}
+
+checkCost();
 
 // ---- Running the scripts --------------------------------------------------------------
 

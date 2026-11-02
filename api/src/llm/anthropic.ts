@@ -81,8 +81,17 @@ const DEFAULT_IDLE_TIMEOUT_MS = 60_000;
 const DEFAULT_SELF_HOSTED_IDLE_TIMEOUT_MS = 600_000;
 /** How much of a non-JSON error body a self-hosted error message carries. */
 const SERVER_MESSAGE_MAX_CHARS = 200;
-/** Thinking tokens count toward max_tokens; leave generous room for the reply. */
-const MAX_OUTPUT_TOKENS = 64_000;
+/**
+ * The output cap on every coach call, Anthropic and self-hosted alike. Over 60
+ * valid Opus 4.7 replies at xhigh in the saved replay runs, the median output
+ * was 3,843 tokens, the highest weekly read 6,690 and the highest reply of any
+ * kind 9,264 (a mid-week chat). Thinking tokens count toward the cap on
+ * Anthropic (adaptive thinking is on there). Twice the maximum, floored at
+ * 16,000, is 20,000. A reply that stops at the cap is refused like a schema
+ * refusal and gets the same one retry; the old 64,000 let a runaway bill the
+ * full limit.
+ */
+export const MAX_OUTPUT_TOKENS = 20_000;
 const ANTHROPIC_VERSION = "2023-06-01";
 const WEEKLY_TOOL_NAME = "submit_weekly_reply";
 const MIDWEEK_TOOL_NAME = "submit_mid_week_chat_reply";
@@ -596,7 +605,7 @@ function readUsage(body: unknown): AnthropicUsage {
   };
 }
 
-function describeStopReason(body: unknown): string | null {
+function describeStopReason(body: unknown, maxTokens: number): string | null {
   if (!isPlainObject(body)) return null;
   if (body.stop_reason === "refusal") {
     const details = isPlainObject(body.stop_details) ? body.stop_details : null;
@@ -607,7 +616,7 @@ function describeStopReason(body: unknown): string | null {
       : "Anthropic refused the request (stop_reason=refusal)";
   }
   if (body.stop_reason === "max_tokens") {
-    return "Anthropic stopped at max_tokens before completing the reply tool call (stop_reason=max_tokens)";
+    return `Anthropic stopped at max_tokens before completing the reply tool call (stop_reason=max_tokens, output cap ${maxTokens} tokens)`;
   }
   return null;
 }
@@ -841,7 +850,7 @@ async function callAnthropicMessages(options: {
       );
     }
 
-    const stopProblem = describeStopReason(message);
+    const stopProblem = describeStopReason(message, requestBody.max_tokens);
     if (stopProblem) {
       throw failWith(new LlmSchemaError(stopProblem), { ...base, ...partial });
     }
