@@ -410,7 +410,24 @@ Two more findings for the same work:
 - The tool schema's names (`distanceM`, `structure`, `paceOrHr`, `dayType`) are not followed: make them required with the unit in the description, and test each description change on the hard inputs.
 - A rescued plan is accepted on shape alone. Before the repairs ship, a plan that jumps far above the athlete's recent load, or adds quality in a week with pain notes, needs a check of its own (section 6).
 
-A second adapter that asks an OpenAI-style server for JSON-schema-constrained output would rule out most of these shape errors by construction, on servers that support it (vLLM does). It looks worth trying after the repairs above, which reach the same replies without a second adapter. Whether it changes how well a model coaches is not measured.
+A second adapter that asks an OpenAI-style server for JSON-schema-constrained output would rule out most of these shape errors by construction, on servers that support it (vLLM does). It looks worth trying after the repairs above, which reach the same replies without a second adapter. Whether it changes how well a model coaches is not measured. Constrained output did not help on Anthropic's side, though: see the strict tool use result below.
+
+### Measured since: strict tool use (2026-11-02)
+
+The first harness change tried after this report was Anthropic's strict tool use: `strict: true` on every reply tool, which makes the API constrain the model's tool input to the schema. To fit strict mode's rules, the seven-day limit on the weekly plan (`minItems` and `maxItems` of 7) moved out of the schema and into the description. Both steps were measured on a set of 20 hard inputs, with one repeat each, on Opus 4.7 at `xhigh` and on gpt-oss-20b at `high` on oMLX.
+
+| Step | Opus 4.7 valid | gpt-oss-20b valid |
+|---|---|---|
+| This report's runs, all 35 inputs | 35 of 35 | 14 of 35 |
+| Schema reshaped for strict, flag not sent | 17 of 20 | 8 of 20 |
+| Strict sent on every tool | 2 of the 12 that ran | 6 of 20 |
+
+- **Opus broke on the encoding, not the coaching.** After the reshape, its failures were malformed tool calls: a missing `headline`, a plan that was not an object, and tool-call markup inside text fields. The five inputs involved all passed first try on the code before the reshape.
+- **Strict mode made Opus run away.** Six replies ran to the 64,000-token output limit, and so did their retries. Each wrote only a few thousand characters of tool input, which stopped inside a text field. No weekly read passed. Eleven replies cost $14.14, against $2.98 for the same eleven without strict.
+- **oMLX ignored the flag.** It accepted `strict: true` without an error. gpt-oss-20b made the same mistakes as before: day types outside the list, malformed week ids, and dates one day off.
+- **This repeats an earlier result.** ADR 0002 recorded strict mode's runaway once before.
+
+Strict mode is not a fix for the shape errors above. The changes in the list stay the plan: the run written in the athlete's units, a retry that carries the error, and the meaning-preserving repairs. Each is measured the same way.
 
 To rebuild the numbers in this report from the saved runs, from `api/`:
 
