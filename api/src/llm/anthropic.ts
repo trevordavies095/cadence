@@ -55,12 +55,14 @@ import {
   validateDossierV1Draft,
   midWeekPlanRetry,
   validateMidWeekChatReply,
+  validatePlanDayFix,
   validateWeeklyReply,
+  planDateLabel,
   type PlanFixResult,
   type PlanRetry,
   type SchemaResult,
 } from "./schema.js";
-import { COACH_STANCE_SUMMARY } from "./stance.js";
+import { COACH_STANCE_SUMMARY, COACH_SYSTEM_STANCE } from "./stance.js";
 import type { TempoUnitPreference } from "../tempo/port.js";
 import { packetUnit, weeklyReplyContext } from "./weeklyContext.js";
 import {
@@ -76,6 +78,8 @@ import type {
   DossierV1Draft,
   DossierV1Input,
   MidWeekChatReply,
+  PlanDayFix,
+  PlanDayFixInput,
   WeeklyReply,
 } from "./types.js";
 
@@ -105,6 +109,7 @@ const ANTHROPIC_VERSION = "2023-06-01";
 const WEEKLY_TOOL_NAME = "submit_weekly_reply";
 const MIDWEEK_TOOL_NAME = "submit_mid_week_chat_reply";
 const ABOUT_YOU_TOOL_NAME = "submit_about_you";
+export const PLAN_DAY_TOOL_NAME = "submit_plan_day";
 
 /**
  * Overall cap for an Anthropic call: ANTHROPIC_TIMEOUT_MS (positive integer
@@ -231,6 +236,63 @@ export function weeklyReplyToolSchema(weekStartMonday: string, unit: TempoUnitPr
 /** The plan grammar in one sentence, in the athlete's unit; the weekly plan box and the mid-week changes box share it. */
 function planLineGrammar(unit: TempoUnitPreference): string {
   return `"weekday date: day type, distance in ${unitWord(unit)} or time in minutes, then how to run it and why", where the day type is rest, easy, quality, long, race or other (strength, cross-training or a walk), a rest day needs no amount, and every number carries its unit`;
+}
+
+/** One example line for `date`, in the athlete's unit: the plan day form's example. */
+export function examplePlanDayLine(date: string, unit: TempoUnitPreference): string {
+  const distance = unit === "metric" ? "8 km" : "5 mi";
+  return `${planDateLabel(date)}: easy, ${distance}, heart rate under 150, flat route.`;
+}
+
+/**
+ * The plan day form ("Add the details", plan-as-text ticket 09): one string,
+ * the line for the date asked, described with the plan grammar and an example
+ * dated that day in the athlete's unit.
+ */
+export function planDayToolSchema(date: string, unit: TempoUnitPreference) {
+  return {
+    name: PLAN_DAY_TOOL_NAME,
+    description: `Submit the one plan line for ${planDateLabel(date)}.`,
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["line"],
+      properties: {
+        line: {
+          type: "string",
+          description:
+            `The plan line for ${planDateLabel(date)} only, one line, written as ${planLineGrammar(unit)}. Example: ${examplePlanDayLine(date, unit)}`,
+        },
+      },
+    },
+  };
+}
+
+/** The plan day call's system prompt: the stance, the grammar, one line for one date. Kept short: no packet goes with it. */
+export function planDaySystemPrompt(unit: TempoUnitPreference): string {
+  return [
+    COACH_SYSTEM_STANCE,
+    `You wrote this week's plan as one line per day, each written as ${planLineGrammar(unit)}.`,
+    "Cadence could not read one day's line. Write one line for this date only, keeping what the day was meant to be. Do not change or mention any other day.",
+  ].join("\n\n");
+}
+
+/** The plan day call's user turn: the plan week, the unit, the date, its line and the reason. Never the packet. */
+export function planDayUserPrompt(input: PlanDayFixInput): string {
+  const label = planDateLabel(input.date);
+  return [
+    `The plan week, Monday to Sunday: ${expectedPlanDates(input.weekStartMonday).join(", ")}.`,
+    `Write distances in ${unitWord(input.unit)}.`,
+    `The day to fill in: ${label}.`,
+    input.line === null
+      ? "No line was written for this date."
+      : `Its line as written: ${JSON.stringify(input.line)}`,
+    input.reason ? `Why Cadence could not read it: ${input.reason}.` : null,
+    `Example line: ${examplePlanDayLine(input.date, input.unit)}`,
+    `Call the ${PLAN_DAY_TOOL_NAME} tool exactly once with the one line for ${label}.`,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
 }
 
 /** Notices, one per line; the weekly and mid-week forms share it. */
@@ -1007,7 +1069,7 @@ export function attemptRowId(a: CoachAttempt, err: unknown): string | undefined 
 }
 
 /**
- * The one attempt loop every coach call goes through: the five operations of
+ * The one attempt loop every coach call goes through: the six operations of
  * the live adapter, the replay harness's dry run and the smoke script. `once`
  * sends one attempt. Two attempts at most, on the target resolved before the
  * loop, never inside it (ADR 0004):
@@ -1027,7 +1089,7 @@ export async function askAtMostTwice<T>(
   once: (attempt: CoachAttempt) => Promise<T | Unfinished<T>>,
 ): Promise<T> {
   const callId = callOptions?.callId;
-  let parentCallId: string | null = null;
+  let parentCallId: string | null = callOptions?.parentCallId ?? null;
   let accepted: { value: T } | null = null;
   for (let n = 1; ; n++) {
     const a: CoachAttempt = {
@@ -1474,6 +1536,31 @@ export function createAnthropicLlmPort(
         "Submit the tidied About you document and what changed.",
         buildDossierAuditUserPrompt(input),
         validateAboutYou(validateDossierAuditDraft),
+      );
+    },
+
+    async generatePlanDayFix(
+      input: PlanDayFixInput,
+      callOptions?: LlmCallOptions,
+    ): Promise<PlanDayFix> {
+      const target = await targetFor(callOptions);
+      const requestBody: AnthropicMessagesRequest = {
+        model: target.model,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        system: planDaySystemPrompt(input.unit),
+        tools: [planDayToolSchema(input.date, input.unit)],
+        ...reasoningParams(target),
+        messages: [{ role: "user", content: planDayUserPrompt(input) }],
+      };
+      // A line that still does not read for the date is refused, so it is
+      // asked for once more with the reason, like any refusal.
+      return ask(
+        "plan_day_fix",
+        callOptions,
+        target,
+        PLAN_DAY_TOOL_NAME,
+        requestBody,
+        (raw) => validatePlanDayFix(raw, input),
       );
     },
   };

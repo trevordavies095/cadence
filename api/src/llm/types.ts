@@ -242,3 +242,25 @@ export type MidWeekChatReply = {
    */
   allowPastDayPatches?: boolean;
 };
+
+/**
+ * One unread plan day sent back to Coach Cade to fill in ("Add the details",
+ * plan-as-text ticket 09): the plan week, the unit, the date, its line as
+ * stored and why Cadence could not read it. No packet.
+ */
+export type PlanDayFixInput = {
+  /** Monday of the plan week, YYYY-MM-DD. */
+  weekStartMonday: string;
+  unit: "metric" | "imperial";
+  /** The day to fill in, YYYY-MM-DD, inside the plan week. */
+  date: string;
+  /** The day's line as stored; null when the plan gave no line for the date. */
+  line: string | null;
+  /** Why the line could not be read, re-read now; null when it cannot be told. */
+  reason: string | null;
+};
+
+/** Coach Cade's new line for the date, read into a stored day (`parsed: true`). */
+export type PlanDayFix = {
+  day: PrescribedDay;
+};

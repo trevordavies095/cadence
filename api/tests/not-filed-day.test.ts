@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { PrescribedDay } from "../../frontend/lib/api.js";
 import {
+  ADD_DETAILS_BUSY,
+  ADD_DETAILS_FAILED,
+  ADD_DETAILS_LABEL,
   isNotARun,
   isNotFiled,
   NO_PLAN_GIVEN,
@@ -13,6 +16,7 @@ import {
 } from "../../frontend/lib/planDay.js";
 import { NO_PLAN_GIVEN_NOTE } from "../src/prescribed/planLines.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
+import { PLAN_DAY_FIX_FAILED_MESSAGE } from "../src/routes/prescribed.js";
 
 /**
  * The copy the Plan page, the plan change card and the Today card use for a
@@ -66,6 +70,19 @@ describe("a day Cadence could not read", () => {
     expect(NO_PLAN_GIVEN).toBe(NO_PLAN_GIVEN_NOTE);
     expect(NOT_FILED_LABEL).toBe("Not yet filed");
     for (const text of [NOT_FILED_LABEL, NOT_FILED_EXPLANATION, NO_PLAN_GIVEN]) {
+      expect(text).not.toMatch(/!/);
+      expect(bannedTermsIn(text)).toEqual([]);
+    }
+  });
+
+  it("Add the details reads as the ticket says, the same words the API returns", () => {
+    expect(ADD_DETAILS_LABEL).toBe("Add the details");
+    expect(ADD_DETAILS_BUSY).toBe("Asking Coach Cade");
+    expect(ADD_DETAILS_FAILED.replace("’", "'")).toBe(PLAN_DAY_FIX_FAILED_MESSAGE);
+    expect(PLAN_DAY_FIX_FAILED_MESSAGE).toBe(
+      "Coach Cade couldn't fill in this day. The plan above still stands.",
+    );
+    for (const text of [ADD_DETAILS_LABEL, ADD_DETAILS_BUSY, ADD_DETAILS_FAILED]) {
       expect(text).not.toMatch(/!/);
       expect(bannedTermsIn(text)).toEqual([]);
     }

@@ -3,7 +3,9 @@ export type LlmCallOperation =
   | "mid_week_chat"
   | "dossier_v1"
   | "dossier_correction"
-  | "dossier_audit";
+  | "dossier_audit"
+  /** "Add the details": one unread plan day filled in (plan-as-text ticket 09). */
+  | "plan_day_fix";
 
 export type LlmCallOutcome =
   | "ok"

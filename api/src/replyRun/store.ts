@@ -108,6 +108,23 @@ export async function getLatestRun(
   return row ? toRun(row) : null;
 }
 
+/** The call id of the week's latest finished run that succeeded; null when none has one. */
+export async function getLatestOkRunCallId(
+  weekSessionId: string,
+): Promise<string | null> {
+  const result = await pool.query<{ llm_call_id: string }>(
+    `
+    SELECT llm_call_id::text
+    FROM weekly_reply_runs
+    WHERE week_session_id = $1 AND status = 'ok' AND llm_call_id IS NOT NULL
+    ORDER BY started_at DESC, seq DESC
+    LIMIT 1
+    `,
+    [weekSessionId],
+  );
+  return result.rows[0]?.llm_call_id ?? null;
+}
+
 export async function hasPendingRun(weekSessionId: string): Promise<boolean> {
   const result = await pool.query(
     "SELECT 1 FROM weekly_reply_runs WHERE week_session_id = $1 AND status = 'pending' LIMIT 1",

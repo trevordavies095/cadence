@@ -107,6 +107,36 @@ export async function savePrescribedWeek(input: {
   return toRecord(result.rows[0]!);
 }
 
+/**
+ * Replace the stored plan's days and nothing else: the read, the notices and
+ * the suggestions stay as they are. Null when the week has no stored plan.
+ */
+export async function updatePrescribedPlan(input: {
+  weekSessionId: string;
+  plan: PrescribedWeek;
+  at: Date;
+}): Promise<PrescribedWeekRecord | null> {
+  const result = await pool.query<Row>(
+    `
+    UPDATE prescribed_weeks
+    SET plan = $2::jsonb, updated_at = $3
+    WHERE week_session_id = $1
+    RETURNING
+      week_session_id::text,
+      plan,
+      analysis,
+      settings_proposal_bullets,
+      safety_callouts,
+      read_sections,
+      created_at,
+      updated_at
+    `,
+    [input.weekSessionId, JSON.stringify(input.plan), input.at],
+  );
+  const row = result.rows[0];
+  return row ? toRecord(row) : null;
+}
+
 export async function getPrescribedWeekBySessionId(
   weekSessionId: string,
 ): Promise<PrescribedWeekRecord | null> {

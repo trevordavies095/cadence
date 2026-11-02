@@ -17,6 +17,7 @@ import type {
   DossierCorrectionDraft,
   DossierV1Draft,
   MidWeekChatReply,
+  PlanDayFix,
   PrescribedDay,
   PrescribedRun,
   PrescribedWeek,
@@ -1362,4 +1363,59 @@ export function validateDossierAuditDraft(
   raw: unknown,
 ): SchemaResult<DossierAuditDraft> {
   return validateDossierSoftGateDraft(raw, "dossier audit draft");
+}
+
+/** "Thu 2026-10-29": a plan date as the plan lines name it. */
+export function planDateLabel(date: string): string {
+  const weekday = new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en-US", {
+    weekday: "short",
+    timeZone: "UTC",
+  });
+  return `${weekday} ${date}`;
+}
+
+/**
+ * "Add the details" (plan-as-text ticket 09): Coach Cade's one line for one
+ * date, read with the plan grammar for that date only. Accepted only when the
+ * date's line parses; a line that names another date, still does not parse,
+ * or holds tool-call markup is refused, so the adapter asks once more with the
+ * reason and the route stores nothing when that fails too. Lines for other
+ * dates are never read into the plan.
+ */
+export function validatePlanDayFix(
+  raw: unknown,
+  input: { weekStartMonday: string; unit: TempoUnitPreference; date: string },
+): SchemaResult<PlanDayFix> {
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: "plan day reply must be an object with a line" };
+  }
+  const markupField = fieldWithToolMarkup(raw);
+  if (markupField) return toolMarkupError(markupField);
+  const line = typeof raw.line === "string" ? raw.line.trim() : "";
+  const label = planDateLabel(input.date);
+  if (!line) {
+    return { ok: false, error: `line is empty; write one plan line for ${label}` };
+  }
+  const read = parsePlanLines({
+    text: line,
+    weekStartMonday: input.weekStartMonday,
+    unit: input.unit,
+  });
+  const day = read.days.find((d) => d.date === input.date);
+  if (day && day.parsed !== false) return { ok: true, value: { day } };
+
+  const failure = read.failures.find((f) => f.date === input.date);
+  if (!failure || failure.reason === "no line") {
+    const elsewhere = [
+      ...read.days.filter((d) => d.date !== input.date && !(d.parsed === false && d.line == null)).map((d) => d.date),
+      ...read.failures.filter((f) => f.reason === "outside the plan week").map((f) => f.date),
+    ];
+    return {
+      ok: false,
+      error: elsewhere.length > 0
+        ? `the line is for ${planDateLabel(elsewhere[0]!)}, not ${label}; write the line for ${label} only`
+        : `the line does not start with ${label}; write it as "${label}: day type, amount, then how to run it and why"`,
+    };
+  }
+  return { ok: false, error: `${label}: ${failure.reason}` };
 }

@@ -23,7 +23,9 @@ import {
   validateDossierAuditDraft,
   validateDossierCorrectionDraft,
   validateDossierV1Draft,
+  planDateLabel,
   validateMidWeekChatReply,
+  validatePlanDayFix,
   validateWeeklyReply,
 } from "./schema.js";
 import { COACH_STANCE_SUMMARY } from "./stance.js";
@@ -38,6 +40,8 @@ import type {
   DossierV1Input,
   MidWeekChatReply,
   MidWeekChatReplyForm,
+  PlanDayFix,
+  PlanDayFixInput,
   ReadFlag,
   SafetyCallout,
   WeeklyReply,
@@ -1090,7 +1094,7 @@ export function createStubLlmPort(options?: StubLlmPortOptions): LlmPort {
         model: null,
         appVersion,
         weekSessionId: callOptions.weekSessionId ?? null,
-        parentCallId: null,
+        parentCallId: callOptions.parentCallId ?? null,
         request,
         responseRaw: JSON.stringify(output),
         httpStatus: null,
@@ -1175,5 +1179,23 @@ export function createStubLlmPort(options?: StubLlmPortOptions): LlmPort {
       await recordOk("dossier_audit", callOptions, input, validated.value);
       return validated.value;
     },
+    async generatePlanDayFix(
+      input: PlanDayFixInput,
+      callOptions?: LlmCallOptions,
+    ): Promise<PlanDayFix> {
+      const draft = { line: buildStubPlanDayLine(input) };
+      const validated = validatePlanDayFix(draft, input);
+      if (!validated.ok) {
+        throw new LlmSchemaError(validated.error);
+      }
+      await recordOk("plan_day_fix", callOptions, input, validated.value);
+      return validated.value;
+    },
   };
+}
+
+/** The stub's line for "Add the details": an easy run for the date, in the athlete's unit. */
+export function buildStubPlanDayLine(input: PlanDayFixInput): string {
+  const distance = input.unit === "metric" ? "6 km" : "4 mi";
+  return `${planDateLabel(input.date)}: easy, ${distance}, relaxed and conversational.`;
 }

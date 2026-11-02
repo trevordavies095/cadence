@@ -165,7 +165,7 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/", createWeekRoutes(clock, athleteTimezone, tempoPort));
   app.route("/", createLoopStatusRoutes(clock, athleteTimezone, sources));
   app.route("/", createHomeRoutes({ clock, athleteTimezone, tempoPort, sources }));
-  app.route("/", createPrescribedRoutes({ tempoPort, clock }));
+  app.route("/", createPrescribedRoutes({ tempoPort, clock, llmPort }));
   app.route("/", createRecapRoutes({ tempoPort }));
   app.route("/", createRecapDepthRoutes({ tempoPort }));
   app.route("/", createRecapSubjectiveRoutes({ tempoPort, runner: replyRunner, clock }));

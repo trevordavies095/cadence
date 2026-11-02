@@ -8,6 +8,8 @@ import type {
   DossierV1Draft,
   DossierV1Input,
   MidWeekChatReply,
+  PlanDayFix,
+  PlanDayFixInput,
   WeeklyReply,
 } from "./types.js";
 
@@ -23,6 +25,12 @@ export type LlmCallOptions = {
    * (from resolveCoachTarget), so a retry never switches model, key or server.
    */
   coachTarget?: CoachTarget;
+  /**
+   * The call this one follows up, when known: "Add the details" names the
+   * Sunday call that wrote the plan. The first attempt's row links to it; a
+   * retry's row links to the attempt before it, as always.
+   */
+  parentCallId?: string | null;
   /**
    * Told after each attempt the live adapter sends (two at most, ADR 0002): the
    * attempt's number, the id its call log row was written under, and the error
@@ -124,6 +132,18 @@ export type LlmPort = {
     input: DossierAuditInput,
     options?: LlmCallOptions,
   ): Promise<DossierAuditDraft>;
+
+  /**
+   * "Add the details" (plan-as-text ticket 09): one unread plan day sent back
+   * with a short prompt (the plan week, the unit, the date, its line and the
+   * reason; no packet) for one line for that date. Resolves with the day read
+   * from the line; rejects with LlmSchemaError when the line still does not
+   * read for that date after the retry.
+   */
+  generatePlanDayFix(
+    input: PlanDayFixInput,
+    options?: LlmCallOptions,
+  ): Promise<PlanDayFix>;
 };
 
 export class LlmSchemaError extends Error {
