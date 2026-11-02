@@ -22,8 +22,6 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP = path.join(__dirname, "fixtures", "tempo-export-mini.zip");
 const ANTHROPIC_KEY = "sk-ant-test-key-fixture-xyz";
-const SELF_HOSTED_URL = "http://omlx.local:8000";
-const SELF_HOSTED_MODEL = "qwen3-8b";
 
 /**
  * Anthropic's strict tool use limits, per request, counted across every strict
@@ -74,26 +72,21 @@ function replyFor(toolName: string): unknown {
   return ABOUT_YOU_DRAFT;
 }
 
-type SentTool = { name: string; description: string; input_schema: Record<string, unknown>; strict?: unknown };
+type SentTool = { name: string; input_schema: Record<string, unknown> };
 type SentBody = { tools: SentTool[]; messages: Array<{ role: string; content: unknown }> };
 
 function fakeAnthropic() {
   const sent: SentBody[] = [];
-  const urls: string[] = [];
-  const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    if (String(input).endsWith("/v1/models")) {
-      return Response.json({ object: "list", data: [{ id: SELF_HOSTED_MODEL, object: "model" }] });
-    }
+  const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body)) as SentBody;
     sent.push(body);
-    urls.push(String(input));
     const toolName = body.tools[0]!.name;
     return new Response(
       anthropicSseEvents(anthropicToolMessage(toolName, replyFor(toolName))).join(""),
       { status: 200, headers: { "content-type": "text/event-stream" } },
     );
   }) as unknown as typeof globalThis.fetch;
-  return { fetchImpl, sent, urls };
+  return { fetchImpl, sent };
 }
 
 type App = ReturnType<typeof createApp>;
@@ -110,39 +103,19 @@ async function openWeek(app: App): Promise<string> {
   return (await json(await app.request("/weeks/current", { method: "POST" }))).id as string;
 }
 
-type Provider = "anthropic" | "self_hosted";
-
-/**
- * Drive each of the five coach operations once and return the request body each
- * sent, to Anthropic (the default) or to a self-hosted server.
- */
-async function sentByOperation(provider: Provider = "anthropic"): Promise<Record<string, SentBody>> {
+/** Drive each of the five coach operations once and return the request body each sent. */
+async function sentByOperation(): Promise<Record<string, SentBody>> {
   await putAnthropicConnection(ANTHROPIC_KEY, new SecretProtector(TEST_DATA_PROTECTION_KEY));
-  const { fetchImpl, sent, urls } = fakeAnthropic();
+  const { fetchImpl, sent } = fakeAnthropic();
   const app = createApp({
     dataProtectionKey: TEST_DATA_PROTECTION_KEY,
     clock: new FixedClock(new Date("2026-10-21T15:00:00.000Z")),
     tempoPort: createExportTempoPort({ exportPath: FIXTURE_ZIP }),
     llmFetch: fetchImpl,
   });
-  if (provider === "self_hosted") {
-    expect((await send(app, "/settings/self-hosted", "PUT", { baseUrl: SELF_HOSTED_URL })).status).toBe(200);
-    expect(
-      (
-        await send(app, "/settings/coach-model", "PUT", {
-          provider: "self_hosted",
-          model: SELF_HOSTED_MODEL,
-          effort: "high",
-        })
-      ).status,
-    ).toBe(200);
-  }
   const out: Record<string, SentBody> = {};
   const take = (operation: string) => {
     expect(sent, operation).toHaveLength(1);
-    expect(urls.pop(), operation).toBe(
-      provider === "anthropic" ? "https://api.anthropic.com/v1/messages" : `${SELF_HOSTED_URL}/v1/messages`,
-    );
     out[operation] = sent.pop()!;
   };
 
@@ -258,7 +231,6 @@ describe("every tool the adapter sends fits Anthropic's strict mode", () => {
     for (const [operation, body] of Object.entries(sent)) {
       expect(body.tools, operation).toHaveLength(1);
       const tool = body.tools[0]!;
-      expect(tool.strict, operation).toBe(true);
       const result = walk(tool.input_schema, tool.name, { optional: 0, unions: 0, problems: [] });
       expect(result.problems, operation).toEqual([]);
       expect(result.optional, operation).toBeLessThanOrEqual(STRICT_MAX_OPTIONAL_PARAMETERS);
@@ -296,32 +268,6 @@ describe("every tool the adapter sends fits Anthropic's strict mode", () => {
         "t.name: maxLength",
       ],
     });
-  });
-});
-
-describe("every tool is sent strict, on either provider", () => {
-  for (const provider of ["anthropic", "self_hosted"] as const) {
-    it(`${provider}: each of the five operations sends its tool with strict: true beside name, description and input_schema`, async () => {
-      const sent = await sentByOperation(provider);
-      expect(Object.keys(sent)).toHaveLength(5);
-      for (const [operation, body] of Object.entries(sent)) {
-        expect(body.tools, operation).toHaveLength(1);
-        for (const tool of body.tools) {
-          expect(Object.keys(tool), operation).toEqual(["name", "description", "input_schema", "strict"]);
-          expect(tool.strict, operation).toBe(true);
-        }
-      }
-    });
-  }
-
-  it("Anthropic and self-hosted send the same tools", async () => {
-    const anthropic = await sentByOperation("anthropic");
-    await resetAppTables();
-    await acceptAndReady();
-    const selfHosted = await sentByOperation("self_hosted");
-    for (const operation of Object.keys(anthropic)) {
-      expect(selfHosted[operation]!.tools, operation).toEqual(anthropic[operation]!.tools);
-    }
   });
 });
 

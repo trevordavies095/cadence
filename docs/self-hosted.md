@@ -14,7 +14,6 @@ Anthropic, Claude Opus 4.7 at `xhigh`, stays the default and the tested setup. C
 
 - **The Anthropic Messages endpoint.** Cadence calls `POST /v1/messages` with streaming and lists models with `GET /v1/models`. It does not use the OpenAI-style `/v1/chat/completions`.
 - **Tool calls.** Every reply from Coach Cade comes back as a tool call. The server must parse your model's tool-call format.
-- **The `strict` flag.** Cadence marks every reply tool `strict: true`. Your server may enforce the tool's format, ignore the flag, or reject it. A server that rejects it fails every coach call, and the error shows the server's message. Test connection sends no tool, so it does not catch this. Tested so far: oMLX 0.7.3 accepts the flag and does not enforce it, so a model's format slips still reach Cadence's validator.
 - **A context of at least 64k tokens** (65,536). A weekly read sends about 21k tokens on average and up to 36k. A mid-week message sends about 28k. Replies are 3k to 9k tokens, thinking included, and must fit too.
 - **A reasoning model, ideally.** Cadence asks for an effort level and expects the model to think before it replies.
 
