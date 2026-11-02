@@ -302,6 +302,100 @@ describe("replay matrix", () => {
   }, 60_000);
 });
 
+describe("replay --only", () => {
+  const SEASON_PACKETS = path.join(api, "tests/fixtures/seasons/season-packets");
+  const REGRESSION_SET = path.join(api, "tests/fixtures/regression-set.json");
+  /** An output root under a fresh temp folder, named as a run's root: snapshot or seasons. */
+  const rootNamed = (name: string) => path.join(mkdtempSync(path.join(tmpdir(), "replay-only-")), name);
+  const replies = (files: string[]) => files.filter((f) => /^\d+\.\d+\.json$/.test(f));
+
+  it("checks in a regression set of about 20 inputs, a reason each, ids within the two roots", () => {
+    const set = JSON.parse(readFileSync(REGRESSION_SET, "utf8")) as Array<{ input: string; why: string }>;
+    expect(set.length).toBeGreaterThanOrEqual(18);
+    expect(set.length).toBeLessThanOrEqual(22);
+    expect(new Set(set.map((e) => e.input)).size).toBe(set.length);
+    for (const { input, why } of set) {
+      const m = /^(seasons|snapshot)\/(\d{2})$/.exec(input);
+      expect(m, input).not.toBeNull();
+      expect(Number(m![2])).toBeGreaterThanOrEqual(1);
+      expect(Number(m![2])).toBeLessThanOrEqual(m![1] === "seasons" ? 18 : 17);
+      expect(why.trim().length, input).toBeGreaterThan(0);
+    }
+  });
+
+  it("replays only the named inputs of a comma list, keeping their ids, and skips the other root's", () => {
+    const run = dryRun(SEASON_PACKETS, rootNamed("seasons"), ["--only", "seasons/02, seasons/14,snapshot/01,snapshot/17"]);
+    expect(run.stderr).toBe("");
+    expect(run.status).toBe(0);
+    expect(replies(run.files())).toEqual(["02.1.json", "14.1.json"]);
+    expect(run.stdout).toContain("--only: 2 of 18 inputs under seasons (02, 14)");
+    const report = run.report();
+    expect(report).toContain("from 2 replayed coach calls");
+    expect(report).toContain("### 02.1 (1-stay-fit-w2.json)");
+    expect(report).toContain("### 14.1 (3-return-w2.json)");
+  }, 60_000);
+
+  it("takes @file: the checked-in regression set replays its own inputs from each root", () => {
+    const set = JSON.parse(readFileSync(REGRESSION_SET, "utf8")) as Array<{ input: string }>;
+    const expected = (root: string) =>
+      set.filter((e) => e.input.startsWith(`${root}/`)).map((e) => `${e.input.split("/")[1]}.1.json`).sort();
+
+    const seasons = dryRun(SEASON_PACKETS, rootNamed("seasons"), ["--only", "@tests/fixtures/regression-set.json"]);
+    expect(seasons.stderr).toBe("");
+    expect(seasons.status).toBe(0);
+    expect(replies(seasons.files())).toEqual(expected("seasons"));
+
+    // The demo snapshot run: no --packets.
+    const out = rootNamed("snapshot");
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    delete env.ANTHROPIC_API_KEY;
+    const snapshot = spawnSync(
+      path.join(api, "node_modules/.bin/tsx"),
+      ["scripts/replay-weekly-reads.ts", "--dry-run", "--out", out, "--only", `@${REGRESSION_SET}`],
+      { cwd: api, env, encoding: "utf8" },
+    );
+    // The demo's weeks were logged before its goal was stored, so the goal-line
+    // check fails on them and the run exits non-zero; nothing else may go wrong.
+    expect(snapshot.stderr).not.toMatch(/Error/);
+    expect(snapshot.stderr).toMatch(/^\d+ goal checks? failed:\n(- .+: no goal line: the packet has no goal\n)+$/);
+    expect(replies(readdirSync(path.join(out, DEFAULT_CONFIG)).sort())).toEqual(expected("snapshot"));
+    expect(readFileSync(path.join(out, "report.md"), "utf8")).toContain(`from ${expected("snapshot").length} replayed coach calls`);
+  }, 120_000);
+
+  it("refuses a bad id, an id past the last input, a missing or malformed file, or a list naming no input of the run, before any call", () => {
+    const notAList = path.join(mkdtempSync(path.join(tmpdir(), "replay-only-file-")), "set.json");
+    writeFileSync(notAList, JSON.stringify([{ input: "seasons/01" }]));
+    const cases: Array<[string, RegExp]> = [
+      ["seasons-01", /--only "seasons-01": expected <root folder name>\/<input id>/],
+      ["seasons/01,seasons/x", /--only "seasons\/x": expected/],
+      ["seasons/19", /--only "seasons\/19": seasons has inputs 01 to 18/],
+      ["@tests/fixtures/no-such-set.json", /--only @tests\/fixtures\/no-such-set.json: no file at/],
+      [`@${notAList}`, /expected a non-empty JSON list of/],
+      ["snapshot/01,snapshot/02", /--only names no input of this run: its inputs are seasons\/<id>/],
+    ];
+    for (const [only, message] of cases) {
+      const run = dryRun(SEASON_PACKETS, rootNamed("seasons"), ["--only", only]);
+      expect(run.status, only).not.toBe(0);
+      expect(run.stderr).toMatch(message);
+      expect(run.stdout).not.toMatch(/done in/);
+      expect(existsSync(run.out), only).toBe(false);
+    }
+  }, 90_000);
+
+  it("is ignored by --report-only", () => {
+    const run = dryRun(FIXTURE);
+    expect(run.status).toBe(0);
+    const again = spawnSync(
+      path.join(api, "node_modules/.bin/tsx"),
+      ["scripts/replay-weekly-reads.ts", "--report-only", "--out", run.out, "--only", "not-an-id"],
+      { cwd: api, env: process.env, encoding: "utf8" },
+    );
+    expect(again.stderr).toBe("");
+    expect(again.status).toBe(0);
+    expect(readFileSync(path.join(run.out, "report.md"), "utf8")).toContain("from 2 replayed coach calls");
+  }, 60_000);
+});
+
 describe("replay over every coach operation", () => {
   const read = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
   const goal = { kind: "race", distance: "10k", raceName: "Riverside 10K", raceDate: "2026-11-08" };

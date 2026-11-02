@@ -1,0 +1,22 @@
+[
+  { "input": "seasons/01", "why": "stay-fit week 1 weekly read: failed in 4 of 5 self-hosted models (both Gemma builds, gpt-oss-120b, gpt-oss-20b), all rescuable" },
+  { "input": "seasons/02", "why": "stay-fit week 2 weekly read: failed in 4 of 5 self-hosted models; gpt-oss-20b's refusal not rescuable by any repair" },
+  { "input": "seasons/03", "why": "review sample: stay-fit season, week 3 (mid-season); first try in every model, a control" },
+  { "input": "seasons/07", "why": "10k week 1 weekly read: failed in 4 of 5 self-hosted models; gpt-oss-20b's refusal not rescuable by any repair" },
+  { "input": "seasons/08", "why": "10k week 2 weekly read: failed in 4 of 5 self-hosted models (both Gemma builds, gpt-oss-120b, gpt-oss-20b), all rescuable" },
+  { "input": "seasons/09", "why": "review sample: 10k season, week 3 (mid-season); failed in pruned Gemma and gpt-oss-20b" },
+  { "input": "seasons/13", "why": "return week 1 weekly read: failed in 4 of 5 self-hosted models (both Gemma builds, gpt-oss-120b, gpt-oss-20b), all rescuable" },
+  { "input": "seasons/14", "why": "return week 2 weekly read: failed in 4 of 5 self-hosted models; pruned Gemma's and gpt-oss-20b's refusals not rescuable by any repair" },
+  { "input": "seasons/15", "why": "review sample: return season, week 3 (mid-season, the one pain report); gpt-oss-20b refused, both Gemma builds only after the retry" },
+  { "input": "snapshot/01", "why": "demo weekly read 2026-08-09: failed in 4 of 5 self-hosted models (both Gemma builds, gpt-oss-120b, gpt-oss-20b), all rescuable" },
+  { "input": "snapshot/02", "why": "demo weekly read 2026-08-16: failed in 4 of 5 self-hosted models; gpt-oss-20b's refusal not rescuable by any repair" },
+  { "input": "snapshot/06", "why": "review sample: injury-flag week (2026-W37, Achilles pain notes); the one input Opus 4.7 needed the retry on; failed in both Gemma builds" },
+  { "input": "snapshot/07", "why": "demo weekly read 2026-09-20: failed in 3 of 5 self-hosted models (both Gemma builds, gpt-oss-20b)" },
+  { "input": "snapshot/08", "why": "demo weekly read 2026-09-27: failed in 3 of 5 self-hosted models (both Gemma builds, gpt-oss-20b)" },
+  { "input": "snapshot/09", "why": "demo weekly read 2026-10-04: failed in 3 of 5 self-hosted models (both Gemma builds, gpt-oss-20b)" },
+  { "input": "snapshot/10", "why": "review sample: marathon week (2026-W41, the latest weekly read); also failed in 3 of 5 self-hosted models (both Gemma builds, gpt-oss-20b)" },
+  { "input": "snapshot/11", "why": "review sample: plain mid-week reply, no run attached; first try in every model, a control" },
+  { "input": "snapshot/12", "why": "mid-week reply 2026-10-13: failed in 3 of 5 self-hosted models (both Gemma builds, gpt-oss-20b), the only hard mid-week input" },
+  { "input": "snapshot/13", "why": "review sample: mid-week reply with a run attached; failed in pruned Gemma and gpt-oss-20b" },
+  { "input": "snapshot/14", "why": "review sample: About you first draft; first try in every model, a control" }
+]

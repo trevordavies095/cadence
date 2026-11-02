@@ -80,6 +80,19 @@ SH_KEY=... npx tsx scripts/smoke-self-hosted.ts --base-url http://<server>:8000 
   --record tests/fixtures/self-hosted/omlx-<name>-weekly.sse
 ```
 
+## `regression-set.json` (the replay's hard inputs)
+
+The inputs every change to the reply contract is measured on: the 13 the 2026-11-01 benchmark found failing in at least half the self-hosted models, plus the 8 inputs of the blind review sample (one overlap), 20 in all, each `{ "input": "<root>/<id>", "why": "..." }`. The roots are the benchmark's: `snapshot` (the demo snapshot run, ids 01 to 17) and `seasons` (`seasons/season-packets/`, ids 01 to 18). Run it with the replay's `--only`, once per root, each into an output root named after it:
+
+```bash
+cd api
+npm run replay -- --out ../.scratch/benchmark-after/<lever>/snapshot --only @tests/fixtures/regression-set.json
+npm run replay -- --packets tests/fixtures/seasons/season-packets \
+  --out ../.scratch/benchmark-after/<lever>/seasons --only @tests/fixtures/regression-set.json
+```
+
+`replay-weekly-reads.test.ts` checks the file's shape and dry-runs it over both roots.
+
 ## Full athlete export (local only)
 
 Keep real Tempo downloads under gitignored `.scratch/` (see repo root `.gitignore`). Example:
