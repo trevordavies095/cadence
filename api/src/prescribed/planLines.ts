@@ -318,15 +318,18 @@ function amountAt(text: string, at: number): Amount | null {
 }
 
 /**
- * A repeat pattern: two durations in a row, each with an optional word, joined
+ * A repeat pattern: two durations in a row, each naming what it is, joined
  * by a slash, a comma or "and" ("3 min run / 1 min walk", "2 min on, 1 min
  * off", "90 sec hard and 90 sec easy"). It describes how the session is run,
  * not how long it is, so it is masked before amounts are read and stays in the
  * sentence only (2026-11-02: a walk-run day stored "3 min" as its length). A
  * single duration ("40 min easy", "2 h on trails") is never a pattern.
  */
+/** What each half of a repeat is; both halves must name one, so "24 min, 4 min run" is no pattern. */
+const REP_WORD = String.raw`(?:run|running|walk|walking|jog|jogging|on|off|hard|easy|fast|steady|rest|recovery|float)(?![a-z])`;
+
 const REP_PATTERN_RE = new RegExp(
-  String.raw`\d+(?:\.\d+)?\s*(?:minutes|minute|mins|min|seconds|second|secs|sec|s)\.?(?:\s+[a-z]+)?\s*(?:\/|,|\band\b)\s*\d+(?:\.\d+)?\s*(?:minutes|minute|mins|min|seconds|second|secs|sec|s)\.?(?:\s+[a-z]+)?`,
+  String.raw`\d+(?:\.\d+)?\s*(?:minutes|minute|mins|min|seconds|second|secs|sec|s)\.?\s+${REP_WORD}\s*(?:\/|,|\band\b)\s*\d+(?:\.\d+)?\s*(?:minutes|minute|mins|min|seconds|second|secs|sec|s)\.?\s+${REP_WORD}`,
   "gi",
 );
 
@@ -470,9 +473,14 @@ const MID_LINE_DAY_RE =
  * where a new day starts mid-line: gpt-oss-20b wrote whole weeks on one line
  * as sentences ("Mon 2026-09-28: easy, 6 km. Tue 2026-09-29: threshold, ...")
  * in 2 of 15 weekly reads on 2026-11-02, which otherwise file only Monday.
+ * An escaped newline, the two characters backslash and n, is a line break
+ * too: gpt-oss-20b separated a week's days that way in the gate run of
+ * 2026-11-02, and a coach's sentence never means it literally.
  */
 function splitDayLines(text: string): string[] {
-  return text.split(/\r?\n/).flatMap((line) => line.split(MID_LINE_DAY_RE));
+  return text
+    .split(/\r?\n|\\(?:r\\)?n/)
+    .flatMap((line) => line.split(MID_LINE_DAY_RE));
 }
 
 /**

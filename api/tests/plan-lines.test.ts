@@ -293,6 +293,11 @@ describe("parsePlanLines: walk-run days and repeat patterns", () => {
     expect(day.run).toEqual(run("easy", km(2.5), null));
   });
 
+  it("a session length before the pattern stays the length", () => {
+    const { day } = parseOne("Mon 2026-11-09: easy, 24 min, 4 min run, 1 min walk, 8 rounds", MONDAY);
+    expect(day.run).toEqual(run("easy", 0, 1440));
+  });
+
   it("a plain walk is still other", () => {
     expect(parseOne("Mon 2026-11-09: walk, 30 min", MONDAY).day.dayType).toBe("other");
   });
@@ -323,6 +328,13 @@ describe("parsePlanLines: a week written on one line", () => {
     expect(result.days.map((d) => d.dayType)).toEqual(["easy", "quality", "rest", "quality", "rest", "easy", "long"]);
     expect(result.days[0]!.line).toBe("Mon 2026-11-09: easy, 6 km, heart rate under 150.");
     expect(result.days[6]!.run?.distanceM).toBe(km(15));
+  });
+
+  it("splits on an escaped newline, the two characters backslash and n", () => {
+    const text = "Mon 2026-11-09: easy, 24 min.\\nTue 2026-11-10: rest.\\r\\nWed 2026-11-11: easy, 5 km";
+    const result = parsePlanLines({ text, weekStartMonday: MONDAY, unit: "metric" });
+    expect(result.days.slice(0, 3).map((d) => d.dayType)).toEqual(["easy", "rest", "easy"]);
+    expect(result.days[0]!.line).toBe("Mon 2026-11-09: easy, 24 min.");
   });
 
   it("also splits on a semicolon and on a date with no weekday", () => {
