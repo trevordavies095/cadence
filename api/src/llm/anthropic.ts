@@ -24,9 +24,11 @@ import {
   LlmNotConfiguredError,
   LlmSchemaError,
   LlmTransportError,
+  type AttemptRequest,
   type LlmCallOptions,
   type LlmPort,
 } from "./port.js";
+import type { PlanLineFailure } from "../prescribed/planLines.js";
 import { formatIsoWeekRangeShort } from "../clock/weekRangeShort.js";
 import { goalPromptLines } from "./goalLines.js";
 import {
@@ -51,8 +53,12 @@ import {
   validateDossierAuditDraft,
   validateDossierCorrectionDraft,
   validateDossierV1Draft,
+  midWeekPlanRetry,
   validateMidWeekChatReply,
   validateWeeklyReply,
+  type PlanFixResult,
+  type PlanRetry,
+  type SchemaResult,
 } from "./schema.js";
 import { COACH_STANCE_SUMMARY } from "./stance.js";
 import type { TempoUnitPreference } from "../tempo/port.js";
@@ -468,7 +474,143 @@ function extractToolInput(body: unknown, toolName: string): unknown {
   );
 }
 
-type AnthropicMessagesRequest = {
+/**
+ * The assistant message's content blocks, copied as the stream assembled them
+ * (anthropicStream.ts keeps every field of each block: a thinking block's text
+ * and signature, a redacted block's data, a tool call's id, name and input).
+ * Sent back unchanged on a retry: Anthropic refuses a thinking block altered.
+ */
+function contentAsReceived(message: unknown): MessageBlock[] {
+  if (!isPlainObject(message) || !Array.isArray(message.content)) return [];
+  return (message.content as unknown[])
+    .filter(isPlainObject)
+    .map((block) => structuredClone(block));
+}
+
+/** The second request's wording, fixed: quoted by the tests and the spec. */
+export const RETRY_FIX_LINES_INSTRUCTION =
+  "Send the plan box again with these lines fixed. Change nothing else.";
+/** The same instruction for a box other than the weekly plan (mid-week's changes). */
+export function fixLinesInstruction(box: string): string {
+  return RETRY_FIX_LINES_INSTRUCTION.replace("the plan box", `the ${box} box`);
+}
+export const RETRY_NO_TOOL_CALL_TEXT =
+  "You did not call the tool. Call it now with your full answer.";
+export const RETRY_ERROR_INSTRUCTION =
+  "Call the tool again with your full answer, with this fixed.";
+
+/** "Thu 2026-11-12: no distance unit." one per line, in date order. */
+export function planFailureLines(failures: readonly PlanLineFailure[]): string {
+  return failures
+    .map((f) => {
+      const weekday = new Date(`${f.date}T00:00:00.000Z`).toLocaleDateString("en-US", {
+        weekday: "short",
+        timeZone: "UTC",
+      });
+      return `${weekday} ${f.date}: ${f.reason}.`;
+    })
+    .join("\n");
+}
+
+/** A validator as the adapter calls it: SchemaResult, with planRetry when lines did not parse. */
+type Validate<T> = (toolInput: unknown) => SchemaResult<T> | PlanFixResult<T>;
+
+/** What the first attempt got back, as the second request is built from it. */
+type FirstReply = {
+  content: MessageBlock[] | null;
+  stopReason: string | null;
+  /** The refusal's message; null when the reply was accepted. */
+  error: string | null;
+  /** Set when the reply was accepted with plan lines that did not parse, and the box they came from. */
+  failures: PlanLineFailure[] | null;
+  box?: string;
+};
+
+/**
+ * The second request, built from the first and what it got back (ADR 0002, the
+ * spec's "Degradation ladder"). The system prompt, tools, model, effort and
+ * thinking are the first request's; only the turns grow.
+ *
+ * - A stop at the output cap or a model refusal, or no message at all: the
+ *   assistant turn is incomplete or absent, and Anthropic will not take a cut
+ *   tool call back, so the first request is sent again unchanged (`resend`).
+ * - No call to the tool: the assistant turn as received, then a plain
+ *   "call the tool" turn (`no_tool_call`). A call to some other tool still
+ *   needs its tool result, so that is answered with the same words as an error.
+ * - Plan lines that did not parse: the assistant turn as received, then an
+ *   error tool result for the call listing each failed date and its reason
+ *   and the fix-only instruction (`fix_lines`).
+ * - Any other refusal: the same, carrying the validator's message (`error_result`).
+ */
+export function secondRequest(
+  first: AnthropicMessagesRequest,
+  toolName: string,
+  reply: FirstReply,
+): { body: AnthropicMessagesRequest; kind: AttemptRequest["kind"] } {
+  const content = reply.content ?? [];
+  const cut =
+    reply.stopReason === "max_tokens" ||
+    reply.stopReason === "refusal" ||
+    content.length === 0;
+  if (cut) return { body: first, kind: "resend" };
+
+  const toolUses = content.filter((b) => b.type === "tool_use");
+  const ours = toolUses.find((b) => b.name === toolName);
+  const withTurn = (
+    user: AnthropicMessage,
+    kind: AttemptRequest["kind"],
+  ): { body: AnthropicMessagesRequest; kind: AttemptRequest["kind"] } => ({
+    body: {
+      ...first,
+      messages: [...first.messages, { role: "assistant", content }, user],
+    },
+    kind,
+  });
+  /** An error tool result for every tool call, `text` on each; plain text when a call has no id. */
+  const answer = (text: string, kind: AttemptRequest["kind"]) =>
+    toolUses.length > 0 && toolUses.every((b) => typeof b.id === "string")
+      ? withTurn(
+          {
+            role: "user",
+            content: toolUses.map((b) => ({
+              type: "tool_result",
+              tool_use_id: b.id,
+              is_error: true,
+              content: text,
+            })),
+          },
+          kind,
+        )
+      : withTurn({ role: "user", content: text }, kind);
+
+  if (!ours) return answer(RETRY_NO_TOOL_CALL_TEXT, "no_tool_call");
+  if (reply.failures) {
+    return answer(
+      `${planFailureLines(reply.failures)}\n\n${fixLinesInstruction(reply.box ?? "plan")}`,
+      "fix_lines",
+    );
+  }
+  const said = (reply.error ?? "the reply was refused").trim();
+  return answer(
+    `${/[.!?]$/.test(said) ? said : `${said}.`}\n\n${RETRY_ERROR_INSTRUCTION}`,
+    "error_result",
+  );
+}
+
+/** Each message's role and block types, for the replay and the smoke script. */
+export function turnsOf(messages: readonly AnthropicMessage[]): string[] {
+  return messages.map((m) => {
+    if (typeof m.content === "string") return `${m.role}: text`;
+    const kinds = m.content.map((b) =>
+      b.type === "tool_result" && b.is_error === true
+        ? "tool_result (error)"
+        : String(b.type),
+    );
+    return `${m.role}: ${kinds.join(", ")}`;
+  });
+}
+
+export type AnthropicMessagesRequest = {
   model: string;
   max_tokens: number;
   system: string;
@@ -481,8 +623,20 @@ type AnthropicMessagesRequest = {
   output_config: { effort: AnthropicEffort };
   tool_choice: { type: "auto" };
   stream: true;
-  messages: Array<{ role: "user"; content: string }>;
+  messages: AnthropicMessage[];
 };
+
+/** A content block as the server sent it, or as Cadence sends one back. */
+export type MessageBlock = Record<string, unknown>;
+
+/**
+ * One turn of a request: the user's prompt, or on a retry the assistant turn
+ * as received (thinking blocks with their signatures, text, the tool call with
+ * its id) and the user turn answering it (a tool result, or plain text).
+ */
+export type AnthropicMessage =
+  | { role: "user"; content: string | MessageBlock[] }
+  | { role: "assistant"; content: MessageBlock[] };
 
 type AnthropicUsage = {
   inputTokens: number | null;
@@ -494,6 +648,8 @@ type AnthropicUsage = {
 
 type AnthropicCallResult = {
   toolInput: unknown;
+  /** The assistant message's content blocks as received. */
+  content: MessageBlock[];
   responseText: string;
   httpStatus: number;
   stopReason: string | null;
@@ -508,6 +664,8 @@ type AnthropicFailureMeta = {
   latencyMs: number;
   stopReason: string | null;
   usage: AnthropicUsage | null;
+  /** The assistant message's content blocks as received; null when no message came. */
+  content: MessageBlock[] | null;
 };
 
 const failureMeta = new WeakMap<object, AnthropicFailureMeta>();
@@ -724,6 +882,7 @@ async function callAnthropicMessages(options: {
           latencyMs: Date.now() - startedAt,
           stopReason: null,
           usage: null,
+          content: null,
         },
       );
     }
@@ -743,6 +902,7 @@ async function callAnthropicMessages(options: {
           latencyMs: Date.now() - startedAt,
           stopReason: null,
           usage: null,
+          content: null,
         },
       );
     }
@@ -758,6 +918,7 @@ async function callAnthropicMessages(options: {
     const partial = {
       stopReason: message ? readStopReason(message) : null,
       usage: message ? readUsage(message) : null,
+      content: message ? contentAsReceived(message) : null,
     };
 
     if (read.streamError) {
@@ -798,6 +959,7 @@ async function callAnthropicMessages(options: {
 
     return {
       toolInput,
+      content: partial.content ?? [],
       responseText: responseText ?? "",
       httpStatus: response.status,
       stopReason: readStopReason(message),
@@ -809,7 +971,7 @@ async function callAnthropicMessages(options: {
   }
 }
 
-/** Attempts at most for one coach call: the reply, and once more if it is refused (ADR 0002). */
+/** Attempts at most for one coach call: the reply, and once more if it is refused or has unread plan lines (ADR 0002). */
 export const COACH_CALL_ATTEMPTS = 2;
 
 /** One attempt as askAtMostTwice hands it to the code that sends it. */
@@ -818,13 +980,28 @@ export type CoachAttempt = {
   attempt: number;
   /** True when no attempt follows this one, whatever it ends with. */
   last: boolean;
-  /** The caller's call id; see attemptRowId for which row it names. */
+  /**
+   * The id this attempt's row is written under when it is not refused: the
+   * caller's call id, except on a retry that fixes lines of an accepted reply,
+   * which gets a fresh id (the caller's names the accepted first reply).
+   */
   callId: string | undefined;
   /** A fresh id: the row's when this attempt is refused for its shape and another follows. */
   refusedCallId: string | undefined;
-  /** The refused attempt's row this one follows; null on the first. */
+  /** The row this one follows (a refused attempt, or the accepted reply it fixes); null on the first. */
   parentCallId: string | null;
+  /** How `once` built this attempt's request; reported to onAttempt. Set by the live adapter. */
+  request?: AttemptRequest;
 };
+
+/**
+ * An attempt's reply accepted, but with plan lines that did not parse: the
+ * loop asks once more, for those lines alone, and keeps this value if that
+ * second attempt fails in any way.
+ */
+export class Unfinished<T> {
+  constructor(readonly value: T) {}
+}
 
 /**
  * The id an attempt's call log row is written under. The caller's call id
@@ -838,36 +1015,56 @@ export function attemptRowId(a: CoachAttempt, err: unknown): string | undefined 
 
 /**
  * The one attempt loop every coach call goes through: the five operations of
- * the live adapter, and the replay harness's dry run. `once` sends one attempt;
- * an attempt refused for its shape (LlmSchemaError: validation, the plan's
- * dates, a missing tool call, a stop at the output cap) is sent once more,
- * unchanged, and any other error is thrown at once. Two attempts at most; the
- * last one's error is thrown as it came. `once` must send the same request each
- * time: the target is resolved before the loop, never inside it (ADR 0004).
+ * the live adapter, the replay harness's dry run and the smoke script. `once`
+ * sends one attempt. Two attempts at most, on the target resolved before the
+ * loop, never inside it (ADR 0004):
+ * - an attempt refused for its shape (LlmSchemaError: validation, the plan's
+ *   dates, a missing tool call, a stop at the output cap) is followed by one
+ *   more; the last one's error is thrown as it came; any other error is thrown
+ *   at once;
+ * - an attempt returned as Unfinished (accepted with plan lines that did not
+ *   parse) is followed by one more, whose value is returned when it succeeds;
+ *   when it fails in any way the first value is returned, and the first row
+ *   (the caller's call id) stays the reply that counted.
+ * `once` decides what the second request holds (secondRequest in the live
+ * adapter); the loop only decides whether there is one.
  */
 export async function askAtMostTwice<T>(
   callOptions: LlmCallOptions | undefined,
-  once: (attempt: CoachAttempt) => Promise<T>,
+  once: (attempt: CoachAttempt) => Promise<T | Unfinished<T>>,
 ): Promise<T> {
   const callId = callOptions?.callId;
   let parentCallId: string | null = null;
+  let accepted: { value: T } | null = null;
   for (let n = 1; ; n++) {
     const a: CoachAttempt = {
       attempt: n,
       last: n >= COACH_CALL_ATTEMPTS,
-      callId,
+      // The retry of an accepted reply is its own row; the caller's id stays on the reply.
+      callId: accepted && callId ? randomUUID() : callId,
       refusedCallId: callId ? randomUUID() : undefined,
       parentCallId,
     };
+    const report = (rowId: string | undefined, error: unknown) =>
+      callOptions?.onAttempt?.({
+        attempt: n,
+        callId: rowId ?? null,
+        error,
+        ...(a.request ? { request: a.request } : {}),
+      });
     try {
-      const value = await once(a);
-      callOptions?.onAttempt?.({ attempt: n, callId: callId ?? null, error: null });
-      return value;
+      const out = await once(a);
+      report(a.callId, null);
+      if (!(out instanceof Unfinished)) return out;
+      if (a.last || accepted) return out.value;
+      accepted = { value: out.value };
+      parentCallId = a.callId ?? null;
     } catch (err) {
-      const rowId = attemptRowId(a, err) ?? null;
-      callOptions?.onAttempt?.({ attempt: n, callId: rowId, error: err });
+      const rowId = attemptRowId(a, err);
+      report(rowId, err);
+      if (accepted) return accepted.value;
       if (a.last || !(err instanceof LlmSchemaError)) throw err;
-      parentCallId = rowId;
+      parentCallId = rowId ?? null;
     }
   }
 }
@@ -959,7 +1156,9 @@ export function createAnthropicLlmPort(
 
   /**
    * One attempt = one row, on every branch, under the id attemptRowId names. A
-   * missing key throws before this runs, so it writes nothing.
+   * missing key throws before this runs, so it writes nothing. `seen` is told
+   * what came back (content, stop reason), so a second request can be built
+   * from it; `validate`'s planRetry, when present, comes back with the value.
    */
   async function attempt<T>(
     operation: LlmCallOperation,
@@ -968,12 +1167,9 @@ export function createAnthropicLlmPort(
     target: CoachTarget,
     requestBody: AnthropicMessagesRequest,
     call: () => Promise<AnthropicCallResult>,
-    validate: (
-      toolInput: unknown,
-    ) =>
-      | { ok: true; value: T; repairs?: string[] }
-      | { ok: false; error: string },
-  ): Promise<T> {
+    validate: Validate<T>,
+    seen: FirstReply,
+  ): Promise<{ value: T; planRetry?: PlanRetry<T>; fixed?: string[] }> {
     const startedAt = Date.now();
     const base = {
       operation,
@@ -989,6 +1185,8 @@ export function createAnthropicLlmPort(
     let result: AnthropicCallResult | undefined;
     try {
       result = await call();
+      seen.content = result.content;
+      seen.stopReason = result.stopReason;
       const validated = validate(result.toolInput);
       if (!validated.ok) {
         throw new LlmSchemaError(validated.error);
@@ -1010,27 +1208,38 @@ export function createAnthropicLlmPort(
           errorMessage: validated.repairs?.join("; ") ?? null,
         });
       }
-      return validated.value;
+      return {
+        value: validated.value,
+        ...(validated.planRetry ? { planRetry: validated.planRetry } : {}),
+        ...("fixed" in validated && Array.isArray(validated.fixed)
+          ? { fixed: validated.fixed as string[] }
+          : {}),
+      };
     } catch (err) {
+      const meta: AnthropicFailureMeta =
+        (err instanceof Error ? failureMeta.get(err) : undefined) ??
+        (result
+          ? {
+              httpStatus: result.httpStatus,
+              responseText: result.responseText,
+              latencyMs: result.latencyMs,
+              stopReason: result.stopReason,
+              usage: result.usage,
+              content: result.content,
+            }
+          : {
+              httpStatus: null,
+              responseText: null,
+              latencyMs: Date.now() - startedAt,
+              stopReason: null,
+              usage: null,
+              content: null,
+            });
+      seen.content = meta.content;
+      seen.stopReason = meta.stopReason;
+      seen.error = err instanceof Error ? err.message : String(err);
       const rowId = attemptRowId(a, err);
       if (rowId) {
-        const meta: AnthropicFailureMeta =
-          (err instanceof Error ? failureMeta.get(err) : undefined) ??
-          (result
-            ? {
-                httpStatus: result.httpStatus,
-                responseText: result.responseText,
-                latencyMs: result.latencyMs,
-                stopReason: result.stopReason,
-                usage: result.usage,
-              }
-            : {
-                httpStatus: null,
-                responseText: null,
-                latencyMs: Date.now() - startedAt,
-                stopReason: null,
-                usage: null,
-              });
         const outcome: LlmCallOutcome =
           err instanceof LlmHttpError
             ? "http_error"
@@ -1059,8 +1268,11 @@ export function createAnthropicLlmPort(
 
   /**
    * One coach call, every operation: the caller resolved the target once and
-   * built the request once from it, so a second attempt sends the identical
-   * body to the identical server with the identical key, model and effort.
+   * built the request once from it, so both attempts go to the identical
+   * server with the identical key, model, effort, system prompt and tools.
+   * The second request is the first plus the turns secondRequest adds; when
+   * the first reply was accepted with plan lines that did not parse, the
+   * second reply is read by its planRetry, which takes only the failed dates.
    */
   function ask<T>(
     operation: LlmCallOperation,
@@ -1068,16 +1280,49 @@ export function createAnthropicLlmPort(
     target: CoachTarget,
     toolName: string,
     requestBody: AnthropicMessagesRequest,
-    validate: (
-      toolInput: unknown,
-    ) =>
-      | { ok: true; value: T; repairs?: string[] }
-      | { ok: false; error: string },
+    validate: Validate<T>,
   ): Promise<T> {
-    const call = send(target, toolName, requestBody);
-    return askAtMostTwice(callOptions, (a) =>
-      attempt(operation, a, callOptions, target, requestBody, call, validate),
-    );
+    let first: FirstReply | null = null;
+    let firstRetry: PlanRetry<T> | null = null;
+    return askAtMostTwice<T>(callOptions, async (a) => {
+      const seen: FirstReply = { content: null, stopReason: null, error: null, failures: null };
+      let body = requestBody;
+      let check: Validate<T> = validate;
+      if (a.attempt === 1 || !first) {
+        a.request = { kind: "first", turns: turnsOf(body.messages) };
+      } else {
+        const next = secondRequest(requestBody, toolName, first);
+        body = next.body;
+        a.request = { kind: next.kind, turns: turnsOf(body.messages) };
+        if (firstRetry) {
+          const retry = firstRetry;
+          check = (input) => retry.takeFixes(input);
+          a.request.fixDates = [...retry.dates];
+        }
+      }
+      try {
+        const out = await attempt(
+          operation,
+          a,
+          callOptions,
+          target,
+          body,
+          send(target, toolName, body),
+          check,
+          seen,
+        );
+        if (out.fixed && a.request) a.request.fixed = out.fixed;
+        if (out.planRetry && !a.last) {
+          first = { ...seen, failures: out.planRetry.failures, box: out.planRetry.box };
+          firstRetry = out.planRetry;
+          return new Unfinished(out.value);
+        }
+        return out.value;
+      } catch (err) {
+        first = seen;
+        throw err;
+      }
+    });
   }
 
   /** One About you call: same key check, reasoning params, logging and validation as the coach replies. */
@@ -1186,8 +1431,14 @@ export function createAnthropicLlmPort(
         target,
         MIDWEEK_TOOL_NAME,
         requestBody,
-        // Changed days that do not parse are stored unparsed for their date only.
-        (input) => validateMidWeekChatReply(input, weekStartMonday, { unit }),
+        // Changed days that do not parse are stored unparsed for their date
+        // only, and asked for once more, those dates alone (planFailures).
+        (input) => {
+          const validated = validateMidWeekChatReply(input, weekStartMonday, { unit });
+          if (!validated.ok) return validated;
+          const planRetry = midWeekPlanRetry(validated, weekStartMonday, unit);
+          return planRetry ? { ...validated, planRetry } : validated;
+        },
       );
     },
 

@@ -16,9 +16,11 @@ import type { ModelPacket } from "../src/packet/index.js";
 import { putAnthropicConnection } from "../src/settings/anthropicStore.js";
 import {
   acceptAndReady,
+  expectedErrorRetryTurns,
   fakeCoachServer,
   json,
   resetAppTables,
+  retryTurns,
   TEST_DATA_PROTECTION_KEY,
 } from "./helpers.js";
 
@@ -123,7 +125,7 @@ describe("a failed chat reply takes the athlete's message with it (#5)", () => {
       return { app, weekSessionId: week.id as string, ...server };
     }
 
-    it("answers with the second reply, sent the identical request, both attempts logged and linked", async () => {
+    it("answers with the second reply, sent with the validator's message, both attempts logged and linked", async () => {
       const { app, weekSessionId, bodies, rows } = await liveApp([
         { body: "" },
         { body: "Keep Thursday easy." },
@@ -132,8 +134,10 @@ describe("a failed chat reply takes the athlete's message with it (#5)", () => {
       expect(res.status).toBe(201);
       expect(await roles(app, weekSessionId)).toEqual(["athlete", "coach"]);
       expect(bodies).toHaveLength(2);
-      expect(bodies[1]).toBe(bodies[0]);
       expect(rows.map((r) => r.outcome)).toEqual(["schema_invalid", "ok"]);
+      expect(retryTurns(bodies[0]!, bodies[1]!)).toEqual(
+        expectedErrorRetryTurns("submit_mid_week_chat_reply", { body: "" }, "body is required and must be non-empty"),
+      );
       expect(rows[0]!.parentCallId).toBeNull();
       expect(rows[1]!.parentCallId).toBe(rows[0]!.id);
       const listed = await json(await app.request(`/thread?weekSessionId=${weekSessionId}`));

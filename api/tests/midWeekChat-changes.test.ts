@@ -26,6 +26,7 @@ import {
   fakeCoachServer,
   json,
   resetAppTables,
+  retryTurns,
   TEST_DATA_PROTECTION_KEY,
 } from "./helpers.js";
 
@@ -178,8 +179,62 @@ describe("Coach Cade changes days with plan lines", () => {
     expect(stored.days[3]).toMatchObject({ date: THU, parsed: true });
     expect(stored.days[5]).toMatchObject({ date: SAT, parsed: false, line: sat });
     untouched(stored, [THU, SAT]);
-    expect(rows.map((r) => r.outcome)).toEqual(["repaired"]);
+    // Asked once more for Saturday alone; the same line comes back, so it stays unparsed.
+    expect(rows.map((r) => r.outcome)).toEqual(["repaired", "repaired"]);
     expect(rows[0]!.errorMessage).toContain(`changes ${SAT} not filed: no distance unit`);
+    expect(rows[1]!.errorMessage).toBe(`changes ${SAT} still not filed: no distance unit`);
+  });
+
+  it("asks once for the lines it could not read, and takes only those dates from the second reply", async () => {
+    const thu = `Thu ${THU}: easy, 4 mi.`;
+    const sat = `Sat ${SAT}: easy 5, by feel.`;
+    const satFixed = `Sat ${SAT}: easy, 5 mi, by feel.`;
+    const first = { body: "Thursday eases off and Saturday stays short.", changes: `${thu}\n${sat}` };
+    const { send, storedPlan, rows, bodies } = await liveApp([
+      first,
+      // The second reply also rewrites Thursday and the body: neither is taken.
+      { body: "A different body.", changes: `Thu ${THU}: quality, 8 mi.\n${satFixed}` },
+    ]);
+    const reply = await send("Can we ease Thursday and Saturday?");
+
+    expect(bodies).toHaveLength(2);
+    expect(retryTurns(bodies[0]!, bodies[1]!)).toEqual([
+      {
+        role: "assistant",
+        content: [
+          {
+            type: "thinking",
+            thinking: "Weighing load, recent runs and the athlete's note.",
+            signature: "sig_test_fixture",
+          },
+          { type: "tool_use", id: "toolu_test", name: TOOL, input: first },
+        ],
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: "toolu_test",
+            is_error: true,
+            content: `Sat ${SAT}: no distance unit.\n\nSend the changes box again with these lines fixed. Change nothing else.`,
+          },
+        ],
+      },
+    ]);
+    expect(reply.body).toBe("Thursday eases off and Saturday stays short.");
+    expect(reply.planChanges![0]).toMatchObject({ date: THU, line: thu, dayType: "easy", parsed: true });
+    expect(reply.planChanges![1]).toMatchObject({
+      date: SAT,
+      line: satFixed,
+      parsed: true,
+      run: { type: "easy", distanceM: Math.round(5 * MI) },
+    });
+    const stored = await storedPlan();
+    expect(stored.days[5]).toMatchObject({ date: SAT, parsed: true, line: satFixed });
+    untouched(stored, [THU, SAT]);
+    expect(rows.map((r) => r.outcome)).toEqual(["repaired", "repaired"]);
+    expect(rows[1]).toMatchObject({ parentCallId: rows[0]!.id, errorMessage: `changes ${SAT} filed by the retry` });
   });
 
   it("a line for a date outside the week is dropped and noted in the call log", async () => {

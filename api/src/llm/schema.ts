@@ -70,10 +70,100 @@ const RUN_TYPES = new Set<RunType>([
 const ISO_WEEK_RE = /^\d{4}-W\d{2}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** `repairs` notes soft fields the validator fixed instead of refusing. */
-export type SchemaOk<T> = { ok: true; value: T; repairs?: string[] };
+/**
+ * `repairs` notes soft fields the validator fixed instead of refusing.
+ * `planRetry`, when present, says the reply was accepted with plan lines
+ * Cadence could not read, and how to take a retry's fixes for them: the
+ * adapter's retry (askAtMostTwice) is driven by it, whatever the operation.
+ */
+export type SchemaOk<T> = {
+  ok: true;
+  value: T;
+  repairs?: string[];
+  planRetry?: PlanRetry<T>;
+};
 export type SchemaErr = { ok: false; error: string };
 export type SchemaResult<T> = SchemaOk<T> | SchemaErr;
+
+/**
+ * A reply accepted with plan lines that did not parse. The adapter sends one
+ * more request quoting `failures` and reads the retry's tool input with
+ * `takeFixes`: only the failed dates are taken from it, and everything else
+ * stays as the first reply had it.
+ */
+export type PlanRetry<T> = {
+  /** The box the lines came from, as the retry names it: "plan" (weekly) or "changes" (mid-week). */
+  box: string;
+  /** Every failed line, in date order, as the retry quotes them. */
+  failures: PlanLineFailure[];
+  /** The failed dates the retry may replace (dates inside the plan week). */
+  dates: string[];
+  /**
+   * The first reply with the failed dates taken from the retry's tool input
+   * where they now parse; a date that fails again stays as it was. `fixed`
+   * names the dates replaced; `repairs` names each date fixed and each still
+   * unparsed. Refused when the retry has no box to read.
+   */
+  takeFixes(retryInput: unknown): PlanFixResult<T>;
+};
+
+export type PlanFixResult<T> = (SchemaOk<T> & { fixed: string[] }) | SchemaErr;
+
+/**
+ * The PlanRetry for a box parsed with parsePlanLines: `boxOf` reads the box
+ * from the retry's tool input, which is parsed against the same week and
+ * unit; `withDays` builds the first reply with the replaced days. Undefined
+ * when no date inside `dates` failed. Mid-week's changes box can use this too.
+ */
+export function planLineRetry<T>(options: {
+  /** The box's name in the tool and in the repair notes: "plan" or "changes". */
+  box: string;
+  failures: PlanLineFailure[];
+  /** The dates the reply's box covers; a failure outside them is quoted, never taken. */
+  dates: readonly string[];
+  weekStartMonday: string;
+  unit: TempoUnitPreference;
+  boxOf: (retryInput: unknown) => SchemaResult<string>;
+  withDays: (replaced: ReadonlyMap<string, PrescribedDay>) => T;
+}): PlanRetry<T> | undefined {
+  const covered = new Set(options.dates);
+  const failedDates = options.failures.map((f) => f.date).filter((d) => covered.has(d));
+  if (failedDates.length === 0) return undefined;
+  const box = options.box;
+  return {
+    box,
+    failures: options.failures,
+    dates: failedDates,
+    takeFixes(retryInput) {
+      const text = options.boxOf(retryInput);
+      if (!text.ok) return text;
+      const parsed = parsePlanLines({
+        text: text.value,
+        weekStartMonday: options.weekStartMonday,
+        unit: options.unit,
+      });
+      const stillFailing = new Map(parsed.failures.map((f) => [f.date, f.reason]));
+      const replaced = new Map<string, PrescribedDay>();
+      const repairs: string[] = [];
+      for (const date of failedDates) {
+        const day = parsed.days.find((d) => d.date === date);
+        const reason = stillFailing.get(date);
+        if (day && reason === undefined) {
+          replaced.set(date, day);
+          repairs.push(`${box} ${date} filed by the retry`);
+        } else {
+          repairs.push(`${box} ${date} still not filed: ${reason ?? "no line"}`);
+        }
+      }
+      return {
+        ok: true,
+        value: options.withDays(replaced),
+        repairs,
+        fixed: [...replaced.keys()],
+      };
+    },
+  };
+}
 
 function withRepairs<T>(value: T, repairs: string[] | undefined): SchemaOk<T> {
   return repairs ? { ok: true, value, repairs } : { ok: true, value };
@@ -434,7 +524,8 @@ export function validateWeeklyReply(
   const analysis = parseAnalysis(raw.analysis);
   if (!analysis.ok) return analysis;
 
-  const plan = parsePlanBox(raw.plan, weekStartMonday, context.unit ?? "imperial", repairs);
+  const unit = context.unit ?? "imperial";
+  const plan = parsePlanBox(raw.plan, weekStartMonday, unit, repairs);
   if (!plan.ok) return plan;
 
   const bulletLines =
@@ -460,7 +551,7 @@ export function validateWeeklyReply(
     flags: flags.value,
     answers: answers.value,
     analysis: analysis.value,
-    prescribedWeek: plan.value,
+    prescribedWeek: plan.value.week,
   };
   if (bullets.value !== undefined) {
     reply.settingsProposalBullets = bullets.value;
@@ -469,7 +560,29 @@ export function validateWeeklyReply(
     reply.safetyCallouts = callouts.value;
   }
   repairs.push(...(callouts.repairs ?? []));
-  return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+  const result = withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+  // Days that did not parse: the adapter asks once for those dates alone, and
+  // takes only them from the retry; the read and every other day stay as sent.
+  const planRetry = planLineRetry<WeeklyReply>({
+    box: "plan",
+    failures: plan.value.failures,
+    dates: expectedPlanDates(weekStartMonday),
+    weekStartMonday,
+    unit,
+    boxOf: (retry) =>
+      isPlainObject(retry) && typeof retry.plan === "string" && retry.plan.trim().length > 0
+        ? { ok: true, value: retry.plan }
+        : { ok: false, error: "plan is required: seven lines, one per day" },
+    withDays: (replaced) => ({
+      ...reply,
+      prescribedWeek: {
+        ...reply.prescribedWeek,
+        days: reply.prescribedWeek.days.map((d) => replaced.get(d.date) ?? d),
+      },
+    }),
+  });
+  if (planRetry) result.planRetry = planRetry;
+  return result;
 }
 
 /**
@@ -555,7 +668,7 @@ function parsePlanBox(
   weekStartMonday: string,
   unit: TempoUnitPreference,
   repairs: string[],
-): SchemaResult<PrescribedWeek> {
+): SchemaResult<{ week: PrescribedWeek; failures: PlanLineFailure[] }> {
   if (typeof raw !== "string" || raw.trim().length === 0) {
     return { ok: false, error: "plan is required: seven lines, one per day" };
   }
@@ -582,7 +695,10 @@ function parsePlanBox(
   }
   return {
     ok: true,
-    value: { week: isoWeekOfDate(weekStartMonday), days: parsed.days },
+    value: {
+      week: { week: isoWeekOfDate(weekStartMonday), days: parsed.days },
+      failures: parsed.failures,
+    },
   };
 }
 
@@ -1071,6 +1187,40 @@ function parseChangesBox(
     ok: true,
     value: { days: parsed.days.filter((d) => d.line != null), failures },
   };
+}
+
+/**
+ * The retry for a mid-week reply whose `changes` lines did not all parse,
+ * driven by the validator's `planFailures`: the retry's `changes` box is read
+ * for those dates alone, and each one that now parses replaces that date's
+ * changed day; every other change, the body and the notices stay as sent.
+ * Undefined when every line parsed.
+ */
+export function midWeekPlanRetry(
+  ok: MidWeekReplyOk,
+  weekStartMonday: string,
+  unit: TempoUnitPreference = "imperial",
+): PlanRetry<MidWeekChatReply> | undefined {
+  const failures = ok.planFailures ?? [];
+  if (failures.length === 0) return undefined;
+  const reply = ok.value;
+  return planLineRetry<MidWeekChatReply>({
+    box: "changes",
+    failures,
+    dates: failures.map((f) => f.date),
+    weekStartMonday,
+    unit,
+    boxOf: (retry) =>
+      isPlainObject(retry) && typeof retry.changes === "string" && retry.changes.trim().length > 0
+        ? { ok: true, value: retry.changes }
+        : { ok: false, error: "changes are required: one line for each date asked about" },
+    withDays: (replaced) => ({
+      ...reply,
+      ...(reply.prescribedDayPatches
+        ? { prescribedDayPatches: reply.prescribedDayPatches.map((d) => replaced.get(d.date) ?? d) }
+        : {}),
+    }),
+  });
 }
 
 function validateDossierSoftGateDraft(

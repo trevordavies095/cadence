@@ -124,7 +124,11 @@
  * A reply refused for its shape, of any operation, is asked for once more by the
  * adapter's own loop (askAtMostTwice), as in the app (ADR
  * 0002). The saved reply lists the refused attempt in `refusedAttempts`, and the
- * report lists retried calls apart from failed ones. On a dry run, a wrapped
+ * report lists retried calls apart from failed ones. A weekly read accepted
+ * with plan lines that did not parse is asked once more for those lines alone;
+ * that retry is no refusal, so it shows only in `timing.attempts`, where a live
+ * run records each attempt's request kind and turns (`request`) and its row's
+ * outcome and repair notes. On a dry run, a wrapped
  * packet's `stubRefusals` (a count) makes the stub refuse that many attempts
  * first, through that same loop, so the retry can be tested offline; a live run
  * ignores it.
@@ -181,7 +185,7 @@ import { askAtMostTwice, createAnthropicLlmPort } from "../src/llm/anthropic.js"
 import { TESTED_COACH_MODEL } from "../src/llm/coachModel.js";
 import { anthropicCoachTarget, type CoachProvider, type CoachTarget } from "../src/llm/coachTarget.js";
 import { ANTHROPIC_EFFORT_LEVELS, parseAnthropicEffort, type AnthropicEffort } from "../src/llm/effort.js";
-import { LlmSchemaError, type AttemptReport, type LlmCallOptions, type LlmPort } from "../src/llm/port.js";
+import { LlmSchemaError, type AttemptReport, type AttemptRequest, type LlmCallOptions, type LlmPort } from "../src/llm/port.js";
 import {
   validateDossierAuditDraft,
   validateDossierCorrectionDraft,
@@ -450,10 +454,27 @@ type Refusal = {
   cacheReadTokens?: number | null;
   cacheCreationTokens?: number | null;
   responseRaw: unknown;
+  /** How the refused attempt's request was built (live runs; missing on older files and dry runs). */
+  request?: AttemptRequest;
 };
 
-/** One attempt's timing: time to first token (null on a dry run or when none came) and its wall-clock. */
-type AttemptTiming = { attempt: number; ttftMs: number | null; totalMs: number };
+/**
+ * One attempt's timing: time to first token (null on a dry run or when none
+ * came) and its wall-clock. Live runs add how its request was built (`request`:
+ * "first", or the retry's kind, e.g. "fix_lines", with its turns and, for a
+ * fix, the dates asked for and fixed) and its call log row's outcome and repair
+ * notes, so the analysis can tell a day fixed by the retry from one repaired.
+ */
+type AttemptTiming = {
+  attempt: number;
+  ttftMs: number | null;
+  totalMs: number;
+  request?: AttemptRequest;
+  outcome?: string | null;
+  repairs?: string | null;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+};
 
 /** A call's timing as its reply file saves it: only measurable while the call runs. */
 type Timing = {
@@ -791,17 +812,32 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
         cacheReadTokens: row?.cacheReadTokens ?? null,
         cacheCreationTokens: row?.cacheCreationTokens ?? null,
         responseRaw: row?.responseRaw ?? null,
+        ...(report.request ? { request: report.request } : {}),
       });
     }
     const messages = timed.exchanges.slice(exchanged).filter((ex) => ex.url.endsWith("/messages"));
-    attemptTimings.push({ attempt: report.attempt, ttftMs: timeToFirstTokenMs(messages.at(-1)), totalMs: Date.now() - attemptStarted });
+    attemptTimings.push({
+      attempt: report.attempt,
+      ttftMs: timeToFirstTokenMs(messages.at(-1)),
+      totalMs: Date.now() - attemptStarted,
+      ...(report.request
+        ? {
+            request: report.request,
+            outcome: row?.outcome ?? null,
+            repairs: row?.errorMessage ?? null,
+            inputTokens: row?.inputTokens ?? null,
+            outputTokens: row?.outputTokens ?? null,
+          }
+        : {}),
+    });
     exchanged = timed.exchanges.length;
     attemptStarted = Date.now();
   };
   let reply: CoachReply;
+  const callId = randomUUID();
   try {
     // The port writes its log rows, with any repairs and token counts, only for a call with an id.
-    reply = await sendToPort(port, call, { callId: randomUUID(), onAttempt });
+    reply = await sendToPort(port, call, { callId, onAttempt });
   } catch (err) {
     // A refused reply is a finding, not a reason to stop: keep what the model sent and move on.
     const failed = log.at(-1);
@@ -830,7 +866,9 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
     console.log(`${path.basename(file)} refused: ${err instanceof Error ? err.message : err}; saved ${path.basename(failedFile)}`);
     return;
   }
-  const row = log.at(-1);
+  // The reply that counted: the caller's id names it. After a retry that fixed
+  // plan lines it is the first reply, the retry's row is in timing.attempts.
+  const row = log.find((r) => r.id === callId) ?? log.at(-1);
   writeFileSync(
     file,
     JSON.stringify(

@@ -322,8 +322,86 @@ describe("a coach call to a self-hosted server", () => {
       ["ok", "self_hosted", "omlx.local"],
       ["schema_invalid", "self_hosted", "omlx.local"],
     ]);
-    expect(sent[1]!.body).toEqual(sent[0]!.body);
+    // The same request plus the reply as received (no thinking: the server sent none) and the error.
+    const refusedInput = { analysis: "ok", prescribedWeek: { days: [] } };
+    expect(sent[1]!.body).toEqual({
+      ...sent[0]!.body,
+      messages: [
+        ...(sent[0]!.body.messages as unknown[]),
+        {
+          role: "assistant",
+          content: [{ type: "tool_use", id: "toolu_test", name: "submit_weekly_reply", input: refusedInput }],
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: "toolu_test",
+              is_error: true,
+              content: "headline is required and must be non-empty.\n\nCall the tool again with your full answer, with this fixed.",
+            },
+          ],
+        },
+      ],
+    });
+    expect(sent[1]!.body).not.toHaveProperty("thinking");
     expect(sent[1]!.headers).toEqual(sent[0]!.headers);
+  });
+
+  it("asks once for the plan lines it could not read, with the same turns as on Anthropic and no thinking", async () => {
+    const good = buildStubWeeklyForm(samplePacket());
+    const lines = good.plan.split("\n");
+    const thu = lines.findIndex((l) => l.includes("2026-10-29"));
+    lines[thu] = "Thu 2026-10-29: easy 5, relaxed.";
+    const first = { ...good, plan: lines.join("\n") };
+    const stream = (toolName: string, input: unknown) =>
+      new Response(anthropicSseEvents(anthropicToolMessage(toolName, input), { thinking: false }).join(""), {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      });
+    const { fetchImpl, sent } = fakeServers({
+      respond: (toolName, n) => (n === 1 ? stream(toolName, first) : stream(toolName, { plan: good.plan })),
+    });
+    const app = appWith(fetchImpl);
+    await useSelfHosted(app);
+    const weekSessionId = await openWeek(app);
+    await unlockPlanCheckIn(app, weekSessionId);
+
+    const res = await send(app, "/week/reply", "POST", { weekSessionId, packet: samplePacket() });
+    expect(res.status).toBe(200);
+    expect(sent).toHaveLength(2);
+    expect(sent[1]!.body).toEqual({
+      ...sent[0]!.body,
+      messages: [
+        ...(sent[0]!.body.messages as unknown[]),
+        {
+          role: "assistant",
+          content: [{ type: "tool_use", id: "toolu_test", name: "submit_weekly_reply", input: first }],
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: "toolu_test",
+              is_error: true,
+              content:
+                "Thu 2026-10-29: no distance unit.\n\nSend the plan box again with these lines fixed. Change nothing else.",
+            },
+          ],
+        },
+      ],
+    });
+    expect(sent[1]!.body).not.toHaveProperty("thinking");
+    expect(sent[1]!.headers).toEqual(sent[0]!.headers);
+    const days = ((await json(res)).prescribed as { plan: { days: Array<{ parsed: boolean }> } }).plan.days;
+    expect(days.every((d) => d.parsed)).toBe(true);
+    const rows = await logRows(app);
+    expect(rows.map((r) => [r.outcome, r.provider, r.serverHost])).toEqual([
+      ["repaired", "self_hosted", "omlx.local"],
+      ["repaired", "self_hosted", "omlx.local"],
+    ]);
   });
 
   it("asks once more on the same server, model, effort and key when a mid-week reply is refused, and never a third time", async () => {
@@ -341,7 +419,24 @@ describe("a coach call to a self-hosted server", () => {
     expect(res.status).toBe(502);
     expect(sent).toHaveLength(2);
     expect(sent.map((c) => c.url)).toEqual([`${BASE_URL}/v1/messages`, `${BASE_URL}/v1/messages`]);
-    expect(sent[1]!.body).toEqual(sent[0]!.body);
+    const { messages: firstTurns, ...firstRest } = sent[0]!.body as { messages: unknown[] };
+    const { messages: secondTurns, ...secondRest } = sent[1]!.body as { messages: unknown[] };
+    expect(secondRest).toEqual(firstRest);
+    expect(secondTurns).toEqual([
+      ...firstTurns,
+      { role: "assistant", content: [{ type: "tool_use", id: "toolu_test", name: "submit_mid_week_chat_reply", input: { body: "" } }] },
+      {
+        role: "user",
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: "toolu_test",
+            is_error: true,
+            content: "body is required and must be non-empty.\n\nCall the tool again with your full answer, with this fixed.",
+          },
+        ],
+      },
+    ]);
     expect(sent[1]!.headers).toEqual(sent[0]!.headers);
     const rows = await logRows(app);
     expect(rows.map((r) => [r.outcome, r.provider, r.serverHost])).toEqual([
