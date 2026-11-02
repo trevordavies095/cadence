@@ -281,6 +281,37 @@ describe("parsePlanLines: decisions of 2026-11-02", () => {
   });
 });
 
+describe("parsePlanLines: a week written on one line", () => {
+  const ONE_LINE =
+    "Mon 2026-11-09: easy, 6 km, heart rate under 150. Tue 2026-11-10: threshold, 11 km, 3 x 9 min at 5:05/km. " +
+    "Wed 2026-11-11: rest. Thu 2026-11-12: intervals, 11.5 km, 6 x 800 m. Fri 2026-11-13: rest. " +
+    "Sat 2026-11-14: easy, 5 km. Sun 2026-11-15: long, 15 km, steady, keep heart rate in Z2.";
+
+  it("files all seven days when each starts with a weekday, a date and a colon after a full stop", () => {
+    const result = parsePlanLines({ text: ONE_LINE, weekStartMonday: MONDAY, unit: "metric" });
+    expect(result.failures).toEqual([]);
+    expect(result.days.map((d) => d.dayType)).toEqual(["easy", "quality", "rest", "quality", "rest", "easy", "long"]);
+    expect(result.days[0]!.line).toBe("Mon 2026-11-09: easy, 6 km, heart rate under 150.");
+    expect(result.days[6]!.run?.distanceM).toBe(km(15));
+  });
+
+  it("also splits on a semicolon and on a date with no weekday", () => {
+    const result = parsePlanLines({
+      text: "2026-11-09: rest; 2026-11-10: easy, 5 mi",
+      weekStartMonday: MONDAY,
+      unit: "imperial",
+    });
+    expect(result.days[0]!.dayType).toBe("rest");
+    expect(result.days[1]!.run?.distanceM).toBe(mi(5));
+  });
+
+  it("does not split on a mention of another day without its date and colon", () => {
+    const { day, failure } = parseOne("Tue: easy, 5 mi. Same as Thu, keep it flat.");
+    expect(failure).toBeUndefined();
+    expect(day.line).toBe("Tue: easy, 5 mi. Same as Thu, keep it flat.");
+  });
+});
+
 describe("parsePlanLines: a line that cannot be filed", () => {
   it.each(failureCases)("$name fails with \"$reason\"", ({ line, reason }) => {
     const { day, failure } = parseOne(line);

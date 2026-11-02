@@ -434,6 +434,24 @@ function noPlanDay(date: string): PrescribedDay {
 }
 
 /**
+ * A day starting mid-line: a weekday and a full date followed by a colon, or a
+ * full date and a colon, right after the end of a sentence. Both parts are
+ * required, so a mention of another day ("same as Tue") never splits a line.
+ */
+const MID_LINE_DAY_RE =
+  /(?<=[.;!?|]\s+)(?=(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s+)?\d{4}-\d{2}-\d{2}\s*:)/gi;
+
+/**
+ * The plan box's lines, one per day. Besides newlines, a line is also split
+ * where a new day starts mid-line: gpt-oss-20b wrote whole weeks on one line
+ * as sentences ("Mon 2026-09-28: easy, 6 km. Tue 2026-09-29: threshold, ...")
+ * in 2 of 15 weekly reads on 2026-11-02, which otherwise file only Monday.
+ */
+function splitDayLines(text: string): string[] {
+  return text.split(/\r?\n/).flatMap((line) => line.split(MID_LINE_DAY_RE));
+}
+
+/**
  * Parses the plan box into seven stored days for the plan week starting
  * `weekStartMonday`, plus the dates that failed and why.
  */
@@ -444,7 +462,7 @@ export function parsePlanLines(input: ParsePlanLinesInput): ParsePlanLinesResult
   const failures = new Map<string, PlanLineFailureReason>();
   const ignoredLines: string[] = [];
 
-  for (const raw of input.text.split(/\r?\n/)) {
+  for (const raw of splitDayLines(input.text)) {
     const line = raw.trim().replace(LIST_MARKER_RE, "").trim();
     if (line === "") continue;
     const token = readDayToken(line);
