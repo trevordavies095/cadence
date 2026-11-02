@@ -43,9 +43,9 @@
  *      does not answer turns the self-hosted replies into transport failures;
  *      the gate then says so and exits non-zero, and the record is not a result.
  *   3. Run the gate with the lever's name, as above. Opus costs about $3; the
- *      self-hosted side takes under an hour. The gate's estimate counts every
- *      reply asked twice, so it can refuse a run that would cost less (see
- *      "Caps on spend" below); read the estimate, then pass --allow-cost.
+ *      self-hosted side takes under an hour. The gate prints its estimate
+ *      first and refuses above $5 (see "Caps on spend" below); pass
+ *      --allow-cost only after reading why it is high.
  *   4. Paste the two record lines into the lever's commit message, commit, and
  *      keep the lever's folder (.scratch/benchmark-after/<lever>): the next
  *      lever's gate is read against it, and the final report links them.
@@ -71,12 +71,12 @@
  * estimated cost (scripts/replayCost.ts), per configuration:
  *
  *   inputs selected (the regression set's, as --only hands the replay)
- *     x the median cost per reply of that configuration's most recent saved
- *       run: cost.medianUsd in the measures.json of the newest live
- *       <configuration> folder (by config.json's startedAt / resumedAt) under
- *       the saved-run folders, .scratch/benchmark and .scratch/benchmark-after
- *       (--saved-runs <dir>[,<dir>] names others)
- *     x 2, the most attempts a reply can take (a refused one is asked once more)
+ *     x the cost per reply: the median, across every saved live run of that
+ *       configuration, of each run's cost.medianUsd in measures.json, found
+ *       under the saved-run folders, .scratch/benchmark and
+ *       .scratch/benchmark-after (--saved-runs <dir>[,<dir>] names others).
+ *       A run's per-reply cost already prices its retries, so there is no
+ *       attempts multiplier; and one runaway run cannot set the figure.
  *
  * With no saved run for an Anthropic configuration it uses the regression
  * set's Opus figure, about $0.15 a reply, and says so. A self-hosted

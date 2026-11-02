@@ -35,17 +35,16 @@ function gate(args: string[]) {
 describe("replay gate", () => {
   it("dry-runs the regression set on both configurations over both roots, analyses them and prints the record", () => {
     const parent = path.join(mkdtempSync(path.join(tmpdir(), "replay-gate-")), "benchmark-after");
-    // No saved run: the fallback $0.15 a reply x 20 inputs x 2 attempts is $6, over the cap.
-    const run = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns(), "--allow-cost"]);
+    // No saved run: the fallback $0.15 a reply x 20 inputs is $3, under the cap.
+    const run = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns()]);
     expect(run.status, run.stderr).toBe(0);
 
     // The cap and the estimate come before any replay starts.
     const firstReplay = run.stdout.indexOf("== gate strict:");
     expect(run.stdout.indexOf("output cap 20000 tokens per call")).toBeGreaterThanOrEqual(0);
     expect(run.stdout.indexOf("output cap 20000 tokens per call")).toBeLessThan(firstReplay);
-    expect(run.stdout.indexOf("total $6.00, cap $5.00")).toBeLessThan(firstReplay);
+    expect(run.stdout.indexOf("total $3.00, cap $5.00")).toBeLessThan(firstReplay);
     expect(run.stdout).toContain("no saved run for this configuration, so the regression set's Opus figure of about $0.15 a reply");
-    expect(run.stdout).toContain("going on, as --allow-cost was passed");
 
     // A dry run writes beside the lever's live folder, never into it.
     const lever = path.join(parent, "strict-dry-run");
@@ -72,15 +71,17 @@ describe("replay gate", () => {
     ]);
 
     // A rerun resumes: every reply is already saved, and the record is the same.
-    const again = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns(), "--allow-cost"]);
+    // Its saved Opus runs price it over the cap, so it goes on only with --allow-cost.
+    const again = gate(["--lever", "strict", "--dry-run", "--root", parent, "--saved-runs", savedRuns(0.5), "--allow-cost"]);
     expect(again.status, again.stderr).toBe(0);
+    expect(again.stdout).toContain("going on, as --allow-cost was passed");
     expect(again.stdout.match(/exists, skipped/g)).toHaveLength(2 * regressionSet.length);
     expect(again.stdout.trim().split("\n").slice(-2)).toEqual(record);
   }, 300_000);
 
   it("refuses a run estimated above $5 before writing or calling anything, naming --allow-cost", () => {
     const tmp = mkdtempSync(path.join(tmpdir(), "replay-gate-cost-"));
-    for (const saved of [savedRuns(), savedRuns(1.5)]) {
+    for (const saved of [savedRuns(0.5), savedRuns(1.5)]) {
       const run = gate(["--lever", "strict", "--dry-run", "--root", tmp, "--saved-runs", saved]);
       expect(run.status).not.toBe(0);
       expect(run.stdout).toContain("output cap 20000 tokens per call");
