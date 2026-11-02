@@ -28,6 +28,7 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { TrainingGoal } from "../src/goal/types.js";
 import { recentWeeklyDistanceM, resolvePlanWeekStartMonday, resolveWeeklyPlanWeek } from "../src/llm/stub.js";
 import type { WeeklyReply } from "../src/llm/types.js";
@@ -70,7 +71,17 @@ const BASELINE = flagValue("--baseline") ?? "anthropic--claude-opus-4-7--xhigh";
 
 // ---- Reading the roots ------------------------------------------------------------------
 
-type ConfigFile = { configuration?: string; provider?: string; model?: string; effort?: string; note?: string | null; inputs?: string; startedAt?: string };
+type ConfigFile = {
+  configuration?: string;
+  provider?: string;
+  model?: string;
+  effort?: string;
+  repeats?: number;
+  note?: string | null;
+  inputs?: string;
+  startedAt?: string;
+  harnessCommit?: string;
+};
 
 type Refusal = {
   attempt: number;
@@ -900,33 +911,33 @@ function sumValues(o: Record<string, number>): number {
 
 // ---- Writing -----------------------------------------------------------------------------
 
-type Analysis = ReturnType<typeof analyse>;
+export type Analysis = ReturnType<typeof analyse>;
 
-function short(c: string): string {
+export function short(c: string): string {
   return c.replace(/^self_hosted--/, "").replace(/^anthropic--/, "");
 }
 
-function cell(v: unknown): string {
+export function cell(v: unknown): string {
   return String(v ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
 }
 
-function pct(n: number, d: number): string {
+export function pct(n: number, d: number): string {
   return d ? `${Math.round((100 * n) / d)}%` : "–";
 }
 
-function fmt(n: number | null | undefined, digits = 2): string {
+export function fmt(n: number | null | undefined, digits = 2): string {
   return n === null || n === undefined ? "–" : Number.isInteger(n) ? String(n) : n.toFixed(digits);
 }
 
-function secs(ms: number | null | undefined): string {
+export function secs(ms: number | null | undefined): string {
   return ms === null || ms === undefined ? "–" : `${(ms / 1000).toFixed(1)} s`;
 }
 
-function spreadCells(s: Spread, f: (n: number | null) => string = (n) => fmt(n)): string {
+export function spreadCells(s: Spread, f: (n: number | null) => string = (n) => fmt(n)): string {
   return `${f(s.median)} / ${f(s.p90)} / ${f(s.worst)}`;
 }
 
-function table(header: string[], rows: Array<Array<unknown>>): string[] {
+export function table(header: string[], rows: Array<Array<unknown>>): string[] {
   return [`| ${header.join(" | ")} |`, `|${header.map(() => "---").join("|")}|`, ...rows.map((r) => `| ${r.map(cell).join(" | ")} |`)];
 }
 
@@ -1291,6 +1302,55 @@ function inside(child: string, parent: string): boolean {
   return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
 }
 
+/**
+ * Each configuration's setup as its config.json in each root records it, for
+ * the published report. Only these fields: the server host is left out.
+ */
+export type SetupRow = {
+  configuration: string;
+  roots: Array<{
+    root: string;
+    provider: string | null;
+    model: string | null;
+    effort: string | null;
+    repeats: number | null;
+    note: string | null;
+    inputs: string | null;
+    startedAt: string | null;
+    harnessCommit: string | null;
+  }>;
+};
+
+function setupOf(configurations: string[], configs: ReturnType<typeof loadReplies>["configs"]): SetupRow[] {
+  return configurations.map((configuration) => ({
+    configuration,
+    roots: configs.get(configuration)!.dirs.map((dir) => {
+      const c = (readJson(path.join(dir, "config.json")) ?? {}) as ConfigFile;
+      return {
+        root: path.basename(path.dirname(dir)),
+        provider: c.provider ?? null,
+        model: c.model ?? null,
+        effort: c.effort ?? null,
+        repeats: c.repeats ?? null,
+        note: c.note ?? null,
+        inputs: c.inputs ?? null,
+        startedAt: c.startedAt ?? null,
+        harnessCommit: c.harnessCommit ?? null,
+      };
+    }),
+  }));
+}
+
+/** analysis.json as main() writes it. */
+export type AnalysisFile = Analysis & {
+  generatedAt: string;
+  roots: string[];
+  baseline: string;
+  warnings: string[];
+  repairs: Array<{ id: string; letter: string; label: string; lossy: boolean; liftTo: string }>;
+  setup: SetupRow[];
+};
+
 function main(): void {
   if (ROOTS.length === 0) throw new Error("--roots needs at least one output root.");
   for (const root of ROOTS) {
@@ -1307,6 +1367,7 @@ function main(): void {
     baseline: BASELINE,
     warnings,
     repairs: CANDIDATE_REPAIRS.map(({ apply: _apply, ...r }) => r),
+    setup: setupOf(a.configurations, configs),
     ...a,
   };
   writeFileSync(path.join(OUT, "analysis.json"), JSON.stringify(json, null, 2));
@@ -1316,4 +1377,5 @@ function main(): void {
   for (const w of warnings) console.warn(`warning: ${w}`);
 }
 
-main();
+// Run only as a script, so scripts/replay-publish.ts can import the helpers above.
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main();

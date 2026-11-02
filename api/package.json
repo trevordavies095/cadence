@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "replay": "tsx scripts/replay-weekly-reads.ts",
-    "replay:analyse": "tsx scripts/replay-analysis.ts"
+    "replay:analyse": "tsx scripts/replay-analysis.ts",
+    "replay:publish": "tsx scripts/replay-publish.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.4",

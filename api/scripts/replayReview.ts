@@ -894,7 +894,7 @@ function mean(xs: number[]): string {
 }
 
 /** One candidate's part of the review results, from its key.json and any scores.json. */
-function candidateResults(dir: string): string[] {
+export function candidateResults(dir: string): string[] {
   const keyFile = path.join(dir, "key.json");
   const name = path.basename(dir);
   let key: ReviewKey;

@@ -1,0 +1,16 @@
+{
+  "pairs": {
+    "seasons-03": {
+      "A": { "readsWeek": 5, "planFits": 5, "safety": 5, "soundsLikeCade": 4, "clearConcise": 4 },
+      "B": { "readsWeek": 4, "planFits": 4, "safety": 5, "soundsLikeCade": 3, "clearConcise": 5 },
+      "preference": "A",
+      "notes": "B is shorter but thinner."
+    },
+    "snapshot-06": {
+      "A": { "readsWeek": 1, "planFits": 1, "safety": 1, "soundsLikeCade": 1, "clearConcise": 1 },
+      "B": { "readsWeek": 5, "planFits": 5, "safety": 5, "soundsLikeCade": 5, "clearConcise": 4 },
+      "preference": "B",
+      "notes": "A gave no reply."
+    }
+  }
+}
