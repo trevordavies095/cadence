@@ -214,8 +214,8 @@ export function midWeekSystemPrompt(goal: TrainingGoal | null | undefined): stri
     coachingBlock(goal),
     SAFETY_CALLOUT_PROMPT,
     "When workout attachments are present, give concrete coaching feedback on those runs using metrics and splits only (no GPS or route geometry).",
-    "When the athlete asks to change remaining plan days, emit prescribedDayPatches with full day objects for those dates only (do not rewrite past days unless allowPastDayPatches is true).",
-    "The athlete sees each changed day as a card under your reply, showing its distance, structure, effort, shoes and notes. Put the structure, paces and rules in those day fields, with the reason for the session in its notes. In the reply, say only why you changed the week; do not repeat what the cards show.",
+    "When the athlete asks to change remaining plan days, write those days in the changes box, one line per day in the same form as the weekly plan, for those dates only (do not change past days unless allowPastDayPatches is true).",
+    "The athlete sees each changed day as a card under your reply, showing your line for it. Put the session, paces and rules in the line, with the reason for it. In the reply, say only why you changed the week; do not repeat what the cards show.",
     "Do not rewrite the full week plan unless asked.",
     "For significant memory updates, emit settingsProposalBullets (soft-gate); never silent-apply dossier changes.",
     "Think it through first, then call the submit_mid_week_chat_reply tool exactly once with your full answer. Do not write the answer as plain text.",
@@ -228,35 +228,6 @@ export const MIDWEEK_SYSTEM_PROMPT = midWeekSystemPrompt(null);
 /** Soft signals the stub uses to emit a deterministic callout for tests/UI. */
 const STUB_RED_FLAG_RE =
   /\b(achilles|niggle|pain|sore|injury|injured|swelling|fracture|chest|dizzy|dizziness|fever|doctor|physio|pt|surgeon|ER|emergency)\b/i;
-
-/**
- * JSON Schema fragment for Anthropic tool input (optional safetyCallouts).
- */
-export function safetyCalloutsJsonSchema(): Record<string, unknown> {
-  return {
-    type: "array",
-    maxItems: MAX_SAFETY_CALLOUTS,
-    description:
-      "Visible safety callouts when red flags appear — escalate to professionals; do not diagnose.",
-    items: {
-      type: "object",
-      additionalProperties: false,
-      required: ["title", "body"],
-      properties: {
-        title: { type: "string", maxLength: MAX_SAFETY_CALLOUT_TITLE },
-        body: {
-          type: "string",
-          maxLength: MAX_SAFETY_CALLOUT_BODY,
-          description: `At most ${MAX_SAFETY_CALLOUT_BODY} characters. One or two short paragraphs; the reply carries the detail.`,
-        },
-        severity: {
-          type: "string",
-          enum: ["info", "caution", "urgent"],
-        },
-      },
-    },
-  };
-}
 
 /**
  * Deterministic stub callout when the athlete's latest message mentions a soft

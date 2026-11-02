@@ -5,14 +5,15 @@ import { FixedClock } from "../src/clock/clock.js";
 import { createApp } from "../src/app.js";
 import {
   buildStubMidWeekChatReply,
-  buildStubPrescribedDayPatches,
+  buildStubMidWeekForm,
+  buildStubPlanChangeLines,
+  checkMidWeekChatReply,
   createStubLlmPort,
   expectedPlanDates,
   type LlmPort,
   type MidWeekChatReply,
   type PrescribedDay,
   type PrescribedWeek,
-  validateMidWeekChatReply,
 } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket } from "../src/packet/index.js";
@@ -141,8 +142,8 @@ describe("prescribed day patch rule (#38)", () => {
   });
 });
 
-describe("stub prescribed day patches (#38)", () => {
-  it("returns a remaining-day patch when athlete asks to cut the plan", () => {
+describe("stub plan changes (#38)", () => {
+  it("returns a remaining-day change line when athlete asks to cut the plan", () => {
     const plan = samplePlan();
     const packet = buildModelPacket({
       dossier: null,
@@ -161,15 +162,24 @@ describe("stub prescribed day patches (#38)", () => {
       },
       prescribedWeek: plan,
     });
-    const patches = buildStubPrescribedDayPatches(packet);
-    expect(patches).toHaveLength(1);
-    expect(patches![0]!.date).toBe(DATES[3]);
-    expect(patches![0]!.dayType).toBe("rest");
+    const changes = buildStubPlanChangeLines(packet);
+    expect(changes).toHaveLength(1);
+    expect(changes![0]!.date).toBe(DATES[3]);
+    expect(buildStubMidWeekForm(packet).changes).toBe(changes![0]!.line);
 
+    // The stub's line parses: the stored day is a rest day read from it.
     const reply = buildStubMidWeekChatReply(packet);
-    expect(reply.prescribedDayPatches).toEqual(patches);
+    expect(reply.prescribedDayPatches).toEqual([
+      expect.objectContaining({
+        date: DATES[3],
+        dayType: "rest",
+        run: null,
+        line: changes![0]!.line,
+        parsed: true,
+      }),
+    ]);
     expect(reply.body).toContain("Updated the plan");
-    const validated = validateMidWeekChatReply(reply, WEEK_START);
+    const validated = checkMidWeekChatReply(reply, WEEK_START);
     expect(validated.ok).toBe(true);
   });
 
@@ -186,7 +196,8 @@ describe("stub prescribed day patches (#38)", () => {
       },
       prescribedWeek: samplePlan(),
     });
-    expect(buildStubPrescribedDayPatches(packet)).toBeUndefined();
+    expect(buildStubPlanChangeLines(packet)).toBeUndefined();
+    expect(buildStubMidWeekForm(packet)).not.toHaveProperty("changes");
   });
 });
 

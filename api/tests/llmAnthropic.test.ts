@@ -18,7 +18,7 @@ import {
   DOSSIER_V1_SYSTEM_PROMPT,
   MIDWEEK_SYSTEM_PROMPT,
   WEEKLY_SYSTEM_PROMPT,
-  buildStubMidWeekChatReply,
+  buildStubMidWeekForm,
   buildStubWeeklyForm,
   buildStubWeeklyReply,
   createAnthropicLlmPort,
@@ -27,10 +27,10 @@ import {
   LlmSchemaError,
   LlmTransportError,
   resolveDefaultLlmPort,
-  validateMidWeekChatReply,
+  checkMidWeekChatReply,
   checkWeeklyReply,
   withCanonicalStance,
-  type MidWeekChatReply,
+  type MidWeekChatReplyForm,
   type WeeklyReply,
   type WeeklyReplyForm,
 } from "../src/llm/index.js";
@@ -78,7 +78,7 @@ function anthropicToolResponse(reply: WeeklyReplyForm | Record<string, unknown>)
   );
 }
 
-function anthropicMidWeekToolResponse(reply: MidWeekChatReply): Response {
+function anthropicMidWeekToolResponse(reply: MidWeekChatReplyForm): Response {
   return anthropicStreamResponse(
     anthropicToolMessage("submit_mid_week_chat_reply", reply, {
       id: "msg_midweek",
@@ -250,7 +250,7 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
         activityName: "Monday 10k",
       },
     ];
-    const expected = buildStubMidWeekChatReply(packet);
+    const expected = buildStubMidWeekForm(packet);
     let sawTool = false;
 
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -282,7 +282,7 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
     const reply = await port.generateMidWeekChatReply(packet);
     expect(sawTool).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    const checked = validateMidWeekChatReply(reply);
+    const checked = checkMidWeekChatReply(reply);
     expect(checked.ok).toBe(true);
     if (checked.ok) {
       expect(checked.value.body).toContain("Attached run feedback");
@@ -301,16 +301,17 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
 });
 
 describe("safety callout limits in the tool schema", () => {
-  it("tells the model the same limits the validator enforces", async () => {
-    const { safetyCalloutsJsonSchema, MAX_SAFETY_CALLOUT_BODY, MAX_SAFETY_CALLOUT_TITLE, MAX_SAFETY_CALLOUTS } =
-      await import("../src/llm/index.js");
-    const schema = safetyCalloutsJsonSchema() as {
-      maxItems: number;
-      items: { properties: { title: { maxLength: number }; body: { maxLength: number } } };
-    };
-    expect(schema.maxItems).toBe(MAX_SAFETY_CALLOUTS);
-    expect(schema.items.properties.title.maxLength).toBe(MAX_SAFETY_CALLOUT_TITLE);
-    expect(schema.items.properties.body.maxLength).toBe(MAX_SAFETY_CALLOUT_BODY);
+  it("tells the model the same limits the validator enforces, on both forms", async () => {
+    const { MAX_SAFETY_CALLOUT_BODY, MAX_SAFETY_CALLOUTS } = await import("../src/llm/index.js");
+    const { midWeekChatReplyToolSchema, weeklyReplyToolSchema } = await import("../src/llm/anthropic.js");
+    for (const schema of [
+      midWeekChatReplyToolSchema(WEEK_START, "imperial"),
+      weeklyReplyToolSchema(PLAN_WEEK_START, "imperial"),
+    ]) {
+      const box = schema.properties.safetyCallouts as { maxItems: number; description: string };
+      expect(box.maxItems).toBe(MAX_SAFETY_CALLOUTS);
+      expect(box.description).toContain(`under ${MAX_SAFETY_CALLOUT_BODY} characters`);
+    }
   });
 });
 

@@ -23,7 +23,7 @@ import {
   validateDossierAuditDraft,
   validateDossierCorrectionDraft,
   validateDossierV1Draft,
-  validateMidWeekChatReply,
+  checkMidWeekChatReply,
   checkWeeklyReply,
   type SchemaResult,
 } from "../src/llm/schema.js";
@@ -342,7 +342,10 @@ export function validateFor(operation: Operation, input: unknown, ctx: Pick<Repa
       // box (plan-as-text ticket 06); checkWeeklyReply still reads that shape.
       return checkWeeklyReply(input, ctx.weekStartMonday ?? "");
     case "mid_week_chat":
-      return validateMidWeekChatReply(input, ctx.weekStartMonday ?? undefined);
+      // The saved runs were made against the mid-week form with day objects,
+      // before the changes box (plan-as-text ticket 10); checkMidWeekChatReply
+      // still reads that shape.
+      return checkMidWeekChatReply(input, ctx.weekStartMonday ?? undefined);
     default: {
       const validate =
         operation === "dossier_v1"
