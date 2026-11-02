@@ -220,19 +220,18 @@ const STUB_RED_FLAG_RE =
 export function safetyCalloutsJsonSchema(): Record<string, unknown> {
   return {
     type: "array",
+    maxItems: MAX_SAFETY_CALLOUTS,
     description:
-      `Visible safety callouts when red flags appear, at most ${MAX_SAFETY_CALLOUTS} — escalate to professionals; do not diagnose.`,
+      "Visible safety callouts when red flags appear — escalate to professionals; do not diagnose.",
     items: {
       type: "object",
       additionalProperties: false,
       required: ["title", "body"],
       properties: {
-        title: {
-          type: "string",
-          description: `At most ${MAX_SAFETY_CALLOUT_TITLE} characters.`,
-        },
+        title: { type: "string", maxLength: MAX_SAFETY_CALLOUT_TITLE },
         body: {
           type: "string",
+          maxLength: MAX_SAFETY_CALLOUT_BODY,
           description: `At most ${MAX_SAFETY_CALLOUT_BODY} characters. One or two short paragraphs; the reply carries the detail.`,
         },
         severity: {

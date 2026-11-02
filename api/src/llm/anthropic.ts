@@ -195,8 +195,9 @@ function weeklyReplyToolSchema() {
       },
       flags: {
         type: "array",
+        maxItems: MAX_READ_FLAGS,
         description:
-          `What you are watching, not a summary of the week. At most ${MAX_READ_FLAGS}. Shown as a short list under "Watching".`,
+          "What you are watching, not a summary of the week. Shown as a short list under \"Watching\".",
         items: {
           type: "object",
           additionalProperties: false,
@@ -215,8 +216,9 @@ function weeklyReplyToolSchema() {
       },
       answers: {
         type: "array",
+        maxItems: MAX_READ_ANSWERS,
         description:
-          `One per question the athlete asked in the check-in or the conversation, at most ${MAX_READ_ANSWERS}. Empty when they asked nothing.`,
+          "One per question the athlete asked in the check-in or the conversation. Empty when they asked nothing.",
         items: {
           type: "object",
           additionalProperties: false,
@@ -249,7 +251,8 @@ function weeklyReplyToolSchema() {
           },
           days: {
             type: "array",
-            description: "Exactly seven days, Monday to Sunday, one per date the prompt lists.",
+            minItems: 7,
+            maxItems: 7,
             items: {
               type: "object",
               additionalProperties: false,
@@ -354,8 +357,9 @@ function aboutYouToolSchema(description: string) {
         summaryBullets: {
           type: "array",
           minItems: 1,
-          items: { type: "string" },
-          description: `Lines on the athlete's note card, one fact or change each: 1 to ${MAX_DOSSIER_SUMMARY_BULLETS} lines, each at most ${MAX_BULLET_LENGTH} characters.`,
+          maxItems: MAX_DOSSIER_SUMMARY_BULLETS,
+          items: { type: "string", maxLength: MAX_BULLET_LENGTH },
+          description: "Lines on the athlete's note card, one fact or change each.",
         },
         proposedBody: {
           type: "string",
