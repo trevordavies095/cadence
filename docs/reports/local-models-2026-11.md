@@ -391,7 +391,7 @@ That joins the scores to each pack's key and replaces this block with mean score
 
 ## 10. What to change in Cadence's harness
 
-This section is for tuning Cadence. **None of these changes are made yet.** After each one, rerun the benchmark on the hard inputs (section 7), then on all inputs, and compare.
+This section is for tuning Cadence. It was written before any of these changes. Most are now made or superseded by the plan-as-text work; see "Measured since" below and ADR 0006. After any further change, rerun the benchmark on the hard inputs (section 7), then on all inputs, and compare.
 
 Ranked by the rescued replies that need each change (from the rescue simulation, 62 of 68 rescued with all of them):
 
@@ -429,6 +429,12 @@ The first harness change tried after this report was Anthropic's strict tool use
 
 Strict mode is not a fix for the shape errors above. The changes in the list stay the plan: the run written in the athlete's units, a retry that carries the error, and the meaning-preserving repairs. Each is measured the same way.
 
+### Measured since: the plan as text (2026-11-02)
+
+The list above was then replaced by a different change (ADR 0006). Coach Cade writes the plan as seven lines of text, one per day, and Cadence reads each line for its date, day type, and distance or time. A day it cannot read keeps Coach Cade's sentence and is marked "Not yet filed". Every other box on the form is plain text too, and the one retry says what was wrong. First, three runs of the 20 hard inputs on the old form measured Opus 4.7's normal spread: 19, 18 and 18 valid. The reshape's 17 above sits one reply under that band, so most of its drop was chance.
+
+On the same 20 inputs with lists of strings still in the form, gpt-oss-20b was valid on 20 of 20 with 94.6 percent of days filed, and Opus on 20 of 20 with every day filed, but only 14 first try: all six slips were in the lists. With no lists at all, Opus passed 20 of 20 on the first try at $3.11, and gpt-oss-20b filed every day of every week (112 of 112). Before this work gpt-oss-20b was valid on 8 of these 20.
+
 To rebuild the numbers in this report from the saved runs, from `api/`:
 
 ```bash
@@ -437,3 +443,22 @@ npm run replay:publish -- --analysis ../.scratch/benchmark-analysis --doc ../doc
 ```
 
 The second command rewrites only the marked tables and leaves the text as it is.
+
+## 11. After the changes
+
+<!-- generated:after:start -->
+On 2026-11-02, after the plan-as-text work (ADR 0006), Opus 4.7 and gpt-oss-20b answered the same 35 coach calls once, on the finished code. The weekly plan is now seven lines of text that Cadence reads day by day, and every box on the form is plain text. This block was written by hand from that run's analysis. The rented-GPU rows (gpt-oss-120b, Gemma 4 full, Qwen3.8-27B) were not rerun and are not comparable with it. Pruned Gemma 4 on the MacBook was still running; its row is added when it finishes.
+
+| Configuration | Replies | Valid (first try / after retry) | Failed | Days filed | Days fixed by the retry | Time per reply, median / p90 | Cost |
+|---|---|---|---|---|---|---|---|
+| claude-opus-4-7--xhigh | 35 | 35 (35 / 0) | 0 | 196 of 196 | 2 of 2 | 50.8 s / 69.4 s | $5.43 |
+| gpt-oss-20b-MXFP4-Q8--high | 35 | 35 (34 / 1) | 0 | 196 of 196 | 6 of 6 | 28.7 s / 47.0 s | – |
+
+Against section 3's run of 2026-11-01: gpt-oss-20b went from 14 of 35 valid to 35 of 35. Opus stayed at 35 of 35 and needed no retry, where it needed one before. Opus cost $5.43 against $6.15.
+
+- **What still slips is filed by the retry.** Opus once wrote Thursday twice and left out Wednesday; gpt-oss-20b left out six days across three weeks. The retry sent back each date and reason, and every one was filed.
+- **gpt-oss-20b's plans are close to Opus's on shape.** Over 28 weekly plans: weekly distance median ratio 0.99 (p90 1.12), long run 1.00, the same rest days in 21 of 28, quality on both sides in 14 weeks and on gpt-oss-20b's side only in 2.
+- **It is not yet a safe coach.** In the injury week (snapshot/06) it planned a 1-mile goal-pace session, a 12-mile long run and a shin stretch, for an Achilles injury. Opus planned all easy running, a 10-mile long run and a physio appointment. It skipped the athlete's question in 4 of 28 weeks, and its full read ran a median 777 characters against Opus's 1,067. Weekly distance was off by more than a quarter in 3 weeks (1.39, 0.72 and 0.69 times Opus's).
+
+Format is no longer the limit on other models. Coaching quality is: section 6's warning stands, and #58 is its first guard.
+<!-- generated:after:end -->

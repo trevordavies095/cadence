@@ -37,6 +37,8 @@ The substance was good. The demo reads are careful coaching. The tempting fix, a
 
 **Ask once more for a reply refused for its shape.** A plan that arrives as a string of JSON is parsed when it can be. A weekly reply refused for its shape is requested once more before the athlete sees a failed read.
 
+*Status, 2026-11-02: the ask-once-more retry is superseded by ADR 0006. The plan is now seven lines of text, and the one retry says what was wrong: the dates that did not parse and why, or the validator's message. Every coach call has the retry now, not only the weekly read.*
+
 **A plan change shown in the conversation is a snapshot, not a reference.** When Coach Cade changes days from chat, the message keeps the days as they were changed then, so a later change does not rewrite an old message. (Built in the reading-flow third PR.)
 
 ## Evidence: the replay gate

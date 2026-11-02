@@ -16,6 +16,8 @@ Three rounds of measurement in November 2026 showed how narrow that is:
 - **Opus 4.7 itself is fragile.** Small changes to the schema cost it valid replies.
 - **Forcing the format makes things worse.** Anthropic's strict tool use made Opus run away to its output limit.
 
+*Corrected later on 2026-11-02:* the second point overstated the reshape's effect. Three baseline runs put Opus's normal spread at 18 to 19 of 20, so most of the drop it describes was run-to-run variance. Opus's own recurring failure was the nested plan's packaging. See [Since this report](#since-this-report-2026-11-02).
+
 If Opus 4.7 is retired, or an athlete picks any other model, Coach Cade stops producing weekly plans in a large share of weeks. The fix is not one setting. Cadence has to ask for less structure, ask for it in a shape models write naturally, recover from mistakes, and measure every model change before it ships.
 
 ## How Coach Cade replies today
@@ -76,6 +78,8 @@ Every failure was a malformed tool call:
 
 The five inputs involved were replayed on the code from before the reshape, and all five passed first try. A change that looked harmless to the schema was not harmless to the model.
 
+*Corrected later on 2026-11-02:* the replay of five inputs was one run each, and it was not enough. The same 20 inputs were then run three times on the code from before the reshape, and Opus 4.7 scored 19, 18 and 18. The reshape's 17 is one reply under that band, and its failures were the same kinds the baseline runs showed. Most of the drop was ordinary variance, not the reshape. The baseline runs also showed Opus's own recurring failure: five of its six failed or retried replies sent the plan as a string of JSON holding the bare days, with no wrapper.
+
 ### 3. Strict tool use, 2026-11-02
 
 Next, every tool was sent with `strict: true`, which makes Anthropic constrain the model's output to the schema.
@@ -100,6 +104,7 @@ ADR 0002 had already recorded one strict-mode runaway, during the reading-flow w
 2. **Capable models are not the bottleneck.** The failing models coached reasonably and wrote plausible plans in their own words. They failed on field names, units and repeated facts.
 3. **The contract was shaped around one model's habits.** Metres and seconds, the duplicated type, and fields with no description all work only for a model that copies the schema exactly.
 4. **Opus 4.7's reliability is narrower than it looks.** Its 35 of 35 depends on the exact schema. Moving one limit into a description cost three replies.
+   *Corrected later on 2026-11-02:* the first half holds and the second does not. The 35 of 35 was one draw: on the 20 hard inputs Opus lost 5 of 60 replies over three runs on the old form. The three lost replies sit within that spread. Its recurring failure was the nested plan's packaging, and later, on the flat form, lists of strings.
 5. **Enforcement is not the answer on Anthropic.** Strict tool use turned a rare slip into a costly runaway on the model it was meant to protect. On oMLX it did nothing. Constrained decoding varies by server and model, so Cadence cannot build on it.
 6. **Recovery is weak.** The retry carries no error, so it rarely fixes anything. Only the weekly read has a retry at all.
 7. **Prose and data fail together.** A good read is thrown away because one day in the plan has the wrong field name.
@@ -139,7 +144,7 @@ ADR 0002 had already recorded one strict-mode runaway, during the reading-flow w
 
 ## Directions to explore
 
-These are options for a design session, not decisions. They are ordered by how much they reduce the chance of failure.
+These are options for a design session, not decisions. They are ordered by how much they reduce the chance of failure. What was decided and measured for each is under [Since this report](#since-this-report-2026-11-02).
 
 1. **Ask for less structure.** Only the plan needs to be data, so separate it from the prose. Two options to weigh:
    - **Two steps:** the model writes the read freely, then a small, focused call or tool turns the plan into data.
@@ -155,9 +160,11 @@ Constrained decoding stays an option only for servers where it is measured to he
 
 ## Decisions waiting
 
-- **Revert tickets 03 and 04** (the schema reshape and strict mode) on `feat/model-independence`. Recommended: both are measured to make Opus worse.
-- **Pause tickets 05 to 09** until direction 1 is settled, because it may shrink or split the schema those tickets reshape.
-- **Hold a design session** on direction 1 before writing more tickets.
+All three were decided on 2026-11-02.
+
+- **Revert tickets 03 and 04** (the schema reshape and strict mode) on `feat/model-independence`. Recommended: both are measured to make Opus worse. *Decided: reverted. Request bodies were then byte-identical to the code before the reshape.*
+- **Pause tickets 05 to 09** until direction 1 is settled, because it may shrink or split the schema those tickets reshape. *Decided: superseded. Direction 1 replaced them.*
+- **Hold a design session** on direction 1 before writing more tickets. *Decided: held. It chose the plain line format, recorded in ADR 0006.*
 
 ## Open questions
 
@@ -167,9 +174,30 @@ Constrained decoding stays an option only for servers where it is measured to he
 - Should the mid-week reply and the About you tools change the same way, or only the weekly read?
 - What does the next Claude model do on today's schema? It is worth one gate run as soon as one is available.
 
+## Since this report (2026-11-02)
+
+The design session chose direction 1, the plain line format, and folded directions 2 to 4 into it. ADR 0006 records the decision. Every Opus 4.7 run below is the 20-input regression set at `xhigh`, one repeat; gpt-oss-20b ran at `high` on oMLX.
+
+**First, the spread.** Opus 4.7 ran three times on the code from before the reshape: 19, 18 and 18 valid of 20, first try 18, 17 and 17, at $3.51 to $4.08 a run. The band later gates are judged against is 18 to 19. This corrects section 2 and finding 4 above.
+
+1. **Ask for less structure.** *Taken, as the plain line format.* The plan is one box of seven lines, and Cadence parses each line for its date, day type, and distance or duration. A day it cannot parse keeps the coach's sentence and is marked "Not yet filed"; the other days still file. The first gate on the new form: gpt-oss-20b 20 of 20 valid with 94.6 percent of days filed (106 of 112); Opus 20 of 20 with every day filed. The plan box never failed on Opus.
+2. **Ask in the shape models already write.** *Taken, further than planned.* Every box on the weekly and mid-week forms is plain text, distances are written in the athlete's unit, and every box has a description. Lists of strings were tried first and were where Opus slipped: 14 of 20 first try, all six refusals in a list, with tool-call markup in `flags` or items spilled into numbered keys. With no lists at all, Opus passed 20 of 20 on the first try for the first time on this harness, at $3.11, and gpt-oss-20b filed every day (112 of 112). A box holding tool-call markup now refuses the reply.
+3. **Say what was wrong.** *Taken.* The one retry lives in the adapter for every operation. For plan lines that did not parse it sends back each failed date and its reason and takes only those dates from the answer; for any other refusal it sends the validator's message; for a reply with no tool call it asks for the call. On the flat form it fixed 8 of gpt-oss-20b's 14 failed days and all six of Opus's refused replies. The identical-request retry it replaces had repeated Opus's packaging mistake in 4 of 6 attempts.
+4. **Repair only what is mechanical.** *Folded into the parser.* The week id is set by Cadence from the plan week and never asked for, and optional boxes sent as null read as absent. The grammar grew by six recorded decisions (race names, "interval" and "hill", walk-run, a week on one line, escaped newlines, repeat patterns), never by mapping a model's field names. Not measured on its own.
+5. **Gate every change.** *Built, with the caps it needed.* Every coach call is capped at 20,000 output tokens instead of 64,000, and the gate refuses a run estimated above $5 unless told otherwise. The gate prints reads valid and structured days against the band and the local thresholds.
+
+Opus 4.7's mis-packaged plan was also recovered on `develop` as a stopgap (PR #60) for the old nested form, ahead of this work.
+
+**The final run** on all 35 inputs: Opus 4.7 35 of 35 valid, all on the first try, every day filed, $5.43; gpt-oss-20b 35 of 35 valid (34 first try), every day filed, against 14 of 35 in the benchmark. Pruned Gemma 4 was still running when this was written. Results are in the after-block of [`local-models-2026-11.md`](local-models-2026-11.md). Opus spend across the work: $23.90.
+
+**Usable is not coachable.** gpt-oss-20b's plans now arrive and file, but its injury-week plan still added a goal-pace session and a 12-mile long run where Opus planned only easy running and a 10-mile long run. Making other models coach well is the next phase, starting with a plan sanity check (#58).
+
+**The open questions, as far as they are answered.** The read and the plan stay in one call, so the plan still follows from the read and there is no second call on slow hardware. "Close enough" for a local model is written down as at least 19 of 20 valid and 90 percent of days filed. The mid-week reply changed the same way; About you did not, since it passed everywhere.
+
 ## Sources
 
 - [`local-models-2026-11.md`](local-models-2026-11.md): the full benchmark, failure taxonomy, rescue simulation and plan comparison.
 - [ADR 0002](../adr/0002-reading-flow.md): the first strict-mode attempt and the current retry.
 - [ADR 0005](../adr/0005-self-hosted-provider.md): the self-hosted provider.
+- [ADR 0006](../adr/0006-plan-is-the-coachs-text.md): the plan as the coach's text, and the gate numbers.
 - The maintainer's working notes hold the gate runs, per-input tables, the runaway's details and the reply-contract spec. They are not checked in.

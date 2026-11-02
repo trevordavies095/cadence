@@ -13,8 +13,10 @@ Anthropic, Claude Opus 4.7 at `xhigh`, stays the default and the tested setup. C
 ## What your server needs
 
 - **The Anthropic Messages endpoint.** Cadence calls `POST /v1/messages` with streaming and lists models with `GET /v1/models`. It does not use the OpenAI-style `/v1/chat/completions`.
-- **Tool calls.** Every reply from Coach Cade comes back as a tool call. The server must parse your model's tool-call format.
-- **A context of at least 64k tokens** (65,536). A weekly read sends about 21k tokens on average and up to 36k. A mid-week message sends about 28k. Replies are 3k to 9k tokens, thinking included, and must fit too.
+- **Tool calls.** Every reply from Coach Cade comes back as a tool call. The server must parse your model's tool-call format. Every box on the form is plain text, so the server never has to build a nested object.
+- **Conversations with more than one turn, for the retry.** When a reply needs fixing, Cadence asks once more in the same conversation: your request, then the model's reply sent back as it came (its thinking and tool-call blocks included), then a tool result marked as an error that says what was wrong, such as the plan days Cadence could not read. A reply with no tool call is followed by a plain "call the tool" message instead. The server must accept assistant turns made of content blocks and `tool_result` blocks with `is_error: true`. Cadence asks for no constrained output.
+- **An output cap of 20,000 tokens.** Every call sends `max_tokens: 20000`. A reply that stops there is asked for once more, then fails. Replies are 3k to 9k tokens, thinking included, so a reply that reaches the cap has usually gone wrong.
+- **A context of at least 64k tokens** (65,536). A weekly read sends about 21k tokens on average and up to 36k. A mid-week message sends about 28k. The reply must fit too, and a retry adds the first reply to the conversation.
 - **A reasoning model, ideally.** Cadence asks for an effort level and expects the model to think before it replies.
 
 ## Raise the context length
@@ -121,7 +123,7 @@ A row that says "works" means the server and model ran every operation. How ofte
 
 Context is what the server reported for the model. Qwen3-14B was not tried: its 40,960-token context is below the 64k Cadence needs.
 
-The format failures come from the model, not the server: the same models fail the same way on both. Cadence asks once more when a weekly reply is refused for its format, but a model that makes the same mistake twice still fails the week. The [benchmark report](reports/local-models-2026-11.md) has the numbers.
+The format failures come from the model, not the server: the same models fail the same way on both. These rows were measured before the plan became seven lines of text (ADR 0006). Cadence now asks once more for any coach reply it cannot use, and says what was wrong; a plan day it still cannot read shows Coach Cade's sentence, marked "Not yet filed", and the rest of the week files. On 20 hard inputs, gpt-oss-20b on oMLX then filed every day of every week. The [benchmark report](reports/local-models-2026-11.md) has the numbers, and its after-the-changes section has the full rerun.
 
 ## oMLX
 
