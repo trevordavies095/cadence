@@ -1,0 +1,10 @@
+{
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "inputs": "tests/fixtures/regression-set.json",
+  "readsValid": { "low": 18, "high": 19, "of": 20 },
+  "weeklyReadsValid": { "low": 14, "high": 16, "of": 16 },
+  "runs": 3,
+  "measuredOn": "2026-11-02",
+  "harness": "f95f144 (strict and the schema reshape reverted; 20,000-token output cap)",
+  "note": "The run-to-run band of Opus 4.7 at xhigh on today's harness. A later Opus gate on the regression set passes on reads valid if it is at or above `low`. Record: .scratch/benchmark-after/baseline-spread/FINDINGS.md (local)."
+}
