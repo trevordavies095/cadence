@@ -18,6 +18,7 @@ import { resolveWeeklyPlanWeek } from "../src/llm/stub.js";
 import type { PrescribedWeek } from "../src/llm/types.js";
 import type { ModelPacket } from "../src/packet/types.js";
 import { comparePlans, pearson, planSummary, spread } from "../scripts/replayAnalysisStats.js";
+import { planLineSummary } from "../scripts/replayPlanLines.js";
 import {
   athleteUnit,
   CANDIDATE_REPAIRS,
@@ -430,6 +431,97 @@ describe("plan figures", () => {
     expect(c.dayTypeMatch).toBeCloseTo(6 / 7);
     expect(c.sameRestDays).toBe(false);
     expect(c.quality).toEqual({ candidate: true, baseline: true });
+    expect(c.unparsed).toEqual({ candidate: 0, baseline: 0 });
+  });
+
+  it("an unparsed day is no plan: counted, left out of the ratios, matching no day type", () => {
+    const base = validWeek() as PrescribedWeek;
+    const cand = validWeek() as PrescribedWeek;
+    // The long run (16 km) and a quality day (8 km) could not be filed.
+    for (const i of [2, 6]) cand.days[i] = { date: cand.days[i]!.date, dayType: "other", run: null, notes: "Sun: long 10", line: "Sun: long 10", parsed: false };
+    const c = comparePlans(cand, base);
+    expect(c.unparsed).toEqual({ candidate: 2, baseline: 0 });
+    // Over the five days both filed: 8 + 8 + 8 = 24 km each side.
+    expect(c.distanceRatio).toBe(1);
+    expect(c.longRunRatio).toBeNull();
+    expect(c.dayTypeMatch).toBeCloseTo(5 / 7);
+    expect(c.quality).toEqual({ candidate: false, baseline: true });
+    // Every day unparsed: nothing to compare, and nothing throws.
+    const none = { ...cand, days: cand.days.map((d) => ({ date: d.date, dayType: "other" as const, run: null, line: null, parsed: false })) };
+    const n = comparePlans(none, base);
+    expect(n).toMatchObject({ distanceRatio: null, longRunRatio: null, dayTypeMatch: 0, unparsed: { candidate: 7, baseline: 0 } });
+  });
+});
+
+describe("the plan-lines summary of a saved reply", () => {
+  const week = (parsed: boolean[]): Any => ({
+    headline: "A week.",
+    analysis: "The read.",
+    prescribedWeek: { week: "2026-W43", days: validWeek().days.map((d: Any, i: number) => ({ ...d, line: `line ${i}`, parsed: parsed[i] })) },
+  });
+
+  it("reads failures, the retry's fixes, bare numbers and dropped lines from what the reply file saved", () => {
+    const summary = planLineSummary("weekly_reply", {
+      repairs:
+        'plan 2026-10-22 not filed: no distance unit; plan 2026-10-24 not filed: no day type word; plan 2026-10-25 not filed: no line; plan line for 2026-10-26 dropped: outside the plan week; plan line with no day ignored: "Note; keep it easy"; headline cut from 200 to 160 chars',
+      timing: {
+        attempts: [
+          { attempt: 1, request: { kind: "first" }, repairs: "plan 2026-10-22 not filed: no distance unit" },
+          { attempt: 2, request: { kind: "fix_lines", fixDates: ["2026-10-22", "2026-10-24", "2026-10-25"], fixed: ["2026-10-22", "2026-10-25"] } },
+        ],
+      },
+      new: week([true, true, true, true, true, false, true]),
+    });
+    expect(summary).toEqual({
+      box: "plan",
+      daysTotal: 7,
+      daysParsed: 6,
+      failures: [
+        { date: "2026-10-22", reason: "no distance unit" },
+        { date: "2026-10-24", reason: "no day type word" },
+        { date: "2026-10-25", reason: "no line" },
+      ],
+      retried: true,
+      retryAskedFor: ["2026-10-22", "2026-10-24", "2026-10-25"],
+      fixedByRetry: ["2026-10-22", "2026-10-25"],
+      bareNumbers: 1,
+      droppedLines: [{ date: "2026-10-26", reason: "outside the plan week" }],
+      ignoredLines: 1,
+    });
+  });
+
+  it("falls back on the retry row's repair notes when its request names no fixed dates", () => {
+    const summary = planLineSummary("weekly_reply", {
+      repairs: "plan 2026-10-22 not filed: no distance unit",
+      timing: { attempts: [{ attempt: 1 }, { attempt: 2, request: { kind: "fix_lines" }, repairs: "plan 2026-10-22 filed by the retry" }] },
+      new: week([true, true, true, true, true, true, true]),
+    });
+    expect(summary).toMatchObject({ retried: true, fixedByRetry: ["2026-10-22"], daysParsed: 7 });
+  });
+
+  it("summarises a mid-week reply's changes lines, files an old nested reply whole, and has none for About you", () => {
+    const mid = planLineSummary("mid_week_chat", {
+      repairs: "changes 2026-10-22 not filed: no distance or duration; changes line for 2026-10-27 dropped: outside the plan week",
+      new: {
+        body: "Moved Thursday.",
+        prescribedDayPatches: [
+          { date: "2026-10-21", dayType: "easy", run: { type: "easy", distanceM: 5000 }, line: "Wed: easy 5 km", parsed: true },
+          { date: "2026-10-22", dayType: "other", run: null, notes: "Thu: easy", line: "Thu: easy", parsed: false },
+        ],
+      },
+    });
+    expect(mid).toMatchObject({
+      box: "changes",
+      daysTotal: 2,
+      daysParsed: 1,
+      failures: [{ date: "2026-10-22", reason: "no distance or duration" }],
+      bareNumbers: 0,
+      droppedLines: [{ date: "2026-10-27", reason: "outside the plan week" }],
+    });
+    expect(planLineSummary("mid_week_chat", { repairs: null, new: { body: "No change." } })).toMatchObject({ daysTotal: 0, daysParsed: 0 });
+    // The 2026-11-01 runs: nested day objects with no parsed flag read as filed.
+    expect(planLineSummary("weekly_reply", { repairs: null, new: validWeekly() })).toMatchObject({ daysTotal: 7, daysParsed: 7, failures: [], retried: false });
+    expect(planLineSummary("dossier_v1", { repairs: null, new: { summaryBullets: [], proposedBody: "x" } })).toBeNull();
   });
 });
 
@@ -477,6 +569,137 @@ describe("the script", () => {
     const md = readFileSync(path.join(out, "analysis.md"), "utf8");
     expect(md.indexOf("## What to change in the harness")).toBeLessThan(md.indexOf("## 1. Outcomes"));
     expect(md).toContain("fill a missing run.type from the day's dayType");
+  });
+
+  /**
+   * A root holding a baseline run on the old nested form and a candidate run
+   * on the plan-as-text form: two valid weekly reads (one with two unparsed
+   * days, one fixed by the retry) and a refusal whose tool input is old-shaped.
+   */
+  function buildNewFormRoot(): string {
+    const root = path.join(tmp, "newform", "seasons");
+    const inputs = path.join(api, "tests/fixtures/seasons/season-packets");
+    const base = path.join(root, "anthropic--claude-opus-4-7--xhigh");
+    const cand = path.join(root, "self_hosted--new-model--high");
+    for (const [dir, provider, model] of [[base, "anthropic", "claude-opus-4-7"], [cand, "self_hosted", "new-model"]] as const) {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(path.join(dir, "config.json"), JSON.stringify({ configuration: path.basename(dir), provider, model, effort: "high", inputs }));
+    }
+    const reply = (extra: Any) => ({ operation: "weekly_reply", outcome: "ok", repairs: null, inputTokens: 1000, outputTokens: 100, refusedAttempts: [], ...extra });
+    for (const id of ["01", "02"]) writeFileSync(path.join(base, `${id}.1.json`), JSON.stringify(reply({ new: validWeekly() })));
+    const filed = (unparsed: number[]): Any => ({
+      ...validWeekly(),
+      prescribedWeek: {
+        week: "2026-W43",
+        days: validWeek().days.map((d: Any, i: number) =>
+          unparsed.includes(i) ? { date: d.date, dayType: "other", run: null, notes: `line ${i}`, line: `line ${i}`, parsed: false } : { ...d, line: `line ${i}`, parsed: true },
+        ),
+      },
+    });
+    writeFileSync(
+      path.join(cand, "01.1.json"),
+      JSON.stringify(
+        reply({
+          outcome: "repaired",
+          repairs: "plan 2026-10-21 not filed: no distance unit; plan 2026-10-25 not filed: no line",
+          timing: {
+            ttftMs: 100,
+            totalMs: 3000,
+            attempts: [
+              { attempt: 1, ttftMs: 100, totalMs: 2000, request: { kind: "first", turns: ["user: text"] }, outcome: "repaired", repairs: "plan 2026-10-21 not filed: no distance unit; plan 2026-10-25 not filed: no line", inputTokens: 1000, outputTokens: 100 },
+              { attempt: 2, ttftMs: 90, totalMs: 1000, request: { kind: "fix_lines", turns: ["user: text", "assistant: tool_use", "user: tool_result (error)"], fixDates: ["2026-10-21", "2026-10-25"], fixed: [] }, outcome: "repaired", repairs: "plan 2026-10-21 still not filed: no distance unit; plan 2026-10-25 still not filed: no line", inputTokens: 1200, outputTokens: 50 },
+            ],
+          },
+          new: filed([2, 6]),
+        }),
+      ),
+    );
+    writeFileSync(
+      path.join(cand, "02.1.json"),
+      JSON.stringify(
+        reply({
+          outcome: "repaired",
+          repairs: "plan 2026-10-22 not filed: no distance unit",
+          timing: {
+            ttftMs: 100,
+            totalMs: 3000,
+            attempts: [
+              { attempt: 1, ttftMs: 100, totalMs: 2000, request: { kind: "first", turns: ["user: text"] } },
+              { attempt: 2, ttftMs: 90, totalMs: 1000, request: { kind: "fix_lines", turns: [], fixDates: ["2026-10-22"], fixed: ["2026-10-22"] }, outcome: "repaired", inputTokens: 1200, outputTokens: 50 },
+            ],
+          },
+          new: filed([]),
+        }),
+      ),
+    );
+    // A refusal with an old-shaped tool input: on a plan-as-text run it is not rescued, nor re-validated by the old checkers.
+    const f = fixture("gpt-oss-120b-run-aliases.json");
+    const attempt = (n: number) => ({ attempt: n, error: f.error, stopReason: "tool_use", outputTokens: 100, inputTokens: 1000, responseRaw: f.responseRaw });
+    writeFileSync(
+      path.join(cand, "03.1.failed.json"),
+      JSON.stringify({ operation: "weekly_reply", error: f.error, stopReason: "tool_use", timing: { ttftMs: 100, totalMs: 2000, attempts: [{ attempt: 1, ttftMs: 100, totalMs: 1000 }, { attempt: 2, ttftMs: 90, totalMs: 1000 }] }, refusedAttempts: [attempt(1), attempt(2)] }),
+    );
+    return root;
+  }
+
+  it("measures the plan lines of a plan-as-text run, skips its rescue, and still rescues an old run beside it", () => {
+    const oldRoot = path.join(tmp, "seasons");
+    if (!existsSync(oldRoot)) buildRoot();
+    const root = buildNewFormRoot();
+    const out = path.join(tmp, "analysis-newform");
+    // The two roots share the name "seasons": read them as one would two runs, each its own root.
+    const oldCopy = path.join(tmp, "old", "snapshot");
+    mkdirSync(path.dirname(oldCopy), { recursive: true });
+    if (!existsSync(oldCopy)) {
+      mkdirSync(oldCopy, { recursive: true });
+      const dir = path.join(oldCopy, "self_hosted--test-model--high");
+      mkdirSync(dir);
+      for (const f of ["config.json", "01.1.failed.json"]) writeFileSync(path.join(dir, f), readFileSync(path.join(oldRoot, "self_hosted--test-model--high", f)));
+    }
+    const res = run(["--roots", `${root},${oldCopy}`, "--out", out]);
+    expect(res.status, res.stderr).toBe(0);
+    const json = JSON.parse(readFileSync(path.join(out, "analysis.json"), "utf8"));
+
+    const cand = json.planLines.find((p: Any) => p.configuration === "self_hosted--new-model--high");
+    expect(cand.form).toBe("plan lines");
+    expect(cand.weekly).toMatchObject({ replies: 2, daysTotal: 14, daysParsed: 12, unparsed: 2, failedFirst: 3, retried: 2, retryAskedFor: 3, fixedByRetry: 1, bareNumbers: 2, droppedLines: 0 });
+    expect(cand.weekly.structuredShare).toBeCloseTo(12 / 14);
+    const base = json.planLines.find((p: Any) => p.configuration === "anthropic--claude-opus-4-7--xhigh");
+    expect(base).toMatchObject({ form: "nested days", weekly: { daysTotal: 14, daysParsed: 14 } });
+    expect(json.failuresByReason).toEqual([
+      { configuration: "self_hosted--new-model--high", operation: "weekly_reply", reason: "no distance unit", firstParse: 2, fixedByRetry: 1, stillUnparsed: 1, droppedLines: 0 },
+      { configuration: "self_hosted--new-model--high", operation: "weekly_reply", reason: "no line", firstParse: 1, fixedByRetry: 0, stillUnparsed: 1, droppedLines: 0 },
+    ]);
+
+    // The rescue skips the plan-as-text run and still works on the old one.
+    expect(json.rescue.skippedRuns).toEqual(["seasons/self_hosted--new-model--high"]);
+    expect(json.rescue.failedPopulation).toBe(1);
+    expect(json.rescue.overall.all).toBe(1);
+    expect(json.rescue.details.map((d: Any) => d.key)).toEqual(["snapshot/01"]);
+    expect(json.rescue.extraction.checked).toBe(2);
+
+    // The plan comparison counts unparsed days and leaves them out of the ratio.
+    const plans = json.plans.find((p: Any) => p.configuration === "self_hosted--new-model--high");
+    expect(plans.valid).toMatchObject({ pairs: 2, unparsed: { candidate: 2, baseline: 0 }, pairsWithUnparsed: 1 });
+    expect(plans.valid.distanceRatio.worst).toBe(1);
+
+    // The second requests by kind, and the fix's tokens on its own attempt.
+    expect(json.retry.find((r: Any) => r.configuration === "self_hosted--new-model--high").secondRequests).toMatchObject({ fix_lines: 2, "not recorded": 1 });
+    const csv = readFileSync(path.join(out, "replies.csv"), "utf8").trim().split("\n");
+    const header = csv[0]!.split(",");
+    const rows = csv.slice(1).map((l) => Object.fromEntries(l.split(",").map((v, i) => [header[i], v])));
+    const fix = rows.find((r) => r.configuration === "self_hosted--new-model--high" && r.input_id === "01" && r.attempt === "2")!;
+    expect(fix).toMatchObject({ request_kind: "fix_lines", input_tokens: "1200", output_tokens: "50", attempt_outcome: "accepted" });
+    const first = rows.find((r) => r.configuration === "self_hosted--new-model--high" && r.input_id === "01" && r.attempt === "1")!;
+    expect(first).toMatchObject({ request_kind: "first", input_tokens: "1000" });
+
+    const md = readFileSync(path.join(out, "analysis.md"), "utf8");
+    expect(md).toContain("| Configuration | Operation | Replies | First try | After retry | Failed | Structured days (of seven) |");
+    expect(md).toContain("| new-model--high | all | 3 | 2 | 0 | 1 | 6.0 (86%) |");
+    expect(md).toContain("### Plan-line failures by reason");
+    expect(md).toContain("| new-model--high | plan | no distance unit | 2 | 1 | 1 | 0 |");
+    expect(md).toContain("Skipped for runs on the plan-as-text form, where the parser is the repair: `seasons/self_hosted--new-model--high`");
+    expect(md).not.toContain("re-sends the identical request");
   });
 
   it("refuses an --out inside a root", () => {

@@ -17,9 +17,15 @@
  *
  * A block is the text between `<!-- generated:<name>:start -->` and
  * `<!-- generated:<name>:end -->`. Known names: setup, results, failures,
- * retry, rescue, plans, hardest, review. An unknown or unpaired marker stops
- * the script before anything is written; a known block missing from the
+ * retry, rescue, plans, hardest, review, after. An unknown or unpaired marker
+ * stops the script before anything is written; a known block missing from the
  * report is reported and skipped.
+ *
+ * `after` (`<!-- generated:after:start -->` ... `<!-- generated:after:end -->`)
+ * is the "after the changes" block of plan-as-text ticket 13, built from the
+ * final run's analysis. Its text is not written yet: until a renderer is
+ * supplied, the publisher recognises the marker and leaves the block's body
+ * exactly as it stands (empty when the report holds the markers alone).
  *
  * Nothing published may carry a key, a host address or a local path: notes
  * and input names are scrubbed of IPv4 addresses and absolute paths.
@@ -291,6 +297,14 @@ function hardestBlock({ a }: Ctx): string[] {
   ];
 }
 
+/**
+ * The "after the changes" block (plan-as-text ticket 13). Null: no block is
+ * supplied yet, so the body is left as it stands.
+ */
+function afterBlock(_ctx: Ctx): string[] | null {
+  return null;
+}
+
 function packsIn(reviewDir: string): string[] {
   if (!existsSync(reviewDir)) return [];
   return readdirSync(reviewDir, { withFileTypes: true })
@@ -322,7 +336,8 @@ function reviewBlock({ reviewDir }: Ctx): string[] {
   ];
 }
 
-const BLOCKS: Record<string, (ctx: Ctx) => string[]> = {
+/** Each block's renderer; one that returns null leaves the block's body as it stands. */
+const BLOCKS: Record<string, (ctx: Ctx) => string[] | null> = {
   setup: setupBlock,
   results: resultsBlock,
   failures: failuresBlock,
@@ -331,6 +346,7 @@ const BLOCKS: Record<string, (ctx: Ctx) => string[]> = {
   plans: plansBlock,
   hardest: hardestBlock,
   review: reviewBlock,
+  after: afterBlock,
 };
 
 // ---- Rewriting ---------------------------------------------------------------------------
@@ -338,9 +354,10 @@ const BLOCKS: Record<string, (ctx: Ctx) => string[]> = {
 const MARKER = /<!-- generated:([\w-]+):(start|end) -->/g;
 
 /** The report with each known block's body replaced; everything else as it was. */
-function rewrite(doc: string, ctx: Ctx): { doc: string; replaced: string[]; missing: string[] } {
+function rewrite(doc: string, ctx: Ctx): { doc: string; replaced: string[]; kept: string[]; missing: string[] } {
   const markers = [...doc.matchAll(MARKER)].map((m) => ({ name: m[1]!, kind: m[2]!, index: m.index!, length: m[0].length }));
   const replaced: string[] = [];
+  const kept: string[] = [];
   let out = "";
   let at = 0;
   for (let i = 0; i < markers.length; i++) {
@@ -350,14 +367,20 @@ function rewrite(doc: string, ctx: Ctx): { doc: string; replaced: string[]; miss
     if (!end || end.kind !== "end" || end.name !== start.name) throw new Error(`generated:${start.name}:start is not followed by its own end marker`);
     const render = BLOCKS[start.name];
     if (!render) throw new Error(`generated:${start.name} is not a known block (known: ${Object.keys(BLOCKS).join(", ")})`);
-    if (replaced.includes(start.name)) throw new Error(`generated:${start.name} appears twice`);
-    out += doc.slice(at, start.index + start.length) + "\n" + render(ctx).join("\n") + "\n";
+    if (replaced.includes(start.name) || kept.includes(start.name)) throw new Error(`generated:${start.name} appears twice`);
+    const body = render(ctx);
+    if (body === null) {
+      out += doc.slice(at, end.index);
+      kept.push(start.name);
+    } else {
+      out += doc.slice(at, start.index + start.length) + "\n" + body.join("\n") + "\n";
+      replaced.push(start.name);
+    }
     at = end.index;
-    replaced.push(start.name);
     i++;
   }
   out += doc.slice(at);
-  return { doc: out, replaced, missing: Object.keys(BLOCKS).filter((b) => !replaced.includes(b)) };
+  return { doc: out, replaced, kept, missing: Object.keys(BLOCKS).filter((b) => !replaced.includes(b) && !kept.includes(b)) };
 }
 
 function main(): void {
@@ -366,10 +389,11 @@ function main(): void {
   const a = JSON.parse(readFileSync(file, "utf8")) as AnalysisFile;
   if (!a.setup) throw new Error(`${file} has no setup; rerun npm run replay:analyse with this version.`);
   if (!existsSync(DOC)) throw new Error(`No report at ${DOC}.`);
-  const { doc, replaced, missing } = rewrite(readFileSync(DOC, "utf8"), { a, reviewDir: REVIEW });
+  const { doc, replaced, kept, missing } = rewrite(readFileSync(DOC, "utf8"), { a, reviewDir: REVIEW });
   if (DRY_RUN) process.stdout.write(doc);
   else writeFileSync(DOC, doc);
   console.error(`${DRY_RUN ? "Would rewrite" : "Rewrote"} ${replaced.length} block${replaced.length === 1 ? "" : "s"} in ${path.basename(DOC)}: ${replaced.join(", ") || "none"}.`);
+  if (kept.length) console.error(`Left as they stand (no block supplied yet): ${kept.join(", ")}.`);
   if (missing.length) console.error(`Not in the report, skipped: ${missing.join(", ")}.`);
 }
 

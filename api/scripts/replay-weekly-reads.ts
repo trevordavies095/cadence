@@ -128,7 +128,11 @@
  * with plan lines that did not parse is asked once more for those lines alone;
  * that retry is no refusal, so it shows only in `timing.attempts`, where a live
  * run records each attempt's request kind and turns (`request`) and its row's
- * outcome and repair notes. On a dry run, a wrapped
+ * outcome and repair notes. Each reply file also saves `plan`
+ * (scripts/replayPlanLines.ts): for a weekly read its days total and parsed,
+ * the dates that failed on the first parse and why, the dates the retry fixed,
+ * bare numbers and dropped lines; for a mid-week reply the same over its
+ * changes lines; null for About you. On a dry run, a wrapped
  * packet's `stubRefusals` (a count) makes the stub refuse that many attempts
  * first, through that same loop, so the retry can be tested offline; a live run
  * ignores it.
@@ -222,6 +226,7 @@ import type { ModelPacket } from "../src/packet/types.js";
 import { normalizeSelfHostedBaseUrl, selfHostedEndpoint, selfHostedHost } from "../src/settings/selfHostedStore.js";
 import { createInstrumentedFetch, thinkingCharsOf, timeToFirstTokenMs } from "./instrumentedFetch.js";
 import { replayCheckFailures, type ReplayCheckFailure } from "./replayChecks.js";
+import { planLineSummary } from "./replayPlanLines.js";
 import { reviewResults, writeReviewPacks, type ReviewInput } from "./replayReview.js";
 import {
   configurationInputs,
@@ -869,6 +874,7 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
   // The reply that counted: the caller's id names it. After a retry that fixed
   // plan lines it is the first reply, the retry's row is in timing.attempts.
   const row = log.find((r) => r.id === callId) ?? log.at(-1);
+  const savedTiming = timing();
   writeFileSync(
     file,
     JSON.stringify(
@@ -887,11 +893,13 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
         repairs: row?.errorMessage ?? null,
         stopReason: row?.stopReason ?? null,
         ...usageFields(row),
-        timing: timing(),
+        timing: savedTiming,
         // What a weekly plan is checked against (week, recent distance); null for other operations.
         planCheck: planExpectation(call),
         // Attempts refused for their shape before this reply came back; empty when none.
         refusedAttempts: refusals,
+        // What the plan lines came to (scripts/replayPlanLines.ts); null for About you.
+        plan: planLineSummary(call.operation, { repairs: row?.errorMessage ?? null, timing: savedTiming, new: reply }),
         old: call.old,
         new: reply,
       },

@@ -23,13 +23,27 @@
  * parent); it is created when missing. The gate never writes under
  * .scratch/benchmark/, which holds the "before" runs.
  *
- * Last, it prints the gate record, one line per configuration: replies valid
- * as sent (accepted by the validator, on the first try or when asked once more,
- * as the benchmark counted them) out of the replies run, and how many of the
- * valid replies carry a soft repair by the validator:
+ * Last, it prints the gate record, one line per configuration: reads valid as
+ * sent (accepted by the validator, on the first try or when asked once more,
+ * as the benchmark counted them) out of the replies run; structured days, the
+ * days Cadence filed from the valid weekly reads' plan boxes over every day
+ * they stored; how many valid replies carry a repair note; and the verdict:
  *
- *   gate strict: opus 20/20 valid, 0 repairs
- *   gate strict: gpt-oss-20b 9/20 valid, 0 repairs
+ *   gate flat-form: opus 19/20 valid (19 first try, 0 after retry), structured days 100% (112 of 112), 0 repairs: PASS, needs at least 18/20 valid (baseline band 18 to 19) and 100% structured days
+ *   gate flat-form: gpt-oss-20b 18/20 valid (18 first try, 0 after retry), structured days 86.6% (91 of 105), 3 repairs: FAIL, needs at least 19/20 valid and 90% structured days
+ *
+ * The pass rule (scripts/replayGateRule.ts, thresholds from
+ * .scratch/plan-as-text/spec.md, "Measurement"): Opus passes at or above the
+ * baseline band's low on reads valid, the band read from
+ * tests/fixtures/baseline-band.json, and at 100 percent structured days;
+ * gpt-oss-20b passes at 19 of 20 reads valid or more and at least 90 percent
+ * structured days. The thresholds are for the 20-input regression set: with
+ * --only naming any other input set, the gate prints the numbers and says the
+ * thresholds apply to the regression set only. The gate's exit code does not
+ * follow the verdict; the record is read, not acted on.
+ *
+ * --only <root>/<id>[,...] or @<file> (a JSON list of { input, why }, as the
+ * replay takes it) runs that input set instead of the regression set.
  *
  * A rerun resumes: the replay skips every reply already saved, so an
  * interrupted gate costs only what is left (a refused or failed reply is asked
@@ -92,10 +106,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { MAX_OUTPUT_TOKENS } from "../src/llm/anthropic.js";
 import { describeEstimate, estimateGateCost } from "./replayCost.js";
+import { judge, readBaselineBand, type GateNumbers } from "./replayGateRule.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const api = path.resolve(here, "..");
 const REGRESSION_SET = path.join(api, "tests/fixtures/regression-set.json");
+const BASELINE_BAND = path.join(api, "tests/fixtures/baseline-band.json");
 const SEASON_PACKETS = path.join(api, "tests/fixtures/seasons/season-packets");
 const TSX = path.join(api, "node_modules/.bin/tsx");
 const ROOTS = ["snapshot", "seasons"] as const;
@@ -189,10 +205,30 @@ function refuseMixedRuns(): void {
 
 refuseMixedRuns();
 
-// ---- The regression set ---------------------------------------------------------------
+// ---- The input set ----------------------------------------------------------------------
 
-const regressionSet = JSON.parse(readFileSync(REGRESSION_SET, "utf8")) as Array<{ input: string; why: string }>;
-const idsOf = (root: Root) => regressionSet.map((e) => e.input).filter((i) => i.startsWith(`${root}/`)).map((i) => i.slice(root.length + 1));
+const regressionSet = (JSON.parse(readFileSync(REGRESSION_SET, "utf8")) as Array<{ input: string; why: string }>).map((e) => e.input);
+const ONLY = flagValue("--only", "a comma-separated list of <root>/<input id>, or @<file>");
+
+/** The inputs this gate runs: the regression set, or what --only names. */
+function inputSet(): string[] {
+  if (ONLY === null) return regressionSet;
+  const names = ONLY.startsWith("@")
+    ? (JSON.parse(readFileSync(path.resolve(ONLY.slice(1)), "utf8")) as Array<{ input: string }>).map((e) => String(e.input).trim())
+    : ONLY.split(",").map((n) => n.trim()).filter(Boolean);
+  for (const name of names) {
+    if (!/^(snapshot|seasons)\/\d+$/.test(name)) throw new Error(`--only "${name}": expected snapshot/<id> or seasons/<id>, such as seasons/09.`);
+  }
+  if (names.length === 0) throw new Error("--only names no input.");
+  return names;
+}
+
+const INPUTS = inputSet();
+/** Whether the thresholds apply: the regression set's inputs, no more and no fewer. */
+const IS_REGRESSION_SET = [...new Set(INPUTS)].sort().join(",") === [...regressionSet].sort().join(",");
+const idsOf = (root: Root) => INPUTS.filter((i) => i.startsWith(`${root}/`)).map((i) => i.slice(root.length + 1));
+const ROOTS_RUN = ROOTS.filter((r) => idsOf(r).length > 0);
+const BAND = readBaselineBand(BASELINE_BAND);
 
 // ---- Caps on spend -------------------------------------------------------------------
 
@@ -235,7 +271,8 @@ function run(args: string[]): Promise<{ code: number | null; stderr: string }> {
 }
 
 function replayArgs(c: Configuration, root: Root): string[] {
-  const args = ["scripts/replay-weekly-reads.ts", "--out", path.join(LEVER_DIR, root), "--only", `@${REGRESSION_SET}`, "--repeats", "1"];
+  const only = ONLY === null ? `@${REGRESSION_SET}` : idsOf(root).map((id) => `${root}/${id}`).join(",");
+  const args = ["scripts/replay-weekly-reads.ts", "--out", path.join(LEVER_DIR, root), "--only", only, "--repeats", "1"];
   if (root === "seasons") args.push("--packets", SEASON_PACKETS);
   args.push("--provider", c.provider, "--model", c.model, "--effort", c.effort);
   if (c.provider === "self_hosted") {
@@ -279,6 +316,7 @@ type Outcome = { replies: number; firstTry: number; afterRetry: number; failedBy
 type AnalysisJson = {
   outcomes: Array<{ configuration: string; all: Outcome }>;
   quality: Array<{ configuration: string; valid: { softRepairReplies: number } }>;
+  planLines: Array<{ configuration: string; weekly: { daysParsed: number; daysTotal: number } }>;
 };
 
 /** One record line per configuration, from the analysis, and any transport failure that voids it. */
@@ -288,8 +326,17 @@ function record(analysis: AnalysisJson): { lines: string[]; transport: string[] 
   for (const c of CONFIGURATIONS) {
     const o = analysis.outcomes.find((x) => x.configuration === c.folder)?.all;
     const q = analysis.quality.find((x) => x.configuration === c.folder)?.valid;
-    if (!o || !q) throw new Error(`The analysis has no ${c.folder}.`);
-    lines.push(`gate ${LEVER}: ${c.short} ${o.firstTry + o.afterRetry}/${o.replies} valid, ${q.softRepairReplies} repairs`);
+    const p = analysis.planLines?.find((x) => x.configuration === c.folder)?.weekly;
+    if (!o || !q || !p) throw new Error(`The analysis has no ${c.folder}.`);
+    const numbers: GateNumbers = {
+      replies: o.replies,
+      firstTry: o.firstTry,
+      afterRetry: o.afterRetry,
+      daysParsed: p.daysParsed,
+      daysTotal: p.daysTotal,
+      softRepairReplies: q.softRepairReplies,
+    };
+    lines.push(judge({ lever: LEVER!, short: c.short, numbers, band: BAND, regressionSet: IS_REGRESSION_SET }).line);
     const lost = o.failedBy["http/transport/timeout"] ?? 0;
     if (lost > 0) transport.push(`${c.short}: ${lost} repl${lost === 1 ? "y" : "ies"} lost to http/transport/timeout`);
   }
@@ -299,10 +346,12 @@ function record(analysis: AnalysisJson): { lines: string[]; transport: string[] 
 // ---- Main ---------------------------------------------------------------------------------
 
 mkdirSync(LEVER_DIR, { recursive: true });
-console.log(`gate ${LEVER}${dryRun ? " (dry run, offline stub)" : ""}: ${regressionSet.length} inputs, writing into ${LEVER_DIR}`);
+console.log(
+  `gate ${LEVER}${dryRun ? " (dry run, offline stub)" : ""}: ${INPUTS.length} inputs${IS_REGRESSION_SET ? " (the regression set)" : " (not the regression set: no verdict)"}, writing into ${LEVER_DIR}`,
+);
 // Self-hosted first: a server that is not awake shows before Opus is paid for.
 for (const c of [...CONFIGURATIONS].reverse()) {
-  for (const root of ROOTS) await replay(c, root);
+  for (const root of ROOTS_RUN) await replay(c, root);
 }
 
 const analysisDir = path.join(LEVER_DIR, "analysis");
@@ -310,7 +359,7 @@ console.log(`\n== gate ${LEVER}: analysis ==`);
 const analysed = await run([
   "scripts/replay-analysis.ts",
   "--roots",
-  ROOTS.map((r) => path.join(LEVER_DIR, r)).join(","),
+  ROOTS_RUN.map((r) => path.join(LEVER_DIR, r)).join(","),
   "--out",
   analysisDir,
   "--baseline",
