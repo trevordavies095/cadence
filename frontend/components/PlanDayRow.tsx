@@ -1,63 +1,56 @@
 import type { PrescribedDay, UnitPreference } from "@/lib/api";
+import {
+  DAY_TYPE_LABEL,
+  isNotARun,
+  isNotFiled,
+  meaningful,
+  NO_PLAN_GIVEN,
+  NOT_FILED_EXPLANATION,
+  NOT_FILED_LABEL,
+  notFiledSentence,
+  planSentence,
+  weekdayLabel,
+} from "@/lib/planDay";
 import { plannedRunLabel } from "@/lib/units";
 import { LabelValueList } from "./ui";
 
-export function weekdayLabel(date: string): string {
-  const d = new Date(`${date}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return date;
-  return d.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+/** The small mark on a day Cadence could not read yet, with what it means beneath. */
+export function NotFiledMark() {
+  return (
+    <span className="flex flex-col gap-0.5" data-part="not-filed">
+      <span
+        className="self-start rounded-md border border-border px-2 py-0.5 text-sm font-semibold text-muted"
+        title={NOT_FILED_EXPLANATION}
+      >
+        {NOT_FILED_LABEL}
+      </span>
+      <span className="text-sm text-muted">{NOT_FILED_EXPLANATION}</span>
+    </span>
+  );
 }
-
-/** "None", "Rest" and "n/a" mean there is nothing to show. */
-export function meaningful(text: string | null | undefined): string | null {
-  const t = (text ?? "").trim();
-  if (!t) return null;
-  return /^(none|rest|n\/a)\.?$/i.test(t) ? null : t;
-}
-
-const LIST_MARKER = /^(?:[-*•]+|\d{1,2}[.)])\s+/;
-/** A weekday name or abbreviation, or a YYYY-MM-DD date, opening the text. */
-const DAY_TOKEN =
-  /^(?:monday|mon|tuesday|tues|tue|wednesday|weds|wed|thursday|thurs|thur|thu|friday|fri|saturday|sat|sunday|sun)(?![a-z])\.?|^\d{4}-\d{2}-\d{2}(?!\d)/i;
 
 /**
- * The sentence Coach Cade wrote for a day Cadence read from its plan line, with
- * the day and date it opens with left off (the row already shows them). Null
- * for a day stored before plans were text, and for a day Cadence could not
- * read, which keeps its non-running rendering.
+ * A day Cadence has no structure for: Coach Cade's sentence with the mark, or,
+ * when the plan left the date out, a line saying so. No distance or time.
  */
-export function planSentence(day: Pick<PrescribedDay, "line" | "parsed">): string | null {
-  if (day.parsed === false) return null;
-  const line = day.line?.trim();
-  if (!line) return null;
-  const sentence = line
-    .replace(LIST_MARKER, "")
-    .replace(DAY_TOKEN, "")
-    .replace(/^[\s,]+/, "")
-    .replace(DAY_TOKEN, "")
-    .replace(/^[\s,:;()\-–—.]+/, "")
-    .trim();
-  const text = sentence || line;
-  return text.charAt(0).toUpperCase() + text.slice(1);
+function NotFiledBody({ day }: { day: PrescribedDay }) {
+  const sentence = notFiledSentence(day);
+  if (!sentence) {
+    return (
+      <p className="m-0 text-muted" data-part="no-plan-given">
+        {NO_PLAN_GIVEN}
+      </p>
+    );
+  }
+  return (
+    <>
+      <p className="m-0" data-part="plan-line">
+        {sentence}
+      </p>
+      <NotFiledMark />
+    </>
+  );
 }
-
-/** A planned day that is not a run: an other day with no run, such as strength or a walk. */
-export function isNotARun(day: Pick<PrescribedDay, "dayType" | "run">): boolean {
-  return day.dayType === "other" && day.run == null;
-}
-
-const DAY_TYPE_LABEL: Record<string, string> = {
-  easy: "Easy run",
-  quality: "Quality session",
-  long: "Long run",
-  race: "Race",
-  rest: "Rest day",
-  other: "Other",
-};
 
 export function PlanDayRow({
   day,
@@ -73,6 +66,8 @@ export function PlanDayRow({
   const notes = meaningful(day.notes);
   const shoes = meaningful(run?.shoes);
   const target = meaningful(run?.paceOrHr);
+  // Checked first: an unread day is also an other day with no run.
+  const notFiled = isNotFiled(day);
   // Strength, cross-training or a walk: the notes say what it is, in place of figures.
   const notRun = isNotARun(day);
   // A day read from Coach Cade's line: the amount Cadence read from it, then the
@@ -97,11 +92,16 @@ export function PlanDayRow({
             </span>
           ) : null}
         </strong>
-        <span className="text-muted">
-          {DAY_TYPE_LABEL[day.dayType] ?? day.dayType}
-        </span>
+        {/* An unread day has no day type worth naming; the body says what it is. */}
+        {notFiled ? null : (
+          <span className="text-muted">
+            {DAY_TYPE_LABEL[day.dayType] ?? day.dayType}
+          </span>
+        )}
       </div>
-      {sentence ? (
+      {notFiled ? (
+        <NotFiledBody day={day} />
+      ) : sentence ? (
         <>
           {run ? (
             <p className="m-0" data-part="planned-amount">
@@ -140,4 +140,3 @@ export function PlanDayRow({
     </li>
   );
 }
-

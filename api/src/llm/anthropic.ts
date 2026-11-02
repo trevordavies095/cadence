@@ -36,11 +36,9 @@ import {
   DOSSIER_CORRECTION_SYSTEM_PROMPT,
   DOSSIER_V1_SYSTEM_PROMPT,
   midWeekSystemPrompt,
-  safetyCalloutsJsonSchema,
   weeklySystemPrompt,
 } from "./safety.js";
 import {
-  DAY_NOTES_TARGET,
   MAX_FLAG_DETAIL_LENGTH,
   MAX_FLAG_TITLE_LENGTH,
   MAX_HEADLINE_LENGTH,
@@ -55,6 +53,7 @@ import {
   validateDossierAuditDraft,
   validateDossierCorrectionDraft,
   validateDossierV1Draft,
+  midWeekPlanRetry,
   validateMidWeekChatReply,
   validateWeeklyReply,
   type PlanFixResult,
@@ -166,41 +165,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** The reason for a session, shown beside it on the plan. */
-const DAY_NOTES_DESCRIPTION = `Why this session, this week: one or two sentences, under ${DAY_NOTES_TARGET} characters. Shown beside the session.`;
-
-/** Day types; every type but rest and other carries a run. */
-const DAY_TYPE_DESCRIPTION =
-  "Every type but rest needs a run, except other: an other day with no run (run null) is strength, cross-training or a walk, and its notes must say what it is (\"30 min strength: squats, lunges, core\"). It is not counted or graded as a run.";
-
-/** A planned run, prescribed by distance, by duration, or by both. */
-export function prescribedRunJsonSchema(): Record<string, unknown> {
-  return {
-    type: ["object", "null"],
-    additionalProperties: false,
-    properties: {
-      type: {
-        type: "string",
-        enum: ["easy", "quality", "long", "race", "other"],
-      },
-      distanceM: {
-        type: "number",
-        description:
-          "Planned distance in meters. 0 when the run is prescribed by duration only.",
-      },
-      durationS: {
-        type: ["number", "null"],
-        description:
-          "Planned duration in seconds, for a run prescribed by time (2400 for 40 minutes). Set it with distanceM 0 for a time-only run, or beside a distance to give both.",
-      },
-      structure: { type: ["string", "null"] },
-      paceOrHr: { type: ["string", "null"] },
-      shoes: { type: ["string", "null"] },
-    },
-    required: ["type", "distanceM"],
-  };
-}
-
 /** "miles" or "kilometres": the word the weekly form and prompt use for the athlete's unit. */
 function unitWord(unit: TempoUnitPreference): string {
   return unit === "metric" ? "kilometres" : "miles";
@@ -254,7 +218,7 @@ export function weeklyReplyToolSchema(weekStartMonday: string, unit: TempoUnitPr
       plan: {
         type: "string",
         description:
-          `Next week's plan as seven lines, one per day Monday to Sunday, each written as "weekday date: day type, distance in ${unitWord(unit)} or time in minutes, then how to run it and why", where the day type is rest, easy, quality, long, race or other (strength, cross-training or a walk), a rest day needs no amount, and every number carries its unit. Example: ${examplePlanLine(weekStartMonday, unit)}`,
+          `Next week's plan as seven lines, one per day Monday to Sunday, each written as ${planLineGrammar(unit)}. Example: ${examplePlanLine(weekStartMonday, unit)}`,
       },
       settingsProposalBullets: {
         type: "array",
@@ -266,36 +230,26 @@ export function weeklyReplyToolSchema(weekStartMonday: string, unit: TempoUnitPr
         type: "array",
         maxItems: MAX_SAFETY_CALLOUTS,
         items: { type: "string" },
-        description:
-          `Notices when red flags appear: escalate to a professional, do not diagnose. One line each: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then one or two short sentences for the athlete, under ${MAX_SAFETY_CALLOUT_BODY} characters.`,
+        description: SAFETY_CALLOUT_LINES_DESCRIPTION,
       },
     },
   };
 }
 
-export function prescribedDayJsonSchema(): Record<string, unknown> {
-  return {
-    type: "object",
-    additionalProperties: false,
-    required: ["date", "dayType"],
-    properties: {
-      date: {
-        type: "string",
-        description: "Local calendar date YYYY-MM-DD within the plan week",
-      },
-      dayType: {
-        type: "string",
-        enum: ["rest", "easy", "quality", "long", "race", "other"],
-        description: DAY_TYPE_DESCRIPTION,
-      },
-      run: prescribedRunJsonSchema(),
-      strength: { type: ["string", "null"] },
-      notes: { type: ["string", "null"], description: DAY_NOTES_DESCRIPTION },
-    },
-  };
+/** The plan grammar in one sentence, in the athlete's unit; the weekly plan box and the mid-week changes box share it. */
+function planLineGrammar(unit: TempoUnitPreference): string {
+  return `"weekday date: day type, distance in ${unitWord(unit)} or time in minutes, then how to run it and why", where the day type is rest, easy, quality, long, race or other (strength, cross-training or a walk), a rest day needs no amount, and every number carries its unit`;
 }
 
-function midWeekChatReplyToolSchema() {
+/** A notice as one line; the weekly and mid-week forms share it. */
+const SAFETY_CALLOUT_LINES_DESCRIPTION = `Notices when red flags appear: escalate to a professional, do not diagnose. One line each: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then one or two short sentences for the athlete, under ${MAX_SAFETY_CALLOUT_BODY} characters.`;
+
+/**
+ * The mid-week form: text, lines and one boolean, each with a description,
+ * nothing nested (.scratch/plan-as-text/spec.md, "The forms"). Built per call:
+ * the changes box names the athlete's unit and the plan week.
+ */
+export function midWeekChatReplyToolSchema(weekStartMonday: string, unit: TempoUnitPreference) {
   return {
     type: "object",
     additionalProperties: false,
@@ -304,7 +258,17 @@ function midWeekChatReplyToolSchema() {
       body: {
         type: "string",
         description:
-          "Athlete-facing mid-week coach prose. When attachments are present, include concrete run feedback from metrics/splits.",
+          "Your reply to the athlete in markdown. When runs are attached, give concrete feedback from their metrics and splits. When you change the plan, say why; the athlete sees the changed days under your reply.",
+      },
+      changes: {
+        type: "string",
+        description:
+          `The plan days you change, one line per changed day, each written as ${planLineGrammar(unit)}. Only the days you write change; the others stay as they are. Leave it empty when the plan does not change. Example: ${examplePlanLine(weekStartMonday, unit)}`,
+      },
+      allowPastDayPatches: {
+        type: "boolean",
+        description:
+          "True only when the athlete asks to change a day that has already passed. Otherwise lines in changes for past days are ignored.",
       },
       settingsProposalBullets: {
         type: "array",
@@ -312,18 +276,12 @@ function midWeekChatReplyToolSchema() {
         description:
           "Optional soft-gate dossier/settings proposal bullets when the mid-week note is a significant memory update. Never silent-apply.",
       },
-      prescribedDayPatches: {
+      safetyCallouts: {
         type: "array",
-        description:
-          "Optional day replacements for remaining plan days (date >= local today). Full PrescribedDay objects.",
-        items: prescribedDayJsonSchema(),
+        maxItems: MAX_SAFETY_CALLOUTS,
+        items: { type: "string" },
+        description: SAFETY_CALLOUT_LINES_DESCRIPTION,
       },
-      allowPastDayPatches: {
-        type: "boolean",
-        description:
-          "When true, past-day patches may be applied. Default false — past days stay stable.",
-      },
-      safetyCallouts: safetyCalloutsJsonSchema(),
     },
   };
 }
@@ -475,16 +433,21 @@ function buildMidWeekUserPrompt(
       ? `Packet includes ${attachCount} workout attachment${attachCount === 1 ? "" : "s"}. Give concrete coaching feedback on the attached run(s) using metrics/splits only.`
       : "No workout attachments — answer the athlete's mid-week note.";
   const dates = expectedPlanDates(weekStartMonday);
+  const unit = packetUnit(packet);
   const hasPlan = Boolean(packet.prescribedWeek?.days?.length);
-  const planLine = hasPlan
-    ? `Current prescribed week is in the packet. To change remaining days, emit prescribedDayPatches using only these dates: ${dates.join(", ")}. Past days stay stable unless allowPastDayPatches is true.`
-    : "No prescribed week in packet — reply in prose only (no prescribedDayPatches).";
+  const planLines = hasPlan
+    ? [
+        `This week's plan is in the packet. To change remaining days, write one line per changed day in the changes box, using only these dates: ${dates.join(", ")}. Days you do not write stay as they are. Past days stay as they are unless allowPastDayPatches is true.`,
+        `Write distances in ${unitWord(unit)}.`,
+        `Example change line: ${examplePlanLine(weekStartMonday, unit)}`,
+        "Do not rewrite the whole week unless the athlete asks.",
+      ]
+    : ["No plan for this week in the packet: reply in prose and leave changes empty."];
   return [
     ...goalPromptLines(packet, weekStartMonday),
     "Call the submit_mid_week_chat_reply tool exactly once with your full answer.",
     attachLine,
-    planLine,
-    "Do not rewrite the full prescribed week unless the athlete asks.",
+    ...planLines,
     "When the athlete reports a significant memory update (new constraint, niggle, schedule change), populate settingsProposalBullets for soft-gate Accept — never mutate the dossier directly.",
     "When red flags appear, populate safetyCallouts (escalate; do not diagnose).",
     "Model packet (redacted; no identity PII or GPS):",
@@ -527,6 +490,10 @@ function contentAsReceived(message: unknown): MessageBlock[] {
 /** The second request's wording, fixed: quoted by the tests and the spec. */
 export const RETRY_FIX_LINES_INSTRUCTION =
   "Send the plan box again with these lines fixed. Change nothing else.";
+/** The same instruction for a box other than the weekly plan (mid-week's changes). */
+export function fixLinesInstruction(box: string): string {
+  return RETRY_FIX_LINES_INSTRUCTION.replace("the plan box", `the ${box} box`);
+}
 export const RETRY_NO_TOOL_CALL_TEXT =
   "You did not call the tool. Call it now with your full answer.";
 export const RETRY_ERROR_INSTRUCTION =
@@ -554,8 +521,9 @@ type FirstReply = {
   stopReason: string | null;
   /** The refusal's message; null when the reply was accepted. */
   error: string | null;
-  /** Set when the reply was accepted with plan lines that did not parse. */
+  /** Set when the reply was accepted with plan lines that did not parse, and the box they came from. */
   failures: PlanLineFailure[] | null;
+  box?: string;
 };
 
 /**
@@ -618,7 +586,7 @@ export function secondRequest(
   if (!ours) return answer(RETRY_NO_TOOL_CALL_TEXT, "no_tool_call");
   if (reply.failures) {
     return answer(
-      `${planFailureLines(reply.failures)}\n\n${RETRY_FIX_LINES_INSTRUCTION}`,
+      `${planFailureLines(reply.failures)}\n\n${fixLinesInstruction(reply.box ?? "plan")}`,
       "fix_lines",
     );
   }
@@ -1345,7 +1313,7 @@ export function createAnthropicLlmPort(
         );
         if (out.fixed && a.request) a.request.fixed = out.fixed;
         if (out.planRetry && !a.last) {
-          first = { ...seen, failures: out.planRetry.failures };
+          first = { ...seen, failures: out.planRetry.failures, box: out.planRetry.box };
           firstRetry = out.planRetry;
           return new Unfinished(out.value);
         }
@@ -1436,6 +1404,7 @@ export function createAnthropicLlmPort(
       const target = await targetFor(callOptions);
 
       const weekStartMonday = resolvePlanWeekStartMonday(packet);
+      const unit = packetUnit(packet);
       const requestBody: AnthropicMessagesRequest = {
         model: target.model,
         max_tokens: MAX_OUTPUT_TOKENS,
@@ -1444,8 +1413,8 @@ export function createAnthropicLlmPort(
           {
             name: MIDWEEK_TOOL_NAME,
             description:
-              "Submit the mid-week coach reply (attached-run feedback and optional remaining-day plan patches when present).",
-            input_schema: midWeekChatReplyToolSchema(),
+              "Submit the mid-week coach reply, with any changed plan days as lines.",
+            input_schema: midWeekChatReplyToolSchema(weekStartMonday, unit),
           },
         ],
         ...reasoningParams(target),
@@ -1462,7 +1431,14 @@ export function createAnthropicLlmPort(
         target,
         MIDWEEK_TOOL_NAME,
         requestBody,
-        (input) => validateMidWeekChatReply(input, weekStartMonday),
+        // Changed days that do not parse are stored unparsed for their date
+        // only, and asked for once more, those dates alone (planFailures).
+        (input) => {
+          const validated = validateMidWeekChatReply(input, weekStartMonday, { unit });
+          if (!validated.ok) return validated;
+          const planRetry = midWeekPlanRetry(validated, weekStartMonday, unit);
+          return planRetry ? { ...validated, planRetry } : validated;
+        },
       );
     },
 

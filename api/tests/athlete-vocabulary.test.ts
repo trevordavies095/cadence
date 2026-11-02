@@ -16,6 +16,7 @@ import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import { buildModelPacket } from "../src/packet/index.js";
 import { PRIVACY_COPY, privacyCopyFor } from "../src/privacy/copy.js";
 import type { PrescribedWeek } from "../src/llm/types.js";
+import { expectedPlanDates } from "../src/llm/schema.js";
 
 const SKIP_NOTE = "Please skip Thursday, sore calf niggle after the long run.";
 const LONG_GOAL =
@@ -68,8 +69,13 @@ function packet(note?: string, prescribedWeek?: PrescribedWeek) {
 
 function texts(): Record<string, string> {
   const weekly = buildStubWeeklyReply(packet());
+  // The conversation changes this week's plan: the stub's plan, on this week's dates.
+  const thisWeek = expectedPlanDates("2026-10-19");
   const midWeek = buildStubMidWeekChatReply(
-    packet(SKIP_NOTE, weekly.prescribedWeek),
+    packet(SKIP_NOTE, {
+      ...weekly.prescribedWeek,
+      days: weekly.prescribedWeek.days.map((d, i) => ({ ...d, date: thisWeek[i]! })),
+    }),
   );
   const v1 = buildStubDossierV1({
     answers: {

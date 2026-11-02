@@ -4,6 +4,7 @@ import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
   buildStubMidWeekChatReply,
+  buildStubMidWeekForm,
   buildStubWeeklyForm,
   buildStubWeeklyReply,
   anthropicCoachTarget,
@@ -97,7 +98,7 @@ const FLOWS: Flow[] = [
     operation: "mid_week_chat",
     call: (port, callId, coachTarget) =>
       port.generateMidWeekChatReply(samplePacket(), { callId, coachTarget }),
-    okInput: () => buildStubMidWeekChatReply(samplePacket()),
+    okInput: () => buildStubMidWeekForm(samplePacket()),
     okReply: () => buildStubMidWeekChatReply(samplePacket()),
   },
 ];

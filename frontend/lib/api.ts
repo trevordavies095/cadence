@@ -1010,7 +1010,9 @@ export type HomeDayState =
   | "upcoming"
   | "rest"
   | "missed"
-  | "unknown";
+  | "unknown"
+  /** Coach Cade wrote the day but Cadence could not read it, or the plan left the date out. */
+  | "not_filed";
 
 export type HomeWeekDay = {
   date: string;
@@ -1021,6 +1023,10 @@ export type HomeWeekDay = {
   actualDistanceM: number | null;
   state: HomeDayState;
   isToday: boolean;
+  /** False when Cadence has no structure for the day; absent reads as parsed. */
+  parsed?: boolean;
+  /** On a day Cadence could not read, Coach Cade's line; null when the plan gave none. */
+  line?: string | null;
 };
 
 export type HomeRead = {

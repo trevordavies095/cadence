@@ -1,4 +1,5 @@
 import type { HomeWeekDay, UnitPreference } from "@/lib/api";
+import { NOT_FILED_EXPLANATION, NOT_FILED_LABEL } from "@/lib/planDay";
 import { distanceLabel, durationLabel } from "@/lib/units";
 import { cx } from "./ui";
 
@@ -9,6 +10,7 @@ const STATE_LABEL: Record<HomeWeekDay["state"], string> = {
   rest: "Rest",
   missed: "Missed",
   unknown: "",
+  not_filed: NOT_FILED_LABEL,
 };
 
 function dayName(ymd: string): { name: string; date: string } {
@@ -34,20 +36,25 @@ export function WeekStrip({
     >
       {week.map((d) => {
         const { name, date } = dayName(d.date);
+        // A rest day and a day Cadence could not read have nothing planned to show.
+        const nothingPlanned = d.state === "rest" || d.state === "not_filed";
         const distance =
           d.state === "done"
             ? d.actualDistanceM
-            : d.state === "rest"
+            : nothingPlanned
               ? null
               : d.plannedDistanceM;
         // A day planned by time alone shows its minutes until it is run.
         const minutes =
-          d.state !== "done" && d.state !== "rest" && !(distance != null && distance > 0)
+          d.state !== "done" && !nothingPlanned && !(distance != null && distance > 0)
             ? (d.plannedDurationS ?? null)
             : null;
         // An other day with nothing planned to run: strength, cross-training or a walk.
         const notARun =
-          d.dayType === "other" && d.plannedDistanceM == null && d.plannedDurationS == null;
+          d.parsed !== false &&
+          d.dayType === "other" &&
+          d.plannedDistanceM == null &&
+          d.plannedDurationS == null;
         return (
           <li
             key={d.date}
@@ -71,10 +78,17 @@ export function WeekStrip({
                 "text-sm font-semibold",
                 d.state === "done" && "text-ok",
                 d.state === "missed" && "text-danger",
-                (d.state === "upcoming" || d.state === "rest") && "text-muted",
+                (d.state === "upcoming" || nothingPlanned) && "text-muted",
               )}
+              title={d.state === "not_filed" && d.line ? NOT_FILED_EXPLANATION : undefined}
             >
-              {d.state === "rest" && notARun ? "Not a run" : STATE_LABEL[d.state]}
+              {d.state === "not_filed"
+                ? d.line
+                  ? NOT_FILED_LABEL
+                  : "No plan"
+                : d.state === "rest" && notARun
+                  ? "Not a run"
+                  : STATE_LABEL[d.state]}
               {d.state === "done" && d.isToday ? " · today" : ""}
             </span>
           </li>

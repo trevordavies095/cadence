@@ -46,22 +46,19 @@ describe("day notes carry the reason for a session", () => {
     expect(checked.repairs).toBeUndefined();
   });
 
-  it("applies the same rule to days Coach Cade changes from chat, named as patches", () => {
+  it("applies the same rule to days Coach Cade changes from chat: a long reason is kept whole", () => {
     const notes = sentences(12);
     const [, tue] = expectedPlanDates(WEEK_START);
     const checked = validateMidWeekChatReply(
-      {
-        body: "Moved Tuesday.",
-        prescribedDayPatches: [
-          { date: tue, dayType: "easy", run: { type: "easy", distanceM: 6000 }, notes },
-        ],
-      },
+      { body: "Moved Tuesday.", changes: `Tue ${tue}: easy, 4 mi, ${notes}` },
       WEEK_START,
     );
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
-    expect(checked.value.prescribedDayPatches![0]!.notes!.length).toBeLessThanOrEqual(400);
-    expect(checked.repairs?.[0]).toMatch(/^prescribedDayPatches\[0\]\.notes cut from/);
+    const [day] = checked.value.prescribedDayPatches!;
+    expect(day!.line).toContain(notes);
+    expect(day!.notes).toBe(notes);
+    expect(checked.repairs).toBeUndefined();
   });
 
   it("tells the model where the reasons go and to keep the days out of the read", () => {

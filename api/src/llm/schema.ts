@@ -92,6 +92,8 @@ export type SchemaResult<T> = SchemaOk<T> | SchemaErr;
  * stays as the first reply had it.
  */
 export type PlanRetry<T> = {
+  /** The box the lines came from, as the retry names it: "plan" (weekly) or "changes" (mid-week). */
+  box: string;
   /** Every failed line, in date order, as the retry quotes them. */
   failures: PlanLineFailure[];
   /** The failed dates the retry may replace (dates inside the plan week). */
@@ -114,6 +116,8 @@ export type PlanFixResult<T> = (SchemaOk<T> & { fixed: string[] }) | SchemaErr;
  * when no date inside `dates` failed. Mid-week's changes box can use this too.
  */
 export function planLineRetry<T>(options: {
+  /** The box's name in the tool and in the repair notes: "plan" or "changes". */
+  box: string;
   failures: PlanLineFailure[];
   /** The dates the reply's box covers; a failure outside them is quoted, never taken. */
   dates: readonly string[];
@@ -125,14 +129,16 @@ export function planLineRetry<T>(options: {
   const covered = new Set(options.dates);
   const failedDates = options.failures.map((f) => f.date).filter((d) => covered.has(d));
   if (failedDates.length === 0) return undefined;
+  const box = options.box;
   return {
+    box,
     failures: options.failures,
     dates: failedDates,
     takeFixes(retryInput) {
-      const box = options.boxOf(retryInput);
-      if (!box.ok) return box;
+      const text = options.boxOf(retryInput);
+      if (!text.ok) return text;
       const parsed = parsePlanLines({
-        text: box.value,
+        text: text.value,
         weekStartMonday: options.weekStartMonday,
         unit: options.unit,
       });
@@ -144,9 +150,9 @@ export function planLineRetry<T>(options: {
         const reason = stillFailing.get(date);
         if (day && reason === undefined) {
           replaced.set(date, day);
-          repairs.push(`plan ${date} filed by the retry`);
+          repairs.push(`${box} ${date} filed by the retry`);
         } else {
-          repairs.push(`plan ${date} still not filed: ${reason ?? "no line"}`);
+          repairs.push(`${box} ${date} still not filed: ${reason ?? "no line"}`);
         }
       }
       return {
@@ -558,6 +564,7 @@ export function validateWeeklyReply(
   // Days that did not parse: the adapter asks once for those dates alone, and
   // takes only them from the retry; the read and every other day stay as sent.
   const planRetry = planLineRetry<WeeklyReply>({
+    box: "plan",
     failures: plan.value.failures,
     dates: expectedPlanDates(weekStartMonday),
     weekStartMonday,
@@ -905,8 +912,10 @@ export function expectedPlanDates(weekStartMonday: string): string[] {
 }
 
 /**
- * Fail-closed validation for optional mid-week prescribed day patches (#38).
- * Each patch must be a full PrescribedDay for a date in the plan week.
+ * The stored check on mid-week changed days (#38): each a full PrescribedDay
+ * for a distinct date in the plan week, keeping its plan-line fields (`line`,
+ * `parsed`). It reads the reply as Cadence stores it, never Coach Cade's form;
+ * the form's `changes` lines are read by {@link validateMidWeekChatReply}.
  */
 export function validatePrescribedDayPatches(
   raw: unknown,
@@ -957,7 +966,7 @@ export function validatePrescribedDayPatches(
     }
     seen.add(dateRaw);
     const dayRepairs: string[] = [];
-    const parsed = parseDay(raw[i], dayIndex, dateRaw, dayRepairs);
+    const parsed = parseDay(raw[i], dayIndex, dateRaw, dayRepairs, true);
     if (!parsed.ok) {
       return {
         ok: false,
@@ -977,32 +986,111 @@ export function validatePrescribedDayPatches(
   return withRepairs(patches, repairs.length > 0 ? repairs : undefined);
 }
 
+/** What Cadence knows beside Coach Cade's mid-week form when it reads it. */
+export type MidWeekReplyContext = {
+  /** The athlete's distance unit; labels the plan, never resolves a bare number. Default imperial. */
+  unit?: TempoUnitPreference;
+};
+
 /**
- * Fail-closed validation for mid-week chat replies (body + optional
- * settings-proposal bullets + callouts + optional prescribed day patches).
+ * A mid-week form read into the stored reply. `planFailures` lists each date
+ * of the plan week whose `changes` line did not parse, with the reason, so a
+ * retry can quote them; the day is stored unparsed meanwhile. Absent when
+ * every line parsed.
+ */
+export type MidWeekReplyOk = SchemaOk<MidWeekChatReply> & {
+  planFailures?: PlanLineFailure[];
+};
+
+/**
+ * Coach Cade's mid-week form (every box text, lines or a boolean, "The forms"
+ * in .scratch/plan-as-text/spec.md) turned into the reply Cadence stores.
  *
- * When patches are present, `weekStartMonday` is required (plan week Monday).
+ * - The `changes` box is read line by line against the plan week. Only dates
+ *   with a line change: a line that parses is the new day; one that does not
+ *   is stored unparsed (`parsed: false`, its line in notes), noted as a repair
+ *   and listed in `planFailures`, and the reply stays valid. A date with no
+ *   line is not a change. A line for a date outside the week, and a line with
+ *   no day, are dropped and noted as repairs. Empty or absent: no change.
+ * - Whether a changed day is in the past is the route's call (it knows the
+ *   athlete's today), as is honouring `allowPastDayPatches`.
+ * - Notices and settings bullets are read as on the weekly form: lines, null
+ *   reads as absent, blank entries dropped.
+ *
+ * `weekStartMonday` is needed only when the `changes` box has text.
  */
 export function validateMidWeekChatReply(
+  raw: unknown,
+  weekStartMonday?: string,
+  context: MidWeekReplyContext = {},
+): MidWeekReplyOk | SchemaErr {
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: "mid-week chat reply must be an object" };
+  }
+  const repairs: string[] = [];
+  const body = parseMidWeekBody(raw.body);
+  if (!body.ok) return body;
+
+  const bulletLines =
+    raw.settingsProposalBullets === undefined || raw.settingsProposalBullets === null
+      ? null
+      : linesOf(raw.settingsProposalBullets, "settingsProposalBullets", MAX_SETTINGS_PROPOSAL_BULLETS, repairs);
+  if (bulletLines && !bulletLines.ok) return bulletLines;
+  const bullets = parseSettingsProposalBullets(bulletLines?.value);
+  if (!bullets.ok) return bullets;
+
+  const calloutObjects = calloutsFromLines(raw.safetyCallouts, repairs);
+  if (!calloutObjects.ok) return calloutObjects;
+  const callouts = validateSafetyCallouts(calloutObjects.value, { allowEmptyBody: true });
+  if (!callouts.ok) return callouts;
+
+  if (
+    raw.allowPastDayPatches !== undefined &&
+    raw.allowPastDayPatches !== null &&
+    typeof raw.allowPastDayPatches !== "boolean"
+  ) {
+    return { ok: false, error: "allowPastDayPatches must be a boolean" };
+  }
+
+  const changes = parseChangesBox(raw.changes, weekStartMonday, context.unit ?? "imperial", repairs);
+  if (!changes.ok) return changes;
+
+  const reply: MidWeekChatReply = { body: body.value };
+  if (bullets.value !== undefined) {
+    reply.settingsProposalBullets = bullets.value;
+  }
+  if (callouts.value !== undefined && callouts.value.length > 0) {
+    reply.safetyCallouts = callouts.value;
+  }
+  if (changes.value.days.length > 0) {
+    reply.prescribedDayPatches = changes.value.days;
+  }
+  if (raw.allowPastDayPatches === true) {
+    reply.allowPastDayPatches = true;
+  }
+  repairs.push(...(callouts.repairs ?? []));
+  const ok: MidWeekReplyOk = withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+  if (changes.value.failures.length > 0) ok.planFailures = changes.value.failures;
+  return ok;
+}
+
+/**
+ * The final check on a mid-week reply in the stored shape, as any port hands
+ * it to the route: the body, settings bullets, notices and the changed days.
+ * It never reshapes; a reply that fails it is refused.
+ */
+export function checkMidWeekChatReply(
   raw: unknown,
   weekStartMonday?: string,
 ): SchemaResult<MidWeekChatReply> {
   if (!isPlainObject(raw)) {
     return { ok: false, error: "mid-week chat reply must be an object" };
   }
-  const body = raw.body;
-  if (typeof body !== "string" || body.trim().length === 0) {
-    return { ok: false, error: "body is required and must be non-empty" };
-  }
-  if (body.length > MAX_ANALYSIS_LENGTH) {
-    return {
-      ok: false,
-      error: `body must be at most ${MAX_ANALYSIS_LENGTH} characters`,
-    };
-  }
+  const body = parseMidWeekBody(raw.body);
+  if (!body.ok) return body;
   const bullets = parseSettingsProposalBullets(raw.settingsProposalBullets);
   if (!bullets.ok) return bullets;
-  const callouts = validateSafetyCallouts(raw.safetyCallouts);
+  const callouts = validateSafetyCallouts(raw.safetyCallouts, { allowEmptyBody: true });
   if (!callouts.ok) return callouts;
 
   let patches: PrescribedDay[] | undefined;
@@ -1014,10 +1102,7 @@ export function validateMidWeekChatReply(
         error: "prescribedDayPatches require weekStartMonday for validation",
       };
     }
-    const checked = validatePrescribedDayPatches(
-      raw.prescribedDayPatches,
-      weekStartMonday,
-    );
+    const checked = validatePrescribedDayPatches(raw.prescribedDayPatches, weekStartMonday);
     if (!checked.ok) return checked;
     patches = checked.value;
     patchRepairs = checked.repairs;
@@ -1030,7 +1115,7 @@ export function validateMidWeekChatReply(
     return { ok: false, error: "allowPastDayPatches must be a boolean" };
   }
 
-  const reply: MidWeekChatReply = { body: body.trim() };
+  const reply: MidWeekChatReply = { body: body.value };
   if (bullets.value !== undefined) {
     reply.settingsProposalBullets = bullets.value;
   }
@@ -1045,6 +1130,97 @@ export function validateMidWeekChatReply(
   }
   const repairs = [...(patchRepairs ?? []), ...(callouts.repairs ?? [])];
   return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+}
+
+function parseMidWeekBody(raw: unknown): SchemaResult<string> {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: false, error: "body is required and must be non-empty" };
+  }
+  if (raw.length > MAX_ANALYSIS_LENGTH) {
+    return {
+      ok: false,
+      error: `body must be at most ${MAX_ANALYSIS_LENGTH} characters`,
+    };
+  }
+  return { ok: true, value: raw.trim() };
+}
+
+/**
+ * The mid-week `changes` box read against the plan week: the days that have a
+ * line (parsed or not), and the dates of the week whose line did not parse.
+ * Dates with no line are not changes. Dropped and failed lines are noted in
+ * `repairs`.
+ */
+function parseChangesBox(
+  raw: unknown,
+  weekStartMonday: string | undefined,
+  unit: TempoUnitPreference,
+  repairs: string[],
+): SchemaResult<{ days: PrescribedDay[]; failures: PlanLineFailure[] }> {
+  const none = { ok: true as const, value: { days: [], failures: [] } };
+  if (raw === undefined || raw === null) return none;
+  if (typeof raw !== "string") {
+    return { ok: false, error: "changes must be a string of plan lines" };
+  }
+  if (raw.trim().length === 0) return none;
+  if (!weekStartMonday || !DATE_RE.test(weekStartMonday)) {
+    return { ok: false, error: "changes require weekStartMonday (YYYY-MM-DD) for validation" };
+  }
+  const parsed = parsePlanLines({ text: raw, weekStartMonday, unit });
+  const dates = new Set(expectedPlanDates(weekStartMonday));
+  const failures: PlanLineFailure[] = [];
+  for (const f of parsed.failures) {
+    if (f.reason === "no line") continue;
+    if (dates.has(f.date)) {
+      failures.push(f);
+      repairs.push(`changes ${f.date} not filed: ${f.reason}`);
+    } else {
+      repairs.push(`changes line for ${f.date} dropped: ${f.reason}`);
+    }
+  }
+  for (const line of parsed.ignoredLines) {
+    const quoted =
+      line.length > IGNORED_LINE_QUOTE ? `${line.slice(0, IGNORED_LINE_QUOTE)}…` : line;
+    repairs.push(`changes line with no day ignored: ${JSON.stringify(quoted)}`);
+  }
+  return {
+    ok: true,
+    value: { days: parsed.days.filter((d) => d.line != null), failures },
+  };
+}
+
+/**
+ * The retry for a mid-week reply whose `changes` lines did not all parse,
+ * driven by the validator's `planFailures`: the retry's `changes` box is read
+ * for those dates alone, and each one that now parses replaces that date's
+ * changed day; every other change, the body and the notices stay as sent.
+ * Undefined when every line parsed.
+ */
+export function midWeekPlanRetry(
+  ok: MidWeekReplyOk,
+  weekStartMonday: string,
+  unit: TempoUnitPreference = "imperial",
+): PlanRetry<MidWeekChatReply> | undefined {
+  const failures = ok.planFailures ?? [];
+  if (failures.length === 0) return undefined;
+  const reply = ok.value;
+  return planLineRetry<MidWeekChatReply>({
+    box: "changes",
+    failures,
+    dates: failures.map((f) => f.date),
+    weekStartMonday,
+    unit,
+    boxOf: (retry) =>
+      isPlainObject(retry) && typeof retry.changes === "string" && retry.changes.trim().length > 0
+        ? { ok: true, value: retry.changes }
+        : { ok: false, error: "changes are required: one line for each date asked about" },
+    withDays: (replaced) => ({
+      ...reply,
+      ...(reply.prescribedDayPatches
+        ? { prescribedDayPatches: reply.prescribedDayPatches.map((d) => replaced.get(d.date) ?? d) }
+        : {}),
+    }),
+  });
 }
 
 function validateDossierSoftGateDraft(
