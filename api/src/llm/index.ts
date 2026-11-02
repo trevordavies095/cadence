@@ -25,6 +25,7 @@ export {
 } from "./port.js";
 export {
   expectedPlanDates,
+  isoWeekOfDate,
   MAX_ANALYSIS_LENGTH,
   MAX_HEADLINE_LENGTH,
   MAX_BULLET_LENGTH,
