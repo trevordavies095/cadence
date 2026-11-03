@@ -188,7 +188,7 @@ The design session chose direction 1, the plain line format, and folded directio
 
 Opus 4.7's mis-packaged plan was also recovered on `develop` as a stopgap (PR #60) for the old nested form, ahead of this work.
 
-**The final run** on all 35 inputs: Opus 4.7 35 of 35 valid, all on the first try, every day filed, $5.43; gpt-oss-20b 35 of 35 valid (34 first try), every day filed, against 14 of 35 in the benchmark. Pruned Gemma 4 was still running when this was written. Results are in the after-block of [`local-models-2026-11.md`](local-models-2026-11.md). Opus spend across the work: $23.90.
+**The final run** on all 35 inputs: Opus 4.7 35 of 35 valid, all on the first try, every day filed, $5.43; gpt-oss-20b 35 of 35 valid (34 first try), every day filed, against 14 of 35 in the benchmark; pruned Gemma 4 34 of 35 valid (33 first try), every day filed, against 14 of 35, its one failure the server ending the stream. Both open models still plan the injury week unsafely. Results are in the after-block of [`local-models-2026-11.md`](local-models-2026-11.md). Opus spend across the work: $23.90.
 
 **Usable is not coachable.** gpt-oss-20b's plans now arrive and file, but its injury-week plan still added a goal-pace session and a 12-mile long run where Opus planned only easy running and a 10-mile long run. Making other models coach well is the next phase, starting with a plan sanity check (#58).
 

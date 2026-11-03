@@ -447,18 +447,22 @@ The second command rewrites only the marked tables and leaves the text as it is.
 ## 11. After the changes
 
 <!-- generated:after:start -->
-On 2026-11-02, after the plan-as-text work (ADR 0006), Opus 4.7 and gpt-oss-20b answered the same 35 coach calls once, on the finished code. The weekly plan is now seven lines of text that Cadence reads day by day, and every box on the form is plain text. This block was written by hand from that run's analysis. The rented-GPU rows (gpt-oss-120b, Gemma 4 full, Qwen3.8-27B) were not rerun and are not comparable with it. Pruned Gemma 4 on the MacBook was still running; its row is added when it finishes.
+On 2026-11-02, after the plan-as-text work (ADR 0006), Opus 4.7, gpt-oss-20b and pruned Gemma 4 answered the same 35 coach calls once, on the finished code. The weekly plan is now seven lines of text that Cadence reads day by day, and every box on the form is plain text. This block was written by hand from that run's analysis. The rented-GPU rows (gpt-oss-120b, Gemma 4 full, Qwen3.8-27B) were not rerun and are not comparable with it.
 
 | Configuration | Replies | Valid (first try / after retry) | Failed | Days filed | Days fixed by the retry | Time per reply, median / p90 | Cost |
 |---|---|---|---|---|---|---|---|
 | claude-opus-4-7--xhigh | 35 | 35 (35 / 0) | 0 | 196 of 196 | 2 of 2 | 50.8 s / 69.4 s | $5.43 |
 | gpt-oss-20b-MXFP4-Q8--high | 35 | 35 (34 / 1) | 0 | 196 of 196 | 6 of 6 | 28.7 s / 47.0 s | – |
+| gemma-4-26B-A4B-it-OptiQ-4bit-REAP-14B--high | 35 | 34 (33 / 1) | 1 | 189 of 189 | none needed | 219.8 s / 325.4 s | – |
 
-Against section 3's run of 2026-11-01: gpt-oss-20b went from 14 of 35 valid to 35 of 35. Opus stayed at 35 of 35 and needed no retry, where it needed one before. Opus cost $5.43 against $6.15.
+Against section 3's run of 2026-11-01: gpt-oss-20b went from 14 of 35 valid to 35 of 35, and pruned Gemma 4 from 14 of 35 to 34 of 35. Opus stayed at 35 of 35 and needed no retry, where it needed one before. Opus cost $5.43 against $6.15.
 
 - **What still slips is filed by the retry.** Opus once wrote Thursday twice and left out Wednesday; gpt-oss-20b left out six days across three weeks. The retry sent back each date and reason, and every one was filed.
+- **Gemma's one failure was the server, not the reply.** On snapshot/09 oMLX ended the stream mid-reply ("stream error: terminated"), as it did once in November; a transport failure is not retried. Its one retry was a reply cut off at the 20,000-token cap, sent again and accepted. Every plan it sent filed all seven days on the first parse.
 - **gpt-oss-20b's plans are close to Opus's on shape.** Over 28 weekly plans: weekly distance median ratio 0.99 (p90 1.12), long run 1.00, the same rest days in 21 of 28, quality on both sides in 14 weeks and on gpt-oss-20b's side only in 2.
 - **It is not yet a safe coach.** In the injury week (snapshot/06) it planned a 1-mile goal-pace session, a 12-mile long run and a shin stretch, for an Achilles injury. Opus planned all easy running, a 10-mile long run and a physio appointment. It skipped the athlete's question in 4 of 28 weeks, and its full read ran a median 777 characters against Opus's 1,067. Weekly distance was off by more than a quarter in 3 weeks (1.39, 0.72 and 0.69 times Opus's).
+
+- **Gemma is further from a safe coach than gpt-oss-20b.** In the same injury week it raised the week from 31 to 42 miles, planned 2 x 3 miles at marathon pace and a 16-mile long run with 3 miles at marathon pace, and its headline never mentions the Achilles. Its full read ran a median 285 characters against Opus's 1,048, and its flags a median 2 against 5. On shape it is close elsewhere: weekly distance median ratio 1.00 (p90 1.17) over 27 plans, the same rest days in 23. It is also slow, at a median of about 3.7 minutes per reply against gpt-oss-20b's half a minute.
 
 Format is no longer the limit on other models. Coaching quality is: section 6's warning stands, and #58 is its first guard.
 <!-- generated:after:end -->

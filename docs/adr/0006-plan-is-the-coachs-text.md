@@ -54,7 +54,7 @@ The final run on all 35 inputs, on the finished code:
 
 - Opus 4.7 `xhigh`: 35 of 35 valid, all on the first try; 196 of 196 days filed; $5.43.
 - gpt-oss-20b on oMLX: 35 of 35 valid, 34 on the first try and 1 after the retry; 196 of 196 days filed. In the November benchmark it was 14 of 35.
-- Gemma 4 pruned 4-bit on oMLX: still running when this was written; its row is added to the report's after-block when it finishes.
+- Gemma 4 pruned 4-bit on oMLX: 34 of 35 valid, 33 on the first try and 1 after the retry; 189 of 189 days filed. Its one failure was the server ending the stream, not a refused reply. In the November benchmark it was 14 of 35.
 - Opus spend across the work: $23.90 ($11.52 for the baseline spread, $3.84 and $3.11 for the two gates, $5.43 for the final run), against a ceiling of about $20. The overrun is the extra gate that measured the removal of the lists.
 
 The H100 rows of the benchmark (gpt-oss-120b, Gemma 4 full, Qwen3.8-27B) were not rerun.
