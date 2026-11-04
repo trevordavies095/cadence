@@ -58,6 +58,22 @@
   --foreground: var(--ink);
 }
 
+/* The app shell's fixed chrome, so a full-height page (Coach Cade) can fill exactly
+   what is left. On a phone: a 3.5rem top bar and a 4rem tab bar at the bottom, each
+   with a 1px border, plus the notch and home-indicator insets. From `sm` up: a 4rem
+   header and no tab bar. */
+:root {
+  --shell-top: calc(3.5rem + 1px + env(safe-area-inset-top));
+  --shell-bottom: calc(4rem + 1px + env(safe-area-inset-bottom));
+}
+
+@media (width >= 40rem) {
+  :root {
+    --shell-top: calc(4rem + 1px + env(safe-area-inset-top));
+    --shell-bottom: 0px;
+  }
+}
+
 @theme inline {
   --color-canvas: var(--canvas);
   --color-raised: var(--raised);

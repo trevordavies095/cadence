@@ -281,10 +281,10 @@ function ChatInner() {
   }
 
   return (
-    // The header is 4rem tall: the page fills the rest, and only the messages scroll.
-    <main className="mx-auto flex h-[calc(100dvh-4rem-1px)] w-full max-w-3xl flex-col gap-3 px-4 pt-6 sm:px-6">
-      <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="m-0 text-3xl font-semibold leading-tight">Coach Cade</h1>
+    // The page fills what the shell's header and tab bar leave, and only the messages scroll.
+    <main className="mx-auto flex h-[calc(100dvh-var(--shell-top)-var(--shell-bottom))] w-full max-w-3xl flex-col gap-3 px-4 pt-4 sm:px-6 sm:pt-6">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h1 className="m-0 text-2xl font-semibold leading-tight sm:text-3xl">Coach Cade</h1>
         <ButtonLink href="/dossier" variant="quiet">
           What Coach Cade knows about you
         </ButtonLink>
@@ -355,6 +355,8 @@ function ChatInner() {
             placeholder="Write to Coach Cade"
             aria-label="Message to Coach Cade"
             rows={3}
+            // Two lines on a phone, so the conversation keeps the room.
+            className="max-sm:h-[4.75rem]"
             required
           />
           <div className="relative flex items-center gap-3">

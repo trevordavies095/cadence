@@ -46,9 +46,17 @@ export default defineConfig({
     },
     {
       name: "chromium",
-      testIgnore: /(welcome|first-run)\.spec\.ts/,
+      testIgnore: /(welcome|first-run|phone)\.spec\.ts/,
       dependencies: ["first-run"],
       use: { ...devices["Desktop Chrome"] },
+    },
+    // A small phone. Chromium with a phone's viewport and touch, not Safari: this catches a page
+    // wider than the screen, not WebKit-only behaviour.
+    {
+      name: "phone",
+      testMatch: /phone\.spec\.ts/,
+      dependencies: ["first-run"],
+      use: { ...devices["iPhone SE"], browserName: "chromium" },
     },
   ],
   webServer: [

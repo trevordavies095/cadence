@@ -2,35 +2,51 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
-import { IconSettings } from "@tabler/icons-react";
+import type { ComponentType, ReactNode } from "react";
+import {
+  IconCalendarWeek,
+  IconHistory,
+  IconHome,
+  IconMessageCircle,
+  IconSettings,
+} from "@tabler/icons-react";
 import { cx } from "./ui";
 
 type NavItem = {
   href: string;
   label: string;
+  icon: ComponentType<{ size?: number; stroke?: number; className?: string; "aria-hidden"?: boolean }>;
   match: (pathname: string) => boolean;
 };
 
 const NAV: NavItem[] = [
-  { href: "/", label: "Home", match: (p) => p === "/" },
-  { href: "/plan", label: "Plan", match: (p) => p === "/plan" },
+  { href: "/", label: "Home", icon: IconHome, match: (p) => p === "/" },
+  { href: "/plan", label: "Plan", icon: IconCalendarWeek, match: (p) => p === "/plan" },
   {
     href: "/chat",
     label: "Coach Cade",
+    icon: IconMessageCircle,
     match: (p) => p === "/chat" || p === "/thread",
   },
   {
     href: "/weeks",
     label: "History",
+    icon: IconHistory,
     match: (p) => p === "/weeks" || p === "/review",
   },
 ];
 
-// The current page is ink text over a 2px accent underline; every other item
-// stays quiet. Volt is kept for the page's one primary action, never the header.
-const linkBase =
-  "inline-flex items-center border-b-2 px-3 py-1.5 text-base font-semibold";
+// The current page is ink text with a 2px accent rule; every other item stays quiet.
+// Volt is kept for the page's one primary action, never the nav.
+//
+// On a phone the nav is a tab bar fixed to the bottom of the screen, icon over label,
+// with the rule along its top edge. From `sm` up it sits in the header as text links
+// with the rule underneath. The heights here are the ones --shell-top and
+// --shell-bottom in globals.css reserve.
+const linkBase = cx(
+  "flex h-16 flex-1 flex-col items-center justify-center gap-0.5 border-t-2 text-[0.8125rem] font-semibold no-underline",
+  "sm:h-auto sm:flex-none sm:flex-row sm:border-t-0 sm:border-b-2 sm:px-3 sm:py-1.5 sm:text-base",
+);
 const linkIdle = "border-transparent text-muted hover:text-ink";
 const linkActive = "border-accent text-ink";
 
@@ -39,15 +55,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const settingsActive = pathname === "/settings";
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-10 border-b border-border bg-raised">
-        <div className="mx-auto flex h-16 max-w-3xl items-center gap-6 px-4 sm:px-6">
+    <div className="flex min-h-dvh flex-col pb-(--shell-bottom)">
+      <header className="sticky top-0 z-10 border-b border-border bg-raised pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto flex h-14 max-w-3xl items-center gap-6 px-4 sm:h-16 sm:px-6">
           <Link href="/" className="text-lg font-semibold text-ink no-underline">
             Cadence
           </Link>
-          <nav aria-label="Main" className="flex flex-1 items-center gap-1">
+          <nav
+            aria-label="Main"
+            className={cx(
+              "fixed inset-x-0 bottom-0 flex border-t border-border bg-raised pb-[env(safe-area-inset-bottom)]",
+              "sm:static sm:flex-1 sm:items-center sm:gap-1 sm:border-t-0 sm:bg-transparent sm:pb-0",
+            )}
+          >
             {NAV.map((item) => {
               const active = item.match(pathname);
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
@@ -55,6 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   className={cx(linkBase, active ? linkActive : linkIdle)}
                   aria-current={active ? "page" : undefined}
                 >
+                  <Icon size={24} stroke={1.75} className="sm:hidden" aria-hidden />
                   {item.label}
                 </Link>
               );
@@ -66,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             title="Settings"
             aria-current={settingsActive ? "page" : undefined}
             className={cx(
-              "inline-flex h-10 w-10 items-center justify-center border-b-2",
+              "ml-auto inline-flex h-11 w-11 items-center justify-center border-b-2",
               settingsActive ? linkActive : linkIdle,
             )}
           >
