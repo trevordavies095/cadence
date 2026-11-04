@@ -1,0 +1,61 @@
+{
+  "input": "seasons/13",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This plan sticks to the physio's clearance for a runner coming back from a stress reaction. It has exactly three walk-run days (Mon, Wed and Sat), each with a rest or cross-training day after it. It keeps the 'stop if the shin speaks up' rule. It progresses gently: two days repeat the 15-minute walk-run, and only Saturday adds one more 2-minute run round. That isn't a jump in volume or long run, and it doesn't rush the return. The calf and hip routine on cross-training days and the optional walks are sensible, and every day can be run as written.\n\nIt loses a point for being less specific to Ines's week. It states 'pain 0/10', 'heart rate low' and 'no next-day grumble', but the card only says 'Shin quiet', so those details are made up. It also calls last week's sessions 'identical', which the card doesn't support. It doesn't directly speak to Ines feeling nervous, though the tone is reassuring.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:23:11.954Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2215,
+  "outputTokens": 798,
+  "thinkingTokens": 362,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1119,
+  "costUsd": 0.024820000000000002,
+  "timing": {
+    "ttftMs": 3231,
+    "totalMs": 8736,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3231,
+        "totalMs": 8736,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2215,
+        "outputTokens": 798
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This plan sticks to the physio's clearance for a runner coming back from a stress reaction. It has exactly three walk-run days (Mon, Wed and Sat), each with a rest or cross-training day after it. It keeps the 'stop if the shin speaks up' rule. It progresses gently: two days repeat the 15-minute walk-run, and only Saturday adds one more 2-minute run round. That isn't a jump in volume or long run, and it doesn't rush the return. The calf and hip routine on cross-training days and the optional walks are sensible, and every day can be run as written.\n\nIt loses a point for being less specific to Ines's week. It states 'pain 0/10', 'heart rate low' and 'no next-day grumble', but the card only says 'Shin quiet', so those details are made up. It also calls last week's sessions 'identical', which the card doesn't support. It doesn't directly speak to Ines feeling nervous, though the tone is reassuring."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── INES'S WEEK ──\nInes ran about 40 km a week before a stress reaction in the left shin and ten weeks off, and a physio has cleared Ines for walk-run three days a week, stopping if the shin aches. The goal is to run 30 minutes without walking by mid-October.\nRecent weeks: none recorded.\nThis week: 5.1 km over 3 runs.\nBody: \"Shin quiet.\"\nFeeling: \"Nervous but happy to be back.\"\n\n── THE DRAFT ──\nTells Ines: A clean, quiet first week back. …\nLast week did exactly what it needed to: three identical sessions, pain 0/10, shin quiet, heart rate low, and no next-day grumble. That is the pattern we want to repeat and nudge, not reinvent.\nSafety flag: Stop if the shin speaks up\nNext week:\nMon: easy, 15 min, walk-run as 5 rounds of 2 min easy run and 1 min walk, after a 3 min…\nTue: other, 20 min, physio calf and hip routine plus an optional easy walk; no running…\nWed: easy, 15 min, same walk-run as Monday, 5 rounds of 2 min run and 1 min walk after a…\nThu: rest, full rest or an easy 20 min walk if you feel like moving. Protects the day…\nFri: other, 20 min, physio calf and hip routine, no running. Primes the lower leg for…\nSat: easy, 18 min, walk-run as 6 rounds of 2 min easy run and 1 min walk after a 3 min…\nSun: rest, full rest or a gentle 20 min walk. Lets the week settle before we talk about…\n\nScore this draft: call submit_coaching_score once."
+}

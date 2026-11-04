@@ -1,0 +1,225 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w12.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:52:47.852Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, race week, target under 3:45.",
+  "asked": null,
+  "outcome": "repaired",
+  "repairs": "plan 2026-10-18 not filed: no distance or duration",
+  "stopReason": "tool_use",
+  "inputTokens": 17264,
+  "outputTokens": 1508,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 3536,
+  "estimatedInputTokens": 9521,
+  "timing": {
+    "ttftMs": 875,
+    "totalMs": 50495,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 875,
+        "totalMs": 26214,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "repaired",
+        "repairs": "plan 2026-10-18 not filed: no distance or duration",
+        "inputTokens": 17264,
+        "outputTokens": 1508
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 1827,
+        "totalMs": 24281,
+        "request": {
+          "kind": "fix_lines",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ],
+          "fixDates": [
+            "2026-10-18"
+          ],
+          "fixed": []
+        },
+        "outcome": "repaired",
+        "repairs": "plan 2026-10-18 still not filed: no distance or duration",
+        "inputTokens": 17875,
+        "outputTokens": 1332
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-12",
+    "isoWeek": "2026-W42",
+    "recentWeeklyM": 65198.5488
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 6,
+    "failures": [
+      {
+        "date": "2026-10-18",
+        "reason": "no distance or duration"
+      }
+    ],
+    "retried": true,
+    "retryAskedFor": [
+      "2026-10-18"
+    ],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Keep volume light, finish the race feeling fresh and confident",
+    "flags": [
+      {
+        "title": "Heart‑rate drift",
+        "detail": "keep under 155 bpm on the 8‑mile Saturday run."
+      },
+      {
+        "title": "Recovery",
+        "detail": "monitor sleep and muscle soreness after the quality session."
+      },
+      {
+        "title": "Race‑pace rehearsal",
+        "detail": "keep Wednesday’s 800 m repeats close to marathon pace."
+      },
+      {
+        "title": "Hydration",
+        "detail": "plan pre‑race fluids and electrolytes."
+      },
+      {
+        "title": "Sleep quality",
+        "detail": "aim for at least 7 hrs each night."
+      }
+    ],
+    "answers": [
+      {
+        "question": "Is it crazy to do one more 16-miler on Wednesday so I feel ready?",
+        "answer": "No, adding a 16‑mile run on Wednesday would be too much for a taper week and could interfere with recovery. Stick to the planned quality run."
+      }
+    ],
+    "analysis": "The athlete has already dropped volume sharply this week; the next week should stay light and keep a single quality session early. A 4‑mile easy run on Tuesday, a 4‑mile threshold/tempo block of 4×800 m at marathon pace on Wednesday, a very short 3‑mile easy run Thursday, full rest Friday, a 8‑mile easy long run Saturday and race Sunday keeps legs fresh and preserves recovery while giving a brief race‑pace rehearsal.\n\nThe athlete asked whether adding a 16‑mile workout on Wednesday was too much; the data from this week shows a reduced total volume and heart‑rate zones largely in 2. The extra distance would push the body too hard and risk over‑recovery.\n\nWe’ll monitor heart‑rate drift on the quality session, ensure the Saturday run stays under 155 bpm, confirm sleep and hydration remain good, watch for any onset of soreness, and keep the race‑day prep routine consistent.\n\nNo safety concerns noted.\n\nAnswer to question: No, adding a 16‑mile run on Wednesday would be too much for a taper week and could interfere with recovery. Stick to the planned quality run.",
+    "prescribedWeek": {
+      "week": "2026-W42",
+      "days": [
+        {
+          "date": "2026-10-12",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "full recovery before race week.",
+          "line": "Mon Oct 12: rest, full recovery before race week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-13",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, smooth run to keep legs loose.",
+          "line": "Tue Oct 13: easy, 4 mi, heart rate under 150, smooth run to keep legs loose.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-14",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "4×800 m at marathon pace with 400 m recoveries, keep legs sharp.",
+          "line": "Wed Oct 14: quality, 4 mi, 4×800 m at marathon pace with 400 m recoveries, keep legs sharp.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-15",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "relaxed pace to preserve energy.",
+          "line": "Thu Oct 15: easy, 3 mi, relaxed pace to preserve energy.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-16",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "total rest before the race.",
+          "line": "Fri Oct 16: rest, total rest before the race.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-17",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 12875,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy pace, keep heart rate under 155, gentle strides.",
+          "line": "Sat Oct 17: long, 8 mi, easy pace, keep heart rate under 155, gentle strides.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-18",
+          "dayType": "other",
+          "run": null,
+          "notes": "Sun Oct 18: race day.",
+          "line": "Sun Oct 18: race day.",
+          "parsed": false
+        }
+      ]
+    }
+  }
+}

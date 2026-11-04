@@ -5,6 +5,8 @@ export {
   planFailureLines,
   RETRY_ERROR_INSTRUCTION,
   RETRY_FIX_LINES_INSTRUCTION,
+  RETRY_FIX_RULES_INSTRUCTION,
+  rulesRetryFromEnv,
   RETRY_NO_TOOL_CALL_TEXT,
   Unfinished,
   createAnthropicLlmPort,

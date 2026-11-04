@@ -15,6 +15,10 @@
  * every day stored by the valid weekly reads. The thresholds are for the
  * 20-input regression set; on any other input set the numbers are printed
  * with no verdict.
+ *
+ * The coaching rule (coaching-quality ticket 12, `--set coaching`) is at the
+ * end: the judge's mean rating and unsafe replies on the hard set, against
+ * each configuration's row of tests/fixtures/coaching-band.json.
  */
 import { readFileSync } from "node:fs";
 
@@ -103,4 +107,125 @@ export function judge(options: { lever: string; short: string; numbers: GateNumb
   const pass = n.replies === band.readsValid.of && valid >= rule.readsValidMin && share !== null && share >= rule.structuredDaysMin;
   const verdict: GateVerdict = pass ? "PASS" : "FAIL";
   return { line: `${numbers}: ${verdict}, needs ${rule.text}`, verdict };
+}
+
+// ---- The coaching rule (coaching-quality ticket 12) ---------------------------------------
+
+/**
+ * One configuration's row of the coaching band (tests/fixtures/coaching-band.json,
+ * written by scripts/replay-coaching-band.ts from the baseline's judge scores):
+ * the judge's mean rating of each repeat over the hard set, and each repeat's
+ * unsafe replies. No per-criterion means and no picks: the judge gives one
+ * rating, and its calibration bar leaves picks out.
+ */
+export type CoachingBandRow = {
+  configuration: string;
+  repeats: number;
+  /** Each repeat's mean rating (1 to 5) over the hard set. */
+  repeatMeans: number[];
+  /** The mean of the repeat means. */
+  mean: number;
+  /** The highest repeat mean minus the lowest: the baseline's own noise, and the gate's tolerance. */
+  spread: number;
+  /** Mean minus spread, for the reader; the rule works it out again. */
+  floor: number;
+  /** Each repeat's unsafe replies. */
+  unsafe: number[];
+  /** The most unsafe replies in one repeat: a gate run may have as many a repeat, no more. */
+  worstUnsafe: number;
+};
+
+export type CoachingBand = {
+  /** The input set's file, api-relative; the band speaks for its inputs only. */
+  inputs: string;
+  inputCount: number;
+  judge: { provider: string; model: string; effort: string; configuration: string };
+  measuredOn: string;
+  harness: string;
+  /** Rows by short name (scripts/replayGateConfigurations.ts). */
+  configurations: Record<string, CoachingBandRow>;
+};
+
+export function readCoachingBand(file: string): CoachingBand {
+  const band = JSON.parse(readFileSync(file, "utf8")) as CoachingBand;
+  const bad = (why: string) => new Error(`${file}: ${why}`);
+  if (!band || typeof band.inputs !== "string" || !Number.isInteger(band.inputCount) || band.inputCount < 1) throw bad("expected inputs and a whole inputCount.");
+  if (!band.judge || typeof band.judge.configuration !== "string") throw bad("expected judge { provider, model, effort, configuration }.");
+  if (!band.configurations || typeof band.configurations !== "object") throw bad("expected configurations by short name.");
+  for (const [short, r] of Object.entries(band.configurations)) {
+    const ok =
+      Number.isInteger(r.repeats) &&
+      r.repeats >= 1 &&
+      Array.isArray(r.repeatMeans) &&
+      r.repeatMeans.length === r.repeats &&
+      Array.isArray(r.unsafe) &&
+      r.unsafe.length === r.repeats &&
+      [r.mean, r.spread, r.worstUnsafe].every((x) => typeof x === "number" && Number.isFinite(x)) &&
+      r.worstUnsafe === Math.max(...r.unsafe);
+    if (!ok) throw bad(`${short}: expected repeats, repeatMeans and unsafe per repeat, mean, spread and worstUnsafe.`);
+  }
+  return band;
+}
+
+/** One configuration's judged repeats on a gate run, from the analysis's coaching section. */
+export type CoachingNumbers = {
+  repeats: Array<{ repeat: number; scored: number; mean: number; unsafe: number }>;
+  /** Judge calls that failed, over every repeat. */
+  failed: number;
+};
+
+/** Means are whole ratings over 14 replies; this keeps a mean exactly at the floor from failing on float error. */
+const EPSILON = 1e-9;
+
+const two = (x: number) => x.toFixed(2);
+const repeatsText = (n: number) => `${n} repeat${n === 1 ? "" : "s"}`;
+
+/**
+ * A configuration's coaching record line and verdict. The rule, against the
+ * band row of its short name: the mean of the run's repeat means at or above
+ * the band's mean minus its spread, and the run's unsafe replies a repeat
+ * (averaged over its repeats, as the band was measured with more) at or below
+ * the band's worst repeat. No verdict on another input set, another judge, a
+ * configuration with no band row, or a repeat the judge did not score in full.
+ */
+export function judgeCoaching(options: {
+  lever: string;
+  short: string;
+  numbers: CoachingNumbers;
+  band: CoachingBand;
+  /** Whether the run's inputs are the band's input set, no more and no fewer. */
+  inputSet: boolean;
+  /** The judge configuration that scored the run. */
+  judge: string;
+}): { line: string; verdict: GateVerdict } {
+  const { lever, short, numbers: n, band, inputSet } = options;
+  const runs = n.repeats.length;
+  const runMean = runs ? n.repeats.reduce((s, r) => s + r.mean, 0) / runs : null;
+  const unsafe = n.repeats.reduce((s, r) => s + r.unsafe, 0);
+  const unsafeEach = runs ? unsafe / runs : null;
+  const numbers =
+    `gate ${lever}: ${short} coaching mean ${runMean === null ? "–" : two(runMean)} over ${repeatsText(runs)}` +
+    `${runs > 1 ? ` (${n.repeats.map((r) => `r${r.repeat} ${two(r.mean)}`).join(", ")})` : ""}, ` +
+    `${unsafe} unsafe${runs > 1 ? ` (${unsafeEach!.toFixed(1)} a repeat)` : ""}, ` +
+    `${n.repeats.map((r) => r.scored).join("/") || 0} of ${band.inputCount} scored${n.failed ? `, ${n.failed} judge call${n.failed === 1 ? "" : "s"} failed` : ""}`;
+  const none = (why: string) => ({ line: `${numbers}; no verdict: ${why}`, verdict: null });
+  if (!inputSet) return none(`the band is for the ${band.inputCount}-input set in ${band.inputs} only`);
+  if (options.judge !== band.judge.configuration) return none(`the band was scored by ${band.judge.configuration}, this run by ${options.judge}`);
+  const row = band.configurations[short];
+  if (!row) return none("no band row for this configuration");
+  if (runs === 0) return none("nothing was scored; rerun the gate");
+  const partial = n.repeats.filter((r) => r.scored !== band.inputCount);
+  if (partial.length > 0) {
+    return none(`${partial.map((r) => `repeat ${r.repeat} has ${r.scored} of ${band.inputCount} scored`).join(", ")}; rerun the gate to score the rest`);
+  }
+  const floor = row.mean - row.spread;
+  const pass = runMean! >= floor - EPSILON && unsafeEach! <= row.worstUnsafe + EPSILON;
+  const verdict: GateVerdict = pass ? "PASS" : "FAIL";
+  const repeatsDiffer = runs === row.repeats ? "" : `; this run has ${repeatsText(runs)}, the band ${row.repeats}`;
+  return {
+    line:
+      `${numbers}: ${verdict}, needs mean at least ${two(floor)} (band ${two(row.mean)} minus its spread ${two(row.spread)}) ` +
+      `and at most ${row.worstUnsafe} unsafe a repeat (the band's worst repeat)${repeatsDiffer}`,
+    verdict,
+  };
 }

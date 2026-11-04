@@ -1,0 +1,230 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w5.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:54:03.172Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 6 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "repaired",
+  "repairs": "plan line for 2026-09-31 dropped: outside the plan week; plan 2026-10-03 not filed: no line",
+  "stopReason": "tool_use",
+  "inputTokens": 9723,
+  "outputTokens": 1293,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2984,
+  "estimatedInputTokens": 6029,
+  "timing": {
+    "ttftMs": 1034,
+    "totalMs": 38633,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 1034,
+        "totalMs": 21154,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "repaired",
+        "repairs": "plan line for 2026-09-31 dropped: outside the plan week; plan 2026-10-03 not filed: no line",
+        "inputTokens": 9723,
+        "outputTokens": 1293
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 1749,
+        "totalMs": 17479,
+        "request": {
+          "kind": "fix_lines",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ],
+          "fixDates": [
+            "2026-10-03"
+          ],
+          "fixed": [
+            "2026-10-03"
+          ]
+        },
+        "outcome": "repaired",
+        "repairs": "plan 2026-10-03 filed by the retry",
+        "inputTokens": 10276,
+        "outputTokens": 1009
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 4267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [
+      {
+        "date": "2026-10-03",
+        "reason": "no line"
+      }
+    ],
+    "retried": true,
+    "retryAskedFor": [
+      "2026-10-03"
+    ],
+    "fixedByRetry": [
+      "2026-10-03"
+    ],
+    "bareNumbers": 0,
+    "droppedLines": [
+      {
+        "date": "2026-09-31",
+        "reason": "outside the plan week"
+      }
+    ],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "This week’s plan eases back into running with short walk‑run intervals and one brief quality session.",
+    "flags": [
+      {
+        "title": "Adherence",
+        "detail": "track if the 3 scheduled runs are completed"
+      },
+      {
+        "title": "Volume",
+        "detail": "keep total time under 45 minutes to avoid overload"
+      },
+      {
+        "title": "Quality effort",
+        "detail": "the 2‑min hard runs should feel 7‑8/10 effort"
+      },
+      {
+        "title": "Recovery",
+        "detail": "two rest days keep the body rested"
+      },
+      {
+        "title": "Consistency",
+        "detail": "aim for 3 runs this week to rebuild routine"
+      }
+    ],
+    "answers": [],
+    "analysis": "The athlete missed the entire previous week, so the focus for this week is a gentle reintroduction to running.  In a build phase we keep most mileage easy, but to keep the training progression we add a single short quality session.  The total time is kept low – about 40 minutes – and the walk‑run format is used for all sessions so the athlete stays comfortable.  Three short easy days provide volume while two rest days keep recovery high.  The 2‑min hard intervals on Friday serve as a taste of threshold work without over‑loading the body.  If any day is missed, we’ll keep the rest day as a real rest and note the missed run in the next week.  The plan should keep the athlete’s heart rate in zones 1–2 for easy runs and have the quality session feel near 7‑8/10 effort.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 960,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk‑run intervals (8×1 min run, 1 min walk), keeps the heart rate in zone 1 and builds volume gently",
+          "line": "Mon 2026-09-28: easy, 16 min walk‑run intervals (8×1 min run, 1 min walk), keeps the heart rate in zone 1 and builds volume gently",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Tue 2026-09-29: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 720,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk‑run intervals (8×1 min run, 1 min walk), adds a little extra easy mileage",
+          "line": "Wed 2026-09-30: easy, 12 min walk‑run intervals (8×1 min run, 1 min walk), adds a little extra easy mileage",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 0,
+            "durationS": 720,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "2‑min hard run / 1‑min easy repeat (4×), develops threshold feel without overloading",
+          "line": "Fri 2026-10-01: quality, 12 min 2‑min hard run / 1‑min easy repeat (4×), develops threshold feel without overloading",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sat 2026-10-02: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sat 2026-10-03: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 600,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk‑run intervals, concludes the week with easy effort and prepares for next week",
+          "line": "Sun 2026-10-04: easy, 10 min walk‑run intervals, concludes the week with easy effort and prepares for next week",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

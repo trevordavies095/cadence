@@ -1,0 +1,200 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w10.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:49:53.872Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, 2 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 17242,
+  "outputTokens": 1346,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2641,
+  "estimatedInputTokens": 9655,
+  "timing": {
+    "ttftMs": 21923,
+    "totalMs": 44480,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 21923,
+        "totalMs": 44480,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 17242,
+        "outputTokens": 1346
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 69209.83872
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "This week cuts volume and adds a short race‑pace run to keep your body fresh for race day.",
+    "flags": [
+      {
+        "title": "Race‑pace session length",
+        "detail": "keep 2‑3 mi at target to avoid fatigue"
+      },
+      {
+        "title": "Long run",
+        "detail": "cut to 12 mi, end easy, no marathon‑pace stretch"
+      },
+      {
+        "title": "Easy runs",
+        "detail": "stay under 150 bpm, keep HR zones 1–2"
+      },
+      {
+        "title": "Recovery",
+        "detail": "use rest days on Mon and Fri, avoid back‑to‑back hard work"
+      },
+      {
+        "title": "Volume taper",
+        "detail": "reduce by ~25 %, keep total ~32 mi"
+      }
+    ],
+    "answers": [],
+    "analysis": "The goal this week is a classic taper. With the race only two weeks away, the athlete should lower overall volume while keeping one brief quality session to preserve race‑pace feel. The previous week ran 41.99 mi, with a 17 mi long at 9:59 mi. We cut the long to about 12 mi, which keeps the legs used but reduces fatigue. A 3‑mile at marathon pace (≈9:10 mi) replaces the previous 9‑mi threshold run, ensuring the body sees the effort level needed without the accumulated stress of a long hard session. Easy runs stay in HR zone 2, staying under 150 bpm, and rest days remain solid. Volume drops about 25 %, a typical 2‑week taper figure. Heart‑rate drift is expected to be lower this week because the warm‑ups and cool‑downs are lighter. The short race‑pace session is spaced two days after the long to allow adequate recovery. This schedule should keep recovery high and readiness for the Oct 18 race.\n\nKey: keep the race‑pace run 2‑3 mi, run the long at easy pace with a 2‑mi finish at target, watch recovery, and maintain rest days. No red flags appear.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-09-28: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "HR <150, flat route. Keeps legs moving after the long.",
+          "line": "Tue 2026-09-29: easy, 4 mi, HR <150, flat route. Keeps legs moving after the long.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "at 9:10/mi, with 1‑min warm‑up and cool‑down. Keeps race‑pace feel.",
+          "line": "Wed 2026-09-30: quality, 3 mi at 9:10/mi, with 1‑min warm‑up and cool‑down. Keeps race‑pace feel.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "HR <150, hilly stretch. Light recovery.",
+          "line": "Thu 2026-10-01: easy, 4 mi, HR <150, hilly stretch. Light recovery.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-10-02: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "HR <150, flat short run. Light footwork.",
+          "line": "Sat 2026-10-03: easy, 3 mi, HR <150, flat short run. Light footwork.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 19312,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy pace 10:00/mi, last 2 mi at 9:10/mi. Light overall, finish in race pace.",
+          "line": "Sun 2026-10-04: long, 12 mi, easy pace 10:00/mi, last 2 mi at 9:10/mi. Light overall, finish in race pace.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

@@ -131,7 +131,7 @@ function emptyScores(): PairScores {
 // ---- Seeded order ------------------------------------------------------------
 
 /** FNV-1a over a string: a stable 32-bit hash. */
-function hash32(text: string): number {
+export function hash32(text: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
@@ -141,7 +141,7 @@ function hash32(text: string): number {
 }
 
 /** One draw from mulberry32 seeded with `seed`. */
-function mulberry32(seed: number): number {
+export function mulberry32(seed: number): number {
   let t = (seed + 0x6d2b79f5) >>> 0;
   t = Math.imul(t ^ (t >>> 15), t | 1);
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
@@ -180,7 +180,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** "2026-09-28" as "Mon Sep 28"; anything else as given. */
-function dayName(date: string): string {
+export function dayName(date: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
   if (!m) return date;
   const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
@@ -200,11 +200,11 @@ export function plainText(text: string): string {
 }
 
 /** Markdown headings pushed down to level 4 or below, so a reply's own headings sit under the pair's. */
-function demoteHeadings(text: string): string {
+export function demoteHeadings(text: string): string {
   return text.replace(/^(#{1,6})(\s)/gm, (_m, hashes: string, space: string) => `${"#".repeat(Math.min(6, hashes.length + 3))}${space}`);
 }
 
-function quoteBlock(text: string): string[] {
+export function quoteBlock(text: string): string[] {
   return text.split("\n").map((l) => (l.trim() ? `> ${l}` : ">"));
 }
 
@@ -280,7 +280,7 @@ function painMessages(packet: ModelPacket | null): string[] {
 }
 
 /** The text under a level-2 heading of the recap, such as "Subjective recap"; null when absent or empty. */
-function recapSection(recap: string | null, heading: RegExp): string | null {
+export function recapSection(recap: string | null, heading: RegExp): string | null {
   const lines = (recap ?? "").split("\n");
   const start = lines.findIndex((l) => /^##\s/.test(l) && heading.test(l.replace(/^##\s+/, "")));
   if (start < 0) return null;

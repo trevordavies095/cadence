@@ -1,0 +1,17 @@
+{
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "provider": "anthropic",
+  "baseUrlHost": null,
+  "model": "claude-opus-4-7",
+  "effort": "xhigh",
+  "repeats": 3,
+  "note": "Anthropic API",
+  "startedAt": "2026-11-03T12:34:33.265Z",
+  "harnessCommit": "3046c4c2dedde93dbf871beec5b8ea89ef183403",
+  "dryRun": false,
+  "inputs": "api/tests/fixtures/seasons/season-packets",
+  "resumedAt": [
+    "2026-11-03T15:11:53.989Z",
+    "2026-11-03T15:11:54.948Z"
+  ]
+}

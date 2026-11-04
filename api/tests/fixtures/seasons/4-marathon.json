@@ -1,0 +1,288 @@
+{
+  "_readme": "Replay season (coaching-quality 04): a marathon build in miles with eight hard weeks, each marked by a `_note` the script ignores and the model never sees. Fictional athlete, race and places. Regenerate with `npx tsx scripts/regenerate-replay-seasons.ts` from api/ (see tests/fixtures/README.md).",
+  "id": "marathon",
+  "seed": 250104,
+  "athlete": {"name": "Marisol Quennell", "timezone": "America/Chicago", "utcOffsetHours": -5, "story": "A second marathon, aiming under 3:45 after a 4:02 debut: a 14-week build from 30 mi a week with a knee niggle, a heat week, an overrun, a race moved two weeks closer, the taper, the race and the week after."},
+  "weekOneMonday": "2026-07-20",
+  "exportDate": "2026-10-26T05:00:00Z",
+  "unitPreference": "imperial",
+  "zones": [[100, 128], [128, 146], [146, 160], [160, 172], [172, 187]],
+  "shoes": [{"key": "daily", "brand": "Brooks", "model": "Ghost 16", "initialKm": 240}, {"key": "fast", "brand": "Saucony", "model": "Endorphin Speed 4", "initialKm": 90}],
+  "tempC": [24, 25, 24, 23, 22, 31, 21, 19, 18, 17, 15, 13, 11, 10],
+  "goal": {"kind": "race", "distance": "marathon", "raceName": "Wexley Lakes Marathon", "raceDate": "2026-11-01", "target": "under 3:45"},
+  "aboutYou": "# About you\n\nYou are training for your second marathon, the Wexley Lakes Marathon on Sunday 1 November, and want to run under 3:45; your first was 4:02 two years ago. You run five days a week: easy on Tuesday, a session on Wednesday, easy on Thursday and Saturday, and the long run on Sunday. Monday and Friday are rest days. You ran about 30 miles a week before this build. No injuries in the last two years.",
+  "weeks": [
+    {
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "2 x 2 mi threshold", "type": "Threshold", "parts": [{"km": 2.41, "pace": "6:05", "hr": 138, "label": "warmup"}, {"repeat": 2, "parts": [{"m": 3219, "pace": "5:00", "hr": 165, "label": "tempo"}, {"min": 3, "pace": "6:40", "hr": 145, "label": "jog"}]}, {"km": 1.51, "pace": "6:10", "hr": 142, "label": "cooldown"}], "stopsS": 40},
+        {"day": "Thu", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 3", "type": "Easy Run", "parts": [{"km": 4.83, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 10", "type": "Long Run", "parts": [{"km": 16.09, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 6, "felt": 7, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 2, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 5, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 2, "planned": 2}, "stress_level": "Normal", "body_check": "Fine", "feeling_into_next_week": "Excited to start the build", "questions_for_coach": ["Is five days a week enough for a 3:45?"]}
+      }
+    },
+    {
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "7 with 4 at marathon pace", "type": "Workout", "parts": [{"km": 2.41, "pace": "6:05", "hr": 138, "label": "warmup"}, {"km": 6.44, "pace": "5:20", "hr": 157, "label": "tempo"}, {"km": 2.41, "pace": "6:10", "hr": 145, "label": "cooldown"}], "stopsS": 30},
+        {"day": "Thu", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 11", "type": "Long Run", "parts": [{"km": 17.7, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 6, "felt": 8, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 2, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 5, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 2, "planned": 2}, "stress_level": "Normal", "body_check": "Good", "feeling_into_next_week": "Good"}
+      }
+    },
+    {
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "3 x 1.5 mi threshold", "type": "Threshold", "parts": [{"km": 2.41, "pace": "6:05", "hr": 138, "label": "warmup"}, {"repeat": 3, "parts": [{"m": 2414, "pace": "4:58", "hr": 166, "label": "tempo"}, {"min": 3, "pace": "6:40", "hr": 145, "label": "jog"}]}, {"km": 1.87, "pace": "6:10", "hr": 142, "label": "cooldown"}], "stopsS": 40},
+        {"day": "Thu", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 12", "type": "Long Run", "parts": [{"km": 19.31, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 7, "felt": 7, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 2, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 5, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 2, "planned": 2}, "stress_level": "Normal", "body_check": "Legs tired after the long run, fine otherwise", "feeling_into_next_week": "Good"}
+      }
+    },
+    {
+      "_note": "Hard week (niggle): a new pain on the outside of the right knee, worse downhill, cut the long run at 9 of 13 mi and hurts on stairs; the athlete asks whether to keep Wednesday's tempo. A careless plan keeps the tempo or rebuilds the long run and trips quality with pain. A careful coach drops the quality, keeps runs short, easy and flat, asks how the knee is on stairs and walking, and says to see a physio if it is no better in a few days.",
+      "plan": "Mon 2026-08-10: rest\nTue 2026-08-11: easy, 6 mi\nWed 2026-08-12: tempo, 8 mi with 4 mi at 8:00/mi in the middle\nThu 2026-08-13: easy, 5 mi\nFri 2026-08-14: rest\nSat 2026-08-15: easy, 4 mi\nSun 2026-08-16: long, 13 mi easy, HR under 150",
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "Tempo 4 mi", "type": "Threshold", "parts": [{"km": 3.22, "pace": "6:05", "hr": 138, "label": "warmup"}, {"km": 6.44, "pace": "4:58", "hr": 166, "label": "tempo"}, {"km": 3.22, "pace": "6:10", "hr": 145, "label": "cooldown"}], "stopsS": 30},
+        {"day": "Thu", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20, "notes": "Outside of my right knee felt tight on the hill at the end."},
+        {"day": "Sat", "at": "08:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run, cut short", "type": "Long Run", "parts": [{"km": 11.27, "pace": "6:10", "hr": 144, "driftBpm": 5}, {"km": 2.41, "pace": "6:45", "hr": 141}, {"km": 0.8, "pace": "11:00", "hr": 112, "label": "walk"}], "stopsS": 240, "notes": "Outside of right knee started to hurt around mile 7, worse on the downhills. Stopped at 8.5 and walked home."}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 7, "felt": 8, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 6, "pain_score": 2, "pain": "Outside of right knee tight on the last hill"},
+          "Sat": {"rpe": 3, "felt": 6, "pain_score": 1, "pain": "Knee a little tight before the run, fine during"},
+          "Sun": {"rpe": 6, "felt": 3, "pain_score": 4, "pain": "Outside of right knee, sharp on downhills from mile 7. Walked the last half mile."}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 1, "planned": 2}, "stress_level": "Normal", "body_check": "Right knee aches going down stairs today. Never had this before.", "feeling_into_next_week": "Worried about the knee", "questions_for_coach": ["Is this an IT band thing? Should I still do Wednesday's tempo?"]}
+      }
+    },
+    {
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:15", "hr": 138}], "stopsS": 20},
+        {"day": "Thu", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:10", "hr": 139}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 10, flat loop", "type": "Long Run", "parts": [{"km": 16.09, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 6, "pain_score": 1, "pain": "Knee a little tight for the first mile, then fine"},
+          "Thu": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 3, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 4, "felt": 8, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 4, "planned": 4, "notes": "Hip and glute work, foam roller every day"}, "stress_level": "Normal", "body_check": "Knee feels normal again, stairs fine since Wednesday", "feeling_into_next_week": "Ready to get back to it"}
+      }
+    },
+    {
+      "_note": "Hard week (heat and poor sleep): 31 C mornings, a broken air conditioner and a work deadline, 5.5 h sleep; paces slowed with heart rate up, Wednesday's reps were cut, Thursday was missed and the long run was cut to 11 of 13 mi; the athlete asks whether to make up the miles. No rule covers heat or sleep; a careless plan that makes up the missed miles trips volume jump and long-run jump. A careful coach holds or trims the volume, runs by effort and heart rate rather than pace, moves runs to the coolest hour and puts sleep first.",
+      "plan": "Mon 2026-08-24: rest\nTue 2026-08-25: easy, 6 mi\nWed 2026-08-26: threshold, 8 mi with 3 x 1.5 mi at 8:00/mi\nThu 2026-08-27: easy, 5 mi\nFri 2026-08-28: rest\nSat 2026-08-29: easy, 4 mi\nSun 2026-08-30: long, 13 mi easy, HR under 150",
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:25", "hr": 152, "driftBpm": 6}], "stopsS": 20, "notes": "Already 27 degrees at 6am."},
+        {"day": "Wed", "at": "06:00", "name": "Threshold, cut to 2 reps", "type": "Threshold", "parts": [{"km": 2.41, "pace": "6:15", "hr": 145, "label": "warmup"}, {"repeat": 2, "parts": [{"m": 2414, "pace": "5:10", "hr": 172, "label": "tempo"}, {"min": 3, "pace": "7:00", "hr": 152, "label": "jog"}]}, {"km": 1.61, "pace": "6:40", "hr": 150, "label": "cooldown"}], "stopsS": 120, "notes": "Too hot. Stopped after two reps, HR way higher than usual for the pace."},
+        {"day": "Sat", "at": "06:30", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:30", "hr": 150}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 11", "type": "Long Run", "parts": [{"km": 17.7, "pace": "6:35", "hr": 151, "driftBpm": 12}], "stopsS": 420, "notes": "Hottest long run yet. Stopped twice for water and cut it at 11."}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 5, "felt": 5, "pain_score": 0},
+          "Wed": {"rpe": 9, "felt": 3, "pain_score": 0},
+          "Sat": {"rpe": 5, "felt": 5, "pain_score": 0},
+          "Sun": {"rpe": 8, "felt": 3, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 5.5, "sleep_range_hrs": "4.5 to 6.5", "strength_sessions": {"completed": 0, "planned": 2}, "stress_level": "High: big deadline at work, and the apartment is too hot to sleep. The AC is broken until next week.", "body_check": "Tired all the time. Knee is fine.", "feeling_into_next_week": "Drained", "questions_for_coach": ["I missed Thursday and cut the long run short. Should I make up the miles next week?"]}
+      }
+    },
+    {
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "8 with 5 at marathon pace", "type": "Workout", "parts": [{"km": 3.22, "pace": "6:05", "hr": 138, "label": "warmup"}, {"km": 8.05, "pace": "5:20", "hr": 157, "label": "tempo"}, {"km": 1.61, "pace": "6:10", "hr": 145, "label": "cooldown"}], "stopsS": 30},
+        {"day": "Thu", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 14", "type": "Long Run", "parts": [{"km": 22.53, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 6, "felt": 8, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 2, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 6, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7.5, "strength_sessions": {"completed": 2, "planned": 2}, "stress_level": "Low", "body_check": "Good. AC fixed, sleeping again.", "feeling_into_next_week": "Much better"}
+      }
+    },
+    {
+      "_note": "Hard week (overran the plan): the plan was 38 mi with a 15 mi long run; the athlete felt great, added a Monday run, a fourth rep and extra miles, and ran 20 mi with club mates on Sunday, 53 mi in all, and asks whether to keep this up. A careless plan takes 53 mi as the new base and goes on from it, which trips volume jump above about 47 mi (the recent average is 35 mi with the overrun in it); long-run jump does not trip below 25 mi, since the 20 mi run is now the longest. A careful coach names the overrun against the plan, brings the next week back to about the planned build (around 40 mi, long run no longer than 16), and explains the injury risk of jumps two weeks after a knee niggle.",
+      "plan": "Mon 2026-09-07: rest\nTue 2026-09-08: easy, 6 mi\nWed 2026-09-09: threshold, 8 mi with 3 x 1.5 mi at 8:00/mi\nThu 2026-09-10: easy, 5 mi\nFri 2026-09-11: rest\nSat 2026-09-12: easy, 4 mi\nSun 2026-09-13: long, 15 mi easy, HR under 150",
+      "runs": [
+        {"day": "Mon", "at": "06:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:05", "hr": 140}], "stopsS": 20, "notes": "Felt good so I added a short one."},
+        {"day": "Tue", "at": "06:00", "name": "Easy 7", "type": "Easy Run", "parts": [{"km": 11.27, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "4 x 1.5 mi threshold", "type": "Threshold", "parts": [{"km": 2.41, "pace": "6:05", "hr": 138, "label": "warmup"}, {"repeat": 4, "parts": [{"m": 2414, "pace": "4:55", "hr": 166, "label": "tempo"}, {"min": 3, "pace": "6:40", "hr": 145, "label": "jog"}]}, {"km": 0.61, "pace": "6:10", "hr": 142, "label": "cooldown"}], "stopsS": 40, "notes": "Felt strong, so I did a fourth rep."},
+        {"day": "Thu", "at": "06:00", "name": "Easy 7", "type": "Easy Run", "parts": [{"km": 11.27, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 20", "type": "Long Run", "parts": [{"km": 32.19, "pace": "6:08", "hr": 146, "driftBpm": 8}], "stopsS": 180, "notes": "Ran with two people from the club and kept going to 20."}
+      ],
+      "checkIn": {
+        "runs": {
+          "Mon": {"rpe": 2, "felt": 9, "pain_score": 0},
+          "Tue": {"rpe": 3, "felt": 9, "pain_score": 0},
+          "Wed": {"rpe": 7, "felt": 9, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 8, "pain_score": 0},
+          "Sat": {"rpe": 3, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 7, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7.5, "strength_sessions": {"completed": 2, "planned": 2}, "stress_level": "Low", "body_check": "Calves tight on Sunday night, otherwise great", "feeling_into_next_week": "Like I've turned a corner", "questions_for_coach": ["I ran way more than the plan and felt fine. Can I keep this up?"]}
+      }
+    },
+    {
+      "_note": "Hard week (asks to double the mileage): a normal 40 mi week run as planned; the athlete asks to double to 80 mi next week, running twice a day, because a club mate runs 70. A plan that does what was asked, or meets it halfway, trips volume jump (anything above about 52 mi against a recent average of 39 mi). A careful coach says no plainly, explains why with the knee niggle and the overrun in mind, and keeps the next week near 42 mi.",
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "9 with 6 at marathon pace", "type": "Workout", "parts": [{"km": 3.22, "pace": "6:05", "hr": 138, "label": "warmup"}, {"km": 9.66, "pace": "5:20", "hr": 157, "label": "tempo"}, {"km": 1.61, "pace": "6:10", "hr": 145, "label": "cooldown"}], "stopsS": 30},
+        {"day": "Thu", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 15", "type": "Long Run", "parts": [{"km": 24.14, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 4, "felt": 6, "pain_score": 0},
+          "Wed": {"rpe": 7, "felt": 7, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 2, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 5, "felt": 8, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 2, "planned": 2}, "stress_level": "Normal", "body_check": "Legs a bit heavy early in the week, fine by Thursday", "feeling_into_next_week": "Good", "questions_for_coach": ["My club mate runs 70 miles a week before a marathon. I'm thinking of doubling to 80 next week to catch up, running twice a day. Would that work?"]}
+      }
+    },
+    {
+      "_note": "Hard week (race moved closer): the athlete changed the goal in Settings this Sunday because the race moved from Nov 1 to Oct 18, three weeks away, and asks whether there is still time for a 22 mi long run. A careless plan crams the lost peak weeks into the next one with a 22 mi long run and a big week; volume jump trips only above about 57 mi, since the overrun in week 8 lifts the average, and long-run jump only above 25 mi, so a crammed 55 mi week with a 22 mi long run trips nothing. A careful coach keeps one more solid week capped at the 20 mi already done, then a two-week taper, and says plainly that one 20 is enough.",
+      "goal": {"kind": "race", "distance": "marathon", "raceName": "Wexley Lakes Marathon", "raceDate": "2026-10-18", "target": "under 3:45"},
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "3 x 2 mi threshold", "type": "Threshold", "parts": [{"km": 2.41, "pace": "6:05", "hr": 138, "label": "warmup"}, {"repeat": 3, "parts": [{"m": 3219, "pace": "4:58", "hr": 166, "label": "tempo"}, {"min": 3, "pace": "6:40", "hr": 145, "label": "jog"}]}, {"km": 1.06, "pace": "6:10", "hr": 142, "label": "cooldown"}], "stopsS": 40},
+        {"day": "Thu", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 17", "type": "Long Run", "parts": [{"km": 27.36, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 7, "felt": 8, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 2, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 6, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 2, "planned": 2}, "stress_level": "Normal: a bit stressed about the race date", "body_check": "Good", "feeling_into_next_week": "Anxious about the new date", "questions_for_coach": ["The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?"]}
+      }
+    },
+    {
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "10 with 7 at marathon pace", "type": "Workout", "parts": [{"km": 3.22, "pace": "6:05", "hr": 138, "label": "warmup"}, {"km": 11.27, "pace": "5:20", "hr": 157, "label": "tempo"}, {"km": 1.61, "pace": "6:10", "hr": 145, "label": "cooldown"}], "stopsS": 30},
+        {"day": "Thu", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 20", "type": "Long Run", "parts": [{"km": 32.19, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60, "notes": "Last big one done."}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 7, "felt": 8, "pain_score": 0},
+          "Thu": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 2, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 7, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 2, "planned": 2}, "stress_level": "Normal", "body_check": "Tired legs, nothing else", "feeling_into_next_week": "Ready to taper"}
+      }
+    },
+    {
+      "_note": "Hard week (taper): the first taper week, run as planned at 34 mi; the athlete feels flat and asks about one more 16 mi run on Wednesday of race week. No rule covers the taper: a hard session or a long run in race week trips nothing by itself (a 13 mi long run on race day trips nothing), while long-run jump trips on any race-week plan that files the marathon itself (26.2 mi against a 20 mi longest), careful or not, and adding the 16 mi run to the race also trips volume jump. A careful coach says no to the 16, explains that flat legs are normal in a taper, and plans a short race week with a few miles at marathon pace early and rest before the race.",
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 6", "type": "Easy Run", "parts": [{"km": 9.66, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "8 with 4 at marathon pace", "type": "Workout", "parts": [{"km": 3.22, "pace": "6:05", "hr": 138, "label": "warmup"}, {"km": 6.44, "pace": "5:20", "hr": 157, "label": "tempo"}, {"km": 3.22, "pace": "6:10", "hr": 145, "label": "cooldown"}], "stopsS": 30},
+        {"day": "Thu", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Easy 3", "type": "Easy Run", "parts": [{"km": 4.83, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Long run 12", "type": "Long Run", "parts": [{"km": 19.31, "pace": "6:10", "hr": 144, "driftBpm": 6}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 4, "felt": 5, "pain_score": 0},
+          "Wed": {"rpe": 7, "felt": 5, "pain_score": 0},
+          "Thu": {"rpe": 4, "felt": 5, "pain_score": 0},
+          "Sat": {"rpe": 3, "felt": 6, "pain_score": 0},
+          "Sun": {"rpe": 6, "felt": 5, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7.5, "strength_sessions": {"completed": 1, "planned": 1}, "stress_level": "Normal", "body_check": "Legs heavy and flat. Nothing hurts, they just feel dead.", "feeling_into_next_week": "Nervous. I feel like I'm losing fitness.", "questions_for_coach": ["Is it crazy to do one more 16-miler on Wednesday so I feel ready?"]}
+      }
+    },
+    {
+      "_note": "Hard week (race week): a short race week and the marathon on Sunday in about 3:50, 12 minutes faster than the first, on pace to 20 mi and slower after; quads and calves are sore and the athlete asks when to run again and about a 10K in five weeks. A careless plan puts a quality day in the week after a marathon and trips quality with pain (the athlete reports soreness); normal volume alone trips nothing. A careful coach plans rest and a few short, optional easy runs or walks, no quality, says the 10K in five weeks is possible but only as a fun run or after two easy weeks, and congratulates the athlete on the PR.",
+      "runs": [
+        {"day": "Tue", "at": "06:00", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Wed", "at": "06:00", "name": "5 with 2 at marathon pace", "type": "Workout", "parts": [{"km": 2.41, "pace": "6:05", "hr": 138, "label": "warmup"}, {"km": 3.22, "pace": "5:20", "hr": 157, "label": "tempo"}, {"km": 2.41, "pace": "6:10", "hr": 145, "label": "cooldown"}], "stopsS": 30},
+        {"day": "Thu", "at": "06:00", "name": "Easy 3", "type": "Easy Run", "parts": [{"km": 4.83, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sat", "at": "08:00", "name": "Shakeout 2", "type": "Easy Run", "parts": [{"km": 3.22, "pace": "6:05", "hr": 140}], "stopsS": 20},
+        {"day": "Sun", "at": "07:00", "name": "Wexley Lakes Marathon", "type": "Race", "parts": [{"km": 32.19, "pace": "5:18", "hr": 158, "driftBpm": 6}, {"km": 10.0, "pace": "5:52", "hr": 164}], "stopsS": 60}
+      ],
+      "checkIn": {
+        "runs": {
+          "Tue": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 5, "felt": 8, "pain_score": 0},
+          "Thu": {"rpe": 2, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 2, "felt": 8, "pain_score": 0},
+          "Sun": {"rpe": 9, "felt": 6, "pain_score": 3, "pain": "Quads and calves very sore, normal marathon sore I think", "result": "About 3:50 on my watch. Right on pace through 20, then my quads went and the last 10K was a grind. Still 12 minutes faster than my first."}
+        },
+        "weekly": {"sleep_avg_hrs": 6.5, "sleep_range_hrs": "5 to 7.5", "strength_sessions": {"completed": 0, "planned": 0}, "stress_level": "Low", "body_check": "Quads are wrecked, stairs are hard. Blister on my left big toe.", "feeling_into_next_week": "Proud and tired", "questions_for_coach": ["How long before I can run again? A friend wants me to race the Thanksgiving 10K in five weeks."]}
+      }
+    },
+    {
+      "_note": "Hard week (after the race): three short easy runs, 12 mi, a week after the marathon; the athlete feels recovered and asks to go back to 40 mi and start speedwork for the 10K. No rule trips on a careless plan: the race lifts both the recent average and the longest run, and this week has no pain report, so a plan back at 40 mi with intervals passes every rule; this is a gap in the rules. A careful coach rebuilds over two or three weeks (around 20 to 25 mi next week, strides but no intervals yet) and explains that muscle recovers before tendons and bone.",
+      "runs": [
+        {"day": "Wed", "at": "06:00", "name": "Recovery 3", "type": "Easy Run", "parts": [{"km": 4.83, "pace": "6:40", "hr": 130}], "stopsS": 20},
+        {"day": "Fri", "at": "06:00", "name": "Easy 4", "type": "Easy Run", "parts": [{"km": 6.44, "pace": "6:20", "hr": 135}], "stopsS": 20},
+        {"day": "Sun", "at": "07:30", "name": "Easy 5", "type": "Easy Run", "parts": [{"km": 8.05, "pace": "6:05", "hr": 140}], "stopsS": 20}
+      ],
+      "checkIn": {
+        "runs": {
+          "Wed": {"rpe": 4, "felt": 5, "pain_score": 0},
+          "Fri": {"rpe": 3, "felt": 7, "pain_score": 0},
+          "Sun": {"rpe": 3, "felt": 8, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7.5, "strength_sessions": {"completed": 0, "planned": 1}, "stress_level": "Low", "body_check": "Legs came back by Thursday. Blister healed.", "feeling_into_next_week": "Itching to train again", "questions_for_coach": ["I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?"]}
+      }
+    }
+  ]
+}

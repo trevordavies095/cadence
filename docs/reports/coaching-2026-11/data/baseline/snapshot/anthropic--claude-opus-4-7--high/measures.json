@@ -1,0 +1,116 @@
+{
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "provider": "anthropic",
+  "replies": 3,
+  "byOperation": {
+    "weekly_reply": 3
+  },
+  "schema": {
+    "firstTry": 3,
+    "afterRetry": 0,
+    "failed": 0
+  },
+  "softRepairs": {
+    "count": 0,
+    "replies": 0,
+    "byField": {}
+  },
+  "goalCheckFailures": {
+    "count": 3,
+    "byCheck": {
+      "no goal line": 3
+    }
+  },
+  "bannedVocabulary": {
+    "hits": 0,
+    "replies": 0,
+    "byTerm": {}
+  },
+  "planSanity": {
+    "band": {
+      "low": 0.5,
+      "high": 1.6
+    },
+    "weeklyReplies": 3,
+    "flaggedReplies": 0,
+    "byCheck": {},
+    "skipped": {},
+    "volumeRatio": {
+      "median": 0.6582746936287185,
+      "worst": 0.7372683113266146,
+      "n": 3
+    },
+    "flags": []
+  },
+  "lengthCaps": {
+    "hits": 0,
+    "byField": {}
+  },
+  "latency": {
+    "firstTokenMs": {
+      "median": 5068,
+      "worst": 5717,
+      "n": 3
+    },
+    "totalMs": {
+      "median": 57803,
+      "worst": 61124,
+      "n": 3
+    },
+    "wallClockMs": 167730
+  },
+  "tokens": {
+    "input": {
+      "median": 24406,
+      "n": 3
+    },
+    "output": {
+      "median": 3196,
+      "n": 3
+    },
+    "thinking": {
+      "median": 935,
+      "n": 3
+    },
+    "thinkingChars": {
+      "median": 1003,
+      "n": 3
+    },
+    "cacheRead": {
+      "median": 0,
+      "n": 3
+    },
+    "cacheCreation": {
+      "median": 0,
+      "n": 3
+    }
+  },
+  "promptCut": {
+    "ratio": 0.9,
+    "checked": 3,
+    "cut": [],
+    "lowestRatio": 2.3852619233776386
+  },
+  "cost": {
+    "priceTakenOn": "2026-11-03",
+    "prices": {
+      "claude-opus-4-7": {
+        "label": "Opus 4.7",
+        "inputPerMTok": 5,
+        "outputPerMTok": 25
+      }
+    },
+    "cacheReadMultiplier": 0.1,
+    "cacheWriteMultiplier": 1.25,
+    "unpricedModels": [],
+    "pricedReplies": 3,
+    "totalUsd": 0.5953900000000001,
+    "medianUsd": 0.20193,
+    "worstUsd": 0.20853000000000002,
+    "perReplyUsd": {
+      "06.1": 0.20193,
+      "06.2": 0.20853000000000002,
+      "06.3": 0.18493
+    }
+  }
+}

@@ -1,0 +1,219 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w04.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:37:14.028Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 10 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 13118,
+  "outputTokens": 1838,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 4139,
+  "estimatedInputTokens": 7433,
+  "timing": {
+    "ttftMs": 797,
+    "totalMs": 30480,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 797,
+        "totalMs": 30480,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 13118,
+        "outputTokens": 1838
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-08-17",
+    "isoWeek": "2026-W34",
+    "recentWeeklyM": 51901.344
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [
+      "quality with pain"
+    ],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Keep knee pain under control, add a soft quality session, and maintain build volume.",
+    "flags": [
+      {
+        "title": "Knee pain",
+        "detail": "monitor for worsening during long runs"
+      },
+      {
+        "title": "Hard minutes",
+        "detail": "aim for 25‑30 min, watch for spike"
+      },
+      {
+        "title": "Easy volume",
+        "detail": "keep 80%+ of time in zones 1‑2"
+      },
+      {
+        "title": "Long‑run HR drift",
+        "detail": "keep below 150, watch for drop"
+      },
+      {
+        "title": "Weekly mileage",
+        "detail": "maintain 33‑34 mi, adjust if pain rises"
+      }
+    ],
+    "answers": [
+      {
+        "question": "Is this an IT band thing? Should I still do Wednesday's tempo?",
+        "answer": "If your knee pain is mild and mainly on the downhill, it could be IT‑band. Keep the Wednesday tempo but reduce it a bit – run the 4‑mile mid‑tempo at about 8:10/mi, use a full warm‑up and cool‑down, and watch how the knee feels. If the pain gets worse, switch to a lighter easy run instead."
+      }
+    ],
+    "analysis": "Last week you ran 32 miles, which matches the target build volume, but you experienced knee pain during the 13‑mile long run and stopped at 8.5 miles. The hard minutes were 26, so you still have room to add a bit of threshold work while keeping overall volume steady. The knee pain may be IT‑band related, but it can be managed by keeping the tempo load modest and watching for any worsening. For this week, keep the volume the same (around 33–34 miles) and include a single quality session that is still a threshold effort but slightly lighter. The long run stays 14 miles at a relaxed pace with heart‑rate under 150. This approach keeps the build while protecting the knee.\n\nYou asked if the knee pain is IT‑band and whether you should keep the tempo on Wednesday. If the pain is mild and comes mainly on the downhill side, it can be IT‑band, but before continuing, reduce the intensity or distance of the tempo. Use a 4‑mile mid‑tempo segment at about 8:10/mi (just slower than your target), keep warm‑ups and cool‑downs, and monitor knee response. If the pain worsens, drop the tempo or replace it with an easy run.\n\nKey points: increase overall mileage modestly, keep hard minutes around 25‑30, include one quality session that is slightly softer, and monitor knee and heart‑rate drift during the long run.",
+    "prescribedWeek": {
+      "week": "2026-W34",
+      "days": [
+        {
+          "date": "2026-08-17",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-08-17: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-18",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8851,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "HR under 150, flat route. Light recovery after long.",
+          "line": "Tue 2026-08-18: easy, 5.5 mi, HR under 150, flat route. Light recovery after long.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-19",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 11265,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "4 mi at 8:10/mi, paced, keeps threshold work but softer.",
+          "line": "Wed 2026-08-19: quality, 7 mi, 4 mi at 8:10/mi, paced, keeps threshold work but softer.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-20",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "HR under 150, hill recovery.",
+          "line": "Thu 2026-08-20: easy, 5 mi, HR under 150, hill recovery.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-21",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-08-21: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-22",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 7242,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "HR under 150, walk break if knee ache.",
+          "line": "Sat 2026-08-22: easy, 4.5 mi, HR under 150, walk break if knee ache.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-23",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 22531,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy, HR under 150, keep legs loose.",
+          "line": "Sun 2026-08-23: long, 14 mi, easy, HR under 150, keep legs loose.",
+          "parsed": true
+        }
+      ]
+    },
+    "safetyCallouts": [
+      {
+        "title": "knee pain – monitor for worsening.",
+        "body": "Avoid overloading the leg.",
+        "severity": "caution"
+      },
+      {
+        "title": "Keep long‑run heart rate under 150 to protect recovery.",
+        "body": "",
+        "severity": "info"
+      }
+    ]
+  }
+}

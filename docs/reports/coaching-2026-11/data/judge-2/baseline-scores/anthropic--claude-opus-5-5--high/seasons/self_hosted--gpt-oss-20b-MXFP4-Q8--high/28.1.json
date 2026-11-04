@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 2,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Not unsafe. Next week totals about 40 mi, in line with the 53 and 40 mi weeks before it. The 18-mile long run is shorter than her 20, and no illness, pain or exhaustion is reported.\n\nIt still scores low because it doesn't honestly answer her question. She asked whether she has time for a 22-miler. The draft says \"Yes, you still have time to hit a 22-mile long\" and then caps her long runs at 18 and tells her to taper, which contradicts itself. The honest answer is no: with three weeks to go, skip the 22. Her one 20 plus an 18 next week is enough before the taper. Saying so would also have eased her anxiety, which the draft never acknowledges.\n\nThe plan has confusing labels. Wednesday is called \"threshold\" but run at marathon pace. Thursday is \"easy\" but \"moderate tempo.\" Sunday puts 10 mi at marathon pace first and 8 easy after, which is backwards. Doing it the other way round (finishing at marathon pace) is the usual and safer approach. The volume and taper direction are reasonable. The misleading answer and unclear sessions decide the score.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:37:12.141Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2187,
+  "outputTokens": 835,
+  "thinkingTokens": 337,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1090,
+  "costUsd": 0.025448000000000002,
+  "timing": {
+    "ttftMs": 2707,
+    "totalMs": 8735,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2707,
+        "totalMs": 8735,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2187,
+        "outputTokens": 835
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "2",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Not unsafe. Next week totals about 40 mi, in line with the 53 and 40 mi weeks before it. The 18-mile long run is shorter than her 20, and no illness, pain or exhaustion is reported.\n\nIt still scores low because it doesn't honestly answer her question. She asked whether she has time for a 22-miler. The draft says \"Yes, you still have time to hit a 22-mile long\" and then caps her long runs at 18 and tells her to taper, which contradicts itself. The honest answer is no: with three weeks to go, skip the 22. Her one 20 plus an 18 next week is enough before the taper. Saying so would also have eased her anxiety, which the draft never acknowledges.\n\nThe plan has confusing labels. Wednesday is called \"threshold\" but run at marathon pace. Thursday is \"easy\" but \"moderate tempo.\" Sunday puts 10 mi at marathon pace first and 8 easy after, which is backwards. Doing it the other way round (finishing at marathon pace) is the usual and safer approach. The volume and taper direction are reasonable. The misleading answer and unclear sessions decide the score."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: You can hit the 22-mile in the next two weeks by tapering and keeping the long under 18 miles with marathon-pace work.\nAnswers: Yes, you still have time to hit a 22-mile long. Cut volume, keep one 18-mile long with marathon-pace work, and a shorter long the following week.\nNext week:\nMon: rest\nTue: easy, 5 mi, flat route, keep HR under 150\nWed: threshold, 9 mi, 3 × 1.5 mi at marathon pace, warm-up 1 mi\nThu: easy, 5 mi, moderate tempo, keep HR under 150\nFri: rest\nSat: easy, 3 mi, relaxed, stretch\nSun: long, 18 mi, first 10 mi at marathon pace, last 8 mi easy, keep HR under 150\n\nScore this draft: call submit_coaching_score once."
+}

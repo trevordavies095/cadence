@@ -1,0 +1,113 @@
+{
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "provider": "anthropic",
+  "replies": 1,
+  "byOperation": {
+    "weekly_reply": 1
+  },
+  "schema": {
+    "firstTry": 1,
+    "afterRetry": 0,
+    "failed": 0
+  },
+  "softRepairs": {
+    "count": 0,
+    "replies": 0,
+    "byField": {}
+  },
+  "goalCheckFailures": {
+    "count": 0,
+    "byCheck": {}
+  },
+  "bannedVocabulary": {
+    "hits": 0,
+    "replies": 0,
+    "byTerm": {}
+  },
+  "planSanity": {
+    "band": {
+      "low": 0.5,
+      "high": 1.6
+    },
+    "weeklyReplies": 1,
+    "flaggedReplies": 0,
+    "byCheck": {},
+    "skipped": {},
+    "volumeRatio": {
+      "median": 1.0165116869536122,
+      "worst": 1.0165116869536122,
+      "n": 1
+    },
+    "flags": []
+  },
+  "lengthCaps": {
+    "hits": 0,
+    "byField": {}
+  },
+  "latency": {
+    "firstTokenMs": {
+      "median": 3012,
+      "worst": 3012,
+      "n": 1
+    },
+    "totalMs": {
+      "median": 124134,
+      "worst": 124134,
+      "n": 1
+    },
+    "wallClockMs": 124134
+  },
+  "tokens": {
+    "input": {
+      "median": 22281,
+      "n": 1
+    },
+    "output": {
+      "median": 12665,
+      "n": 1
+    },
+    "thinking": {
+      "median": 10300,
+      "n": 1
+    },
+    "thinkingChars": {
+      "median": 12051,
+      "n": 1
+    },
+    "cacheRead": {
+      "median": 0,
+      "n": 1
+    },
+    "cacheCreation": {
+      "median": 0,
+      "n": 1
+    }
+  },
+  "promptCut": {
+    "ratio": 0.9,
+    "checked": 1,
+    "cut": [],
+    "lowestRatio": 2.4552066115702478
+  },
+  "cost": {
+    "priceTakenOn": "2026-11-03",
+    "prices": {
+      "claude-opus-5-5": {
+        "label": "Opus 5.5",
+        "inputPerMTok": 4,
+        "outputPerMTok": 20,
+        "cacheReadMultiplier": 0.05
+      }
+    },
+    "cacheReadMultiplier": 0.1,
+    "cacheWriteMultiplier": 1.25,
+    "unpricedModels": [],
+    "pricedReplies": 1,
+    "totalUsd": 0.342424,
+    "medianUsd": 0.342424,
+    "worstUsd": 0.342424,
+    "perReplyUsd": {
+      "24.1": 0.342424
+    }
+  }
+}

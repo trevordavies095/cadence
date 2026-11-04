@@ -6,7 +6,7 @@
  * one, the season packets in the other. Never calls a model.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,7 +14,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { baselineIsA, plainText } from "../scripts/replayReview.js";
 
 const api = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SEASONS = path.join(api, "tests/fixtures/seasons/season-packets");
+const SEASON_PACKETS = path.join(api, "tests/fixtures/seasons/season-packets");
+/** The three six-week seasons the pairs below were written against; later seasons (the hard set) are left out. */
+const FIRST_SEASONS = /^[123]-.+-w\d+\.json$/;
 const BASELINE = "anthropic--claude-opus-4-7--xhigh";
 const CANDIDATE = "self_hosted--cand-model_9b--high";
 const OTHER = "self_hosted--other-model--high";
@@ -42,9 +44,14 @@ beforeAll(() => {
   bench = mkdtempSync(path.join(tmpdir(), "replay-review-"));
   snapshot = path.join(bench, "snapshot");
   seasons = path.join(bench, "seasons");
+  const packets = path.join(bench, "season-packets");
+  mkdirSync(packets);
+  for (const f of readdirSync(SEASON_PACKETS).filter((f) => FIRST_SEASONS.test(f))) {
+    copyFileSync(path.join(SEASON_PACKETS, f), path.join(packets, f));
+  }
   for (const [root, inputs] of [
     [snapshot, []],
-    [seasons, ["--packets", SEASONS]],
+    [seasons, ["--packets", packets]],
   ] as const) {
     for (const extra of [[], candidateArgs("cand-model:9b"), candidateArgs("other-model")]) {
       const run = replay([...inputs, "--dry-run", "--out", root, ...extra]);

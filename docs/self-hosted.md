@@ -125,6 +125,18 @@ Context is what the server reported for the model. Qwen3-14B was not tried: its 
 
 The format failures come from the model, not the server: the same models fail the same way on both. These rows were measured before the plan became seven lines of text (ADR 0006). Cadence now asks once more for any coach reply it cannot use, and says what was wrong; a plan day it still cannot read shows Coach Cade's sentence, marked "Not yet filed", and the rest of the week files. On 20 hard inputs, gpt-oss-20b on oMLX then filed every day of every week. The [benchmark report](reports/local-models-2026-11.md) has the numbers, and its after-the-changes section has the full rerun.
 
+### How well they coach
+
+A reply that arrives is not the same as good coaching. In November 2026 the weekly reads of six configurations were scored on 14 hard weeks (an injury, illness, race week, a beginner's missed weeks and more), three times each, by a model judge calibrated against a certified running coach. The [coaching report](reports/coaching-2026-11.md) has the method and every number; for the models above:
+
+- **gpt-oss-20b-MXFP4-Q8 (oMLX):** scored 1.83 out of 5 against 3.31 for Opus 4.7 at `xhigh`, Cadence's default, and 57 percent of its replies were judged unsafe against 24 percent. The coach rated its drafts 2.71 against 3.33. Its plans tripped Cadence's plan check in 17 of 42 replies, 12 with the retry below. Not recommended for coaching.
+- **gemma-4-26B-A4B-it-OptiQ-4bit-REAP-14B, Qwen3.8-27B (4-bit and full), gpt-oss-120b and Gemma 4 26B-A4B:** not scored for coaching.
+
+Two guards apply on any model, hosted or your own:
+
+- **Plan warnings.** Every plan is checked against your recent training before it is stored: a big step up in weekly distance or in the long run, hard running in a week you reported pain, and a rushed return from injury. A plan that trips a check is shown with a notice from Coach Cade saying what to watch. The plan itself is never changed.
+- **Asking once more.** When a plan trips a check, Cadence sends it back to the same model once, with the warnings, and keeps the second plan only if it trips fewer checks. It is on by default; set `COACH_RULES_RETRY=off` in the API's environment to turn it off. On gpt-oss-20b it adds about 15 seconds a weekly read at the median and clears the pain warning, but the judge found no better coaching from it.
+
 ## oMLX
 
 oMLX serves MLX models on Apple silicon. It speaks the Messages endpoint natively.

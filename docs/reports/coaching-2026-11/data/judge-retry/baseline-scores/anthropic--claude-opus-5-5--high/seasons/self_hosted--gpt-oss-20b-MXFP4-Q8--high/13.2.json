@@ -1,0 +1,61 @@
+{
+  "input": "seasons/13",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The plan follows the physio's clearance. It has three walk-runs with a rest day between each, short run intervals (2–3 min) and a \"keep pain 0/10\" cap on every session. Ines's shin is quiet, so a small step up is reasonable. Each day can be run as written.\n\nThe increase isn't measured against this week. The card doesn't say how long this week's sessions or intervals were. About 12 min of running inside 18 min per session could come to around 7–8 km, up from 5.1 km. That's still a small amount, but the draft doesn't show it's only \"a few minutes\" more.\n\nThe draft also gets the athlete's situation wrong. It says the physio said \"walk-run until the pain clears,\" but the physio actually said stop if the shin aches, and Ines says the shin is quiet. It also calls this \"the first week,\" when Ines has already done a week of walk-runs.\n\nIt doesn't spell out the physio's stop rule. \"Keep pain 0/10\" only hints at it. It doesn't mention the mid-October goal of 30 minutes without walking. It doesn't respond to Ines feeling nervous. The structure is safe and sensible, but the generic and partly wrong reading of Ines's week holds it to a middling score.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:57:19.569Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2057,
+  "outputTokens": 1051,
+  "thinkingTokens": 531,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1020,
+  "costUsd": 0.029248,
+  "timing": {
+    "ttftMs": 3041,
+    "totalMs": 11327,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3041,
+        "totalMs": 11327,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2057,
+        "outputTokens": 1051
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The plan follows the physio's clearance. It has three walk-runs with a rest day between each, short run intervals (2–3 min) and a \"keep pain 0/10\" cap on every session. Ines's shin is quiet, so a small step up is reasonable. Each day can be run as written.\n\nThe increase isn't measured against this week. The card doesn't say how long this week's sessions or intervals were. About 12 min of running inside 18 min per session could come to around 7–8 km, up from 5.1 km. That's still a small amount, but the draft doesn't show it's only \"a few minutes\" more.\n\nThe draft also gets the athlete's situation wrong. It says the physio said \"walk-run until the pain clears,\" but the physio actually said stop if the shin aches, and Ines says the shin is quiet. It also calls this \"the first week,\" when Ines has already done a week of walk-runs.\n\nIt doesn't spell out the physio's stop rule. \"Keep pain 0/10\" only hints at it. It doesn't mention the mid-October goal of 30 minutes without walking. It doesn't respond to Ines feeling nervous. The structure is safe and sensible, but the generic and partly wrong reading of Ines's week holds it to a middling score."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── INES'S WEEK ──\nInes ran about 40 km a week before a stress reaction in the left shin and ten weeks off, and a physio has cleared Ines for walk-run three days a week, stopping if the shin aches. The goal is to run 30 minutes without walking by mid-October.\nRecent weeks: none recorded.\nThis week: 5.1 km over 3 runs.\nBody: \"Shin quiet.\"\nFeeling: \"Nervous but happy to be back.\"\n\n── THE DRAFT ──\nTells Ines: Continue gentle walk-runs, keeping the shin quiet and adding just a few minutes each session.\nYou are back from a full break and a shin injury. The physio said walk-run until the pain clears, so the first week should be very gentle.\nNext week:\nMon: walk-run, 18 min total, 2 min run / 1 min walk x 6, keep pain 0/10\nTue: rest\nWed: walk-run, 18 min total, 2 min run / 1 min walk x 6, keep pain 0/10\nThu: rest\nFri: walk-run, 16 min total, 3 min run / 1 min walk x 4, keep pain 0/10\nSat: rest\nSun: rest\n\nScore this draft: call submit_coaching_score once."
+}

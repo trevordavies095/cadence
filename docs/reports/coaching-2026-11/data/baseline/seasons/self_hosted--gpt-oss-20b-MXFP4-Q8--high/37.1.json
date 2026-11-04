@@ -1,0 +1,189 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w5.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:53:24.537Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 6 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 9723,
+  "outputTokens": 1509,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 3382,
+  "estimatedInputTokens": 6029,
+  "timing": {
+    "ttftMs": 10957,
+    "totalMs": 34484,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 10957,
+        "totalMs": 34484,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 9723,
+        "outputTokens": 1509
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 4267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "This week keeps the easy volume high and adds one quality interval session to raise your speed without overloading.",
+    "flags": [
+      {
+        "title": "Rest compliance",
+        "detail": "keep all missed sessions this week."
+      },
+      {
+        "title": "Quality effort",
+        "detail": "run Saturday intervals into a steady heart‑rate zone."
+      },
+      {
+        "title": "Fatigue monitoring",
+        "detail": "record sleep and soreness after each run."
+      },
+      {
+        "title": "Progression",
+        "detail": "track distance for each walk‑run as a baseline."
+      },
+      {
+        "title": "Recovery",
+        "detail": "note any new pain before adding volume next week."
+      }
+    ],
+    "answers": [],
+    "analysis": "The athlete missed all runs for the week that was reviewed.  They are a beginner with a 5‑K goal and we are in the build phase, so the focus is on keeping 80 % of the volume easy and inserting only one quality session that is not placed on a back‑to‑back hard day.  The plan re‑establishes the routine of Mon‑Wed‑Sat walk‑runs, uses the same 2‑min run/1‑min walk structure for the easy days, and adds a 3‑min run/1‑min walk interval on Saturday to elevate effort.  Rest days are kept true to allow recovery.  No red flags were seen in the week’s recap, so a conservative approach is appropriate.  The plan is presented in the required format, each line explains what to run and why.  Flags focus on rest compliance, quality effort, fatigue, and progression.  The headline captures the key intent of the week.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "8 x 2 min run and 1 min walk, keep pace easy to build aerobic base.",
+          "line": "Mon 2026-09-28: easy, 24 min, 8 x 2 min run and 1 min walk, keep pace easy to build aerobic base.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "allow muscle recovery.",
+          "line": "Tue 2026-09-29: rest, allow muscle recovery.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1620,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "9 x 2 min run and 1 min walk, maintain easy tempo.",
+          "line": "Wed 2026-09-30: easy, 27 min, 9 x 2 min run and 1 min walk, maintain easy tempo.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "keep overall rest ratio.",
+          "line": "Thu 2026-10-01: rest, keep overall rest ratio.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no hard work before Saturday quality.",
+          "line": "Fri 2026-10-02: rest, no hard work before Saturday quality.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 0,
+            "durationS": 1800,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "6 x 3 min run and 1 min walk, target steady effort around race pace.",
+          "line": "Sat 2026-10-03: quality, 30 min, 6 x 3 min run and 1 min walk, target steady effort around race pace.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "allow full recovery before next week.",
+          "line": "Sun 2026-10-04: rest, allow full recovery before next week.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Add a light 20‑min walk on the first rest day to aid recovery."
+    ]
+  }
+}

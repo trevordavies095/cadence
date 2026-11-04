@@ -203,9 +203,21 @@ describe("the models the athlete's key can use", () => {
     expect(got.fallback).toBeNull();
     expect(got.models).toEqual([
       { id: "claude-opus-4-7", displayName: "Claude Opus 4.7", tested: true, efforts: ALL_EFFORTS },
-      { id: "claude-opus-5-5", displayName: "Claude Opus 5.5", tested: false, efforts: ALL_EFFORTS },
+      // Opus 5.5 lists max, but at max it cannot finish a weekly read inside the output cap.
+      { id: "claude-opus-5-5", displayName: "Claude Opus 5.5", tested: false, efforts: ["low", "medium", "high", "xhigh"] },
       { id: "claude-opus-4-6", displayName: "Claude Opus 4.6", tested: false, efforts: ["low", "medium", "high", "max"] },
     ]);
+  });
+
+  it("refuses an effort above the model's ceiling, and reads one saved before the ceiling at the ceiling", async () => {
+    await acceptAndReady();
+    await saveKey();
+    const app = settingsApp(fakeAnthropic().fetchImpl);
+    const res = await put(app, { model: "claude-opus-5-5", effort: "max" });
+    expect(res.status).toBe(400);
+    expect((await json(res)).error).toBe("effort_not_supported");
+    await saveCoachModel({ provider: "anthropic", model: "claude-opus-5-5", effort: "max" });
+    expect((await view(app)).saved).toEqual({ model: "claude-opus-5-5", effort: "xhigh" });
   });
 
   it("keeps the tested default first even when the listing leaves it out", async () => {

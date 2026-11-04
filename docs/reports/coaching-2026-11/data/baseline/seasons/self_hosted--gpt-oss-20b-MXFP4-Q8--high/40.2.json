@@ -1,0 +1,195 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w8.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:55:25.041Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 3 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 8264,
+  "outputTokens": 1217,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2755,
+  "estimatedInputTokens": 5470,
+  "timing": {
+    "ttftMs": 494,
+    "totalMs": 19122,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 494,
+        "totalMs": 19122,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 8264,
+        "outputTokens": 1217
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-19",
+    "isoWeek": "2026-W43",
+    "recentWeeklyM": 1267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [
+      "volume jump",
+      "long-run jump"
+    ],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Restart with a single quality session and keep the rest easy to stay on track for the 5k.",
+    "flags": [
+      {
+        "title": "Heart rate drift",
+        "detail": "watch your HR on the quality run to stay in zones 1‑2."
+      },
+      {
+        "title": "Soreness",
+        "detail": "listen for stiffness after the missed week."
+      },
+      {
+        "title": "Long run volume",
+        "detail": "keep the Sunday run at 7 km easy."
+      },
+      {
+        "title": "Rest around the quality",
+        "detail": "ensure no consecutive hard days."
+      },
+      {
+        "title": "Race‑pace tempo",
+        "detail": "maintain the target pace on Wednesday."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?",
+        "answer": "You can pick up again with this plan. The 5k is still realistic if you stay consistent."
+      }
+    ],
+    "analysis": "The athlete missed every run last week and is now entering week three of the race. The coach must reset the load, re‑introduce mileage, and place a single quality session that is not consecutive with rest. The plan builds 3 easy runs, one quality at race pace and a longer easy run, with rest days between the easy runs and the quality. The coach answers the question that restarting with this week is fine and the race is still realistic if the athlete stays consistent. The flags watch for heart‑rate drift on the quality session, soreness after the missed week, volume on the long run, the need for adequate rest around the quality, and consistency in race‑pace tempo. No medical safety calls are needed.",
+    "prescribedWeek": {
+      "week": "2026-W43",
+      "days": [
+        {
+          "date": "2026-10-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 5000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep HR in zones 1‑2, flat route.",
+          "line": "Mon 2026-10-19: easy, 5 km, keep HR in zones 1‑2, flat route.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Tue 2026-10-20: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-21",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 5000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "at race pace, 4:30 min/km.",
+          "line": "Wed 2026-10-21: quality, 5 km at race pace, 4:30 min/km.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-22",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Thu 2026-10-22: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-23",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-10-23: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-24",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sat 2026-10-24: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-25",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 7000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep HR in zones 1‑2, include hills.",
+          "line": "Sun 2026-10-25: easy, 7 km, keep HR in zones 1‑2, include hills.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": []
+  }
+}

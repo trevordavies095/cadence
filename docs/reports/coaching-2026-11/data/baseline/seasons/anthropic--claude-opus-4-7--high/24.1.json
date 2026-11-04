@@ -1,0 +1,216 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w06.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:15:45.991Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 8 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 22673,
+  "outputTokens": 2352,
+  "thinkingTokens": 732,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 919,
+  "estimatedInputTokens": 9075,
+  "timing": {
+    "ttftMs": 3770,
+    "totalMs": 44612,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3770,
+        "totalMs": 44612,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 22673,
+        "outputTokens": 2352
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-08-31",
+    "isoWeek": "2026-W36",
+    "recentWeeklyM": 47495.764800000004
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Last week was heat, no sleep and work stress stacked on top of training, so this week we reset at the same volume rather than chase the miles you lost.",
+    "flags": [
+      {
+        "title": "Session cut short",
+        "detail": "the planned threshold stopped at 2 of 3 reps and the long run ended at 11 of 13, both on how hard it felt in the heat."
+      },
+      {
+        "title": "Thursday missed",
+        "detail": "the 5 easy did not happen, which is why total distance landed at 27 instead of 32."
+      },
+      {
+        "title": "Easy heart rate jumped",
+        "detail": "averaged 151 vs 138 the week before at a slower pace, a clear sign of heat and sleep debt."
+      },
+      {
+        "title": "Sleep at 5.5 hours",
+        "detail": "that is the biggest limiter right now, more than any session we could add."
+      },
+      {
+        "title": "Shoes at 149 mi on the Ghost 16",
+        "detail": "fine for now, start thinking about the next pair before race day."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I missed Thursday and cut the long run short. Should I make up the miles next week?",
+        "answer": "No, do not make up the miles. The reason you came up short was heat, 5.5 hours of sleep and a work deadline, not fitness. Adding a bonus run or stretching the long run would dig a deeper hole. Repeat similar volume this week with the AC back on, get the long run done at an honest easy effort, and we are right back on track with 8 weeks to go."
+      }
+    ],
+    "analysis": "## How I read the week\nYou followed the plan where you could and were honest about stopping when the heat spiked, which is the right call. The threshold on Wed showed what the week was really like: same target pace as three weeks ago, but heart rate 10 beats higher and you called it at 2 reps. That is the body saying \"not today,\" not a fitness drop.\n\nThe long run on Sunday tells the same story in a different voice. Pace was a minute per mile slower than the Aug 9 long run, heart rate drifted from 150 to 161, and you still felt it as an 8/10. In cooler air and on normal sleep, that same run sits in the mid 140s.\n\n## Why next week looks like this\nWith the AC fixed and the deadline passing, I want a clean, steady week at roughly the same distance you have been handling, not a jump. One quality session, and I am moving it to marathon pace rather than threshold so we start pointing the work at race day. The long run goes to 12, a small step up from what you actually ran, not from what was on the page.\n\nIf sleep is still short or the apartment is still hot on Wednesday, drop the marathon pace miles and run the whole thing easy. We have 8 weeks: one honest easy week is worth more than a forced quality day.\n\n## What I am watching for the next three weeks\nLong run building toward 15 to 16 miles with some marathon pace work inside, easy heart rate settling back into the high 130s, and sleep returning to 7 hours. Hit those and sub-3:45 is on.",
+    "prescribedWeek": {
+      "week": "2026-W36",
+      "days": [
+        {
+          "date": "2026-08-31",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full day off after a draining week to start fresh.",
+          "line": "Mon 2026-08-31: rest. Full day off after a draining week to start fresh.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 145, flat route. Shake the legs out and see where easy effort sits with the AC back on.",
+          "line": "Tue 2026-09-01: easy, 5 mi, heart rate under 145, flat route. Shake the legs out and see where easy effort sits with the AC back on.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-02",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 11265,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "with 3 mi at 8:35/mi in the middle after a 2 mi warm-up, 2 mi cool-down. First marathon pace touch of the build; drop the pace miles and run easy if sleep is still short or it is hot.",
+          "line": "Wed 2026-09-02: quality, 7 mi, with 3 mi at 8:35/mi in the middle after a 2 mi warm-up, 2 mi cool-down. First marathon pace touch of the build; drop the pace miles and run easy if sleep is still short or it is hot.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 145, conversational. The run you missed last week, back in its normal spot.",
+          "line": "Thu 2026-09-03: easy, 5 mi, heart rate under 145, conversational. The run you missed last week, back in its normal spot.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Protect Sunday.",
+          "line": "Fri 2026-09-04: rest. Protect Sunday.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-05",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 145. Loosen the legs before the long run.",
+          "line": "Sat 2026-09-05: easy, 4 mi, heart rate under 145. Loosen the legs before the long run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-06",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 19312,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "all easy with heart rate under 150, start out slow. Rebuild the long run honestly after last week's hot cut-short.",
+          "line": "Sun 2026-09-06: long, 12 mi, all easy with heart rate under 150, start out slow. Rebuild the long run honestly after last week's hot cut-short.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Note that marathon goal pace for sub-3:45 is about 8:35/mi, so we have a shared target for pace work.",
+      "Note that heat above 25 C or sleep under 6 hours is a trigger to swap quality for easy that day."
+    ],
+    "safetyCallouts": [
+      {
+        "title": "Sleep and heat are affecting training.",
+        "body": "Short sleep and a hot bedroom will raise heart rate and effort on every run. If the AC is not fully fixed or sleep stays under 6 hours for another week, tell me and we will trim further. If you notice chest symptoms, dizziness or a run where heart rate will not come down to normal easy levels, stop and check in with a clinician.",
+        "severity": "info"
+      }
+    ]
+  }
+}

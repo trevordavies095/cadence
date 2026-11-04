@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a safe, sensible plan that fits Nessa. It keeps her Mon/Wed/Sat walk-run routine and her dog walks. After she missed every run last week, it mostly repeats the walk-run plan and adds one small step: 3-minute run blocks on Saturday. That's about 24–27 minutes a session, in line with her earlier ~7 km weeks, so it's neither a jump in volume nor a rushed return after a single missed week. She said \"All good\" and reported no illness, injury or tiredness, so none of the must-never checks apply. The plan is clear enough to run day by day. It loses a point on specifics. It never mentions the 15 November 5K or how this week builds toward running the whole race without walking. It also doesn't acknowledge her excitement or ask in a friendly way what got in the way last week, so it feels a little generic.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:58:47.656Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2208,
+  "outputTokens": 638,
+  "thinkingTokens": 237,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1113,
+  "costUsd": 0.021592,
+  "timing": {
+    "ttftMs": 3354,
+    "totalMs": 7544,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3354,
+        "totalMs": 7544,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2208,
+        "outputTokens": 638
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a safe, sensible plan that fits Nessa. It keeps her Mon/Wed/Sat walk-run routine and her dog walks. After she missed every run last week, it mostly repeats the walk-run plan and adds one small step: 3-minute run blocks on Saturday. That's about 24–27 minutes a session, in line with her earlier ~7 km weeks, so it's neither a jump in volume nor a rushed return after a single missed week. She said \"All good\" and reported no illness, injury or tiredness, so none of the must-never checks apply. The plan is clear enough to run day by day. It loses a point on specifics. It never mentions the 15 November 5K or how this week builds toward running the whole race without walking. It also doesn't acknowledge her excitement or ask in a friendly way what got in the way last week, so it feels a little generic."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: You missed all of last week, so this week repeats that walk-run plan with one step forward: your first 3-minute run blocks on Saturday. …\nWhat happened last week. You didn't run last week, and your check-in gives no health reason for it.\nNext week:\nMon: easy, 24 min, walk-run of 8 x (2 min easy run, 1 min walk), running slowly enough…\nTue: rest. Your usual dog walk is fine. It keeps you moving without adding any running.\nWed: easy, 27 min, walk-run of 9 x (2 min easy run, 1 min walk), same easy pace, heart…\nThu: rest. Your usual dog walk is fine. Two rest days in a row give your legs time to…\nFri: rest. Your usual dog walk is fine. You go into Saturday's longer blocks with fresh…\nSat: easy, 24 min, walk-run of 6 x (3 min easy run, 1 min walk), running the blocks a…\nSun: rest. Your usual dog walk is fine. A full day off after the week's biggest step.\n\nScore this draft: call submit_coaching_score once."
+}

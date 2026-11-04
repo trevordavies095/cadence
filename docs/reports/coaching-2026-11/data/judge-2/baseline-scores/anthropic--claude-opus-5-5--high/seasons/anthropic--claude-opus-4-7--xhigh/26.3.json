@@ -1,0 +1,61 @@
+{
+  "input": "seasons/26",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft gets the parts that matter most right. It answers \"Can I keep this up?\" with a direct, honest no and explains why: volume rose far faster than is safe. Next week drops to about 41 mi from 53, which is a sensible step back. The plan keeps her schedule (rest Monday and Friday, quality Wednesday, long run Sunday), and each day can be run as written, with paces and heart-rate caps. Tight calves alone, with her saying she otherwise feels great, isn't an injury sign that calls for a referral, so a marathon-pace session isn't unsafe.\n\nIt loses points for stating things the card doesn't support. It mentions a 20-mile long run, says the long run \"drifted into tempo territory\" and says there are \"six weeks left,\" but none of this is on the card. It also says the plan was 37 mi when it was 38, and gives the trend as \"24 to 37 to 53,\" leaving out the 27-mile week. Some of the advice rests on these claims. The calf flag is only \"Watch the calves,\" with no guidance on what to look for or what to do if the tightness gets worse before Wednesday's session.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:24:35.712Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2307,
+  "outputTokens": 1131,
+  "thinkingTokens": 645,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1165,
+  "costUsd": 0.031848,
+  "timing": {
+    "ttftMs": 3923,
+    "totalMs": 13230,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3923,
+        "totalMs": 13230,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2307,
+        "outputTokens": 1131
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft gets the parts that matter most right. It answers \"Can I keep this up?\" with a direct, honest no and explains why: volume rose far faster than is safe. Next week drops to about 41 mi from 53, which is a sensible step back. The plan keeps her schedule (rest Monday and Friday, quality Wednesday, long run Sunday), and each day can be run as written, with paces and heart-rate caps. Tight calves alone, with her saying she otherwise feels great, isn't an injury sign that calls for a referral, so a marathon-pace session isn't unsafe.\n\nIt loses points for stating things the card doesn't support. It mentions a 20-mile long run, says the long run \"drifted into tempo territory\" and says there are \"six weeks left,\" but none of this is on the card. It also says the plan was 37 mi when it was 38, and gives the trend as \"24 to 37 to 53,\" leaving out the 27-mile week. Some of the advice rests on these claims. The calf flag is only \"Watch the calves,\" with no guidance on what to look for or what to do if the tightness gets worse before Wednesday's session."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 24, 27, 37 mi\nThis week: 53 mi over 6 runs. Planned 38 mi, ran 53 mi.\nBody: \"Calves tight on Sunday night, otherwise great.\"\nFeeling: \"Like I've turned a corner.\"\nAsks: \"I ran way more than the plan and felt fine. Can I keep this up?\"\n\n── THE DRAFT ──\nTells Marisol: You ran 53 miles against a planned 37, and the long run drifted into tempo territory, so next week pulls the volume back a touch…\nAnswers: Short answer: no, and I would not want you to. The jump from 24 to 37 to 53 miles in three weeks is roughly double the safe rate, and you only have six weeks left to turn this fitness into a marathon rather than build more of it.\nSafety flag: Watch the calves\nNext week:\nMon: rest. A real day off to absorb the 20 miler and reset the week.\nTue: easy, 6 mi, HR under 145, flat route. Shake the long run out of the legs, nothing…\nWed: quality, 9 mi with 5 mi at marathon pace around 8:35/mi, 2 mi warm-up and 1 mi…\nThu: easy, 5 mi, HR under 145, conversational. Recovery from Wednesday, keep it slow.\nFri: rest. Protects Sunday.\nSat: easy, 5 mi, HR under 145. Opens the legs for the long run.\nSun: long, 16 mi easy, HR under 150 the whole way, slow the first 3 mi. Deliberate…\n\nScore this draft: call submit_coaching_score once."
+}

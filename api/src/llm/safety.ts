@@ -216,9 +216,42 @@ export function midWeekSystemPrompt(goal: TrainingGoal | null | undefined): stri
 /** The conversation system prompt with no goal stored: no coaching block. */
 export const MIDWEEK_SYSTEM_PROMPT = midWeekSystemPrompt(null);
 
+/**
+ * Words that say the athlete is hurt. One list, shared by the stub's red-flag
+ * notice below and the plan check's pain rules (src/prescribed/planCheck.ts,
+ * issue #58), so what counts as a pain report is decided once. Grows only by
+ * decision, as the plan-line vocabulary does.
+ */
+export const PAIN_WORDS = [
+  "achilles",
+  "niggle",
+  "pain",
+  "sore",
+  "injury",
+  "injured",
+  "swelling",
+  "fracture",
+] as const;
+
+/** Words that say something medical is going on, beyond pain. */
+const MEDICAL_WORDS = [
+  "chest",
+  "dizzy",
+  "dizziness",
+  "fever",
+  "doctor",
+  "physio",
+  "pt",
+  "surgeon",
+  "ER",
+  "emergency",
+] as const;
+
 /** Soft signals the stub uses to emit a deterministic callout for tests/UI. */
-const STUB_RED_FLAG_RE =
-  /\b(achilles|niggle|pain|sore|injury|injured|swelling|fracture|chest|dizzy|dizziness|fever|doctor|physio|pt|surgeon|ER|emergency)\b/i;
+const STUB_RED_FLAG_RE = new RegExp(
+  `\\b(${[...PAIN_WORDS, ...MEDICAL_WORDS].join("|")})\\b`,
+  "i",
+);
 
 /**
  * Deterministic stub callout when the athlete's latest message mentions a soft

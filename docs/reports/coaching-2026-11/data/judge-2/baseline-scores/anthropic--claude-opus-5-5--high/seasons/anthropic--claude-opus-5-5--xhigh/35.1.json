@@ -1,0 +1,61 @@
+{
+  "input": "seasons/35",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft says no directly to adding the two missed runs and explains why: missed runs don't need paying back, and five sessions would pile on work when Nessa can least handle it. The week backs off after the fever. Monday is a walk only, to test her chest. Wednesday's walk-run is shorter than usual. Total volume stays well below the 6.8 and 7.3 km weeks. There are plenty of rest days and the dog walks are kept gentle, so the illness and the exhaustion are both dealt with. It also flags seeing a doctor if the cough hangs on and stopping if warning signs appear. Every day can be run as written. Two things keep it from a 5. It never mentions the 15 November 5K, so she gets no reassurance about her goal and no picture of the build afterwards. Saturday's 24 minutes is back to a normal session, and it isn't clearly made conditional on how Wednesday goes, even though she still has a chest cough.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:03:14.644Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2318,
+  "outputTokens": 872,
+  "thinkingTokens": 444,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1200,
+  "costUsd": 0.026712,
+  "timing": {
+    "ttftMs": 2401,
+    "totalMs": 9125,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2401,
+        "totalMs": 9125,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2318,
+        "outputTokens": 872
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft says no directly to adding the two missed runs and explains why: missed runs don't need paying back, and five sessions would pile on work when Nessa can least handle it. The week backs off after the fever. Monday is a walk only, to test her chest. Wednesday's walk-run is shorter than usual. Total volume stays well below the 6.8 and 7.3 km weeks. There are plenty of rest days and the dog walks are kept gentle, so the illness and the exhaustion are both dealt with. It also flags seeing a doctor if the cough hangs on and stopping if warning signs appear. Every day can be run as written. Two things keep it from a 5. It never mentions the 15 November 5K, so she gets no reassurance about her goal and no picture of the build afterwards. Saturday's 24 minutes is back to a normal session, and it isn't clearly made conditional on how Wednesday goes, even though she still has a chest cough."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3 km\nThis week: 2.8 km over 1 run. Missed 2 of 3 planned runs.\nBody: \"Came down with a cold on Tuesday that turned into a fever, 38.4 on Wednesday night. No fever since Friday but still coughing and blocked up.\"\nFeeling: \"Wiped out.\"\nAsks: \"Can I do all three runs next week and add the two I missed?\"\n\n── THE DRAFT ──\nTells Nessa: You were right to skip Wednesday and Saturday with the fever. …\nAnswers: (1) No. Stick to your usual three days and don't add the two you missed. (2) Squeezing five sessions into one week would pile on work just when you can handle it least. Missed runs don't need to be paid back. (3) Next week is a walk on Monday, then two walk-runs. Wednesday's is shorter than usual.\nSafety flag: Stop and get checked if warning signs appear\nSafety flag: See a doctor if the cough hangs on\nNext week:\nMon: other, 20 min walk at an easy pace on a flat route, no running. Tests your chest…\nTue: rest. Keep the dog walk short and gentle. Getting over the cold comes first.\nWed: easy, 18 min walk-run: 6 rounds of 2 min running and 1 min walking, flat route, run…\nThu: rest. A full day to see how your body handles the first run back.\nFri: rest. Your usual second rest day before the weekend run.\nSat: easy, 24 min walk-run: 8 rounds of 2 min running and 1 min walking, flat route…\nSun: rest. Finishes the week rested so the build can start again the week after.\n\nScore this draft: call submit_coaching_score once."
+}

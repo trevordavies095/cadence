@@ -1,0 +1,205 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w06.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:38:28.675Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 8 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 15908,
+  "outputTokens": 1766,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 4171,
+  "estimatedInputTokens": 9075,
+  "timing": {
+    "ttftMs": 617,
+    "totalMs": 29894,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 617,
+        "totalMs": 29894,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 15908,
+        "outputTokens": 1766
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-08-31",
+    "isoWeek": "2026-W36",
+    "recentWeeklyM": 47495.764800000004
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Keep volume steady this week and focus on quality without chasing lost miles.",
+    "flags": [
+      {
+        "title": "Missing Thursday run",
+        "detail": "keep volume stable so a mid‑week run stays within safe limits."
+      },
+      {
+        "title": "Short long run",
+        "detail": "monitor recovery and avoid hard work the next day."
+      },
+      {
+        "title": "Heat and HR drift",
+        "detail": "keep HR under 150 on easy runs to reduce fatigue."
+      },
+      {
+        "title": "Sleep deficit",
+        "detail": "aim for 7–8 hrs to support recovery."
+      },
+      {
+        "title": "Easy‑run share low",
+        "detail": "keep most days easy to stay below 20% hard work."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I missed Thursday and cut the long run short. Should I make up the miles next week?",
+        "answer": "No, you don’t need to chase the missed miles. Keep the week’s volume the same and focus on quality today. If you feel you can add a medium run, do it; otherwise let the rest day after the long run allow full recovery."
+      }
+    ],
+    "analysis": "I will answer the athlete's question: missing Thursday run and short long run. They do not need to make up miles now; focus on volume stability and quality. My plan for the week will keep the same five days, add a mid‑week medium run only if needed, but keep a rest day after the long run to avoid overreaching. The long run will be 14 miles easy to allow recovery.\n\nFlags: missing a Thursday run means we must keep volume stable; short long run means we should avoid running too hard immediately after; heat and HR drift are concerns; sleep deficit should be monitored; overall easy‑run share is low.\n\nI will not include any medical or diagnosis, just advice. No safety callouts needed.",
+    "prescribedWeek": {
+      "week": "2026-W36",
+      "days": [
+        {
+          "date": "2026-08-31",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "full recovery after the heat.",
+          "line": "Mon 2026-08-31: rest – full recovery after the heat.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, flat route. Loosens the legs after the long run.",
+          "line": "Tue 2026-09-01: easy, 6 mi, heart rate under 150, flat route. Loosens the legs after the long run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-02",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 12875,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "4 × 1.5 mi at 8:00/mi, keep intensity. Builds endurance.",
+          "line": "Wed 2026-09-02: quality, 8 mi, 4 × 1.5 mi at 8:00/mi, keep intensity. Builds endurance.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "recover, keep easy pace. Provides buffer before the long run.",
+          "line": "Thu 2026-09-03: easy, 5 mi, recover, keep easy pace. Provides buffer before the long run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "allow rest.",
+          "line": "Fri 2026-09-04: rest – allow rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-05",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "light, maintain mileage. Keeps volume up.",
+          "line": "Sat 2026-09-05: easy, 4 mi, light, maintain mileage. Keeps volume up.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-06",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 22531,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy, heart rate under 150. Builds volume without stressing recovery.",
+          "line": "Sun 2026-09-06: long, 14 mi, easy, heart rate under 150. Builds volume without stressing recovery.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

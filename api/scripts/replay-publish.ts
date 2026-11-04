@@ -17,7 +17,7 @@
  *
  * A block is the text between `<!-- generated:<name>:start -->` and
  * `<!-- generated:<name>:end -->`. Known names: setup, results, failures,
- * retry, rescue, plans, hardest, review, after. An unknown or unpaired marker
+ * retry, rescue, plans, hardest, review, after, coaching. An unknown or unpaired marker
  * stops the script before anything is written; a known block missing from the
  * report is reported and skipped.
  *
@@ -27,12 +27,21 @@
  * supplied, the publisher recognises the marker and leaves the block's body
  * exactly as it stands (empty when the report holds the markers alone).
  *
+ * `coaching` is section 9 of the analysis (scripts/replayCoaching.ts, made
+ * with `replay:analyse -- --judge`): the judge's line and the coaching tables,
+ * for the coaching report (coaching-quality ticket 13). The publisher rewrites
+ * every block it knows from the analysis it is given, so an analysis that
+ * carries coaching scores is refused for a report without a coaching block:
+ * it is never published over the November report. An analysis without the
+ * section leaves a coaching block as it stands.
+ *
  * Nothing published may carry a key, a host address or a local path: notes
  * and input names are scrubbed of IPv4 addresses and absolute paths.
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fmt, secs, short, spreadCells, table, type AnalysisFile } from "./replay-analysis.js";
+import { coachingBody } from "./replayCoaching.js";
 import { candidateResults } from "./replayReview.js";
 
 // ---- Flags ----------------------------------------------------------------------------
@@ -336,6 +345,11 @@ function reviewBlock({ reviewDir }: Ctx): string[] {
   ];
 }
 
+/** Section 9 of the analysis, without its heading; null (left as it stands) when the analysis was made without --judge. */
+function coachingBlock({ a }: Ctx): string[] | null {
+  return a.coaching ? coachingBody(a.coaching, { table, short, fmt }).map(scrub) : null;
+}
+
 /** Each block's renderer; one that returns null leaves the block's body as it stands. */
 const BLOCKS: Record<string, (ctx: Ctx) => string[] | null> = {
   setup: setupBlock,
@@ -347,6 +361,7 @@ const BLOCKS: Record<string, (ctx: Ctx) => string[] | null> = {
   hardest: hardestBlock,
   review: reviewBlock,
   after: afterBlock,
+  coaching: coachingBlock,
 };
 
 // ---- Rewriting ---------------------------------------------------------------------------
@@ -389,7 +404,11 @@ function main(): void {
   const a = JSON.parse(readFileSync(file, "utf8")) as AnalysisFile;
   if (!a.setup) throw new Error(`${file} has no setup; rerun npm run replay:analyse with this version.`);
   if (!existsSync(DOC)) throw new Error(`No report at ${DOC}.`);
-  const { doc, replaced, kept, missing } = rewrite(readFileSync(DOC, "utf8"), { a, reviewDir: REVIEW });
+  const text = readFileSync(DOC, "utf8");
+  if (a.coaching && !text.includes("<!-- generated:coaching:start -->")) {
+    throw new Error(`${file} carries coaching scores (made with --judge) and ${path.basename(DOC)} has no coaching block; publish it only to the coaching report, never over another report's blocks.`);
+  }
+  const { doc, replaced, kept, missing } = rewrite(text, { a, reviewDir: REVIEW });
   if (DRY_RUN) process.stdout.write(doc);
   else writeFileSync(DOC, doc);
   console.error(`${DRY_RUN ? "Would rewrite" : "Rewrote"} ${replaced.length} block${replaced.length === 1 ? "" : "s"} in ${path.basename(DOC)}: ${replaced.join(", ") || "none"}.`);

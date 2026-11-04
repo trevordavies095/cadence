@@ -1,0 +1,194 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w3.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:31:52.096Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 8 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 10638,
+  "outputTokens": 1499,
+  "thinkingTokens": 340,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 645,
+  "estimatedInputTokens": 4505,
+  "timing": {
+    "ttftMs": 3995,
+    "totalMs": 25870,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3995,
+        "totalMs": 25870,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 10638,
+        "outputTokens": 1499
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-14",
+    "isoWeek": "2026-W38",
+    "recentWeeklyM": 4220
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "A cold with fever knocked you out, so this week is a steady return to where you were, not a catch-up. One Monday walk-run done is a win given the circumstances.",
+    "flags": [
+      {
+        "title": "Return from illness",
+        "detail": "still coughing and blocked up, so ease back in and stop if symptoms flare."
+      },
+      {
+        "title": "Missed sessions",
+        "detail": "Wed and Sat did not happen, do not try to add them on top of the next week."
+      },
+      {
+        "title": "Sleep at 6 hours",
+        "detail": "a bit low while recovering, aim for more this week to help bounce back."
+      },
+      {
+        "title": "Consistency over catch-up",
+        "detail": "holding the walk-run shape beats piling on extra kilometres right now."
+      }
+    ],
+    "answers": [
+      {
+        "question": "Can I do all three runs next week and add the two I missed?",
+        "answer": "Short answer: do the three runs, but do not add the two you missed. You are coming off a fever and still coughing, and stacking runs on a tired body is how beginners pick up niggles or get sick again. The race is 8 weeks out, which is plenty of time if you stay consistent week by week. Think of this week as a repeat of the one you missed, not a make-up week."
+      }
+    ],
+    "analysis": "## How I read the week\n\nYou followed Monday as planned, then illness took Wednesday and Saturday off the table. That is the right call, and the Monday run at 2.78 km was actually your longest to date, so the fitness is still there.\n\n## Why this plan\n\nI am repeating the walk-run shape from the week you missed, not pushing it further. Two short walk-run sessions early, a slightly longer one on Saturday, and real rest days in between. The run bouts stay at 2 minutes with 1 minute walking so your heart and legs settle back into the rhythm you had before the cold.\n\n## What to watch as you run\n\nKeep the running segments conversational, meaning you could speak a short sentence. If the cough worsens during a run, stop and walk home, and give it another day or two. If next week goes smoothly, we will nudge the Saturday session up the week after.",
+    "prescribedWeek": {
+      "week": "2026-W38",
+      "days": [
+        {
+          "date": "2026-09-14",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "8 x (2 min easy run / 1 min walk), conversational. Gentle re-entry after the illness.",
+          "line": "Mon 2026-09-14: easy, walk-run 24 min, 8 x (2 min easy run / 1 min walk), conversational. Gentle re-entry after the illness.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-15",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full day off to keep recovery moving.",
+          "line": "Tue 2026-09-15: rest. Full day off to keep recovery moving.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-16",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "8 x (2 min easy run / 1 min walk), same shape as Monday. Repeat builds confidence that the body is back.",
+          "line": "Wed 2026-09-16: easy, walk-run 24 min, 8 x (2 min easy run / 1 min walk), same shape as Monday. Repeat builds confidence that the body is back.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-17",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Space between runs matters more than usual this week.",
+          "line": "Thu 2026-09-17: rest. Space between runs matters more than usual this week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-18",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "dog walk fine. Keeps you loose without loading the legs.",
+          "line": "Fri 2026-09-18: rest, dog walk fine. Keeps you loose without loading the legs.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1620,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "9 x (2 min easy run / 1 min walk), flat route. Your longest of the week, only if Mon and Wed felt fine.",
+          "line": "Sat 2026-09-19: easy, walk-run 27 min, 9 x (2 min easy run / 1 min walk), flat route. Your longest of the week, only if Mon and Wed felt fine.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Protects next Monday and the race build.",
+          "line": "Sun 2026-09-20: rest. Protects next Monday and the race build.",
+          "parsed": true
+        }
+      ]
+    },
+    "safetyCallouts": [
+      {
+        "title": "Return from illness.",
+        "body": "You had a fever as high as 38.4 last week and are still coughing. Keep efforts easy this week, and if the cough gets worse, you feel chest tightness, your heart races at rest, or you feel dizzy on a run, stop and see a GP before running again.",
+        "severity": "caution"
+      }
+    ]
+  }
+}

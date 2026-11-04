@@ -1,5 +1,6 @@
 import type { ModelPacket } from "../packet/types.js";
 import type { CoachTarget } from "./coachTarget.js";
+import type { CoachingJudgeInput, CoachingJudgement } from "./judge.js";
 import type {
   DossierAuditDraft,
   DossierAuditInput,
@@ -63,7 +64,7 @@ export type AttemptReport = {
  * - `resend`: the first reply was cut off (output cap, a model refusal, no
  *   message); the original request is sent again unchanged.
  */
-export type AttemptRequestKind = "first" | "fix_lines" | "error_result" | "no_tool_call" | "resend";
+export type AttemptRequestKind = "first" | "fix_lines" | "fix_rules" | "error_result" | "no_tool_call" | "resend";
 
 export type AttemptRequest = {
   kind: AttemptRequestKind;
@@ -144,6 +145,17 @@ export type LlmPort = {
     input: PlanDayFixInput,
     options?: LlmCallOptions,
   ): Promise<PlanDayFix>;
+
+  /**
+   * The coaching judge (coaching-quality 09, src/llm/judge.ts): one draft
+   * scored blind against the rubric, as the coach's form scores it. The replay
+   * harness calls it and no route does, so a port built for the app may leave
+   * it out; the live adapter and the stub have it.
+   */
+  judgeCoachingDraft?(
+    input: CoachingJudgeInput,
+    options?: LlmCallOptions,
+  ): Promise<CoachingJudgement>;
 };
 
 export class LlmSchemaError extends Error {

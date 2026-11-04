@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Safe and sensible. Marisol asked to go back to 40 miles and start speedwork. The draft says \"not yet\" straight away and explains why: going from 12 to 40 is a 28-mile step. Next week adds up to about 23 easy miles, with the long run at 7. That's a reasonable step back up from a 12-mile recovery week for someone who has been running about 41 miles a week. Speed is held back until her legs have had one more easy week, so she isn't rushed back. There's no pain or illness to work around. The plan keeps her usual rest days (Mon and Fri) and puts the long run on Sunday. Each day can be run as written, with a distance, an effort cue and a sensible easy pace (9:50–10:20/mi against a 3:45 goal). The draft also answers the 10K part of her question with a clear way to bring structure back in. I took one point off for details the card doesn't support: Thanksgiving, the five-week timeline and the heart rate cap of 140. The draft may have invented these.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:49:37.849Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2130,
+  "outputTokens": 1034,
+  "thinkingTokens": 583,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1043,
+  "costUsd": 0.0292,
+  "timing": {
+    "ttftMs": 3055,
+    "totalMs": 10833,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3055,
+        "totalMs": 10833,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2130,
+        "outputTokens": 1034
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Safe and sensible. Marisol asked to go back to 40 miles and start speedwork. The draft says \"not yet\" straight away and explains why: going from 12 to 40 is a 28-mile step. Next week adds up to about 23 easy miles, with the long run at 7. That's a reasonable step back up from a 12-mile recovery week for someone who has been running about 41 miles a week. Speed is held back until her legs have had one more easy week, so she isn't rushed back. There's no pain or illness to work around. The plan keeps her usual rest days (Mon and Fri) and puts the long run on Sunday. Each day can be run as written, with a distance, an effort cue and a sensible easy pace (9:50–10:20/mi against a 3:45 goal). The draft also answers the 10K part of her question with a clear way to bring structure back in. I took one point off for details the card doesn't support: Thanksgiving, the five-week timeline and the heart rate cap of 140. The draft may have invented these."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Recovery is going well, so take one more easy week before adding any speed. …\nAnswers: (1) Short answer: not yet. Hold at easy running for one more week, then we start layering structure back in. (2) Here is how I think about the two weeks after a marathon. … (3) On mileage, jumping 12 to 40 is a 28-mile step. … (4) On the Thanksgiving 10K, it is doable: five weeks is enough to add strides, one tempo and one short interval session, and…\nNext week:\nMon: rest. Full day off keeps the recovery curve going.\nTue: easy, 4 mi, conversational, heart rate under 140. Opens the week with an honest…\nWed: easy, 5 mi, flat route, same easy feel. Light volume bump while legs stay fresh.\nThu: easy, 3 mi, very relaxed, or swap for a 30 min walk if legs feel flat. Short…\nFri: rest. Protects Sunday and respects your usual Friday off.\nSat: easy, 4 mi, relaxed. Primes the legs for a slightly longer Sunday.\nSun: easy, 7 mi, 9:50 to 10:20/mi, no pushing the last mile. First step back toward a…\n\nScore this draft: call submit_coaching_score once."
+}

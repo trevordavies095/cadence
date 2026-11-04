@@ -1,0 +1,116 @@
+{
+  "generatedAt": "2026-11-03T18:00:00.000Z",
+  "formSeed": 1,
+  "reviewers": [
+    {
+      "reviewer": "coach",
+      "submittedAt": "2026-11-03T17:00:00.000Z",
+      "priorities": [
+        "Safe for this runner this week"
+      ],
+      "otherPriority": null,
+      "anythingElse": null,
+      "cases": [
+        {
+          "case": 1,
+          "input": "seasons/01",
+          "answered": true,
+          "pick": "B",
+          "comment": "Hand-written fixture.",
+          "drafts": [
+            {
+              "draft": "A",
+              "configuration": "self_hosted--small-model--high",
+              "repeat": 1,
+              "rating": 1,
+              "unsafe": true
+            },
+            {
+              "draft": "B",
+              "configuration": "anthropic--claude-opus-4-7--xhigh",
+              "repeat": 1,
+              "rating": 5,
+              "unsafe": false
+            },
+            {
+              "draft": "C",
+              "configuration": "anthropic--claude-haiku-5-5--high",
+              "repeat": 1,
+              "rating": 3,
+              "unsafe": false
+            }
+          ]
+        },
+        {
+          "case": 2,
+          "input": "seasons/02",
+          "answered": false,
+          "pick": null,
+          "comment": null,
+          "drafts": [
+            {
+              "draft": "A",
+              "configuration": "anthropic--claude-haiku-5-5--high",
+              "repeat": 2,
+              "rating": null,
+              "unsafe": null
+            },
+            {
+              "draft": "B",
+              "configuration": "self_hosted--small-model--high",
+              "repeat": 2,
+              "rating": null,
+              "unsafe": null
+            },
+            {
+              "draft": "C",
+              "configuration": "anthropic--claude-opus-4-7--xhigh",
+              "repeat": 2,
+              "rating": null,
+              "unsafe": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "reviewer": "user",
+      "submittedAt": "2026-11-03T16:00:00.000Z",
+      "priorities": [],
+      "otherPriority": null,
+      "anythingElse": null,
+      "cases": [
+        {
+          "case": 1,
+          "input": "seasons/01",
+          "answered": true,
+          "pick": "C",
+          "comment": null,
+          "drafts": [
+            {
+              "draft": "A",
+              "configuration": "self_hosted--small-model--high",
+              "repeat": 1,
+              "rating": 5,
+              "unsafe": false
+            },
+            {
+              "draft": "B",
+              "configuration": "anthropic--claude-opus-4-7--xhigh",
+              "repeat": 1,
+              "rating": 1,
+              "unsafe": true
+            },
+            {
+              "draft": "C",
+              "configuration": "anthropic--claude-haiku-5-5--high",
+              "repeat": 1,
+              "rating": 1,
+              "unsafe": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

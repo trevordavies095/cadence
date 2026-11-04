@@ -1,0 +1,205 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w06.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:37:58.778Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 8 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 15908,
+  "outputTokens": 1490,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 4023,
+  "estimatedInputTokens": 9075,
+  "timing": {
+    "ttftMs": 19911,
+    "totalMs": 44747,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 19911,
+        "totalMs": 44747,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 15908,
+        "outputTokens": 1490
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-08-31",
+    "isoWeek": "2026-W36",
+    "recentWeeklyM": 47495.764800000004
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Add a Thursday easy run and return the long run to 13 mi to keep volume steady.",
+    "flags": [
+      {
+        "title": "HR drift",
+        "detail": "high on easy runs—watch HR during all easy sessions."
+      },
+      {
+        "title": "Missed run",
+        "detail": "Thursday’s 5 mi—plan to add this next week."
+      },
+      {
+        "title": "Long cut",
+        "detail": "11 mi instead of 13 mi—extend to 13 mi next week."
+      },
+      {
+        "title": "Heat",
+        "detail": "hot weather—keep HR under 150 on all easy runs."
+      },
+      {
+        "title": "Volume",
+        "detail": "keep total about 30 mi—add 1–2 mi on Thursday."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I missed Thursday and cut the long run short. Should I make up the miles next week?",
+        "answer": "Yes, add a recovery easy run on Thursday to bring mileage up and keep the long run back to 13 mi."
+      }
+    ],
+    "analysis": "The athlete missed the Thursday easy run and ran 11 miles instead of the planned 13 for Sunday. The total volume for the week was 27 miles, 2 miles short of the 29‑mile goal.  HR drift on the easy runs was high, indicating fatigue and heat stress.  They are in the build phase, so next week should recover the missing mileage without adding extra hard work and keep the quality session single.  A 5‑mile easy run on Thursday is a simple way to replace the missed run, and the long run should return to 13 miles.  Keep each easy run under 150 HR, especially on hot days, and monitor the HR drift for recovery.  The weekly plan keeps volume steady at ~30 miles and the single quality day on Wednesday.",
+    "prescribedWeek": {
+      "week": "2026-W36",
+      "days": [
+        {
+          "date": "2026-08-31",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon Aug 31: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate under 150, flat route. Low‑intensity recovery.",
+          "line": "Tue Sep 1: easy, 5 mi, keep heart rate under 150, flat route. Low‑intensity recovery.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-02",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "3 x 1 mi at threshold, keep effort 8/10. Build speed.",
+          "line": "Wed Sep 2: quality, 6 mi, 3 x 1 mi at threshold, keep effort 8/10. Build speed.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "maintain low HR, slight tempo feel.",
+          "line": "Thu Sep 3: easy, 5 mi, maintain low HR, slight tempo feel.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri Sep 4: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-05",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "recovery run, keep HR <140.",
+          "line": "Sat Sep 5: easy, 4 mi, recovery run, keep HR <140.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-06",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 20921,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy, keep heart rate under 150, target pace 11:00/mi.",
+          "line": "Sun Sep 6: long, 13 mi, easy, keep heart rate under 150, target pace 11:00/mi.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

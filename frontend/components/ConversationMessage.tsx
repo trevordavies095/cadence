@@ -172,6 +172,14 @@ export function ConversationMessage({
           {c.body}
         </Notice>
       ))}
+      {/* The Sunday message carries the plan's own notices, so the card says what the plan says. */}
+      {message.kind === "weekly_read"
+        ? (message.planWarnings ?? []).map((w) => (
+            <Notice key={`${w.title}:${w.body}`} title={w.title} severity="caution">
+              {w.body}
+            </Notice>
+          ))
+        : null}
       {message.planChanges && message.planChanges.length > 0 ? (
         <PlanChangeCard days={message.planChanges} unit={unit} />
       ) : null}

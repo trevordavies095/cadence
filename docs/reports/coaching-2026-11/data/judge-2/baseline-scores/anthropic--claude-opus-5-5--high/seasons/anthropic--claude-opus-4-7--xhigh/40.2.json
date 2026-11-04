@@ -1,0 +1,61 @@
+{
+  "input": "seasons/40",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Safe and it fits Nessa: it keeps her Mon/Wed/Sat walk-run days and dog walks, all easy and flat. Total load is about 66 minutes, with 14, 15 and 20 minutes of running. That's about the same as her best recent week (7 km), so it's not a sharp jump or rushed. Going from 2-min to 4-min run blocks in one week is a little brisk after two weeks off, but it's normal walk-run progression. It also answers her first question well: she doesn't have to start from the beginning. The answer to her second question is weak. Her goal is to run the whole 5K without walking, but the draft only says \"finishing\" is realistic. That quietly swaps her goal for an easier one without saying so. The honest answer would cover whether going from 4-min run blocks to about 30+ minutes of continuous running in four weeks is realistic after an on-off block, and what the fallback is. It also doesn't mention her stiffness from driving. The plan is clear enough to run. But the most important question gets only half an answer, so it scores in the middle.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:28:31.570Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2177,
+  "outputTokens": 893,
+  "thinkingTokens": 423,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1075,
+  "costUsd": 0.026568,
+  "timing": {
+    "ttftMs": 3101,
+    "totalMs": 9931,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3101,
+        "totalMs": 9931,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2177,
+        "outputTokens": 893
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Safe and it fits Nessa: it keeps her Mon/Wed/Sat walk-run days and dog walks, all easy and flat. Total load is about 66 minutes, with 14, 15 and 20 minutes of running. That's about the same as her best recent week (7 km), so it's not a sharp jump or rushed. Going from 2-min to 4-min run blocks in one week is a little brisk after two weeks off, but it's normal walk-run progression. It also answers her first question well: she doesn't have to start from the beginning. The answer to her second question is weak. Her goal is to run the whole 5K without walking, but the draft only says \"finishing\" is realistic. That quietly swaps her goal for an easier one without saying so. The honest answer would cover whether going from 4-min run blocks to about 30+ minutes of continuous running in four weeks is realistic after an on-off block, and what the fallback is. It also doesn't mention her stiffness from driving. The plan is clear enough to run. But the most important question gets only half an answer, so it scores in the middle."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 7, 0, 5.1, 0 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"Fine, a bit stiff from all the driving.\"\nFeeling: \"Want to get going again.\"\nAsks: \"I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?\"\n\n── THE DRAFT ──\nTells Nessa: Life came first and that is fine, so we restart gently this week rather than from scratch. …\nAnswers: (1) Do you have to start from the beginning? No. (2) Is the 5K still realistic? Finishing the 5K on Nov 15 is realistic.\nNext week:\nMon: easy, walk-run 21 min, 7 rounds of 2 min run and 1 min walk, flat and…\nTue: rest, a 20–30 min dog walk is perfect.\nWed: easy, walk-run 20 min, 5 rounds of 3 min run and 1 min walk, flat route. Start…\nThu: rest.\nFri: rest, dog walk only.\nSat: easy, walk-run 25 min, 5 rounds of 4 min run and 1 min walk, flat and steady…\nSun: rest.\n\nScore this draft: call submit_coaching_score once."
+}

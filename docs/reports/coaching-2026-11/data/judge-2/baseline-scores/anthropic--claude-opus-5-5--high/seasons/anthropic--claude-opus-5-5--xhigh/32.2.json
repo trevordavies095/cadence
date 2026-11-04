@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Safe: the plan comes to 24 mi, all easy. That is well under her recent 41–46 mi weeks and a gentle step up from the 12 mi recovery week. The 7 mi long run is conservative. The only faster running is a few short strides. It keeps Monday and Friday as rest days, as she usually does, and Wednesday's session is turned into an easy run. It answers her question directly and honestly (\"Not yet, on either\") and gives a reason. The plan is clear enough to run, with mileage, a heart-rate cap and a pace for each day. Two things pull the score down. First, it says her easy heart rate is \"already back to normal\", which is made up: the card gives no heart-rate data. Second, the build-up to the 10K is promised as a table, but only the header appears, so she never sees how the weeks progress. It also guesses the race date (\"If it is on Thu Nov 26\"). A solid, safe week, but the made-up claim and the missing table make it less specific and trustworthy than it should be.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:31:04.327Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2373,
+  "outputTokens": 1099,
+  "thinkingTokens": 650,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1209,
+  "costUsd": 0.031472,
+  "timing": {
+    "ttftMs": 3035,
+    "totalMs": 11684,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3035,
+        "totalMs": 11684,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2373,
+        "outputTokens": 1099
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Safe: the plan comes to 24 mi, all easy. That is well under her recent 41–46 mi weeks and a gentle step up from the 12 mi recovery week. The 7 mi long run is conservative. The only faster running is a few short strides. It keeps Monday and Friday as rest days, as she usually does, and Wednesday's session is turned into an easy run. It answers her question directly and honestly (\"Not yet, on either\") and gives a reason. The plan is clear enough to run, with mileage, a heart-rate cap and a pace for each day. Two things pull the score down. First, it says her easy heart rate is \"already back to normal\", which is made up: the card gives no heart-rate data. Second, the build-up to the 10K is promised as a table, but only the header appears, so she never sees how the weeks progress. It also guesses the race date (\"If it is on Thu Nov 26\"). A solid, safe week, but the made-up claim and the missing table make it less specific and trustworthy than it should be."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Your recovery week went exactly to plan, but jumping to 40 miles with speedwork next week is too much too soon. …\nAnswers: (1) Not yet, on either. … (2) Your easy heart rate is already back to normal, so your fitness is fine. … (3) The Thanksgiving 10K still fits well. If it is on Thu Nov 26, the weeks could build like this: (4) | Week | Miles | Faster running |. | --- | --- | --- |. (5) You don't need 40 mi for a 10K. Your marathon base carries you, and the sessions bring the speed.\nNext week:\nMon: rest. Your usual day off; a short walk is fine if your legs want to move.\nTue: easy, 4 mi, heart rate under 145, about 10:00/mi or slower, flat route, then 15 min…\nWed: easy, 5 mi, heart rate under 145, relaxed enough to chat the whole way. Your usual…\nThu: easy, 4 mi, heart rate under 145, then 4 x 20 sec strides, quick but relaxed…\nFri: rest. Keeps your normal pattern and gives your legs time to absorb the fuller week.\nSat: easy, 4 mi, heart rate under 145, soft surface if you have one. Easy miles that…\nSun: easy, 7 mi, heart rate under 145, about 10:00/mi, flat to rolling route. Your…\n\nScore this draft: call submit_coaching_score once."
+}

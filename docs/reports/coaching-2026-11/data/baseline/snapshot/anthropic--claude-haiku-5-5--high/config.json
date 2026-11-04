@@ -1,0 +1,18 @@
+{
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "provider": "anthropic",
+  "baseUrlHost": null,
+  "model": "claude-haiku-5-5",
+  "effort": "high",
+  "repeats": 3,
+  "note": "Anthropic API",
+  "startedAt": "2026-11-03T15:11:57.239Z",
+  "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614",
+  "dryRun": false,
+  "rulesRetry": false,
+  "inputs": "demo snapshot",
+  "resumedAt": [
+    "2026-11-03T15:27:33.827Z",
+    "2026-11-04T11:36:38.415Z"
+  ]
+}

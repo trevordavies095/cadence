@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Usable but generic. It keeps the shape Nessa knows: three walk-runs on Mon/Wed/Sat, rest days between them, heart rate caps and flat routes. Each day is clear enough to run, and nothing in the week breaks a must-never check.\n\nWhat holds it back:\n- The read just restates the zero week. It doesn't ask whether the runs were missed or just not logged. She says \"all good\" and \"feeling great\", so a logging problem is possible.\n- It doesn't reply to her excitement.\n- It never links the plan to the 15 November 5K, where the goal is to run the whole way without walking.\n- It sets 24, 27 and 28 minute sessions, with a 3-minute run interval on Wednesday and Saturday, right after a week with no running. Holding at the recent load, about 7 km a week, would be safer than possibly stepping up. The card doesn't give her past session lengths, so a sharp jump can't be confirmed, but the progression is optimistic.\n- Calling Wednesday \"quality\" doesn't suit a brand-new walk-runner, even though the session itself is mild.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:56:37.095Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2193,
+  "outputTokens": 1263,
+  "thinkingTokens": 781,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1095,
+  "costUsd": 0.034032,
+  "timing": {
+    "ttftMs": 3329,
+    "totalMs": 14807,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3329,
+        "totalMs": 14807,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2193,
+        "outputTokens": 1263
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Usable but generic. It keeps the shape Nessa knows: three walk-runs on Mon/Wed/Sat, rest days between them, heart rate caps and flat routes. Each day is clear enough to run, and nothing in the week breaks a must-never check.\n\nWhat holds it back:\n- The read just restates the zero week. It doesn't ask whether the runs were missed or just not logged. She says \"all good\" and \"feeling great\", so a logging problem is possible.\n- It doesn't reply to her excitement.\n- It never links the plan to the 15 November 5K, where the goal is to run the whole way without walking.\n- It sets 24, 27 and 28 minute sessions, with a 3-minute run interval on Wednesday and Saturday, right after a week with no running. Holding at the recent load, about 7 km a week, would be safer than possibly stepping up. The card doesn't give her past session lengths, so a sharp jump can't be confirmed, but the progression is optimistic.\n- Calling Wednesday \"quality\" doesn't suit a brand-new walk-runner, even though the session itself is mild."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: No runs were logged this week, so all three planned walk-runs were missed. …\nWhat the week was. The three planned walk-runs on Mon Sep 21, Wed Sep 23 and Sat Sep 26 did not happen, and no run was logged at all.\nNext week:\nMon: easy, 24 min, 8 x 2 min run and 1 min walk, heart rate under 145, flat route. This…\nTue: rest. Ordinary dog walks are fine, and the rest gives the legs a full day before…\nWed: quality, about 27 min: 5 min walk, then 4 x 3 min run with 90 seconds walking…\nThu: rest. This gives your body a day to absorb Wednesday's firmer running.\nFri: rest. Two rest days keep Saturday's longer run fresh.\nSat: long, about 28 min, 6 x 3 min run and 2 min walk, heart rate under 145, flat route…\nSun: rest. The step up for next week depends on how this week goes, so Sunday is full…\n\nScore this draft: call submit_coaching_score once."
+}

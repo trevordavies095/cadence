@@ -1,0 +1,61 @@
+{
+  "input": "seasons/40",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Both questions get direct, honest answers. Nessa doesn't have to start over. Finishing the 5K, and running most of it, is realistic. Running every step is a stretch. That is the right call for a new runner after two weeks off. The plan keeps her Mon/Wed/Sat pattern and her walk-run format, eases in a notch below her previous level, and adds about 3 minutes per session. Total time is modest next to her earlier 7 km and 5.1 km weeks, so I don't see a sharp jump in volume or a rushed return. The Saturday step up to 3-minute run intervals in the first week back is a little eager, but it's still easy walk-run work. Each day is clear enough to run as written.\n\nThree problems pull the score down. (1) The draft makes up details that aren't on the card: \"glad your mum is home\", the walk-run blocks \"in September\", and \"longest effort under 3 km\". The only context Nessa gave was stiffness from driving. (2) It says \"three weeks left\" when Nessa said four. That changes the honesty of the realism answer and could confuse her. (3) It never mentions her stiffness from the driving. A short note on mobility or a warm-up would have helped. The plan itself is sound, but the made-up personal details hurt trust.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:07:50.324Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2296,
+  "outputTokens": 1101,
+  "thinkingTokens": 569,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1175,
+  "costUsd": 0.031204000000000003,
+  "timing": {
+    "ttftMs": 3163,
+    "totalMs": 12436,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3163,
+        "totalMs": 12436,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2296,
+        "outputTokens": 1101
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Both questions get direct, honest answers. Nessa doesn't have to start over. Finishing the 5K, and running most of it, is realistic. Running every step is a stretch. That is the right call for a new runner after two weeks off. The plan keeps her Mon/Wed/Sat pattern and her walk-run format, eases in a notch below her previous level, and adds about 3 minutes per session. Total time is modest next to her earlier 7 km and 5.1 km weeks, so I don't see a sharp jump in volume or a rushed return. The Saturday step up to 3-minute run intervals in the first week back is a little eager, but it's still easy walk-run work. Each day is clear enough to run as written.\n\nThree problems pull the score down. (1) The draft makes up details that aren't on the card: \"glad your mum is home\", the walk-run blocks \"in September\", and \"longest effort under 3 km\". The only context Nessa gave was stiffness from driving. (2) It says \"three weeks left\" when Nessa said four. That changes the honesty of the realism answer and could confuse her. (3) It never mentions her stiffness from the driving. A short note on mobility or a warm-up would have helped. The plan itself is sound, but the made-up personal details hurt trust."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 7, 0, 5.1, 0 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"Fine, a bit stiff from all the driving.\"\nFeeling: \"Want to get going again.\"\nAsks: \"I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?\"\n\n── THE DRAFT ──\nTells Nessa: Welcome back, and glad your mum is home. …\nAnswers: (1) No, you do not start again from the beginning. Two weeks off at this stage costs a little sharpness, not your base, and the walk-run blocks you did in September are still in your legs. (2) On the 5K: finishing is realistic, and finishing mostly running is realistic. Running every single step of 5 km on Nov 15, without a walk break, is a stretch given your longest effort so far is under 3 km and we have three weeks left.\nNext week:\nMon: easy, walk-run 21 min, 7 x 2 min run and 1 min walk. Gentle restart one notch below…\nTue: rest. Let the legs settle after the first run back.\nWed: easy, walk-run 24 min, 8 x 2 min run and 1 min walk. Back to your familiar block to…\nThu: rest. Dog walk is fine, no running.\nFri: rest. Keep the legs fresh for Saturday's longer session.\nSat: easy, walk-run 27 min, 6 x 3 min run and 1 min walk, add 3 min easy walk to finish…\nSun: rest. Full recovery before next week's build.\n\nScore this draft: call submit_coaching_score once."
+}

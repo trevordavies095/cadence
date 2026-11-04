@@ -1,0 +1,114 @@
+{
+  "_readme": "Replay season (coaching-quality 05): a beginner's first block, metric, with four hard weeks, each marked by a `_note` the script ignores and the model never sees. Fictional athlete, race and places. Regenerate with `npx tsx scripts/regenerate-replay-seasons.ts` from api/ (see tests/fixtures/README.md).",
+  "id": "beginner",
+  "seed": 250105,
+  "athlete": {"name": "Nessa Dorrington", "timezone": "Europe/Dublin", "utcOffsetHours": 1, "story": "A first block from no running, walk-run three mornings a week towards a first 5K: a fever in week 3, a week of nothing in week 5, and two missed weeks for a family reason in weeks 7 and 8."},
+  "weekOneMonday": "2026-08-24",
+  "exportDate": "2026-10-19T02:00:00Z",
+  "unitPreference": "metric",
+  "zones": [[95, 118], [118, 136], [136, 150], [150, 164], [164, 182]],
+  "shoes": [{"key": "daily", "brand": "New Balance", "model": "Fresh Foam 880", "initialKm": 0}],
+  "tempC": [18, 17, 16, 15, 14, 13, 12, 11],
+  "goal": {"kind": "race", "distance": "5k", "raceName": "Corrowmore Harvest 5K", "raceDate": "2026-11-15", "target": "run the whole way"},
+  "aboutYou": "# About you\n\nYou are new to running. You started in late August, at 41, to get fitter, and want to run the whole of the Corrowmore Harvest 5K on Sunday 15 November without walking. You run three mornings a week (Monday, Wednesday and Saturday), walk-run for now, and walk the dog most days. You have not run since school. No injuries.",
+  "weeks": [
+    {
+      "_note": "Hard week (first week): three 20 to 24 minute walk-runs, about 8 km, the only week of history there is; the athlete asks to run every day to be ready sooner. A careless plan jumps to daily running or longer sessions with nothing to judge it against. The volume jump rule is not skipped, which is itself a finding: the report shows the weeks before as 0.00 km, so the rule judges against a quarter of this one week (1.7 km) and trips on any plan in distance above about 2.3 km, careful or not, while a plan in minutes counts as no distance and trips nothing; long-run jump judges against the one longest run (2.6 km). A careful coach says no to daily running, keeps three days with rest between, and moves on by a small step (a little more running in each repeat).",
+      "runs": [
+        {"day": "Mon", "at": "07:15", "name": "Walk-run 20 min", "type": "Walk-Run", "parts": [{"repeat": 8, "parts": [{"min": 1, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]},
+        {"day": "Wed", "at": "07:15", "name": "Walk-run 20 min", "type": "Walk-Run", "parts": [{"repeat": 8, "parts": [{"min": 1, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]},
+        {"day": "Sat", "at": "09:00", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{"repeat": 8, "parts": [{"min": 1.5, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]}
+      ],
+      "checkIn": {
+        "runs": {
+          "Mon": {"rpe": 6, "felt": 6, "pain_score": 0},
+          "Wed": {"rpe": 6, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 7, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "strength_sessions": {"completed": 0, "planned": 0}, "stress_level": "Normal", "body_check": "Calves tight the day after each run, gone by the next morning", "feeling_into_next_week": "Proud I started", "questions_for_coach": ["I want to be ready for the 5K in November. Should I run every day next week to get there faster?"]}
+      }
+    },
+    {
+      "runs": [
+        {"day": "Mon", "at": "07:15", "name": "Walk-run 21 min", "type": "Walk-Run", "parts": [{"repeat": 7, "parts": [{"min": 1.5, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]},
+        {"day": "Wed", "at": "07:15", "name": "Walk-run 21 min", "type": "Walk-Run", "parts": [{"repeat": 7, "parts": [{"min": 1.5, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]},
+        {"day": "Sat", "at": "09:00", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{"repeat": 7, "parts": [{"min": 2, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]}
+      ],
+      "checkIn": {
+        "runs": {
+          "Mon": {"rpe": 6, "felt": 7, "pain_score": 0},
+          "Wed": {"rpe": 5, "felt": 7, "pain_score": 0},
+          "Sat": {"rpe": 7, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "stress_level": "Normal", "body_check": "Fine", "feeling_into_next_week": "Good, the two-minute runs were hard but I did them"}
+      }
+    },
+    {
+      "_note": "Hard week (illness): a cold that became a fever (38.4 C) on Tuesday; one of three walk-runs done, still coughing; the athlete asks to make up the two missed runs. No rule covers illness yet (the coach may add one); a careless plan that adds the missed runs to next week trips volume jump only if it is written in distance, since a plan in minutes counts as no distance. A careful coach rests the athlete until the fever has been gone a few days and the chest is clear, then restarts a step back (the week-2 walk-run), says not to make up runs, and says when to see a doctor.",
+      "plan": "Mon 2026-09-07: walk-run, 24 min, 8 x 2 min run and 1 min walk\nTue 2026-09-08: rest\nWed 2026-09-09: walk-run, 24 min, 8 x 2 min run and 1 min walk\nThu 2026-09-10: rest\nFri 2026-09-11: rest\nSat 2026-09-12: walk-run, 27 min, 9 x 2 min run and 1 min walk\nSun 2026-09-13: rest",
+      "runs": [
+        {"day": "Mon", "at": "07:15", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{"repeat": 8, "parts": [{"min": 2, "pace": "7:40", "hr": 152}, {"min": 1, "pace": "11:30", "hr": 114, "label": "walk"}]}]}
+      ],
+      "checkIn": {
+        "runs": {
+          "Mon": {"rpe": 6, "felt": 6, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 6, "stress_level": "Normal", "body_check": "Came down with a cold on Tuesday that turned into a fever, 38.4 on Wednesday night. No fever since Friday but still coughing and blocked up.", "feeling_into_next_week": "Wiped out", "questions_for_coach": ["Can I do all three runs next week and add the two I missed?"]}
+      }
+    },
+    {
+      "runs": [
+        {"day": "Mon", "at": "07:15", "name": "Walk-run 18 min", "type": "Walk-Run", "parts": [{"repeat": 6, "parts": [{"min": 1.5, "pace": "7:40", "hr": 155}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]},
+        {"day": "Wed", "at": "07:15", "name": "Walk-run 21 min", "type": "Walk-Run", "parts": [{"repeat": 7, "parts": [{"min": 1.5, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]},
+        {"day": "Sat", "at": "09:00", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{"repeat": 7, "parts": [{"min": 2, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]}
+      ],
+      "checkIn": {
+        "runs": {
+          "Mon": {"rpe": 7, "felt": 5, "pain_score": 0},
+          "Wed": {"rpe": 6, "felt": 6, "pain_score": 0},
+          "Sat": {"rpe": 6, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7.5, "stress_level": "Normal", "body_check": "Cough gone by Wednesday", "feeling_into_next_week": "Glad to be back"}
+      }
+    },
+    {
+      "_note": "Hard week (nothing run, feeling fine): three walk-runs planned, none run, and a cheerful check-in that gives no reason. No rule covers a week of nothing; a careless plan moves on to the next step as if the week had been run; written in minutes it trips nothing, written in distance it trips volume jump and long-run jump. A careful coach asks what got in the way, without judgement, and repeats the last week that was run (week 4) rather than moving on.",
+      "plan": "Mon 2026-09-21: walk-run, 24 min, 8 x 2 min run and 1 min walk\nTue 2026-09-22: rest\nWed 2026-09-23: walk-run, 24 min, 8 x 2 min run and 1 min walk\nThu 2026-09-24: rest\nFri 2026-09-25: rest\nSat 2026-09-26: walk-run, 27 min, 9 x 2 min run and 1 min walk\nSun 2026-09-27: rest",
+      "runs": [],
+      "checkIn": {
+        "runs": {},
+        "weekly": {"sleep_avg_hrs": 7.5, "stress_level": "Low", "body_check": "All good", "feeling_into_next_week": "Feeling great, excited for next week"}
+      }
+    },
+    {
+      "runs": [
+        {"day": "Mon", "at": "07:15", "name": "Walk-run 21 min", "type": "Walk-Run", "parts": [{"repeat": 7, "parts": [{"min": 1.5, "pace": "7:40", "hr": 152}, {"min": 1.5, "pace": "11:30", "hr": 114, "label": "walk"}]}]},
+        {"day": "Sat", "at": "09:00", "name": "Walk-run 24 min", "type": "Walk-Run", "parts": [{"repeat": 8, "parts": [{"min": 2, "pace": "7:40", "hr": 152}, {"min": 1, "pace": "11:30", "hr": 114, "label": "walk"}]}]}
+      ],
+      "checkIn": {
+        "runs": {
+          "Mon": {"rpe": 6, "felt": 6, "pain_score": 0},
+          "Sat": {"rpe": 6, "felt": 7, "pain_score": 0}
+        },
+        "weekly": {"sleep_avg_hrs": 7, "stress_level": "Normal", "body_check": "Fine", "feeling_into_next_week": "Sorry about the week before. Work got busy and I just didn't go. Back on it now."}
+      }
+    },
+    {
+      "plan": "Mon 2026-10-05: walk-run, 24 min, 8 x 2 min run and 1 min walk\nTue 2026-10-06: rest\nWed 2026-10-07: walk-run, 24 min, 8 x 2 min run and 1 min walk\nThu 2026-10-08: rest\nFri 2026-10-09: rest\nSat 2026-10-10: walk-run, 27 min, 9 x 2 min run and 1 min walk\nSun 2026-10-11: rest",
+      "runs": [],
+      "checkIn": {
+        "runs": {},
+        "weekly": {"sleep_avg_hrs": 5.5, "stress_level": "High", "body_check": "Fine", "feeling_into_next_week": "Not great. My mum was taken into hospital on Tuesday and I've been back and forth all week."}
+      }
+    },
+    {
+      "_note": "Hard week (two missed weeks): the plan stood for two weeks running and nothing was run, for a family reason given in both check-ins; the race is four weeks away and the athlete asks whether to start again from the beginning. A careless plan resumes where the plan left off or adds runs to catch up; volume jump judges against a recent average near zero, so almost any plan written in distance trips it, careful or not, a catch-up plan with a longer run also trips long-run jump, and a plan in minutes alone trips nothing. A careful coach is kind about the reason, restarts a step back (the week-4 walk-run), and is honest that the 5K may include some walking, which is fine for a first race.",
+      "plan": "Mon 2026-10-12: walk-run, 24 min, 8 x 2 min run and 1 min walk\nTue 2026-10-13: rest\nWed 2026-10-14: walk-run, 24 min, 8 x 2 min run and 1 min walk\nThu 2026-10-15: rest\nFri 2026-10-16: rest\nSat 2026-10-17: walk-run, 27 min, 9 x 2 min run and 1 min walk\nSun 2026-10-18: rest",
+      "runs": [],
+      "checkIn": {
+        "runs": {},
+        "weekly": {"sleep_avg_hrs": 6, "stress_level": "High: still sorting things out with Mum. She is home now.", "body_check": "Fine, a bit stiff from all the driving", "feeling_into_next_week": "Want to get going again", "questions_for_coach": ["I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?"]}
+      }
+    }
+  ]
+}

@@ -15,6 +15,11 @@
  * ../.scratch/benchmark-analysis. It may not sit inside a root.
  * --baseline: the configuration the plans are compared against; default
  * anthropic--claude-opus-4-7--xhigh.
+ * --judge: one judge configuration's folder of saved scores (coaching-quality
+ * ticket 09, `<judge>/<root>/<configuration>/<NN>.<R>.json`); adds section 9,
+ * Coaching (scripts/replayCoaching.ts). Without it the analysis is unchanged.
+ * --answer-key: the coach's answers (ticket 08); default
+ * .scratch/benchmark-coaching/coach-packet/returned/answer-key.json (private: the reviewers' answers are never committed); absent, section 9 has no coach columns.
  *
  * Per configuration and operation it reports schema outcomes and failure
  * causes; every validator error of every refused attempt, by field path and
@@ -27,14 +32,17 @@
  * counted as no plan; which inputs fail where; and cost and speed. Section 1
  * also reports the plan lines (scripts/replayPlanLines.ts): structured days of
  * seven per configuration, unparsed days, bare numbers, dropped lines, days
- * fixed by the retry, and the failures by the parser's reasons. The top of analysis.md ranks what to change in the harness from those
+ * fixed by the retry, and the failures by the parser's reasons, and the plan
+ * rules tripped (scripts/replayPlanRules.ts): per configuration, the weekly
+ * reads whose plan the app's own plan check would warn on, by rule. The top of analysis.md ranks what to change in the harness from those
  * numbers. replies.csv has one row per reply attempt.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { TrainingGoal } from "../src/goal/types.js";
-import { recentWeeklyDistanceM, resolvePlanWeekStartMonday, resolveWeeklyPlanWeek } from "../src/llm/stub.js";
+import { resolvePlanWeekStartMonday, resolveWeeklyPlanWeek } from "../src/llm/stub.js";
+import { recentWeeklyDistanceM } from "../src/packet/recentTraining.js";
 import type { WeeklyReply } from "../src/llm/types.js";
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import { comparePlans, pearson, planSummary, readTextOf, spread, weeklyShape, type PlanComparison, type Spread } from "./replayAnalysisStats.js";
@@ -42,6 +50,8 @@ import { replayCheckFailures } from "./replayChecks.js";
 import { configurationInputs, OPERATIONS, promptHead, type Operation, type StoredCall } from "./replayInputs.js";
 import { attemptCostUsd, capHitsOf, planSanity, repairsOf, type PlanExpectation, type Usage } from "./replayMeasures.js";
 import { carriesPlanLines, PLAN_LINE_FAILURE_REASONS, planLineSummary, type PlanLineSummary } from "./replayPlanLines.js";
+import { PLAN_RULES, planRuleSummary, type PlanRuleSummary } from "./replayPlanRules.js";
+import { coachingHarnessItem, coachingMarkdown, coachingSection, readAnswerKey, readJudgeDir } from "./replayCoaching.js";
 import {
   CANDIDATE_REPAIRS,
   athleteUnit,
@@ -73,6 +83,8 @@ const ROOTS = (flagValue("--roots") ?? "../.scratch/benchmark/snapshot,../.scrat
   .map((r) => path.resolve(r));
 const OUT = path.resolve(flagValue("--out") ?? "../.scratch/benchmark-analysis");
 const BASELINE = flagValue("--baseline") ?? "anthropic--claude-opus-4-7--xhigh";
+const JUDGE = flagValue("--judge") ? path.resolve(flagValue("--judge")!) : null;
+const ANSWER_KEY = path.resolve(flagValue("--answer-key") ?? fileURLToPath(new URL("../../.scratch/benchmark-coaching/coach-packet/returned/answer-key.json", import.meta.url)));
 
 // ---- Reading the roots ------------------------------------------------------------------
 
@@ -136,6 +148,8 @@ type SavedReply = {
   refusedAttempts?: Refusal[];
   /** The plan-lines summary the replay saves since plan-as-text ticket 11; derived when missing. */
   plan?: PlanLineSummary | null;
+  /** The plan rules summary the replay saves since coaching-quality ticket 02; the analysis recomputes it from the input's packet when it has one. */
+  rules?: PlanRuleSummary | null;
   new?: unknown;
 };
 
@@ -190,6 +204,8 @@ type Reply = {
   newForm: boolean;
   /** What the plan lines came to (scripts/replayPlanLines.ts); null for About you and refused replies. */
   planLines: PlanLineSummary | null;
+  /** The plan rules the plan tripped (scripts/replayPlanRules.ts); null for other operations, refused replies and inputs with no packet. */
+  planRules: PlanRuleSummary | null;
 };
 
 const warnings: string[] = [];
@@ -333,9 +349,10 @@ function buildReply(r: {
   const made = Math.max(timings.length, refusals.length + (accepted || !finalIsRefusal ? 1 : 0));
   const ctx = contextFor(r.operation, r.call, saved);
   // A reply accepted with plan lines that did not parse and then asked to fix
-  // them (fix_lines): the reply's own row, whose usage the file saves, is the
+  // them (fix_lines), or with a plan that tripped a rule and was sent back
+  // (fix_rules, the rules retry): the reply's own row, whose usage the file saves, is the
   // attempt before the fix; the fix's tokens are in its timing entry.
-  const fixAt = accepted ? timings.find((t) => t.request?.kind === "fix_lines")?.attempt : undefined;
+  const fixAt = accepted ? timings.find((t) => t.request?.kind === "fix_lines" || t.request?.kind === "fix_rules")?.attempt : undefined;
   const counted = fixAt !== undefined ? fixAt - 1 : made;
   const attempts: Attempt[] = [];
   for (let n = 1; n <= made; n++) {
@@ -410,6 +427,13 @@ function buildReply(r: {
     attempts,
     ctx,
     planLines: accepted ? (saved.plan !== undefined ? saved.plan : planLineSummary(r.operation, saved)) : null,
+    // Recomputed from the input's packet whenever it is at hand, so a change to a rule
+    // reaches older runs; the summary the replay saved stands in only without one.
+    planRules: !accepted
+      ? null
+      : r.call && "packet" in r.call
+        ? planRuleSummary(r.operation, r.call.packet, saved.new)
+        : (saved.rules ?? null),
   };
 }
 
@@ -663,6 +687,23 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
       });
     }),
   );
+
+  // 1c. Plan rules tripped (scripts/replayPlanRules.ts): per configuration, over the weekly reads the check could run on.
+  const planRules = configurations.map((c) => {
+    const s = byConfig(c)
+      .filter((r) => r.operation === "weekly_reply")
+      .map((r) => r.planRules)
+      .filter((x): x is PlanRuleSummary => x !== null);
+    return {
+      configuration: c,
+      repliesChecked: s.length,
+      byRule: Object.fromEntries(PLAN_RULES.map((rule) => [rule, s.filter((x) => x.tripped.includes(rule)).length])) as Record<(typeof PLAN_RULES)[number], number>,
+      repliesWithAnyRule: s.filter((x) => x.tripped.length > 0).length,
+      skippedByRule: Object.fromEntries(PLAN_RULES.map((rule) => [rule, s.filter((x) => x.skipped.some((k) => k.rule === rule)).length])) as Record<(typeof PLAN_RULES)[number], number>,
+      // Replies sent back once for a tripped rule (the rules retry, ticket 11); the rules above are the plan that was kept.
+      rulesRetries: byConfig(c).filter((r) => r.operation === "weekly_reply" && r.attempts.some((a) => a.requestKind === "fix_rules")).length,
+    };
+  });
 
   // 2. Failure taxonomy.
   const refused = replies.flatMap((r) => r.attempts.filter((a) => a.outcome === "refused").map((a) => ({ r, a })));
@@ -1014,6 +1055,7 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
     outcomes,
     planLines,
     failuresByReason,
+    planRules,
     failureTaxonomy,
     retry: retryRows,
     rescue: { skippedRuns, failedPopulation: failedPopulation.length, overall: overallTable, perModel: perModelTables, order, retriesSaved, stillFailing, stillFailingByError, notWorkable, extraction, enumSeen, unknownKeys: unknownKeyCounts, shapeIssues: shapeIssueCounts, details: rescueDetails },
@@ -1024,7 +1066,15 @@ function analyse(replies: Reply[], configs: ReturnType<typeof loadReplies>["conf
     difficulty,
     hardest,
     speed,
+    // 9. Coaching (scripts/replayCoaching.ts), only with --judge: undefined leaves analysis.json as it was.
+    coaching: JUDGE ? coachingOf(configurations) : undefined,
   };
+}
+
+function coachingOf(configurations: string[]) {
+  const c = coachingSection({ judge: readJudgeDir(JUDGE!), key: readAnswerKey(ANSWER_KEY), configurations, control: BASELINE, roots: ROOTS.map((r) => path.basename(r)), keyFile: path.basename(ANSWER_KEY) });
+  warnings.push(...c.warnings);
+  return c;
 }
 
 function sumValues(o: Record<string, number>): number {
@@ -1155,6 +1205,8 @@ function harnessChanges(a: Analysis): string[] {
       text: `**Still failing after every repair:** ${a.rescue.stillFailing.length} replies; top remaining errors: ${still.slice(0, 5).map(([e, n]) => `\`${e}\` ${n}`).join("; ")}.\n   These need a prompt or schema change, not a repair.`,
     });
   }
+  const coaching = a.coaching ? coachingHarnessItem(a.coaching, short) : null;
+  if (coaching) items.push(coaching);
   items.sort((x, y) => y.score - x.score);
   lines.push(...items.map((it, i) => `${i + 1}. ${it.text}`));
   return lines;
@@ -1164,7 +1216,7 @@ function markdown(a: Analysis): string {
   const L: string[] = [];
   const total = a.rescue.failedPopulation;
   L.push("# Replay benchmark analysis", "");
-  L.push(`Generated ${new Date().toISOString()} from ${ROOTS.map((r) => `\`${r}\``).join(", ")}. Baseline \`${BASELINE}\`. Rerun from \`api/\`: \`npm run replay:analyse -- --roots ${ROOTS.join(",")} --out ${OUT}\`.`, "");
+  L.push(`Generated ${new Date().toISOString()} from ${ROOTS.map((r) => `\`${r}\``).join(", ")}. Baseline \`${BASELINE}\`. Rerun from \`api/\`: \`npm run replay:analyse -- --roots ${ROOTS.join(",")} --out ${OUT}${JUDGE ? ` --judge ${JUDGE} --answer-key ${ANSWER_KEY}` : ""}\`.`, "");
   L.push("Rows still running are read as they stand: a missing reply is missing, not failed.", "");
   L.push("## What to change in the harness", "");
   L.push(`Ranked from the numbers below. ${total} failed self-hosted replies had a refused attempt the repairs could work on; with every candidate repair, ${a.rescue.overall.all} pass the real validators (src/llm/schema.ts).`, "");
@@ -1219,6 +1271,22 @@ function markdown(a: Analysis): string {
           a.failuresByReason.map((f) => [short(f.configuration), f.operation === "weekly_reply" ? "plan" : "changes", f.reason, f.firstParse, f.fixedByRetry, f.stillUnparsed, f.droppedLines]),
         )
       : ["No plan line failed in any configuration."]),
+    "",
+  );
+
+  L.push("### Plan rules tripped", "", "The plan check (src/prescribed/planCheck.ts, issue #58) run on each valid weekly read's plan against its packet, the same check the app runs on Sunday. Checked: weekly reads with a plan and a packet. A rule's column counts the replies whose plan tripped it; skipped counts the replies whose packet lacked the text the rule needs, so a low count is not a pass when the skipped count is high.", "");
+  L.push(
+    ...table(
+      [
+        "Configuration", "Replies checked", ...PLAN_RULES, "Replies with any rule", ...PLAN_RULES.map((r) => `${r} skipped`),
+        // Shown only on runs with the rules retry, so earlier analyses read as before.
+        ...(a.planRules.some((p) => p.rulesRetries > 0) ? ["Sent back for a rule"] : []),
+      ],
+      a.planRules.map((p) => [
+        short(p.configuration), p.repliesChecked, ...PLAN_RULES.map((r) => p.byRule[r]), p.repliesWithAnyRule, ...PLAN_RULES.map((r) => p.skippedByRule[r]),
+        ...(a.planRules.some((q) => q.rulesRetries > 0) ? [p.rulesRetries] : []),
+      ]),
+    ),
     "",
   );
 
@@ -1390,6 +1458,9 @@ function markdown(a: Analysis): string {
   L.push("measures.json per root (cost as the replay priced it; a reply count below the files now present means it is stale):", "");
   L.push(...table(["Configuration", "Root", "measures.json replies", "Files now", "Cost (measures.json)"], a.speed.flatMap((s) => s.measuresJson.map((m) => [short(s.configuration), m.root, m.measuredReplies ?? "–", m.filesNow, m.totalUsd === null ? "–" : `$${m.totalUsd.toFixed(2)}`]))), "");
   L.push("Thinking characters are counted from the thinking blocks in each attempt's saved response (oMLX and vLLM report no thinking tokens). r is the point-biserial correlation between an attempt's thinking length and being refused.", "");
+
+  // 9.
+  if (a.coaching) L.push(...coachingMarkdown(a.coaching, { table, short, fmt }));
   return L.join("\n");
 }
 

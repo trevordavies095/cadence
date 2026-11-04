@@ -1,0 +1,207 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w12.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:24:53.956Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, race week, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 24386,
+  "outputTokens": 2010,
+  "thinkingTokens": 460,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 742,
+  "estimatedInputTokens": 9521,
+  "timing": {
+    "ttftMs": 4239,
+    "totalMs": 35734,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 4239,
+        "totalMs": 35734,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 24386,
+        "outputTokens": 2010
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-12",
+    "isoWeek": "2026-W42",
+    "recentWeeklyM": 65198.5488
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [
+      "long-run jump"
+    ],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Race week. The work is done, so protect it: short runs, a little sharpness, and show up on Sunday with fresh legs and a patient first half.",
+    "flags": [
+      {
+        "title": "Taper legs",
+        "detail": "heavy and flat is expected this week and usually lifts two to three days out."
+      },
+      {
+        "title": "Pacing trap",
+        "detail": "easy to run the first 5 mi too fast; hold 8:45 to 8:50 before settling to 8:35."
+      },
+      {
+        "title": "Fueling rehearsal",
+        "detail": "take a gel every 30 to 35 minutes on Wednesday so race day is not the first try."
+      },
+      {
+        "title": "Shoe choice",
+        "detail": "race in what you trained in, not something new out of the box."
+      },
+      {
+        "title": "Sleep bank",
+        "detail": "Thursday and Friday nights matter more than Saturday if nerves hit."
+      }
+    ],
+    "answers": [
+      {
+        "question": "Is it crazy to do one more 16-miler on Wednesday so I feel ready?",
+        "answer": "No, do not add a 16-miler on Wednesday. A long run three or four days out will not build any fitness that shows up by Sunday, but it will absolutely leave your legs flat on the start line. The 20 on Oct 4 and the 17 the week before are already banked, and your Wednesday marathon-pace work has been solid. The job this week is to arrive fresh, not fitter."
+      }
+    ],
+    "analysis": "## Reading the week\n\nYou hit every session as planned: easy days easy, the 8 with 4 at marathon pace on Wednesday, and the 12 cutdown long run. That is exactly what the first taper week should look like, and the heavy, flat legs you felt are the normal response to pulling back after the 20. It is not lost fitness.\n\n## Why not another 16\n\nRunning 16 on Wednesday would not add fitness before Sunday; fitness gains from a long run take about ten days to show up. It would, though, leave your legs tired on race morning and shrink the glycogen tank you need. Trust the 20 on Oct 4 and the 17 the week before. That work is in the bank.\n\n## How to race it\n\nTarget 3:45 means about 8:35/mi, and your marathon-pace reps have been sitting right there at a controlled effort. Start the first 2 miles at 8:45 to 8:50, settle into 8:35 through halfway, and only let yourself press after mile 20 if you feel strong. Carry fuel every 30 to 35 minutes from the start, and drink at every aid station once it gets warm.\n\n## This week\n\nVolume drops to roughly half of a normal week. The Wednesday session is short on purpose: enough faster running to keep the legs sharp, not enough to cost anything. Treat Friday and Saturday as the easiest days of the block, sleep as much as you can, and eat normally with a little extra carbohydrate from Thursday onward.",
+    "prescribedWeek": {
+      "week": "2026-W42",
+      "days": [
+        {
+          "date": "2026-10-12",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full day off to start the taper properly.",
+          "line": "Mon 2026-10-12: rest. Full day off to start the taper properly.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-13",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 145, then 4 x 20 sec strides. Keeps the legs turning over without any load.",
+          "line": "Tue 2026-10-13: easy, 5 mi, heart rate under 145, then 4 x 20 sec strides. Keeps the legs turning over without any load.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-14",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "with 3 x 1 mi at marathon pace (8:35/mi), 90 sec jog between. Short sharpener to lock in race pace and rehearse fueling.",
+          "line": "Wed 2026-10-14: quality, 5 mi, with 3 x 1 mi at marathon pace (8:35/mi), 90 sec jog between. Short sharpener to lock in race pace and rehearse fueling.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-15",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "very relaxed, heart rate under 140. Flush the legs after Wednesday.",
+          "line": "Thu 2026-10-15: easy, 3 mi, very relaxed, heart rate under 140. Flush the legs after Wednesday.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-16",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Sleep, hydrate, add a little extra carbohydrate at meals.",
+          "line": "Fri 2026-10-16: rest. Sleep, hydrate, add a little extra carbohydrate at meals.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-17",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 3219,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "shakeout pace, plus 4 x 20 sec strides. Wakes the system up without taxing anything.",
+          "line": "Sat 2026-10-17: easy, 2 mi, shakeout pace, plus 4 x 20 sec strides. Wakes the system up without taxing anything.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-18",
+          "dayType": "race",
+          "run": {
+            "type": "race",
+            "distanceM": 42165,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "First 2 mi at 8:45 to 8:50, settle to 8:35 through halfway, race the last 10 km if you feel strong.",
+          "line": "Sun 2026-10-18: race, Wexley Lakes Marathon, 26.2 mi. First 2 mi at 8:45 to 8:50, settle to 8:35 through halfway, race the last 10 km if you feel strong.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

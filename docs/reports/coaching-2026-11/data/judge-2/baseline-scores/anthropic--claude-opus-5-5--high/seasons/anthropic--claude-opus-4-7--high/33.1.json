@@ -1,0 +1,61 @@
+{
+  "input": "seasons/33",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Safe and a good fit for Nessa. The plan keeps her Monday, Wednesday and Saturday walk-runs and fills the other days with the dog walks she already does. Volume goes from 6.8 km to 8.0 km (about +18%), and the long one is 3.0 km, up from about 2.3 km per run. Both are modest steps for a beginner. It answers her question directly and honestly: no running every day, with a clear reason why. Treating calf tightness that is gone by the next morning as normal is right, and no referral is needed. Every day can be run as written. Points off: the read says \"heart rate under control\" and the plan sets a 150 bpm cap, but she gave no heart-rate data, so that detail is made up. The draft also never ties the plan to her 15 November 5K. It doesn't say how the 1 min run / 90 sec walk will build toward running the whole way, or reassure her that the timeline is realistic. That is part of what she asked.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:21:02.119Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2221,
+  "outputTokens": 774,
+  "thinkingTokens": 340,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1124,
+  "costUsd": 0.024364,
+  "timing": {
+    "ttftMs": 2591,
+    "totalMs": 8274,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2591,
+        "totalMs": 8274,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2221,
+        "outputTokens": 774
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Safe and a good fit for Nessa. The plan keeps her Monday, Wednesday and Saturday walk-runs and fills the other days with the dog walks she already does. Volume goes from 6.8 km to 8.0 km (about +18%), and the long one is 3.0 km, up from about 2.3 km per run. Both are modest steps for a beginner. It answers her question directly and honestly: no running every day, with a clear reason why. Treating calf tightness that is gone by the next morning as normal is right, and no referral is needed. Every day can be run as written. Points off: the read says \"heart rate under control\" and the plan sets a 150 bpm cap, but she gave no heart-rate data, so that detail is made up. The draft also never ties the plan to her 15 November 5K. It doesn't say how the 1 min run / 90 sec walk will build toward running the whole way, or reassure her that the timeline is realistic. That is part of what she asked."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: none recorded.\nThis week: 6.8 km over 3 runs.\nBody: \"Calves tight the day after each run, gone by the next morning.\"\nFeeling: \"Proud I started.\"\nAsks: \"I want to be ready for the 5K in November. Should I run every day next week to get there faster?\"\n\n── THE DRAFT ──\nTells Nessa: Strong first week: three runs done, no pain, heart rate under control. …\nAnswers: No, please do not run every day yet. Your body is brand new to this, and the gap days are where the fitness actually gets built.\nSafety flag: Calf tightness is normal early on\nNext week:\nMon: easy, 2.5 km walk-run, 1 min run / 90 sec walk, keep heart rate under 150. Repeats…\nTue: other, 20 – 30 min easy dog walk. Keeps the legs moving and helps the calves settle.\nWed: easy, 2.5 km walk-run, same 1 min run / 90 sec walk intervals, conversational…\nThu: other, 20 – 30 min easy walk. Light aerobic day between runs.\nFri: rest. Sets up a fresher Saturday long one.\nSat: long, 3.0 km walk-run, 1 min run / 90 sec walk, slow and steady. The week's…\nSun: other, 30 – 40 min easy walk. Recovery day on your feet, no running.\n\nScore this draft: call submit_coaching_score once."
+}

@@ -1,6 +1,6 @@
 import { pool } from "../db.js";
 import type { CoachModel } from "../llm/coachModel.js";
-import { parseAnthropicEffort } from "../llm/effort.js";
+import { effortWithinCeiling, parseAnthropicEffort } from "../llm/effort.js";
 
 /** Who serves Coach Cade: Anthropic, or the athlete's own model server. */
 export const COACH_PROVIDERS = ["anthropic", "self_hosted"] as const;
@@ -29,7 +29,9 @@ export async function getSavedCoachModel(): Promise<SavedCoachSetting | null> {
   if (!row) return null;
   const effort = parseAnthropicEffort(row.effort);
   const provider = parseCoachProvider(row.provider);
-  return effort && provider ? { provider, model: row.model, effort } : null;
+  if (!effort || !provider) return null;
+  // A choice saved before the model's ceiling was known is read at the ceiling.
+  return { provider, model: row.model, effort: provider === "anthropic" ? effortWithinCeiling(row.model, effort) : effort };
 }
 
 export async function saveCoachModel(choice: SavedCoachSetting): Promise<void> {

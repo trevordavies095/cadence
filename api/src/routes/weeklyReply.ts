@@ -16,6 +16,7 @@ import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import {
   assembleLeanLiveContext,
   assertPacketHasNoPiiOrGps,
+  loadReviewedWeekPlan,
   rememberLastOutboundPacket,
   resolveFocusWeekSession,
   resolveRecentHistoryLimit,
@@ -35,6 +36,7 @@ import {
   TempoTransportError,
   type TempoPort,
 } from "../tempo/port.js";
+import { checkPlan, rulesTripped } from "../prescribed/planCheck.js";
 import { savePrescribedWeek } from "../prescribed/store.js";
 import { getWeekRecapBySessionId } from "../recap/recapStore.js";
 import { coachNotConfiguredBody } from "../settings/coachSetup.js";
@@ -142,12 +144,17 @@ async function assemblePacket(
     (await getWeekRecapBySessionId(focus.session.id))?.markdown ??
     null;
 
+  // The plan the reviewed week was meant to follow, with each day's outcome,
+  // so the read is of the week against its plan (#59). Null with no plan.
+  const reviewedPlan = await loadReviewedWeekPlan(focus.session, tempoPort);
+
   const packet = await assembleLeanLiveContext({
     focusSession: focus.session,
     recentHistoryLimit: resolveRecentHistoryLimit(body.recentHistoryLimit),
     recapMarkdown,
     includePlanWeek: true,
     attachments,
+    ...reviewedPlan,
     identityHints: body.identityHints,
     tempoPort,
   });
@@ -305,6 +312,13 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         };
       }
 
+      // The plan check (issue #58): the validated plan against the packet's
+      // recent training, on every provider and model. It never changes the
+      // plan; its warnings are stored beside it and the rules tripped go on
+      // the accepted attempt's call-log row (empty when none tripped).
+      const planCheck = checkPlan(packet, checked.value.prescribedWeek);
+      await llmCallRecorder?.notePlanRules?.(callId, rulesTripped(planCheck));
+
       // Plan lands on N+1's session; the analysis stays in N's thread.
       const reviewedSessionId =
         (typeof body.weekSessionId === "string" && body.weekSessionId.trim()) ||
@@ -343,6 +357,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
               flags: checked.value.flags ?? [],
               answers: checked.value.answers ?? [],
             },
+            planWarnings: planCheck.warnings,
             at: clock.now(),
           });
           // The headline and a link; the full read is on the plan, not repeated here.
@@ -363,6 +378,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         callId,
         body: {
           reply: checked.value,
+          planWarnings: planCheck.warnings,
           packetWeek: packet.week,
           prescribed,
           coachMessage,
@@ -374,6 +390,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
                 weekSessionId: prescribed.weekSessionId,
                 plan: prescribed.plan,
                 safetyCallouts: prescribed.safetyCallouts ?? [],
+                planWarnings: prescribed.planWarnings ?? [],
                 createdAt: prescribed.createdAt,
                 updatedAt: prescribed.updatedAt,
               }

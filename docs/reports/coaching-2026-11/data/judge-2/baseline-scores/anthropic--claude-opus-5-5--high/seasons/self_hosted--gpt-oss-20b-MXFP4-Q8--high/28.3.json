@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft gets the main call right and is safe. It says plainly that Marisol doesn't need a 22-miler with the race three weeks away. That is honest, and it keeps her from a sharp long-run jump this close to the race. Next week is 32 mi, down from 42, with a 15 mi long run. That is a sensible start to a shortened taper and fits her five-day schedule with Monday and Friday off.\n\nThe execution is muddled, which keeps it at a 3:\n- \"Finish this week with a 15-17 mi long run and a quality session\" contradicts the card, which says this week is already done (42 mi over 5 runs).\n- Monday says to recover \"from the 17 mi long run,\" a run the card never mentions.\n- The Wednesday session can't be run as written. \"4×1 mi at marathon pace, 10 sec/mile target\" gives no actual pace (about 8:35/mi for a 3:45 goal). Squeezing 4 mi of work into 5 mi total leaves almost no warm-up or cool-down.\n- The heart-rate caps are invented. Nothing in her data supports them.\n- The draft doesn't lay out the remaining weeks to October 18.\n- It does little to settle the worry she named about the new date.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:37:34.212Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2224,
+  "outputTokens": 876,
+  "thinkingTokens": 354,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1118,
+  "costUsd": 0.026416000000000002,
+  "timing": {
+    "ttftMs": 2919,
+    "totalMs": 9203,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2919,
+        "totalMs": 9203,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2224,
+        "outputTokens": 876
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft gets the main call right and is safe. It says plainly that Marisol doesn't need a 22-miler with the race three weeks away. That is honest, and it keeps her from a sharp long-run jump this close to the race. Next week is 32 mi, down from 42, with a 15 mi long run. That is a sensible start to a shortened taper and fits her five-day schedule with Monday and Friday off.\n\nThe execution is muddled, which keeps it at a 3:\n- \"Finish this week with a 15-17 mi long run and a quality session\" contradicts the card, which says this week is already done (42 mi over 5 runs).\n- Monday says to recover \"from the 17 mi long run,\" a run the card never mentions.\n- The Wednesday session can't be run as written. \"4×1 mi at marathon pace, 10 sec/mile target\" gives no actual pace (about 8:35/mi for a 3:45 goal). Squeezing 4 mi of work into 5 mi total leaves almost no warm-up or cool-down.\n- The heart-rate caps are invented. Nothing in her data supports them.\n- The draft doesn't lay out the remaining weeks to October 18.\n- It does little to settle the worry she named about the new date."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: Finish this week with a 15-17 mi long run and a quality session—no need for a 22-mile run.\nAnswers: You don’t need to hit 22 mi before the race. A 15-17 mi long run with a quality session that week keeps the load safe and lets you be fresh for Oct 18.\nNext week:\nMon: rest, fully recover from the 17 mi long run.\nTue: easy, 5 mi, keep heart rate under 150, flat route, loosen legs.\nWed: quality, 5 mi, 4×1 mi at marathon pace, 10 sec/mile target, keep HR under 155.\nThu: easy, 4 mi, heart rate 140, mild hills, stay comfortable.\nFri: rest, focus on stretching and hydration.\nSat: easy, 3 mi, walk downhill finish, allow recovery.\nSun: long, 15 mi, steady pace, keep HR 140-150, fueling on gels.\n\nScore this draft: call submit_coaching_score once."
+}

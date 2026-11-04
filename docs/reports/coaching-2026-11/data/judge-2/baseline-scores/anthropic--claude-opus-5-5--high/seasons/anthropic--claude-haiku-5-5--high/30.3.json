@@ -1,0 +1,61 @@
+{
+  "input": "seasons/30",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 5,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft reads this correctly as race week. It answers her question first and plainly: skip the Wednesday 16-miler, because it adds fatigue she can't clear by Sunday and adds almost no fitness. The volume is a sensible final taper after 53, 40, 42, 46 and 34 miles. Before the race there are only about 15 miles: easy 5, a short 5-mile session, a 3-mile shake-out and 2 miles with strides. Rest days fall on Monday and Friday, which fits her usual schedule. The Wednesday session is light: 2 x 1 mile at 8:35/mi, which is about her 3:45 goal pace. That works as a confidence touch, not a training load. Nothing hurts, so the heavy legs aren't an injury sign. The plan cuts her load, which deals with the dead legs, and it speaks to her fear of losing fitness by explaining that the job now is to arrive fresh. Every day can be run as written. Race day has a sensible start near 8:40/mi before she settles in toward her goal of under 3:45. This was the 26.2-mile goal race she was already training for, so it isn't a jump in the long run. Nothing is invented or generic, and no must-never check is broken.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:55:38.425Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2295,
+  "outputTokens": 747,
+  "thinkingTokens": 224,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1156,
+  "costUsd": 0.024120000000000003,
+  "timing": {
+    "ttftMs": 2604,
+    "totalMs": 8019,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2604,
+        "totalMs": 8019,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2295,
+        "outputTokens": 747
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "5",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft reads this correctly as race week. It answers her question first and plainly: skip the Wednesday 16-miler, because it adds fatigue she can't clear by Sunday and adds almost no fitness. The volume is a sensible final taper after 53, 40, 42, 46 and 34 miles. Before the race there are only about 15 miles: easy 5, a short 5-mile session, a 3-mile shake-out and 2 miles with strides. Rest days fall on Monday and Friday, which fits her usual schedule. The Wednesday session is light: 2 x 1 mile at 8:35/mi, which is about her 3:45 goal pace. That works as a confidence touch, not a training load. Nothing hurts, so the heavy legs aren't an injury sign. The plan cuts her load, which deals with the dead legs, and it speaks to her fear of losing fitness by explaining that the job now is to arrive fresh. Every day can be run as written. Race day has a sensible start near 8:40/mi before she settles in toward her goal of under 3:45. This was the 26.2-mile goal race she was already training for, so it isn't a jump in the long run. Nothing is invented or generic, and no must-never check is broken."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 53, 40, 42, 46 mi\nThis week: 34 mi over 5 runs.\nBody: \"Legs heavy and flat. Nothing hurts, they just feel dead.\"\nFeeling: \"Nervous. I feel like I'm losing fitness.\"\nAsks: \"Is it crazy to do one more 16-miler on Wednesday so I feel ready?\"\n\n── THE DRAFT ──\nTells Marisol: This is race week, so the job now is to arrive fresh, not to add fitness. …\nAnswers: No, skip the Wednesday 16-miler. It is four days before the race, and a run that long adds fatigue you cannot clear by Sunday but adds almost no fitness in that time.\nNext week:\nMon: rest. No running. The big training block is finished, and a full day off starts the…\nTue: easy, 5 mi, heart rate 140 or lower, flat route. Finish with four 20-second relaxed…\nWed: quality, 5 mi. Run 1.5 mi easy, then 2 x 1 mi at 8:35/mi with 2 min easy jog…\nThu: easy, 3 mi, heart rate 140 or lower. A short shake-out clears Wednesday's work…\nFri: rest. Full day off, normal meals and an early night. Two days out, rest matters…\nSat: easy, 2 mi, then three 20-second strides. This opens the legs for the start without…\nSun: race, 26.2 mi, Wexley Lakes Marathon, target under 3:45. Start near 8:40/mi, settle…\n\nScore this draft: call submit_coaching_score once."
+}

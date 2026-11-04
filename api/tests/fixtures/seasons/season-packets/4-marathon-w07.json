@@ -1,0 +1,471 @@
+{
+  "dossier": {
+    "versionId": 32603,
+    "body": "# About you\n\nYou are training for your second marathon, the Wexley Lakes Marathon on Sunday 1 November, and want to run under 3:45; your first was 4:02 two years ago. You run five days a week: easy on Tuesday, a session on Wednesday, easy on Thursday and Saturday, and the long run on Sunday. Monday and Friday are rest days. You ran about 30 miles a week before this build. No injuries in the last two years."
+  },
+  "recapMarkdown": "# Weekly Recap — 2026-W36 (Mon Aug 31 – Sun Sep 6, 2026)\n\n## Summary\n\n- Hard minutes (zones 4 and 5): 0 min, down 47 min\n\n| Metric | This week | Prev week | 3-wk avg | Δ |\n| --- | --- | --- | --- | --- |\n| Distance | 37.01 mi | 27.03 mi | 27.68 mi | +9.3 |\n| Runs | 5 | 4 | 4.3 | +0.7 |\n| Total time | 6h 0m | 4h 46m | 4h 41m | +1h 18m |\n| Total elevation | 610 ft | 502 ft | 539 ft | +71 ft |\n| Relative effort | 253 | 248 | 232 | +21 |\n| Avg easy-run HR | 139 | 151 | 142 | -3 |\n\n## HR zone distribution (week total)\n\nZ1 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  1.1%   (4m)\nZ2 ██████████████████████░░░░░░░░░░░░░  61.5%   (3h 42m)\nZ3 █████████████░░░░░░░░░░░░░░░░░░░░░░  37.4%   (2h 15m)\nZ4 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0%   (0m)\nZ5 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0%   (0m)\n\nEasy-running share: 62.6% (zones 1 and 2 of time with heart rate).\nTarget for this block: 80% or more. This week is below the target.\n\n## Run-by-run\n\n### Tue Sep 1 — Easy Run — 6.00 mi / 58m 55s\n\nPace: 9:49/mi  ·  Avg HR 139 (74.3% max)  ·  Max HR 144  ·  Cad 344 spm\n\nSplits: 9:46/mi / 9:43/mi / 9:46/mi / 9:46/mi / 9:49/mi / 9:43/mi / 9:43/mi / 9:51/mi / 9:44/mi / 9:46/mi\n\nHR drift: 135.9 → 141.1 (+5.2 bpm)\n\nTime in zones: Z1 1.7% · Z2 98.3% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑85 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 41\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Wed Sep 2 — Workout — 8.00 mi / 1h 12m\n\nPace: 9:07/mi  ·  Avg HR 149 (79.7% max)  ·  Max HR 160  ·  Cad 355 spm\n\nSplits: 9:51/mi / 9:38/mi / 9:46/mi / 9:51/mi / 8:35/mi / 8:37/mi / 8:35/mi / 8:33/mi / 8:30/mi / 8:33/mi / 8:35/mi / 8:35/mi / 8:37/mi / 10:00/mi / 10:00/mi\n\nReps: 7 reps, avg 5:19 at 8:34/mi, fade 0%, rests 5:21 (by pace)\n\nHR drift: 135.3 → 152.5 (+17.2 bpm)\n\nTime in zones: Z1 1.4% · Z2 30.1% · Z3 68.6% · Z4 0% · Z5 0%\n\nElevation: ↑121 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 51\n\nSimilar route: n/a\n\nRPE: 6/10  ·  Felt: 8/10  ·  Pain: 0/10\n\n### Thu Sep 3 — Easy Run — 5.00 mi / 49m 28s\n\nPace: 9:54/mi  ·  Avg HR 139 (74.3% max)  ·  Max HR 143  ·  Cad 344 spm\n\nSplits: 9:51/mi / 9:47/mi / 9:51/mi / 9:52/mi / 9:52/mi / 9:49/mi / 9:44/mi / 9:51/mi / 9:43/mi\n\nHR drift: 136 → 139.9 (+3.9 bpm)\n\nTime in zones: Z1 2% · Z2 98% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑82 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 35\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Sat Sep 5 — Easy Run — 4.00 mi / 39m 26s\n\nPace: 9:51/mi  ·  Avg HR 139 (73.8% max)  ·  Max HR 143  ·  Cad 344 spm\n\nSplits: 9:52/mi / 9:51/mi / 9:47/mi / 9:44/mi / 9:44/mi / 9:41/mi / 9:43/mi\n\nHR drift: 134.2 → 140.3 (+6.1 bpm)\n\nTime in zones: Z1 2.5% · Z2 97.5% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑98 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 28\n\nSimilar route: n/a\n\nRPE: 2/10  ·  Felt: 8/10  ·  Pain: 0/10\n\n### Sun Sep 6 — Long Run — 14.00 mi / 2h 19m\n\nPace: 10:00/mi  ·  Avg HR 146 (78.1% max)  ·  Max HR 153  ·  Cad 344 spm\n\nSplits: 9:54/mi / 9:51/mi / 9:51/mi / 10:04/mi / 9:54/mi / 10:00/mi / 9:51/mi / 9:55/mi / 9:57/mi / 9:54/mi / 9:52/mi / 9:54/mi / 9:51/mi / 9:55/mi / 9:55/mi / 9:57/mi / 9:54/mi / 9:59/mi / 10:00/mi / 9:59/mi / 9:51/mi / 9:55/mi / 10:00/mi\n\nHR drift: 143 → 148.9 (+6 bpm)\n\nTime in zones: Z1 0% · Z2 39.3% · Z3 60.7% · Z4 0% · Z5 0%\n\nElevation: ↑223 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 98\n\nSimilar route: n/a\n\nRPE: 6/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Long run — Sun Sep 6 — 14.00 mi / 2h 19m\n\nAvg pace: 10:00/mi  ·  Avg HR 146  ·  Drift: 143 → 148.9 (+6 bpm)\n\nSplits: 9:54/mi / 9:51/mi / 9:51/mi / 10:04/mi / 9:54/mi / 10:00/mi / 9:51/mi / 9:55/mi / 9:57/mi / 9:54/mi / 9:52/mi / 9:54/mi / 9:51/mi / 9:55/mi / 9:55/mi / 9:57/mi / 9:54/mi / 9:59/mi / 10:00/mi / 9:59/mi / 9:51/mi / 9:55/mi / 10:00/mi\n\nBack half avg pace: 9:56/mi vs front 9:55/mi (vs front half; Δ -1s/mi)\n\nFast finish? No (last 3 mi 3 s/mi slower than the rest)\n\n## Trends\n\n- **Easy pace (Easy Run, Recovery, untyped)**: 9:50/mi → 10:00/mi → 10:28/mi → 9:51/mi █▅▁█\n\n- **Avg easy HR**: 138 → 138 → 151 → 139 ██▁█\n\n- **Easy runs**: 9:51/mi at 139 bpm, from 9:50/mi at 138 bpm three weeks ago (declining)\n\n- **Long-run distance** (max long-typed, else max run in week): 9.00 mi → 10.00 mi → 11.00 mi → 14.00 mi ▁▃▃█ (improving)\n\n## Subjective recap\n\nPain: highest 0/10 (Tue, Wed, Thu, Sat, Sun)\n\nSleep avg this week: 7.5 hrs\n\nStrength, rehab or cross-training: 2 of 2 planned\n\nStress level: Low\n\nBody check: Good. AC fixed, sleeping again.\n\nGoing into next week feeling: Much better\n",
+  "thread": [],
+  "attachments": [],
+  "week": {
+    "isoWeek": "2026-W36",
+    "start": "2026-08-31T05:00:00.000Z",
+    "end": "2026-09-07T04:59:59.999Z",
+    "weekSessionId": "a36e96a1-542c-4c0e-bc8a-79bad15a29bb"
+  },
+  "recentHistory": [
+    {
+      "isoWeek": "2026-W35",
+      "weekSessionId": "42c3168a-8e73-41db-ad7f-31dcddf26827",
+      "recapMarkdown": "# Weekly Recap — 2026-W35 (Mon Aug 24 – Sun Aug 30, 2026)\n\n## Summary\n\n- Hard minutes (zones 4 and 5): 47 min, up 47 min\n\n| Metric | This week | Prev week | 3-wk avg | Δ |\n| --- | --- | --- | --- | --- |\n| Distance | 27.03 mi | 24.00 mi | 30.34 mi | -3.3 |\n| Runs | 4 | 4 | 4.7 | -0.7 |\n| Total time | 4h 46m | 4h 0m | 4h 59m | -12m |\n| Total elevation | 502 ft | 443 ft | 556 ft | -54 ft |\n| Relative effort | 248 | 168 | 248 | +0 |\n| Avg easy-run HR | 151 | 138 | 138 | +13 |\n\n## HR zone distribution (week total)\n\nZ1 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0%   (0m)\nZ2 ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  10.8%   (31m)\nZ3 █████████████████████████░░░░░░░░░░  72.7%   (3h 28m)\nZ4 ██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  16.5%   (47m)\nZ5 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0%   (0m)\n\nEasy-running share: 10.8% (zones 1 and 2 of time with heart rate).\nTarget for this block: 80% or more. This week is below the target.\n\n## Run-by-run\n\n### Tue Aug 25 — Easy Run — 6.00 mi / 1h 2m\n\nPace: 10:24/mi  ·  Avg HR 153 (81.8% max)  ·  Max HR 160  ·  Cad 344 spm\n\nSplits: 10:23/mi / 10:20/mi / 10:24/mi / 10:23/mi / 10:16/mi / 10:23/mi / 10:23/mi / 10:23/mi / 10:20/mi / 10:15/mi\n\nHR drift: 148.5 → 156.7 (+8.2 bpm)\n\nTime in zones: Z1 0% · Z2 6.4% · Z3 93.6% · Z4 0% · Z5 0%\n\nElevation: ↑125 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 44\n\nSimilar route: n/a\n\nNotes (from app): \"Already 27 degrees at 6am.\"\n\nRPE: 5/10  ·  Felt: 5/10  ·  Pain: 0/10\n\n### Wed Aug 26 — Threshold — 6.03 mi / 58m 44s\n\nPace: 9:44/mi  ·  Avg HR 157 (84% max)  ·  Max HR 174  ·  Cad 351 spm\n\nSplits: 10:04/mi / 10:04/mi / 10:00/mi / 8:16/mi / 11:16/mi / 8:21/mi / 11:16/mi / 10:49/mi / 10:47/mi\n\nReps: 2 reps, avg 12:27 at 8:18/mi, fade 1%, rests 3:00 (by pace)\n\nHR drift: 141.3 → 154.9 (+13.6 bpm)\n\nTime in zones: Z1 0% · Z2 27.2% · Z3 26.8% · Z4 46% · Z5 0%\n\nElevation: ↑85 ft\n\nShoe: Saucony Endorphin Speed 4 (56 mi)\n\nRelative effort: 88\n\nSimilar route: n/a\n\nNotes (from app): \"Too hot. Stopped after two reps, HR way higher than usual for the pace.\"\n\nRPE: 9/10  ·  Felt: 3/10  ·  Pain: 0/10\n\n### Sat Aug 29 — Easy Run — 4.00 mi / 42m 16s\n\nPace: 10:34/mi  ·  Avg HR 149 (79.7% max)  ·  Max HR 154  ·  Cad 345 spm\n\nSplits: 10:24/mi / 10:29/mi / 10:31/mi / 10:32/mi / 10:26/mi / 10:32/mi / 10:26/mi\n\nHR drift: 145.3 → 149.4 (+4.1 bpm)\n\nTime in zones: Z1 0% · Z2 11.8% · Z3 88.2% · Z4 0% · Z5 0%\n\nElevation: ↑95 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 30\n\nSimilar route: n/a\n\nRPE: 5/10  ·  Felt: 5/10  ·  Pain: 0/10\n\n### Sun Aug 30 — Long Run — 11.00 mi / 2h 3m\n\nPace: 11:14/mi  ·  Avg HR 156 (83.4% max)  ·  Max HR 165  ·  Cad 344 spm\n\nSplits: 10:32/mi / 10:32/mi / 10:39/mi / 10:37/mi / 10:34/mi / 10:31/mi / 10:37/mi / 10:32/mi / 10:32/mi / 10:39/mi / 10:41/mi / 10:37/mi / 10:34/mi / 10:39/mi / 10:36/mi / 10:34/mi / 10:37/mi / 10:36/mi\n\nHR drift: 150.2 → 161 (+10.7 bpm)\n\nTime in zones: Z1 0% · Z2 4.9% · Z3 78.6% · Z4 16.6% · Z5 0%\n\nElevation: ↑197 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 86\n\nSimilar route: n/a\n\nNotes (from app): \"Hottest long run yet. Stopped twice for water and cut it at 11.\"\n\nRPE: 8/10  ·  Felt: 3/10  ·  Pain: 0/10\n\n### Long run — Sun Aug 30 — 11.00 mi / 2h 3m\n\nAvg pace: 11:14/mi  ·  Avg HR 156  ·  Drift: 150.2 → 161 (+10.7 bpm)\n\nSplits: 10:32/mi / 10:32/mi / 10:39/mi / 10:37/mi / 10:34/mi / 10:31/mi / 10:37/mi / 10:32/mi / 10:32/mi / 10:39/mi / 10:41/mi / 10:37/mi / 10:34/mi / 10:39/mi / 10:36/mi / 10:34/mi / 10:37/mi / 10:36/mi\n\nBack half avg pace: 10:37/mi vs front 10:34/mi (vs front half; Δ -3s/mi)\n\nFast finish? No (last 3 mi at the same pace as the rest)\n\n## Trends\n\n- **Easy pace (Easy Run, Recovery, untyped)**: 9:51/mi → 9:50/mi → 10:00/mi → 10:28/mi ██▅▁\n\n- **Avg easy HR**: 139 → 138 → 138 → 151 ███▁\n\n- **Easy runs**: 10:28/mi at 151 bpm, from 9:51/mi at 139 bpm three weeks ago (declining)\n\n- **Long-run distance** (max long-typed, else max run in week): 12.00 mi → 9.00 mi → 10.00 mi → 11.00 mi █▁▃▅\n\n## Subjective recap\n\nPain: highest 0/10 (Tue, Wed, Sat, Sun)\n\nSleep avg this week: 5.5 hrs (range 4.5–6.5)\n\nStrength, rehab or cross-training: 0 of 2 planned\n\nStress level: High: big deadline at work, and the apartment is too hot to sleep. The AC is broken until next week.\n\nBody check: Tired all the time. Knee is fine.\n\nGoing into next week feeling: Drained\n\n## Questions for coach\n\n1. I missed Thursday and cut the long run short. Should I make up the miles next week?\n",
+      "analysis": "## Why this plan\nKeep quality to one session, shoes as listed, and treat rest days as real rest.",
+      "prescribedWeek": {
+        "days": [
+          {
+            "run": null,
+            "date": "2026-08-24",
+            "line": "Mon 2026-08-24: rest",
+            "notes": null,
+            "parsed": true,
+            "dayType": "rest",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "easy",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 9656,
+              "structure": null
+            },
+            "date": "2026-08-25",
+            "line": "Tue 2026-08-25: easy, 6 mi",
+            "notes": null,
+            "parsed": true,
+            "dayType": "easy",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "quality",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 12875,
+              "structure": null
+            },
+            "date": "2026-08-26",
+            "line": "Wed 2026-08-26: threshold, 8 mi with 3 x 1.5 mi at 8:00/mi",
+            "notes": "with 3 x 1.5 mi at 8:00/mi",
+            "parsed": true,
+            "dayType": "quality",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "easy",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 8047,
+              "structure": null
+            },
+            "date": "2026-08-27",
+            "line": "Thu 2026-08-27: easy, 5 mi",
+            "notes": null,
+            "parsed": true,
+            "dayType": "easy",
+            "strength": null
+          },
+          {
+            "run": null,
+            "date": "2026-08-28",
+            "line": "Fri 2026-08-28: rest",
+            "notes": null,
+            "parsed": true,
+            "dayType": "rest",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "easy",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 6437,
+              "structure": null
+            },
+            "date": "2026-08-29",
+            "line": "Sat 2026-08-29: easy, 4 mi",
+            "notes": null,
+            "parsed": true,
+            "dayType": "easy",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "long",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 20921,
+              "structure": null
+            },
+            "date": "2026-08-30",
+            "line": "Sun 2026-08-30: long, 13 mi easy, HR under 150",
+            "notes": "easy, HR under 150",
+            "parsed": true,
+            "dayType": "long",
+            "strength": null
+          }
+        ],
+        "week": "2026-W35"
+      }
+    },
+    {
+      "isoWeek": "2026-W34",
+      "weekSessionId": "eccd527d-93e4-4970-8597-62baf30151ff",
+      "recapMarkdown": "# Weekly Recap — 2026-W34 (Mon Aug 17 – Sun Aug 23, 2026)\n\n## Summary\n\n- Hard minutes (zones 4 and 5): 0 min, down 26 min\n\n| Metric | This week | Prev week | 3-wk avg | Δ |\n| --- | --- | --- | --- | --- |\n| Distance | 24.00 mi | 32.01 mi | 33.00 mi | -9.0 |\n| Runs | 4 | 5 | 5.0 | -1.0 |\n| Total time | 4h 0m | 5h 17m | 5h 23m | -1h 23m |\n| Total elevation | 443 ft | 673 ft | 623 ft | -180 ft |\n| Relative effort | 168 | 280 | 265 | -97 |\n| Avg easy-run HR | 138 | 138 | 139 | -1 |\n\n## HR zone distribution (week total)\n\nZ1 █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  2.1%   (5m)\nZ2 ██████████████████████████░░░░░░░░░  75.4%   (3h 1m)\nZ3 ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  22.6%   (54m)\nZ4 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0%   (0m)\nZ5 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0%   (0m)\n\nEasy-running share: 77.45% (zones 1 and 2 of time with heart rate).\nTarget for this block: 80% or more. This week is below the target.\n\n## Run-by-run\n\n### Tue Aug 18 — Easy Run — 4.00 mi / 40m 31s\n\nPace: 10:07/mi  ·  Avg HR 137 (73.3% max)  ·  Max HR 142  ·  Cad 344 spm\n\nSplits: 10:02/mi / 10:04/mi / 10:04/mi / 9:59/mi / 10:04/mi / 10:07/mi / 9:59/mi\n\nHR drift: 132.1 → 138.9 (+6.7 bpm)\n\nTime in zones: Z1 4.9% · Z2 95.1% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑95 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 28\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 6/10  ·  Pain: 1/10 (Knee a little tight for the first mile, then fine)\n\n### Thu Aug 20 — Easy Run — 5.00 mi / 50m 5s\n\nPace: 10:00/mi  ·  Avg HR 138 (73.8% max)  ·  Max HR 143  ·  Cad 344 spm\n\nSplits: 10:02/mi / 10:04/mi / 9:49/mi / 9:57/mi / 9:59/mi / 9:55/mi / 9:55/mi / 9:52/mi / 9:55/mi\n\nHR drift: 134.6 → 138.9 (+4.3 bpm)\n\nTime in zones: Z1 4% · Z2 96% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑95 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 35\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Sat Aug 22 — Easy Run — 5.00 mi / 49m 31s\n\nPace: 9:54/mi  ·  Avg HR 140 (74.9% max)  ·  Max HR 144  ·  Cad 344 spm\n\nSplits: 9:52/mi / 9:47/mi / 9:51/mi / 9:49/mi / 9:49/mi / 9:52/mi / 9:51/mi / 9:49/mi / 9:43/mi\n\nHR drift: 136.4 → 139.9 (+3.5 bpm)\n\nTime in zones: Z1 2% · Z2 98% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑69 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 35\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 8/10  ·  Pain: 0/10\n\n### Sun Aug 23 — Long Run — 10.00 mi / 1h 40m\n\nPace: 10:02/mi  ·  Avg HR 146 (78.1% max)  ·  Max HR 152  ·  Cad 344 spm\n\nSplits: 9:47/mi / 10:02/mi / 9:57/mi / 9:57/mi / 9:55/mi / 9:49/mi / 9:54/mi / 9:52/mi / 9:57/mi / 9:54/mi / 9:59/mi / 9:52/mi / 9:59/mi / 9:59/mi / 9:54/mi / 9:59/mi / 9:59/mi\n\nHR drift: 141.6 → 149.2 (+7.6 bpm)\n\nTime in zones: Z1 0% · Z2 45.9% · Z3 54.1% · Z4 0% · Z5 0%\n\nElevation: ↑184 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 70\n\nSimilar route: n/a\n\nRPE: 4/10  ·  Felt: 8/10  ·  Pain: 0/10\n\n### Long run — Sun Aug 23 — 10.00 mi / 1h 40m\n\nAvg pace: 10:02/mi  ·  Avg HR 146  ·  Drift: 141.6 → 149.2 (+7.6 bpm)\n\nSplits: 9:47/mi / 10:02/mi / 9:57/mi / 9:57/mi / 9:55/mi / 9:49/mi / 9:54/mi / 9:52/mi / 9:57/mi / 9:54/mi / 9:59/mi / 9:52/mi / 9:59/mi / 9:59/mi / 9:54/mi / 9:59/mi / 9:59/mi\n\nBack half avg pace: 9:57/mi vs front 9:54/mi (vs front half; Δ -2s/mi)\n\nFast finish? No (last 3 mi 1 s/mi slower than the rest)\n\n## Trends\n\n- **Easy pace (Easy Run, Recovery, untyped)**: 9:51/mi → 9:51/mi → 9:50/mi → 10:00/mi ███▁\n\n- **Avg easy HR**: 139 → 139 → 138 → 138 ▁▁██\n\n- **Easy runs**: 10:00/mi at 138 bpm, from 9:51/mi at 139 bpm three weeks ago\n\n- **Long-run distance** (max long-typed, else max run in week): 11.00 mi → 12.00 mi → 9.00 mi → 10.00 mi ▅█▁▃\n\n## Subjective recap\n\nPain: highest 1/10 (Tue)\n\nSleep avg this week: 7 hrs\n\nStrength, rehab or cross-training: 4 of 4 planned (Hip and glute work, foam roller every day)\n\nStress level: Normal\n\nBody check: Knee feels normal again, stairs fine since Wednesday\n\nGoing into next week feeling: Ready to get back to it\n",
+      "analysis": "## Why this plan\nKeep quality to one session, shoes as listed, and treat rest days as real rest.",
+      "prescribedWeek": {
+        "days": [
+          {
+            "run": null,
+            "date": "2026-08-17",
+            "dayType": "rest"
+          },
+          {
+            "run": {
+              "type": "easy",
+              "distanceM": 6400,
+              "structure": null
+            },
+            "date": "2026-08-18",
+            "dayType": "easy"
+          },
+          {
+            "run": null,
+            "date": "2026-08-19",
+            "dayType": "rest"
+          },
+          {
+            "run": {
+              "type": "easy",
+              "distanceM": 8100,
+              "structure": null
+            },
+            "date": "2026-08-20",
+            "dayType": "easy"
+          },
+          {
+            "run": null,
+            "date": "2026-08-21",
+            "dayType": "rest"
+          },
+          {
+            "run": {
+              "type": "easy",
+              "distanceM": 8100,
+              "structure": null
+            },
+            "date": "2026-08-22",
+            "dayType": "easy"
+          },
+          {
+            "run": {
+              "type": "long",
+              "distanceM": 16100,
+              "structure": null
+            },
+            "date": "2026-08-23",
+            "dayType": "long"
+          }
+        ],
+        "week": "2026-W34"
+      }
+    },
+    {
+      "isoWeek": "2026-W33",
+      "weekSessionId": "05a4c892-1728-4559-a7d4-fe3511da5693",
+      "recapMarkdown": "# Weekly Recap — 2026-W33 (Mon Aug 10 – Sun Aug 16, 2026)\n\n## Summary\n\n- Hard minutes (zones 4 and 5): 26 min, down 3 min\n\n| Metric | This week | Prev week | 3-wk avg | Δ |\n| --- | --- | --- | --- | --- |\n| Distance | 32.01 mi | 35.00 mi | 32.33 mi | -0.3 |\n| Runs | 5 | 5 | 5.0 | +0.0 |\n| Total time | 5h 17m | 5h 39m | 5h 14m | +3m |\n| Total elevation | 673 ft | 551 ft | 575 ft | +97 ft |\n| Relative effort | 280 | 296 | 256 | +24 |\n| Avg easy-run HR | 138 | 139 | 139 | -1 |\n\n## HR zone distribution (week total)\n\nZ1 ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  4.8%   (15m)\nZ2 █████████████████████████░░░░░░░░░░  71.6%   (3h 48m)\nZ3 █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  15.4%   (49m)\nZ4 ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  8.2%   (26m)\nZ5 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0%   (0m)\n\nEasy-running share: 76.41% (zones 1 and 2 of time with heart rate).\nTarget for this block: 80% or more. This week is below the target.\n\n## Run-by-run\n\n### Tue Aug 11 — Easy Run — 6.00 mi / 58m 58s\n\nPace: 9:49/mi  ·  Avg HR 139 (74.3% max)  ·  Max HR 144  ·  Cad 344 spm\n\nSplits: 9:51/mi / 9:41/mi / 9:46/mi / 9:49/mi / 9:49/mi / 9:44/mi / 9:49/mi / 9:51/mi / 9:39/mi / 9:39/mi\n\nHR drift: 136 → 139.6 (+3.6 bpm)\n\nTime in zones: Z1 1.7% · Z2 98.3% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑157 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 41\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Wed Aug 12 — Threshold — 8.00 mi / 1h 11m\n\nPace: 8:59/mi  ·  Avg HR 151 (80.7% max)  ·  Max HR 168  ·  Cad 353 spm\n\nSplits: 9:49/mi / 9:47/mi / 9:52/mi / 9:44/mi / 7:58/mi / 8:04/mi / 7:58/mi / 7:53/mi / 7:58/mi / 8:04/mi / 8:00/mi / 9:49/mi / 9:55/mi / 9:52/mi / 10:00/mi\n\nReps: 7 reps, avg 4:34 at 7:59/mi, fade 0% (by pace)\n\nHR drift: 134.2 → 147.4 (+13.2 bpm)\n\nTime in zones: Z1 2.8% · Z2 40.2% · Z3 20.9% · Z4 36.2% · Z5 0%\n\nElevation: ↑171 ft\n\nShoe: Saucony Endorphin Speed 4 (56 mi)\n\nRelative effort: 108\n\nSimilar route: n/a\n\nRPE: 7/10  ·  Felt: 8/10  ·  Pain: 0/10\n\n### Thu Aug 13 — Easy Run — 5.00 mi / 49m 5s\n\nPace: 9:49/mi  ·  Avg HR 138 (73.8% max)  ·  Max HR 143  ·  Cad 344 spm\n\nSplits: 9:44/mi / 9:47/mi / 9:46/mi / 9:39/mi / 9:46/mi / 9:43/mi / 9:47/mi / 9:44/mi / 9:46/mi\n\nHR drift: 135.2 → 139.4 (+4.2 bpm)\n\nTime in zones: Z1 2% · Z2 98% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑72 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 34\n\nSimilar route: n/a\n\nNotes (from app): \"Outside of my right knee felt tight on the hill at the end.\"\n\nRPE: 3/10  ·  Felt: 6/10  ·  Pain: 2/10 (Outside of right knee tight on the last hill)\n\n### Sat Aug 15 — Easy Run — 4.00 mi / 39m 37s\n\nPace: 9:54/mi  ·  Avg HR 138 (73.8% max)  ·  Max HR 143  ·  Cad 344 spm\n\nSplits: 9:51/mi / 9:44/mi / 9:47/mi / 9:54/mi / 9:52/mi / 9:47/mi / 9:46/mi\n\nHR drift: 134.1 → 139.4 (+5.3 bpm)\n\nTime in zones: Z1 2.5% · Z2 97.5% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑62 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 28\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 6/10  ·  Pain: 1/10 (Knee a little tight before the run, fine during)\n\n### Sun Aug 16 — Long Run — 9.00 mi / 1h 38m\n\nPace: 10:57/mi  ·  Avg HR 143 (75.9% max)  ·  Max HR 151  ·  Cad 343 spm\n\nSplits: 9:59/mi / 9:52/mi / 9:54/mi / 10:04/mi / 9:55/mi / 9:57/mi / 9:47/mi / 9:49/mi / 9:55/mi / 9:54/mi / 9:54/mi / 9:51/mi / 10:44/mi / 10:52/mi / 10:53/mi / 17:39/mi\n\nHR drift: 141.8 → 130.7 (-11.2 bpm)\n\nTime in zones: Z1 10.5% · Z2 54.9% · Z3 34.6% · Z4 0% · Z5 0%\n\nElevation: ↑210 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 69\n\nSimilar route: n/a\n\nNotes (from app): \"Outside of right knee started to hurt around mile 7, worse on the downhills. Stopped at 8.5 and walked home.\"\n\nRPE: 6/10  ·  Felt: 3/10  ·  Pain: 4/10 (Outside of right knee, sharp on downhills from mile 7. Walked the last half mile.)\n\n### Long run — Sun Aug 16 — 9.00 mi / 1h 38m\n\nAvg pace: 10:57/mi  ·  Avg HR 143  ·  Drift: 141.8 → 130.7 (-11.2 bpm)\n\nSplits: 9:59/mi / 9:52/mi / 9:54/mi / 10:04/mi / 9:55/mi / 9:57/mi / 9:47/mi / 9:49/mi / 9:55/mi / 9:54/mi / 9:54/mi / 9:51/mi / 10:44/mi / 10:52/mi / 10:53/mi / 17:39/mi\n\nBack half avg pace: 11:13/mi vs front 9:55/mi (vs front half; Δ -78s/mi)\n\nFast finish? No (last 3 mi 91 s/mi slower than the rest)\n\n## Trends\n\n- **Easy pace (Easy Run, Recovery, untyped)**: 9:53/mi → 9:51/mi → 9:51/mi → 9:50/mi ▁▅▅█\n\n- **Avg easy HR**: 139 → 139 → 139 → 138 ▁▁▁█\n\n- **Easy runs**: 9:50/mi at 138 bpm, from 9:53/mi at 139 bpm three weeks ago (improving)\n\n- **Long-run distance** (max long-typed, else max run in week): 10.00 mi → 11.00 mi → 12.00 mi → 9.00 mi ▃▅█▁\n\n## Subjective recap\n\nPain: highest 4/10 (Sun)\n\nSleep avg this week: 7 hrs\n\nStrength, rehab or cross-training: 1 of 2 planned\n\nStress level: Normal\n\nBody check: Right knee aches going down stairs today. Never had this before.\n\nGoing into next week feeling: Worried about the knee\n\n## Questions for coach\n\n1. Is this an IT band thing? Should I still do Wednesday's tempo?\n",
+      "analysis": "## Why this plan\nKeep quality to one session, shoes as listed, and treat rest days as real rest.",
+      "prescribedWeek": {
+        "days": [
+          {
+            "run": null,
+            "date": "2026-08-10",
+            "line": "Mon 2026-08-10: rest",
+            "notes": null,
+            "parsed": true,
+            "dayType": "rest",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "easy",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 9656,
+              "structure": null
+            },
+            "date": "2026-08-11",
+            "line": "Tue 2026-08-11: easy, 6 mi",
+            "notes": null,
+            "parsed": true,
+            "dayType": "easy",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "quality",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 12875,
+              "structure": null
+            },
+            "date": "2026-08-12",
+            "line": "Wed 2026-08-12: tempo, 8 mi with 4 mi at 8:00/mi in the middle",
+            "notes": "with 4 mi at 8:00/mi in the middle",
+            "parsed": true,
+            "dayType": "quality",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "easy",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 8047,
+              "structure": null
+            },
+            "date": "2026-08-13",
+            "line": "Thu 2026-08-13: easy, 5 mi",
+            "notes": null,
+            "parsed": true,
+            "dayType": "easy",
+            "strength": null
+          },
+          {
+            "run": null,
+            "date": "2026-08-14",
+            "line": "Fri 2026-08-14: rest",
+            "notes": null,
+            "parsed": true,
+            "dayType": "rest",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "easy",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 6437,
+              "structure": null
+            },
+            "date": "2026-08-15",
+            "line": "Sat 2026-08-15: easy, 4 mi",
+            "notes": null,
+            "parsed": true,
+            "dayType": "easy",
+            "strength": null
+          },
+          {
+            "run": {
+              "type": "long",
+              "shoes": null,
+              "paceOrHr": null,
+              "distanceM": 20921,
+              "structure": null
+            },
+            "date": "2026-08-16",
+            "line": "Sun 2026-08-16: long, 13 mi easy, HR under 150",
+            "notes": "easy, HR under 150",
+            "parsed": true,
+            "dayType": "long",
+            "strength": null
+          }
+        ],
+        "week": "2026-W33"
+      }
+    },
+    {
+      "isoWeek": "2026-W32",
+      "weekSessionId": "c09d4100-a4b8-4c7c-932e-50ecbaa7d01d",
+      "recapMarkdown": "# Weekly Recap — 2026-W32 (Mon Aug 3 – Sun Aug 9, 2026)\n\n## Summary\n\n- Hard minutes (zones 4 and 5): 29 min, up 29 min\n\n| Metric | This week | Prev week | 3-wk avg | Δ |\n| --- | --- | --- | --- | --- |\n| Distance | 35.00 mi | 32.00 mi | 20.67 mi | +14.3 |\n| Runs | 5 | 5 | 3.3 | +1.7 |\n| Total time | 5h 39m | 5h 12m | 3h 21m | +2h 18m |\n| Total elevation | 551 ft | 646 ft | 392 ft | +160 ft |\n| Relative effort | 296 | 218 | 157 | +139 |\n| Avg easy-run HR | 139 | 139 | 139 | +0 |\n\n## HR zone distribution (week total)\n\nZ1 █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  1.8%   (6m)\nZ2 ███████████████████████░░░░░░░░░░░░  66.1%   (3h 45m)\nZ3 ████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  23.6%   (1h 20m)\nZ4 ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  8.5%   (29m)\nZ5 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0%   (0m)\n\nEasy-running share: 67.88% (zones 1 and 2 of time with heart rate).\nTarget for this block: 80% or more. This week is below the target.\n\n## Run-by-run\n\n### Tue Aug 4 — Easy Run — 6.00 mi / 59m 7s\n\nPace: 9:51/mi  ·  Avg HR 139 (74.3% max)  ·  Max HR 143  ·  Cad 344 spm\n\nSplits: 9:43/mi / 9:44/mi / 9:44/mi / 9:49/mi / 9:51/mi / 9:46/mi / 9:49/mi / 9:49/mi / 9:49/mi / 9:52/mi\n\nHR drift: 135.6 → 139.8 (+4.2 bpm)\n\nTime in zones: Z1 3.4% · Z2 96.6% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑92 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 41\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Wed Aug 5 — Threshold — 8.00 mi / 1h 11m\n\nPace: 8:58/mi  ·  Avg HR 153 (81.8% max)  ·  Max HR 168  ·  Cad 353 spm\n\nSplits: 9:44/mi / 9:44/mi / 9:43/mi / 8:03/mi / 10:44/mi / 8:00/mi / 10:39/mi / 7:56/mi / 10:45/mi / 9:54/mi / 9:55/mi\n\nReps: 3 reps, avg 11:59 at 7:59/mi, fade -1%, rests 3:00 (by pace)\n\nHR drift: 136.3 → 151.2 (+14.9 bpm)\n\nTime in zones: Z1 2.8% · Z2 30.3% · Z3 26.5% · Z4 40.4% · Z5 0%\n\nElevation: ↑118 ft\n\nShoe: Saucony Endorphin Speed 4 (56 mi)\n\nRelative effort: 108\n\nSimilar route: n/a\n\nRPE: 7/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Thu Aug 6 — Easy Run — 5.00 mi / 49m 22s\n\nPace: 9:52/mi  ·  Avg HR 139 (74.3% max)  ·  Max HR 143  ·  Cad 345 spm\n\nSplits: 9:55/mi / 9:43/mi / 9:44/mi / 9:49/mi / 9:55/mi / 9:51/mi / 9:43/mi / 9:46/mi / 9:47/mi\n\nHR drift: 135.3 → 140.3 (+5 bpm)\n\nTime in zones: Z1 2% · Z2 98% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑102 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 35\n\nSimilar route: n/a\n\nRPE: 3/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Sat Aug 8 — Easy Run — 4.00 mi / 39m 25s\n\nPace: 9:51/mi  ·  Avg HR 138 (73.8% max)  ·  Max HR 143  ·  Cad 344 spm\n\nSplits: 9:44/mi / 9:41/mi / 9:47/mi / 9:51/mi / 9:44/mi / 9:49/mi / 9:46/mi\n\nHR drift: 134 → 139.1 (+5.1 bpm)\n\nTime in zones: Z1 2.5% · Z2 97.5% · Z3 0% · Z4 0% · Z5 0%\n\nElevation: ↑79 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 28\n\nSimilar route: n/a\n\nRPE: 2/10  ·  Felt: 8/10  ·  Pain: 0/10\n\n### Sun Aug 9 — Long Run — 12.00 mi / 2h 0m\n\nPace: 10:00/mi  ·  Avg HR 146 (78.1% max)  ·  Max HR 152  ·  Cad 344 spm\n\nSplits: 9:57/mi / 9:57/mi / 9:52/mi / 9:51/mi / 9:59/mi / 9:51/mi / 9:54/mi / 9:55/mi / 9:54/mi / 9:59/mi / 9:57/mi / 9:52/mi / 9:54/mi / 9:59/mi / 10:00/mi / 9:54/mi / 10:04/mi / 9:54/mi / 9:57/mi / 9:59/mi\n\nHR drift: 142.5 → 149.1 (+6.6 bpm)\n\nTime in zones: Z1 0% · Z2 49.1% · Z3 50.9% · Z4 0% · Z5 0%\n\nElevation: ↑161 ft\n\nShoe: Brooks Ghost 16 (149 mi)\n\nRelative effort: 84\n\nSimilar route: n/a\n\nRPE: 5/10  ·  Felt: 7/10  ·  Pain: 0/10\n\n### Long run — Sun Aug 9 — 12.00 mi / 2h 0m\n\nAvg pace: 10:00/mi  ·  Avg HR 146  ·  Drift: 142.5 → 149.1 (+6.6 bpm)\n\nSplits: 9:57/mi / 9:57/mi / 9:52/mi / 9:51/mi / 9:59/mi / 9:51/mi / 9:54/mi / 9:55/mi / 9:54/mi / 9:59/mi / 9:57/mi / 9:52/mi / 9:54/mi / 9:59/mi / 10:00/mi / 9:54/mi / 10:04/mi / 9:54/mi / 9:57/mi / 9:59/mi\n\nBack half avg pace: 9:57/mi vs front 9:55/mi (vs front half; Δ -2s/mi)\n\nFast finish? No (last 3 mi 3 s/mi slower than the rest)\n\n## Trends\n\n- **Easy pace (Easy Run, Recovery, untyped)**: — → 9:53/mi → 9:51/mi → 9:51/mi ▁▁██\n\n- **Avg easy HR**: — → 139 → 139 → 139 ▁▅▅▅\n\n- **Easy runs**: 9:51/mi at 139 bpm, from 9:53/mi at 139 bpm two weeks ago\n\n- **Long-run distance** (max long-typed, else max run in week): — → 10.00 mi → 11.00 mi → 12.00 mi ▁▁▅█ (improving)\n\n## Subjective recap\n\nPain: highest 0/10 (Tue, Wed, Thu, Sat, Sun)\n\nSleep avg this week: 7 hrs\n\nStrength, rehab or cross-training: 2 of 2 planned\n\nStress level: Normal\n\nBody check: Legs tired after the long run, fine otherwise\n\nGoing into next week feeling: Good\n",
+      "analysis": "## Why this plan\nKeep quality to one session, shoes as listed, and treat rest days as real rest.",
+      "prescribedWeek": {
+        "days": [
+          {
+            "run": null,
+            "date": "2026-08-03",
+            "dayType": "rest"
+          },
+          {
+            "run": {
+              "type": "easy",
+              "distanceM": 9700,
+              "structure": null
+            },
+            "date": "2026-08-04",
+            "dayType": "easy"
+          },
+          {
+            "run": {
+              "type": "quality",
+              "distanceM": 12900,
+              "structure": "3 x 1.5 mi threshold"
+            },
+            "date": "2026-08-05",
+            "dayType": "quality"
+          },
+          {
+            "run": {
+              "type": "easy",
+              "distanceM": 8100,
+              "structure": null
+            },
+            "date": "2026-08-06",
+            "dayType": "easy"
+          },
+          {
+            "run": null,
+            "date": "2026-08-07",
+            "dayType": "rest"
+          },
+          {
+            "run": {
+              "type": "easy",
+              "distanceM": 6400,
+              "structure": null
+            },
+            "date": "2026-08-08",
+            "dayType": "easy"
+          },
+          {
+            "run": {
+              "type": "long",
+              "distanceM": 19300,
+              "structure": null
+            },
+            "date": "2026-08-09",
+            "dayType": "long"
+          }
+        ],
+        "week": "2026-W32"
+      }
+    }
+  ],
+  "recentHistoryLimit": 4,
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "coaching": {
+    "phase": "build",
+    "weeksToRace": 7,
+    "unitPreference": "imperial",
+    "maxHeartRateBpm": 187
+  },
+  "planWeek": {
+    "isoWeek": "2026-W37",
+    "start": "2026-09-07T05:00:00.000Z",
+    "end": "2026-09-14T04:59:59.999Z",
+    "startDate": "2026-09-07",
+    "endDate": "2026-09-13"
+  },
+  "prescribedWeek": {
+    "days": [
+      {
+        "run": null,
+        "date": "2026-08-31",
+        "dayType": "rest"
+      },
+      {
+        "run": {
+          "type": "easy",
+          "distanceM": 9700,
+          "structure": null
+        },
+        "date": "2026-09-01",
+        "dayType": "easy"
+      },
+      {
+        "run": {
+          "type": "quality",
+          "distanceM": 12900,
+          "structure": "8 with 5 at marathon pace"
+        },
+        "date": "2026-09-02",
+        "dayType": "quality"
+      },
+      {
+        "run": {
+          "type": "easy",
+          "distanceM": 8100,
+          "structure": null
+        },
+        "date": "2026-09-03",
+        "dayType": "easy"
+      },
+      {
+        "run": null,
+        "date": "2026-09-04",
+        "dayType": "rest"
+      },
+      {
+        "run": {
+          "type": "easy",
+          "distanceM": 6400,
+          "structure": null
+        },
+        "date": "2026-09-05",
+        "dayType": "easy"
+      },
+      {
+        "run": {
+          "type": "long",
+          "distanceM": 22500,
+          "structure": null
+        },
+        "date": "2026-09-06",
+        "dayType": "long"
+      }
+    ],
+    "week": "2026-W36"
+  },
+  "prescribedWeekOutcomes": [
+    {
+      "date": "2026-08-31",
+      "state": "rest",
+      "actualDistanceM": 0
+    },
+    {
+      "date": "2026-09-01",
+      "state": "done",
+      "actualDistanceM": 9660
+    },
+    {
+      "date": "2026-09-02",
+      "state": "done",
+      "actualDistanceM": 12880
+    },
+    {
+      "date": "2026-09-03",
+      "state": "done",
+      "actualDistanceM": 8050
+    },
+    {
+      "date": "2026-09-04",
+      "state": "rest",
+      "actualDistanceM": 0
+    },
+    {
+      "date": "2026-09-05",
+      "state": "done",
+      "actualDistanceM": 6440
+    },
+    {
+      "date": "2026-09-06",
+      "state": "done",
+      "actualDistanceM": 22530
+    }
+  ]
+}

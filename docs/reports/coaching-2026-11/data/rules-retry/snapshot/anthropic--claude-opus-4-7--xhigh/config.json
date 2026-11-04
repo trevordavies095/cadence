@@ -1,0 +1,14 @@
+{
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "provider": "anthropic",
+  "baseUrlHost": null,
+  "model": "claude-opus-4-7",
+  "effort": "xhigh",
+  "repeats": 1,
+  "note": "Anthropic API",
+  "startedAt": "2026-11-04T11:36:20.348Z",
+  "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614",
+  "dryRun": false,
+  "rulesRetry": true,
+  "inputs": "demo snapshot"
+}

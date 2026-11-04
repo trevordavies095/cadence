@@ -1,0 +1,216 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w13.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:53:53.524Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 16821,
+  "outputTokens": 1779,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 3638,
+  "estimatedInputTokens": 9287,
+  "timing": {
+    "ttftMs": 21255,
+    "totalMs": 65671,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 21255,
+        "totalMs": 51062,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 16821,
+        "outputTokens": 1779
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 2536,
+        "totalMs": 14609,
+        "request": {
+          "kind": "fix_rules",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 17690,
+        "outputTokens": 723
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-19",
+    "isoWeek": "2026-W43",
+    "recentWeeklyM": 65673.30528
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Allow a two‑week gentle recovery before boosting mileage toward the Thanksgiving 10‑K.",
+    "flags": [
+      {
+        "title": "Quad soreness",
+        "detail": "watch for discomfort during easy runs. Recovery pace: keep heart rate in zone 2, avoid hard effort. Thanksgiving 10K plan: start low mileage, gradually build. Heart‑rate drift: note increases on easy days. Sleep: aim for 7–8 hrs to support recovery."
+      }
+    ],
+    "answers": [
+      {
+        "question": "How long before I can run again? A friend wants me to race the Thanksgiving 10K in five weeks.",
+        "answer": "After the marathon, give your legs two full weeks of very light running.  Start with 3–5 mi easy runs on the first week, keeping heart rate in zone 2 and listening for any new pain.  In the second week you can add a short 5‑mile easy run, then a 6‑mile run that is still mostly zone 2.  This gives you a solid base for the 10‑K in five weeks.  In weeks 3–4 of that window you can add a moderate‑pace run (7–8 mi) and then a tempo or race‑pace 4‑mi effort in week 4, finishing with a easy run in week 5."
+      }
+    ],
+    "analysis": "This week is a two‑week recovery phase after the marathon. The athlete still reports quad soreness and a blister, so a hard session would risk re‑injury. Replacing the Wednesday quality run with an easy run keeps the load low and allows the body to heal while still providing movement. The rest of the week remains light, maintaining 80% easy effort and no additional hard work.",
+    "prescribedWeek": {
+      "week": "2026-W43",
+      "days": [
+        {
+          "date": "2026-10-19",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-10-19: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-20",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, flat route. Loosens the legs after the long run.",
+          "line": "Tue 2026-10-20: easy, 5 mi, heart rate under 150, flat route. Loosens the legs after the long run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-21",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "relaxed pacing. Keeps legs moving.",
+          "line": "Wed 2026-10-21: easy, 5 mi, relaxed pacing. Keeps legs moving.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-22",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "relaxed pacing. Keeps legs moving.",
+          "line": "Thu 2026-10-22: easy, 3 mi, relaxed pacing. Keeps legs moving.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-23",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-10-23: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 3219,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "low intensity. Keeps training consistent.",
+          "line": "Sat 2026-10-24: easy, 2 mi, low intensity. Keeps training consistent.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-25",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 2414,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "very light effort. Finishes the week with minimal load.",
+          "line": "Sun 2026-10-25: easy, 1.5 mi, very light effort. Finishes the week with minimal load.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Consider adding a short 6‑mile easy run in week 2 if soreness is minimal. Think about a 4‑mi tempo in week 4 of the 10‑K plan if feeling strong."
+    ],
+    "safetyCallouts": [
+      {
+        "title": "Manage quad soreness.",
+        "body": "If pain increases, stop that muscle group and seek professional advice. Info: Blister care. Keep the toe clean and consider a padded sock or covering to prevent worsening.",
+        "severity": "info"
+      }
+    ]
+  }
+}

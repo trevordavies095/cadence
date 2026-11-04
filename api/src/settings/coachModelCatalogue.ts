@@ -1,5 +1,5 @@
 import { TESTED_COACH_MODEL, type CoachModel } from "../llm/coachModel.js";
-import { ANTHROPIC_EFFORT_LEVELS, type AnthropicEffort } from "../llm/effort.js";
+import { ANTHROPIC_EFFORT_LEVELS, effortWithinCeiling, type AnthropicEffort } from "../llm/effort.js";
 
 export const TESTED_COACH_MODEL_DISPLAY_NAME = "Claude Opus 4.7";
 
@@ -43,14 +43,17 @@ type ModelsResponse = {
 
 /**
  * Models that can take Cadence's request: adaptive thinking and at least one
- * effort level. Others (Haiku 4.5 and older use budget_tokens) are left out.
+ * effort level, listed up to the model's effort ceiling (src/llm/effort.ts).
+ * Others (Haiku 4.5 and older use budget_tokens) are left out.
  */
 function readListing(body: ModelsResponse): ListedModel[] {
   const listed: ListedModel[] = [];
   for (const m of body.data ?? []) {
     if (typeof m.id !== "string" || m.capabilities?.thinking?.types?.adaptive?.supported !== true) continue;
+    // Efforts above the model's ceiling cannot finish a weekly read, so they are not offered.
     const efforts = ANTHROPIC_EFFORT_LEVELS.filter(
-      (level) => m.capabilities?.effort?.[level]?.supported === true,
+      (level) =>
+        m.capabilities?.effort?.[level]?.supported === true && effortWithinCeiling(m.id as string, level) === level,
     );
     if (efforts.length === 0) continue;
     listed.push({

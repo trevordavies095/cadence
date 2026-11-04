@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The plan is safe and sensible. After a fully missed week, the draft repeats the last block instead of moving on. Three walk-runs total about 7 km, which matches her recent 6.8–7.3 km weeks. The sessions build gently from 6x to 8x 2 min run / 1 min walk, with easy heart-rate caps and rest days between, and it keeps her Mon/Wed/Sat routine and dog walks. One missed week with 'all good' isn't a real return from a break, so repeating the load doesn't rush her. Each day is clear enough to run. It loses a point for being generic and mechanical. It never asks why the week was missed, which matters most for keeping a new runner consistent. It doesn't respond to her excitement. It doesn't link the plan to the 15 November 5K goal, about 7 weeks away. The line 'four rest days were kept, so nothing was overrun' is filler and reads oddly to a beginner.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:50:43.303Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2080,
+  "outputTokens": 806,
+  "thinkingTokens": 377,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 998,
+  "costUsd": 0.024440000000000003,
+  "timing": {
+    "ttftMs": 3077,
+    "totalMs": 9276,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3077,
+        "totalMs": 9276,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2080,
+        "outputTokens": 806
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The plan is safe and sensible. After a fully missed week, the draft repeats the last block instead of moving on. Three walk-runs total about 7 km, which matches her recent 6.8–7.3 km weeks. The sessions build gently from 6x to 8x 2 min run / 1 min walk, with easy heart-rate caps and rest days between, and it keeps her Mon/Wed/Sat routine and dog walks. One missed week with 'all good' isn't a real return from a break, so repeating the load doesn't rush her. Each day is clear enough to run. It loses a point for being generic and mechanical. It never asks why the week was missed, which matters most for keeping a new runner consistent. It doesn't respond to her excitement. It doesn't link the plan to the 15 November 5K goal, about 7 weeks away. The line 'four rest days were kept, so nothing was overrun' is filler and reads oddly to a beginner."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: All three planned runs from Sep 21 – 27 were skipped, so the plan for Sep 28 – Oct 4 repeats the last sessions you…\nThe main issue is that the whole Sep 21 – 27 plan was skipped, not that any session went wrong. The planned runs on Mon, Wed and Sat did not happen, and the four rest days were kept, so nothing was overrun.\nNext week:\nMon: easy, 18 min (about 2 km), 6 x 2 min run and 1 min walk, heart rate under 145. This…\nTue: rest, no running. Dog walks are fine. A full day off before Wednesday lets the legs…\nWed: easy, 21 min (about 2.3 km), 7 x 2 min run and 1 min walk, heart rate under 145…\nThu: rest, no running. Dog walks are fine. Two rest days in a row keep the week light…\nFri: rest, no running. Dog walks are fine. A quiet day before Saturday keeps the weekend…\nSat: easy, 24 min (about 2.7 km), 8 x 2 min run and 1 min walk, heart rate under 145…\nSun: rest, no running. A full day off after the week's three runs lets the habit build…\n\nScore this draft: call submit_coaching_score once."
+}

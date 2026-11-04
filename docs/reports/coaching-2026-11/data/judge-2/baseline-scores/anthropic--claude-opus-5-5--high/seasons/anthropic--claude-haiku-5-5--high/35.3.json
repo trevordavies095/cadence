@@ -1,0 +1,61 @@
+{
+  "input": "seasons/35",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft answers Nessa's question directly and honestly: don't do all three runs, and drop the two missed runs rather than adding them back. It explains why. The fever and the cough are taken seriously. Monday and Tuesday are full rest, with advice on sleep for the tiredness she describes. It flags a professional check for the recent fever and the ongoing cough, and says not to run with a fever. The return is gentle: two 20-minute walk-runs on Wednesday and Saturday, with about 12 minutes of running in each and rest days in between. That's well below her recent 7 km weeks, and both sessions are optional (\"only if you feel up to it\"). So the illness rule and the volume rule are respected. Each day can be run as written. It holds back from a 5 because effort 5/10 is a bit high for someone who is 'wiped out' (3-4/10 would suit better). It also gives no clear rule to stop if the fever comes back or the cough moves to her chest. And it barely connects the plan to the 15 November 5K, or says whether her goal of running the whole way still works.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:56:22.286Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2359,
+  "outputTokens": 1032,
+  "thinkingTokens": 562,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1237,
+  "costUsd": 0.030076000000000002,
+  "timing": {
+    "ttftMs": 2795,
+    "totalMs": 11466,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2795,
+        "totalMs": 11466,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2359,
+        "outputTokens": 1032
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft answers Nessa's question directly and honestly: don't do all three runs, and drop the two missed runs rather than adding them back. It explains why. The fever and the cough are taken seriously. Monday and Tuesday are full rest, with advice on sleep for the tiredness she describes. It flags a professional check for the recent fever and the ongoing cough, and says not to run with a fever. The return is gentle: two 20-minute walk-runs on Wednesday and Saturday, with about 12 minutes of running in each and rest days in between. That's well below her recent 7 km weeks, and both sessions are optional (\"only if you feel up to it\"). So the illness rule and the volume rule are respected. Each day can be run as written. It holds back from a 5 because effort 5/10 is a bit high for someone who is 'wiped out' (3-4/10 would suit better). It also gives no clear rule to stop if the fever comes back or the cough moves to her chest. And it barely connects the plan to the 15 November 5K, or says whether her goal of running the whole way still works."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3 km\nThis week: 2.8 km over 1 run. Missed 2 of 3 planned runs.\nBody: \"Came down with a cold on Tuesday that turned into a fever, 38.4 on Wednesday night. No fever since Friday but still coughing and blocked up.\"\nFeeling: \"Wiped out.\"\nAsks: \"Can I do all three runs next week and add the two I missed?\"\n\n── THE DRAFT ──\nTells Nessa: Last week ended after one run because a cold turned into a fever, so recovery now matters more than mileage. …\nAnswers: (1) No, not all three runs, and the two missed runs should not be added on top. Next week has two short sessions, Wed and Sat, and you run them only if you feel up to it. (2) Catch-up runs add load while your body is still recovering from a fever, and a setback would cost you more time than the missed runs did. The missed sessions are lost.\nSafety flag: A recent fever and ongoing cough need a professional check\nSafety flag: Skip running while you have a fever\nNext week:\nMon: rest, no running. Recovery is the job this week, and gentle walking with the dog is…\nTue: rest, no running. Aim for 7 hours of sleep or more, since sleep is where the…\nWed: easy, 20 min walk-run: 2 min walk, then 6 x (2 min run, 1 min walk), at effort 5/10…\nThu: rest, no running. A full rest day between sessions lets the body absorb the first…\nFri: rest, no running. Keeps two clear days before the weekend session.\nSat: easy, 20 min walk-run, same pattern as Wednesday, at effort 5/10 or less. Repeats…\nSun: rest, no running. Ends the week with recovery and sets up a steady return the week…\n\nScore this draft: call submit_coaching_score once."
+}

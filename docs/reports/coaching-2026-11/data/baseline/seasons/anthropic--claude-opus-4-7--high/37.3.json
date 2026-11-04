@@ -1,0 +1,185 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w5.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:34:29.794Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 6 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 14202,
+  "outputTokens": 1823,
+  "thinkingTokens": 787,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 982,
+  "estimatedInputTokens": 6029,
+  "timing": {
+    "ttftMs": 4833,
+    "totalMs": 31483,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 4833,
+        "totalMs": 31483,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 14202,
+        "outputTokens": 1823
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 4267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Last week slipped by with no runs, so we pick up where you left off and nudge the run intervals from 2 minutes to 3. That keeps you honest to the race in six weeks without any catch-up.",
+    "flags": [
+      {
+        "title": "No runs last week",
+        "detail": "all three planned sessions were skipped. Body check said all good, so I am watching whether life, weather or motivation got in the way."
+      },
+      {
+        "title": "Easing back in",
+        "detail": "first week after a gap stays at the volume you handled before the cold, not above it."
+      },
+      {
+        "title": "Interval step-up",
+        "detail": "run blocks move from 2 minutes to 3 minutes. If any one feels like effort 8/10 or more, walk early."
+      },
+      {
+        "title": "Race countdown",
+        "detail": "six weeks to Nov 15. We need steady weeks more than big ones from here."
+      }
+    ],
+    "answers": [],
+    "analysis": "The reviewed week shows no runs on Mon, Wed or Sat, and nothing to replace them. Your body check and mood were good, so this is not an injury or illness story, and I am not going to treat it like one. Tell me in the next check-in what got in the way, so we plan around it.\n\nDo not try to make up the missed runs. Adding a fourth day or a longer Saturday now is how new runners get hurt, and it would not buy you anything by Nov 15. Three steady weeks of running will.\n\nThe small step this week is interval length, not total time. You handled 8 x 2 minutes well before the cold, so 6 x 3 minutes is the same running time with longer continuous efforts, which is what the race asks for. Saturday stretches to 30 minutes with 4-minute run blocks to start pointing at the full 5K.\n\nKeep the easy days easy: breathing should let you speak a short sentence. If a run block feels harder than that, cut it short and walk; the plan is a guide, not a test.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "6 x (3 min run / 1 min walk). Step the run intervals up from 2 to 3 minutes after a week off.",
+          "line": "Mon 2026-09-28: easy, walk-run 24 min, 6 x (3 min run / 1 min walk). Step the run intervals up from 2 to 3 minutes after a week off.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Protect the day after the first run back.",
+          "line": "Tue 2026-09-29: rest. Protect the day after the first run back.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "6 x (3 min run / 1 min walk). Repeat Monday to settle the new interval length.",
+          "line": "Wed 2026-09-30: easy, walk-run 24 min, 6 x (3 min run / 1 min walk). Repeat Monday to settle the new interval length.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Legs recover between run days.",
+          "line": "Thu 2026-10-01: rest. Legs recover between run days.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Freshen up for the longest run of the week.",
+          "line": "Fri 2026-10-02: rest. Freshen up for the longest run of the week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1800,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "5 x (4 min run / 2 min walk). Longer run blocks start pointing at race day.",
+          "line": "Sat 2026-10-03: easy, walk-run 30 min, 5 x (4 min run / 2 min walk). Longer run blocks start pointing at race day.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full day off before the next block.",
+          "line": "Sun 2026-10-04: rest. Full day off before the next block.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Note that the Sep 21 – 27 week had no runs completed, with no reason given in the check-in."
+    ]
+  }
+}

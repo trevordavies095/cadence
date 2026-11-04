@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft gives a direct, honest answer to Marisol's question: no 22-miler with the race moved to three weeks away. It also makes this her last big week before tapering, which is the right call. The plan comes to about 45 mi. That's a small step up from 42 and below her 53 mi peak. The 20 mi long run repeats a distance she has already done, so neither the volume nor the long run jumps. Marathon pace of 8:30–8:40/mi fits her sub-3:45 goal (about 8:35/mi). Rest days fall on Monday and Friday, matching her schedule, and every day can be run as written. One weakness: 6 mi at marathon pace on Wednesday plus 8 mi at marathon pace inside Sunday's 20 is a lot of race-pace work three weeks out. The draft also handles her anxiety about the new date only briefly (\"trust the build\"), and it mentions a 17 mi run last Sunday that the card doesn't confirm. Overall it's safe and well fitted to her.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:19:22.327Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2330,
+  "outputTokens": 850,
+  "thinkingTokens": 396,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1172,
+  "costUsd": 0.026320000000000003,
+  "timing": {
+    "ttftMs": 2497,
+    "totalMs": 8627,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2497,
+        "totalMs": 8627,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2330,
+        "outputTokens": 850
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft gives a direct, honest answer to Marisol's question: no 22-miler with the race moved to three weeks away. It also makes this her last big week before tapering, which is the right call. The plan comes to about 45 mi. That's a small step up from 42 and below her 53 mi peak. The 20 mi long run repeats a distance she has already done, so neither the volume nor the long run jumps. Marathon pace of 8:30–8:40/mi fits her sub-3:45 goal (about 8:35/mi). Rest days fall on Monday and Friday, matching her schedule, and every day can be run as written. One weakness: 6 mi at marathon pace on Wednesday plus 8 mi at marathon pace inside Sunday's 20 is a lot of race-pace work three weeks out. The draft also handles her anxiety about the new date only briefly (\"trust the build\"), and it mentions a 17 mi run last Sunday that the card doesn't confirm. Overall it's safe and well fitted to her."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: With the race now 3 weekends away, this is your last big week: one marathon-pace workout mid-week and a 20 mi long run with marathon-pace…\nAnswers: (1) No, there is no room for a 22-miler, and chasing one now would cost more than it gives. Here is the reasoning. (2) The race is 3 weekends away. … (3) Trust the build. The work is done; the next 3 weeks are about sharpening and arriving fresh.\nNext week:\nMon: rest. Full day off to absorb Sunday's 17 mi.\nTue: easy, 6 mi, heart rate under 145, flat route. Loosens the legs for Wednesday.\nWed: quality, 9 mi with 2 mi warm-up, 6 mi at marathon pace (8:30 – 8:40/mi), 1 mi…\nThu: easy, 6 mi, heart rate under 145, truly conversational. Flushes the workout out.\nFri: rest. Protect Sunday.\nSat: easy, 4 mi, with 4 x 20 sec strides at the end. Primes the legs without adding…\nSun: long, 20 mi, 4 mi easy warm-up, then 8 mi at marathon pace (8:30 – 8:40/mi), then 8…\n\nScore this draft: call submit_coaching_score once."
+}

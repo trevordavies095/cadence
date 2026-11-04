@@ -1,0 +1,187 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w13.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:54:16.511Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 16821,
+  "outputTokens": 1318,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2761,
+  "estimatedInputTokens": 9287,
+  "timing": {
+    "ttftMs": 966,
+    "totalMs": 22986,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 966,
+        "totalMs": 22986,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 16821,
+        "outputTokens": 1318
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-19",
+    "isoWeek": "2026-W43",
+    "recentWeeklyM": 65673.30528
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "This week focuses on gentle recovery; keep runs light and rest days solid.",
+    "flags": [
+      {
+        "title": "Soreness monitoring",
+        "detail": "watch quads, calves after the race"
+      },
+      {
+        "title": "Heart‑rate stability",
+        "detail": "keep easy runs below 140 bpm"
+      },
+      {
+        "title": "Rest day importance",
+        "detail": "keep Mon and Fri strictly rest"
+      },
+      {
+        "title": "Progression",
+        "detail": "plan to add longer run after feeling strong"
+      }
+    ],
+    "answers": [
+      {
+        "question": "How long before I can run again? A friend wants me to race the Thanksgiving 10K in five weeks.",
+        "answer": "You can start running next week, but keep the mileage low and focus on recovery. Running a 10‑K in five weeks is doable if you stay comfortable and avoid high‑intensity sessions for now."
+      }
+    ],
+    "analysis": "This week lets the body settle from the marathon. Easy runs keep the legs moving without heavy load, while rest days provide recovery. The Monday and Friday rest days help prevent over‑loading and keep heart‑rate patterns stable. Soreness is expected, especially in the quads, so monitor how it feels before adding any higher intensity work.\n\nThe athlete’s question about how soon to run again is answered by beginning next week with short, easy runs. The 10‑K in five weeks is realistic as long as the athlete stays comfortable and does not push into hard work until the body feels ready.\n\nPlan: 4 mi easy on Tue, 5 mi easy on Thu, 6 mi easy on Sat, with rest on the other days. This keeps total volume low but maintains a rhythm.",
+    "prescribedWeek": {
+      "week": "2026-W43",
+      "days": [
+        {
+          "date": "2026-10-19",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon Oct 19: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-20",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate under 140, flat route. Keeps legs moving without stress.",
+          "line": "Tue Oct 20: easy, 4 mi, keep heart rate under 140, flat route. Keeps legs moving without stress.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-21",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Wed Oct 21: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-22",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 140, gentle hills. Builds mild endurance.",
+          "line": "Thu Oct 22: easy, 5 mi, heart rate under 140, gentle hills. Builds mild endurance.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-23",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri Oct 23: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "steady pace, flat route. Gradually increases volume.",
+          "line": "Sat Oct 24: easy, 6 mi, steady pace, flat route. Gradually increases volume.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sun Oct 25: rest",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

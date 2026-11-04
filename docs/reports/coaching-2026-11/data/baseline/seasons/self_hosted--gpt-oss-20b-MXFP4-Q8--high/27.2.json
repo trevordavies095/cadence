@@ -1,0 +1,205 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w09.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:42:33.554Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 5 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 16674,
+  "outputTokens": 1172,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2759,
+  "estimatedInputTokens": 9382,
+  "timing": {
+    "ttftMs": 964,
+    "totalMs": 20439,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 964,
+        "totalMs": 20439,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 16674,
+        "outputTokens": 1172
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-21",
+    "isoWeek": "2026-W39",
+    "recentWeeklyM": 63194.91552
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Keep the volume steady with one quality session and a steady long run, making recovery a priority.",
+    "flags": [
+      {
+        "title": "Easy HR share",
+        "detail": "keep heart rate under 150 for 80%+ of easy sessions"
+      },
+      {
+        "title": "Quality effort",
+        "detail": "keep the 9‑mile workout moderate and avoid over‑exertion"
+      },
+      {
+        "title": "Long run pace",
+        "detail": "watch the pace; stay at or below easy pace"
+      },
+      {
+        "title": "Recovery Sat",
+        "detail": "keep intensity low, focus on recovery"
+      },
+      {
+        "title": "Total mileage",
+        "detail": "aim for 40‑42 mi, check weekly total"
+      }
+    ],
+    "answers": [
+      {
+        "question": "My club mate runs 70 miles a week before a marathon. I'm thinking of doubling to 80 next week to catch up, running twice a day. Would that work?",
+        "answer": "No, you don’t need to double‑up your mileage for a missed long run. Focus on maintaining the planned volume and quality. If you skip a session, add an easy run later to make up the miles."
+      }
+    ],
+    "analysis": "The athlete is on build phase, 5 weeks to race. Keeping one quality session and a long run is appropriate. Add a Saturday easy run for recovery. The overall volume stays around 41-42 miles, about 80% easy. The flags focus on HR share, quality effort, long run pace, recovery, and total mileage. The question from earlier week about missed long run is answered, advising no need to double up but to add back a short easy run if desired. No safety concerns.",
+    "prescribedWeek": {
+      "week": "2026-W39",
+      "days": [
+        {
+          "date": "2026-09-21",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-09-21: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-22",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep HR under 150, flat route",
+          "line": "Tue 2026-09-22: easy, 6 mi, keep HR under 150, flat route",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-23",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 14484,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "with 5 at marathon pace, moderate effort",
+          "line": "Wed 2026-09-23: quality, 9 mi with 5 at marathon pace, moderate effort",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "same as previous",
+          "line": "Thu 2026-09-24: easy, 6 mi, same as previous",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-09-25: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-26",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "relaxed, focus on recovery",
+          "line": "Sat 2026-09-26: easy, 4 mi, relaxed, focus on recovery",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-27",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 25750,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy pace, keep HR under 150",
+          "line": "Sun 2026-09-27: long, 16 mi, easy pace, keep HR under 150",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

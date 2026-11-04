@@ -1,0 +1,196 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w3.json",
+  "originalCallAt": null,
+  "model": "claude-haiku-5-5",
+  "replayedAt": "2026-11-04T11:53:17.697Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 8 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 10246,
+  "outputTokens": 8761,
+  "thinkingTokens": 7041,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 6211,
+  "estimatedInputTokens": 4505,
+  "timing": {
+    "ttftMs": 1847,
+    "totalMs": 42421,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 1847,
+        "totalMs": 42421,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 10246,
+        "outputTokens": 8761
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-14",
+    "isoWeek": "2026-W38",
+    "recentWeeklyM": 4220
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Last week ended after one run because a cold turned into a fever, so recovery now matters more than mileage. Next week is two short, easy walk-run sessions with full rest between, and the two missed runs are not made up.",
+    "flags": [
+      {
+        "title": "Missed runs",
+        "detail": "the Wed Sep 9 and Sat Sep 12 sessions were skipped during the illness, and they are not added back."
+      },
+      {
+        "title": "Still unwell",
+        "detail": "you have been fever-free only since Friday, and you are still coughing and congested, so every run next week depends on how you feel that morning."
+      },
+      {
+        "title": "Sleep and fatigue",
+        "detail": "you averaged 6 hours of sleep and feel wiped out, which slows recovery more than the runs do."
+      },
+      {
+        "title": "Return load",
+        "detail": "next week totals 40 minutes of running, about half of the 75 minutes planned for last week, so the body can rebuild first."
+      }
+    ],
+    "answers": [
+      {
+        "question": "Can I do all three runs next week and add the two I missed?",
+        "answer": "No, not all three runs, and the two missed runs should not be added on top. Next week has two short sessions, Wed and Sat, and you run them only if you feel up to it.\n\nCatch-up runs add load while your body is still recovering from a fever, and a setback would cost you more time than the missed runs did. The missed sessions are lost. The build comes back through steady weeks, not by squeezing in make-up runs."
+      }
+    ],
+    "analysis": "The week came apart after one session. Monday's walk-run went as planned: 24 minutes of 2-minute runs with 1-minute walks, at effort 6/10 with heart rate flat across the run. The cold started on Tuesday, and the next two planned runs were skipped.\n\n| Day | Planned | What happened |\n| --- | --- | --- |\n| Mon Sep 7 | Walk-run, 24 min | Done: 2.78 km in 23m 59s |\n| Wed Sep 9 | Walk-run, 24 min | Missed |\n| Sat Sep 12 | Walk-run, 27 min | Missed |\n\nThe four rest days were taken as rest, and nothing was overrun. The Monday run was done before the illness and was controlled, so it does not explain the week. The missed sessions were a result of being unwell, not of the plan being too hard.\n\nYour heart rate averaged 139 with a maximum of 146, which is about 76 percent of your maximum of 182. The run segments held about 7:40 per km and the walks about 11:30 per km. That is a comfortable pace for where you are, so the plan does not need changing for speed.\n\nA fever of 38.4 and a cough that is still there mean the first job is getting well. Two 20-minute sessions with rest days between keep the running easy and let you judge how you feel on each morning. If symptoms return or worsen, the right move is to skip the session, not to push through it.\n\nYour goal is to run the whole 5K, and you are at 2-minute runs with 1-minute walks. That gap closes over several weeks of steady running, so a lost week is recoverable if you come back gradually. Once you are clear of symptoms, the following weeks add run time slowly, with a lighter week every three or four weeks.",
+    "prescribedWeek": {
+      "week": "2026-W38",
+      "days": [
+        {
+          "date": "2026-09-14",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. Recovery is the job this week, and gentle walking with the dog is fine.",
+          "line": "Mon 2026-09-14: rest, no running. Recovery is the job this week, and gentle walking with the dog is fine.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-15",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. Aim for 7 hours of sleep or more, since sleep is where the recovery happens.",
+          "line": "Tue 2026-09-15: rest, no running. Aim for 7 hours of sleep or more, since sleep is where the recovery happens.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-16",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1200,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run: 2 min walk, then 6 x (2 min run, 1 min walk), at effort 5/10 or less. Skip it if you feel worse than today, because a short session that you can finish beats a longer one that sets you back.",
+          "line": "Wed 2026-09-16: easy, 20 min walk-run: 2 min walk, then 6 x (2 min run, 1 min walk), at effort 5/10 or less. Skip it if you feel worse than today, because a short session that you can finish beats a longer one that sets you back.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-17",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. A full rest day between sessions lets the body absorb the first run.",
+          "line": "Thu 2026-09-17: rest, no running. A full rest day between sessions lets the body absorb the first run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-18",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. Keeps two clear days before the weekend session.",
+          "line": "Fri 2026-09-18: rest, no running. Keeps two clear days before the weekend session.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1200,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run, same pattern as Wednesday, at effort 5/10 or less. Repeats the session only if Wednesday went well, so you finish the week with the load you can handle.",
+          "line": "Sat 2026-09-19: easy, 20 min walk-run, same pattern as Wednesday, at effort 5/10 or less. Repeats the session only if Wednesday went well, so you finish the week with the load you can handle.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. Ends the week with recovery and sets up a steady return the week after.",
+          "line": "Sun 2026-09-20: rest, no running. Ends the week with recovery and sets up a steady return the week after.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Add a note that a cold turned into a fever from Tue Sep 8 to Fri Sep 11, so the next few weeks are judged with that in mind.",
+      "Add that sleep averaged 6 hours in the week of Sep 7 – 13, so recovery can be watched alongside the runs."
+    ],
+    "safetyCallouts": [
+      {
+        "title": "A recent fever and ongoing cough need a professional check.",
+        "body": "See a doctor or pharmacist if the fever returns, your breathing feels hard, you get chest tightness, or the cough and congestion are not clearing.",
+        "severity": "caution"
+      },
+      {
+        "title": "Skip running while you have a fever.",
+        "body": "Restart only when you feel well, and stop a session if chest tightness, dizziness or breathlessness starts.",
+        "severity": "caution"
+      }
+    ]
+  }
+}

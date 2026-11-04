@@ -91,6 +91,12 @@
  *                       unset or empty fails the run before any call.
  *   --repeats <N>       replies per input (default 1)
  *   --note "<text>"     free text for config.json, such as the hardware and server
+ *   --rules-retry       send a weekly plan that trips a plan rule back once
+ *                       (coaching-quality ticket 11; the app's COACH_RULES_RETRY).
+ *                       Recorded in config.json; a folder run without it is
+ *                       refused, so before and after runs never mix. A dry run
+ *                       records it but the stub's second plan would be the
+ *                       same, so it does not ask again.
  *
  * Self-hosted needs --base-url and --model, and every call uses that model
  * (models pinned in packets are Anthropic ids). An Anthropic call pinned to a
@@ -132,7 +138,10 @@
  * (scripts/replayPlanLines.ts): for a weekly read its days total and parsed,
  * the dates that failed on the first parse and why, the dates the retry fixed,
  * bare numbers and dropped lines; for a mid-week reply the same over its
- * changes lines; null for About you. On a dry run, a wrapped
+ * changes lines; null for About you. A weekly read's file also saves `rules`
+ * (scripts/replayPlanRules.ts): the plan rules its plan tripped against its
+ * packet, by the app's own plan check, and the rules that could not be judged.
+ * On a dry run, a wrapped
  * packet's `stubRefusals` (a count) makes the stub refuse that many attempts
  * first, through that same loop, so the retry can be tested offline; a live run
  * ignores it.
@@ -178,6 +187,25 @@
  * each rubric item for baseline and candidate, the preference rate, and the
  * two pairs with the largest margin each way, quoted. Missing, partial or
  * malformed scores are reported, never fatal.
+ *
+ * The coach's packet (scripts/replayCoachPacket.ts): --coach-packet writes a
+ * Google Form for a running coach from the coaching run's roots and the hard
+ * set, one page per hard week with three anonymous drafts drawn across the
+ * configurations' repeat 1, and makes no calls:
+ *
+ *   npm run replay -- --coach-packet \
+ *     --roots ../.scratch/benchmark-coaching/baseline/seasons,../.scratch/benchmark-coaching/baseline/snapshot \
+ *     --seed 1 --packet-dir ../.scratch/benchmark-coaching/coach-packet
+ *
+ * --hard-set <file> names the weeks (tests/fixtures/hard-set.json when
+ * absent) and --athletes <file> the athletes' names and introductions
+ * (tests/fixtures/coach-packet-athletes.json when absent); --configuration
+ * <name>,... limits the draw (every configuration folder in the roots when
+ * absent); --packet-dir defaults to a coach-packet folder beside the roots'
+ * parent. It writes form.gs (an Apps Script to paste into script.google.com
+ * and run once: it creates the form and logs its links), preview.md (the same
+ * pages as text) and key.json (which configuration wrote each draft letter,
+ * the seed, the date), kept apart.
  */
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -205,7 +233,6 @@ import {
   buildStubMidWeekForm,
   buildStubWeeklyForm,
   createStubLlmPort,
-  recentWeeklyDistanceM,
   resolvePlanWeekStartMonday,
   resolveWeeklyPlanWeek,
 } from "../src/llm/stub.js";
@@ -222,11 +249,14 @@ import type {
 import { bannedTermsIn } from "../src/llm/vocabulary.js";
 import { packetUnit, weeklyReplyContext } from "../src/llm/weeklyContext.js";
 import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
+import { recentWeeklyDistanceM } from "../src/packet/recentTraining.js";
 import type { ModelPacket } from "../src/packet/types.js";
 import { normalizeSelfHostedBaseUrl, selfHostedEndpoint, selfHostedHost } from "../src/settings/selfHostedStore.js";
 import { createInstrumentedFetch, thinkingCharsOf, timeToFirstTokenMs } from "./instrumentedFetch.js";
 import { replayCheckFailures, type ReplayCheckFailure } from "./replayChecks.js";
 import { planLineSummary } from "./replayPlanLines.js";
+import { planRuleSummary } from "./replayPlanRules.js";
+import { writeCoachPacket, type CoachAthlete, type HardSetEntry } from "./replayCoachPacket.js";
 import { reviewResults, writeReviewPacks, type ReviewInput } from "./replayReview.js";
 import {
   configurationInputs,
@@ -308,6 +338,7 @@ const MODEL = MODEL_FLAG ?? TESTED_COACH_MODEL.model;
 const EFFORT = flagEffort();
 const REPEATS = flagRepeats();
 const NOTE = flagValue("--note", "some text");
+const RULES_RETRY = process.argv.includes("--rules-retry");
 const KEY_ENV = flagValue("--key-env", "an environment variable name");
 
 /** The self-hosted server's base URL, checked; null for Anthropic. */
@@ -327,6 +358,7 @@ function flagBaseUrl(): string | null {
 const BASE_URL = flagBaseUrl();
 
 const reviewPack = process.argv.includes("--review-pack");
+const coachPacket = process.argv.includes("--coach-packet");
 
 /** Every value of a flag that may repeat or take a comma-separated list, such as --candidate. */
 function flagValues(flag: string, what: string): string[] {
@@ -371,7 +403,7 @@ const ONLY_NAME = /^([^/\s]+)\/(\d+)$/;
  * on --report-only and --review-pack, which ignore it.
  */
 function flagOnly(): string[] | null {
-  if (reportOnly || reviewPack) return null;
+  if (reportOnly || reviewPack || coachPacket) return null;
   const raw = flagValue("--only", "a comma-separated list of <root>/<input id>, or @<file>");
   if (raw === null) return null;
   let names: string[];
@@ -552,6 +584,8 @@ type ConfigFile = {
   /** The harness's git commit, or null outside a checkout. */
   harnessCommit: string | null;
   dryRun: boolean;
+  /** The rules retry was on (--rules-retry); absent on runs from before ticket 11, read as off. */
+  rulesRetry?: boolean;
   /** The packet folder, or "demo snapshot". */
   inputs: string;
   /** When a later run added to this folder, oldest first. */
@@ -585,6 +619,7 @@ function writeConfig(dir: string): void {
     startedAt: now,
     harnessCommit: harnessCommit(),
     dryRun,
+    rulesRetry: RULES_RETRY,
     inputs: PACKETS ?? "demo snapshot",
   };
   if (!existsSync(file)) {
@@ -592,6 +627,9 @@ function writeConfig(dir: string): void {
     return;
   }
   const saved = JSON.parse(readFileSync(file, "utf8")) as ConfigFile;
+  if ((saved.rulesRetry ?? false) !== RULES_RETRY) {
+    throw new Error(`${file} was run with the rules retry ${saved.rulesRetry ? "on" : "off"}; pass another --out to keep both.`);
+  }
   for (const key of ["provider", "baseUrlHost", "model", "effort", "inputs"] as const) {
     if (saved[key] !== fresh[key]) {
       throw new Error(
@@ -787,6 +825,7 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
         resolveCoachTarget: async () => target,
         recorder: memoryRecorder(log),
         fetchImpl: timed.fetch,
+        rulesRetry: RULES_RETRY,
       });
   const started = Date.now();
   const attemptTimings: AttemptTiming[] = [];
@@ -900,6 +939,8 @@ async function replayOne(call: StoredCall, file: string, apiKey: string | null):
         refusedAttempts: refusals,
         // What the plan lines came to (scripts/replayPlanLines.ts); null for About you.
         plan: planLineSummary(call.operation, { repairs: row?.errorMessage ?? null, timing: savedTiming, new: reply }),
+        // The plan rules a weekly read's plan tripped (scripts/replayPlanRules.ts); null for the other operations.
+        rules: "packet" in call ? planRuleSummary(call.operation, call.packet, reply) : null,
         old: call.old,
         new: reply,
       },
@@ -948,6 +989,26 @@ function reviewPacks(): void {
     seed: flagSeed(),
     sample: sample.length ? sample : null,
     reviewDir: flagPath("--review") ?? path.resolve(roots[0]!, "..", "review"),
+    loadInputs: loadReviewInputs,
+  });
+  for (const line of lines) console.log(line);
+}
+
+/** Writes the coach's packet (--coach-packet); no calls, no report. */
+function coachPacketFile(): void {
+  const roots = flagValues("--roots", "a comma-separated list of output roots").map((r) => path.resolve(r));
+  if (roots.length === 0) throw new Error("--coach-packet needs --roots <dir>,<dir>, the output roots holding the configuration folders.");
+  for (const r of roots) if (!existsSync(r)) throw new Error(`--roots: ${r} does not exist.`);
+  const hardSetFile = flagPath("--hard-set") ?? path.resolve(here, "../tests/fixtures/hard-set.json");
+  const athletesFile = flagPath("--athletes") ?? path.resolve(here, "../tests/fixtures/coach-packet-athletes.json");
+  const configurations = flagValues("--configuration", "a comma-separated list of configuration folder names");
+  const lines = writeCoachPacket({
+    roots,
+    hardSet: JSON.parse(readFileSync(hardSetFile, "utf8")) as HardSetEntry[],
+    seed: flagSeed(),
+    outDir: flagPath("--packet-dir") ?? path.resolve(roots[0]!, "..", "..", "coach-packet"),
+    configurations: configurations.length ? configurations : null,
+    athletes: JSON.parse(readFileSync(athletesFile, "utf8")) as Record<string, CoachAthlete>,
     loadInputs: loadReviewInputs,
   });
   for (const line of lines) console.log(line);
@@ -1357,7 +1418,7 @@ function reportConfiguration(dir: string): ConfigurationReport {
     `## ${folder}`,
     "",
     `Provider ${config.provider}${config.baseUrlHost ? ` at ${config.baseUrlHost}` : ""}. Model ${config.model}, effort ${config.effort}. ${config.repeats} repeat${config.repeats === 1 ? "" : "s"} over ${config.inputs}${config.dryRun ? " (dry run, offline stub)" : ""}.`,
-    `Started ${config.startedAt}${config.resumedAt?.length ? `, resumed ${config.resumedAt.join(", ")}` : ""}. Harness commit ${config.harnessCommit ?? "unknown"}.${config.note ? ` Note: ${config.note}` : ""}`,
+    `Started ${config.startedAt}${config.resumedAt?.length ? `, resumed ${config.resumedAt.join(", ")}` : ""}. Harness commit ${config.harnessCommit ?? "unknown"}.${config.rulesRetry ? " Rules retry on." : ""}${config.note ? ` Note: ${config.note}` : ""}`,
     "",
     `Replies: ${operationCounts(byOperation) || "none"}.`,
     "",
@@ -1473,6 +1534,8 @@ function report(): ReplayCheckFailure[] {
 
 if (reviewPack) {
   reviewPacks();
+} else if (coachPacket) {
+  coachPacketFile();
 } else {
   if (!reportOnly) {
     const calls = PACKETS ? folderCalls(PACKETS) : storedDemoCalls();

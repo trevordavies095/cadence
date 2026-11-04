@@ -118,6 +118,7 @@ function toPrescribedArtifact(
     weekSessionId: record.weekSessionId,
     plan: record.plan,
     safetyCallouts: (record.safetyCallouts ?? []) as SafetyCallout[],
+    planWarnings: record.planWarnings ?? [],
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -385,6 +386,8 @@ export function createMidWeekChatRoutes(
                 existingPrescribed.settingsProposalBullets,
               safetyCallouts: existingPrescribed.safetyCallouts,
               readSections: existingPrescribed.readSections,
+              // Sunday's notices stay as they were: a change from chat is not a new plan.
+              planWarnings: existingPrescribed.planWarnings,
               at: clock.now(),
             });
             threadArtifact = toPrescribedArtifact(prescribed);

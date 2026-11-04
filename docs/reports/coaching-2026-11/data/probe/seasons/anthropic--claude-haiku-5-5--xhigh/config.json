@@ -1,0 +1,13 @@
+{
+  "configuration": "anthropic--claude-haiku-5-5--xhigh",
+  "provider": "anthropic",
+  "baseUrlHost": null,
+  "model": "claude-haiku-5-5",
+  "effort": "xhigh",
+  "repeats": 1,
+  "note": "Anthropic API, probe",
+  "startedAt": "2026-11-03T14:50:28.735Z",
+  "harnessCommit": "380933a762f5d15170c1328d4e0ef515a4752e1e",
+  "dryRun": false,
+  "inputs": "api/tests/fixtures/seasons/season-packets"
+}

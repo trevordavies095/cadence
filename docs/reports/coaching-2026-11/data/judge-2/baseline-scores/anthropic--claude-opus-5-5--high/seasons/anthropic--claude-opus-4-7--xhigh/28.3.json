@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Marisol asked one question and the draft answers it plainly and honestly: there isn't time for a 22. The reason it gives is sound. A long run takes 2–3 weeks to pay off, and she already has a 20 behind her. That should also ease some of her worry about the new date.\n\nThe plan works as a first taper week. It adds up to 36 mi against her 42 this week, and the long run drops to 13. The paces fit her 3:45 goal: 8:35/mi is goal marathon pace, and easy runs sit around 9:55 or under 145 bpm. Nothing breaks a must-never check, and her rest days stay on Monday and Friday. Every day is clear enough to run as written.\n\nWhy it's a 4 and not a 5:\n- The opening contradicts itself. It says the taper starts now, then calls this \"the last meaningful week before race prep.\"\n- It speaks to her anxiety only through the reasoning, never directly.\n- It names a 17 on Sep 27 and gives dates for both long runs. None of that is on the card, so I can't check it.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:25:17.625Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2311,
+  "outputTokens": 871,
+  "thinkingTokens": 406,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1168,
+  "costUsd": 0.026664,
+  "timing": {
+    "ttftMs": 2745,
+    "totalMs": 9282,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2745,
+        "totalMs": 9282,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2311,
+        "outputTokens": 871
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Marisol asked one question and the draft answers it plainly and honestly: there isn't time for a 22. The reason it gives is sound. A long run takes 2–3 weeks to pay off, and she already has a 20 behind her. That should also ease some of her worry about the new date.\n\nThe plan works as a first taper week. It adds up to 36 mi against her 42 this week, and the long run drops to 13. The paces fit her 3:45 goal: 8:35/mi is goal marathon pace, and easy runs sit around 9:55 or under 145 bpm. Nothing breaks a must-never check, and her rest days stay on Monday and Friday. Every day is clear enough to run as written.\n\nWhy it's a 4 and not a 5:\n- The opening contradicts itself. It says the taper starts now, then calls this \"the last meaningful week before race prep.\"\n- It speaks to her anxiety only through the reasoning, never directly.\n- It names a 17 on Sep 27 and gives dates for both long runs. None of that is on the card, so I can't check it."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: Race moved up means the taper starts now, so skip the 22 and treat this as the last meaningful week before race prep. …\nAnswers: No, there is not time for a 22-miler, and you do not need one. You already have a 20 (Sep 13) and a solid 17 (Sep 27) in the legs, and the aerobic gains from a long run take 2 – 3 weeks to show up.\nNext week:\nMon: rest. Full day off to open the taper and recover from Sunday's 17.\nTue: easy, 6 mi, heart rate under 145, flat route. Loosens the legs after the long run.\nWed: quality, 8 mi with 5 mi at 8:35/mi in the middle, 1 mi easy warm-up and 2 mi easy…\nThu: easy, 5 mi, heart rate under 145, conversational. Flush out Wednesday without…\nFri: rest. Keep it a true rest day to set up the weekend.\nSat: easy, 4 mi, then 4 x 20 sec strides on flat ground with full walk recovery. Keeps…\nSun: long, 13 mi, first 10 mi easy around 9:55/mi, last 3 mi at 8:35/mi. Final…\n\nScore this draft: call submit_coaching_score once."
+}

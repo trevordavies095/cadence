@@ -1,0 +1,186 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w5.json",
+  "originalCallAt": null,
+  "model": "claude-haiku-5-5",
+  "replayedAt": "2026-11-03T15:44:28.446Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 6 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 13810,
+  "outputTokens": 17604,
+  "thinkingTokens": 16247,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 15033,
+  "estimatedInputTokens": 6029,
+  "timing": {
+    "ttftMs": 1428,
+    "totalMs": 81505,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 1428,
+        "totalMs": 81505,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 13810,
+        "outputTokens": 17604
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 4267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "You ran none of your three planned sessions last week, so this week's job is getting three runs back in place. The plan repeats lengths you have already handled, with no hard session yet.",
+    "flags": [
+      {
+        "title": "Missed runs",
+        "detail": "none of the three planned runs happened last week, and your weekly report gives no reason. Tell me what got in the way so the next plans fit your days."
+      },
+      {
+        "title": "Distance to goal",
+        "detail": "the run blocks must grow from 2 minutes to about 40 minutes of continuous running by Nov 15. That only works with three runs most weeks from now."
+      },
+      {
+        "title": "Effort on run blocks",
+        "detail": "the 2-minute runs have felt 6 to 7 out of 10. If they climb past 7 out of 10, walk a little longer between them."
+      },
+      {
+        "title": "Restart size",
+        "detail": "last week's planned jump in length was big after the early September cold. Keep steps small, and do not add time to a session that feels hard."
+      }
+    ],
+    "answers": [],
+    "analysis": "Last week was a full miss on running. All three planned walk-run sessions were skipped, and the rest days were kept, so nothing was overrun. Your weekly report gives no reason for the gap, and your body check and sleep look fine.\n\nThe week before, you ran all three sessions, so the habit is still there. The planned week stepped up from 63 minutes of walk-running to 75 minutes, which may have been too big a jump after the early September cold.\n\nA week away costs some fitness, but the base is still there, so this is a short restart. The plan returns to lengths you have already run and adds no hard session yet.\n\nYour 5K goal depends on how fast the run blocks grow from 2 minutes. Running the whole distance by Nov 15 needs about 40 minutes of continuous running, which is a big climb in about six weeks.\n\nThat is only achievable with three runs most weeks, so consistency matters more than any single session. The checkpoint is the week of Oct 12: if you are running 5-minute blocks by then, the whole-distance goal is on track. If the blocks are still near 2 to 3 minutes, I will recommend a run-walk finish and say so plainly.\n\nBuild usually adds threshold work, but a week back after a gap is the wrong time for hard efforts. Harder work starts the week of Oct 5, when the run blocks move up from 2 to 3 minutes.\n\nKeep the rest days real, and walk the run blocks whenever effort goes past 7 out of 10. If a cough or fever returns, stop running and see a doctor before you restart.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1260,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run, about 2.3 km, 7 x (2 min run and 1 min walk), heart rate under 150 on the run blocks. A week off calls for a restart at a length you have already run.",
+          "line": "Mon Sep 28: easy, 21 min walk-run, about 2.3 km, 7 x (2 min run and 1 min walk), heart rate under 150 on the run blocks. A week off calls for a restart at a length you have already run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. Walks with the dog are fine. Rest lets the first run settle before the second.",
+          "line": "Tue Sep 29: rest, no running. Walks with the dog are fine. Rest lets the first run settle before the second.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1260,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run, about 2.3 km, 7 x (2 min run and 1 min walk), heart rate under 150. A second run at the same length confirms the restart before any time is added.",
+          "line": "Wed Sep 30: easy, 21 min walk-run, about 2.3 km, 7 x (2 min run and 1 min walk), heart rate under 150. A second run at the same length confirms the restart before any time is added.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. A rest day after two runs keeps the week easy.",
+          "line": "Thu Oct 1: rest, no running. A rest day after two runs keeps the week easy.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. Full rest before the longest session of the week.",
+          "line": "Fri Oct 2: rest, no running. Full rest before the longest session of the week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run, about 2.6 km, 8 x (2 min run and 1 min walk), heart rate under 150. This is the length you ran on Sat Sep 19, so it is a step back up rather than new ground.",
+          "line": "Sat Oct 3: easy, 24 min walk-run, about 2.6 km, 8 x (2 min run and 1 min walk), heart rate under 150. This is the length you ran on Sat Sep 19, so it is a step back up rather than new ground.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running. A full day off after the weekend run.",
+          "line": "Sun Oct 4: rest, no running. A full day off after the weekend run.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Add the cold with fever in the week of Sep 7 – 13 to what I know about you, so future gaps are read correctly.",
+      "Add the reason for last week's missed runs once you know it, so the next plan fits your days."
+    ]
+  }
+}

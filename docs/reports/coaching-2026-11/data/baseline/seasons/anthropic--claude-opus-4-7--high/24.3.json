@@ -1,0 +1,216 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w06.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:17:11.268Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 8 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 22673,
+  "outputTokens": 2568,
+  "thinkingTokens": 851,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 1002,
+  "estimatedInputTokens": 9075,
+  "timing": {
+    "ttftMs": 3375,
+    "totalMs": 44751,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3375,
+        "totalMs": 44751,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 22673,
+        "outputTokens": 2568
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-08-31",
+    "isoWeek": "2026-W36",
+    "recentWeeklyM": 47495.764800000004
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "You did the right thing cutting back in the heat with no AC and short sleep. We reset this week at the same shape, protect the long run, and only lean on the quality session if the room is cool and sleep is back.",
+    "flags": [
+      {
+        "title": "Long run cut and Thursday skipped",
+        "detail": "driven by heat and poor sleep, not fitness. Reset, do not make up miles."
+      },
+      {
+        "title": "Threshold stopped at 2 of 3 reps",
+        "detail": "heat-limited at the same pace that flowed two weeks earlier. Not a fitness drop."
+      },
+      {
+        "title": "Easy heart rate up 13 bpm",
+        "detail": "138 to 151 at the same pace. A clear sign the body was cooked, not a trend to chase."
+      },
+      {
+        "title": "Sleep debt",
+        "detail": "5.5 hr average with a hot apartment. The single biggest lever this week once the AC is fixed."
+      },
+      {
+        "title": "Heart rate drift on the long run",
+        "detail": "150 to 161 over 11 miles. Watch again on Sunday with cooler conditions."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I missed Thursday and cut the long run short. Should I make up the miles next week?",
+        "answer": "No, do not make up the Thursday miles or the long run shortfall. Piling missed work onto a week when you are already drained is how good athletes get hurt or sick. The point of a week like last one is to listen, back off, and come back on the next scheduled session. We keep the same shape this week: one quality session, one long run at 13 mi, and the easy days stay easy. If sleep and the AC are back by Wednesday, run the session as written. If not, swap it for an easy 6 mi and we move the quality to Saturday or roll it to next week."
+      }
+    ],
+    "analysis": "## What last week showed\nYou followed the plan where it was safe to and pulled the plug where it was not, which is good judgment. Tue and Sat went as written, Wed got two reps instead of three in 27C heat, Thu was skipped, and Sun landed at 11 mi instead of 13. The numbers tell a consistent story: same easy pace, heart rate up 13 bpm, drift of 10 to 13 bpm on both hard efforts. That is heat and 5.5 hr nights, not a loss of form.\n\n## Why this week looks the same, not bigger\nWe are 8 weeks out and still in the build. The job now is to get a clean week in the same shape as the one that just slipped, then progress the long run from there. Pushing distance up to 14 or 15 mi while you are still catching up on sleep would be the wrong call. If the AC is back and you sleep 7+ hrs by midweek, run the threshold reps as written at around 8:00/mi; if not, treat Wednesday as easy and I would rather you nail Sunday.\n\n## What I want to see\nEasy running back near 9:50/mi at 138 bpm within the first two runs is the signal the system has recovered. On Sunday, heart rate under 150 for 13 mi matters more than the pace. Keep fluids on the long run and consider starting before sunrise again while it is still warm.",
+    "prescribedWeek": {
+      "week": "2026-W36",
+      "days": [
+        {
+          "date": "2026-08-31",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full day off after a draining week.",
+          "line": "Mon 2026-08-31: rest. Full day off after a draining week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 145, flat route. First check that the system has reset after the heat week.",
+          "line": "Tue 2026-09-01: easy, 6 mi, heart rate under 145, flat route. First check that the system has reset after the heat week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-02",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 11265,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "with 3 x 1 mi at 8:00/mi, 3 min easy jog between. Rebuild the threshold session you had to cut short, slightly shorter reps so it is finishable.",
+          "line": "Wed 2026-09-02: quality, 7 mi with 3 x 1 mi at 8:00/mi, 3 min easy jog between. Rebuild the threshold session you had to cut short, slightly shorter reps so it is finishable.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 145. Flush the legs the day after quality.",
+          "line": "Thu 2026-09-03: easy, 5 mi, heart rate under 145. Flush the legs the day after quality.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Protect Sunday.",
+          "line": "Fri 2026-09-04: rest. Protect Sunday.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-05",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "conversational. Short primer for the long run.",
+          "line": "Sat 2026-09-05: easy, 4 mi, conversational. Short primer for the long run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-06",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 20921,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, start before sunrise and carry fluids. The one we did not get last week; the key session of the build.",
+          "line": "Sun 2026-09-06: long, 13 mi, heart rate under 150, start before sunrise and carry fluids. The one we did not get last week; the key session of the build.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Note that heat and sleep below 6 hrs clearly spike easy heart rate for this athlete, so we flex quality on those weeks.",
+      "Add a standing rule: if sleep is under 6 hrs for 3 nights in a row, swap the week's quality session for an easy run."
+    ],
+    "safetyCallouts": [
+      {
+        "title": "Sleep and heat are the real limiters right now.",
+        "body": "If the AC is not fixed by midweek, prioritize sleep over the quality session and tell me. If you feel dizzy, unusually breathless, or get chest discomfort on a run, stop and see a clinician rather than pushing through.",
+        "severity": "info"
+      }
+    ]
+  }
+}

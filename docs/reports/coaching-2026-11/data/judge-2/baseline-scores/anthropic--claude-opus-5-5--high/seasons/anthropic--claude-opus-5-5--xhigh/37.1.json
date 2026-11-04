@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a safe, sensible plan. Nessa missed all three sessions but says she feels well and has no pain, so repeating last week's plan is the right progression. It doesn't make up the missed sessions. Next week is about 24/24/27 minutes of 2-minute run, 1-minute walk intervals, which fits her recent 7 km weeks. It isn't a jump in volume or long run, and the running stays at talking pace. The plan keeps her Mon/Wed/Sat schedule and her dog walks, and every day can be run as written. The tips about laying out kit the night before and asking 'whether anything got in the way' are good for a new runner who has just missed a week. Nothing is invented. One drawback: the draft doesn't ask about or acknowledge why she missed the week, apart from that Sunday check-in prompt. It also never links the plan to her 15 November 5K goal or says how she'll build toward running it without walking. Both would make it more personal.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:07:05.467Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2169,
+  "outputTokens": 658,
+  "thinkingTokens": 225,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1081,
+  "costUsd": 0.021836,
+  "timing": {
+    "ttftMs": 2599,
+    "totalMs": 6755,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2599,
+        "totalMs": 6755,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2169,
+        "outputTokens": 658
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a safe, sensible plan. Nessa missed all three sessions but says she feels well and has no pain, so repeating last week's plan is the right progression. It doesn't make up the missed sessions. Next week is about 24/24/27 minutes of 2-minute run, 1-minute walk intervals, which fits her recent 7 km weeks. It isn't a jump in volume or long run, and the running stays at talking pace. The plan keeps her Mon/Wed/Sat schedule and her dog walks, and every day can be run as written. The tips about laying out kit the night before and asking 'whether anything got in the way' are good for a new runner who has just missed a week. Nothing is invented. One drawback: the draft doesn't ask about or acknowledge why she missed the week, apart from that Sunday check-in prompt. It also never links the plan to her 15 November 5K goal or says how she'll build toward running it without walking. Both would make it more personal."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: You missed all three walk-runs last week, so this week repeats that plan. …\nWhat happened. None of the three walk-runs planned for Sep 21 – 27 were logged.\nNext week:\nMon: easy, 24 min, walk-run of 8 x 2 min run and 1 min walk, running bits at a pace…\nTue: rest. Your usual dog walk is fine and keeps the legs moving.\nWed: easy, 24 min, walk-run of 8 x 2 min run and 1 min walk, same talking pace, flat…\nThu: rest. Walk the dog as normal. Two days off before Saturday freshen the legs.\nFri: rest. Lay out your kit tonight so Saturday morning is easy to start.\nSat: long, 27 min, walk-run of 9 x 2 min run and 1 min walk, running bits slow and even…\nSun: rest. In your check-in, say how the running bits felt and whether anything got in…\n\nScore this draft: call submit_coaching_score once."
+}

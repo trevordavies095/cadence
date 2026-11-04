@@ -27,13 +27,24 @@ Two hand-built weekly model packets, a stay-fit runner and a 10K runner, each ca
 
 ## `seasons/` (replay seasons)
 
-Three six-week fictional seasons that are not marathon blocks, for replaying the weekly read (coaching-bias 25):
+Fictional seasons for replaying the weekly read: three six-week seasons that are not marathon blocks (coaching-bias 25), then the hard-set seasons (coaching-quality 04 and 05), each written by hand around weeks that test coaching judgement:
 
 | Season | Goal | What happens |
 |---|---|---|
 | `1-stay-fit` | Stay fit | Four easy runs a week, 30 to 35 km, no races |
 | `2-10k` | Riverside 10K (fictional), Nov 8 | One Threshold and one Intervals session a week; a 5K best at parkrun in week 4 |
 | `3-return` | Return from a shin stress reaction | Walk-run from 15 minutes, one pain report (3/10) in week 3, 30 minutes continuous in week 6 |
+| `4-marathon` | Wexley Lakes Marathon (fictional), under 3:45, in miles | A 14-week second-marathon build from 30 mi a week: a knee niggle (week 4), a heat week with poor sleep (6), 53 mi run against a 38 mi plan (8), a question about doubling the mileage (9), the race moved from Nov 1 to Oct 18 in Settings (10), the taper (12), race week (13) and the week after (14) |
+| `5-beginner` | Corrowmore Harvest 5K (fictional), Nov 15, run the whole way | An eight-week first block of walk-runs three mornings a week: the first week (week 1), a fever (3), a week of nothing run with a cheerful check-in (5), and two missed weeks for a family reason (7 and 8) |
+
+A hard week carries a `_note`, which the script ignores and no packet carries (the return season's week 1 has one too): the scenario, the plan rules (`PLAN_RULES` in `src/prescribed/planCheck.ts`) a careless plan would trip, and what a careful coach would do. Only the hard weeks are coaching inputs; the other weeks are the history that makes them real.
+
+Besides the run and check-in fields documented in `demo/generate-season-export.mjs`, a week may carry:
+
+- `plan`: the week's stored plan as plan lines in Coach Cade's grammar, one per day ("Tue 2026-09-08: easy, 6 mi"), parsed by the app's parser and stored instead of the scripted runs, for a week the athlete overran or skipped. Every line must parse.
+- `goal`: a goal saved through Settings on the week's Sunday before the check-in, as an athlete would change it mid-season; Settings also tells Coach Cade through Fix something, so About you gains the "My goal is now ..." correction from that week on.
+
+A season of ten weeks or more pads the week in its packet names (`4-marathon-w01.json`), so file order is week order and the replay's input ids follow it: `seasons/01` to `18` are the first three seasons, `seasons/19` to `32` the marathon build, `seasons/33` to `40` the beginner's block.
 
 Each `<n>-<id>.json` is the season script (goal, About you, every run as parts, every check-in); `<n>-<id>.zip` is its Tempo export, written by the demo's generator (`demo/generate-season-export.mjs`, sharing `demo/lib/tempoExport.mjs` with the demo season); `season-packets/` holds the packet each weekly read sent, built by the app itself. Regenerate all of it with:
 
@@ -43,7 +54,7 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5433/ai_coach_test \
   npx tsx scripts/regenerate-replay-seasons.ts
 ```
 
-It plays each season through the app on the offline stub (goal, About you, then a Sunday check-in each week), against a test database it clears. The exports regenerate byte for byte; the packets differ only in week-session ids and About you version numbers. `replay-seasons.test.ts` checks the packets against the scripts and runs the replay dry run over `season-packets/`.
+It plays each season through the app on the offline stub (goal, About you, then a Sunday check-in each week), against a test database it clears. The exports regenerate byte for byte; the packets differ only in week-session ids and About you version numbers. From week 2 each packet carries the week's plan (`prescribedWeek`, the previous read's plan for it, which the script makes the week's scripted runs, or the week's `plan`) and each day's outcome against it (`prescribedWeekOutcomes`); week 1 carries null for both (#59). `replay-seasons.test.ts` checks the packets against the scripts and runs the replay dry run over `season-packets/`.
 
 ## `demo-operations/` (replay inputs from the demo)
 
@@ -82,7 +93,7 @@ SH_KEY=... npx tsx scripts/smoke-self-hosted.ts --base-url http://<server>:8000 
 
 ## `regression-set.json` (the replay's hard inputs)
 
-The inputs every change to the reply contract is measured on: the 13 the 2026-11-01 benchmark found failing in at least half the self-hosted models, plus the 8 inputs of the blind review sample (one overlap), 20 in all, each `{ "input": "<root>/<id>", "why": "..." }`. The roots are the benchmark's: `snapshot` (the demo snapshot run, ids 01 to 17) and `seasons` (`seasons/season-packets/`, ids 01 to 18). Run it with the replay's `--only`, once per root, each into an output root named after it:
+The inputs every change to the reply contract is measured on: the 13 the 2026-11-01 benchmark found failing in at least half the self-hosted models, plus the 8 inputs of the blind review sample (one overlap), 20 in all, each `{ "input": "<root>/<id>", "why": "..." }`. The roots are the benchmark's: `snapshot` (the demo snapshot run, ids 01 to 17) and `seasons` (`seasons/season-packets/`, ids 01 to 18 then; the hard-set seasons have since added 19 to 40, and the set's ids are unchanged). Run it with the replay's `--only`, once per root, each into an output root named after it:
 
 ```bash
 cd api
@@ -92,6 +103,23 @@ npm run replay -- --packets tests/fixtures/seasons/season-packets \
 ```
 
 `replay-weekly-reads.test.ts` checks the file's shape and dry-runs it over both roots.
+
+## `hard-set.json` (the coaching inputs)
+
+The fourteen weeks the coaching score runs on (coaching-quality spec), each `{ "input", "why", "scenario", "expectedRules" }`: the eight hard weeks of `4-marathon` (`seasons/22, 24, 26, 27, 28, 30, 31, 32`), the four of `5-beginner` (`seasons/33, 35, 37, 40`), the return season's first week (`seasons/13`) and the demo athlete's Achilles week (`snapshot/06`, 2026-W37). `scenario` is the name in the week's `_note` ("Hard week (niggle): ..."), or "Achilles week"; `expectedRules` lists the plan rules a careless plan would trip, which may be none: the note says why. It is an `--only` file like the regression set, so one file serves both roots:
+
+```bash
+cd api
+npm run replay -- --packets tests/fixtures/seasons/season-packets \
+  --out ../.scratch/<run>/seasons --only @tests/fixtures/hard-set.json
+npm run replay -- --out ../.scratch/<run>/snapshot --only @tests/fixtures/hard-set.json
+```
+
+`hard-set.test.ts` checks each id resolves to the week its scenario names, that every hard week of every season is listed, and dry-runs the list over both roots.
+
+## `coach-packet-athletes.json` (the coach's athletes)
+
+The four athletes of the hard set as the coach's form introduces them (`npm run replay -- --coach-packet`): a first name, what they train for (for a page title when no goal is stored), and two hand-written sentences in the third person, without pronouns, from each season's athlete, goal and About you (the demo athlete's from the snapshot's About you). Keyed by season file stem (`4-marathon`, `5-beginner`, `3-return`) or `snapshot`. The introductions say nothing about any hard week. `replay-coach-packet.test.ts` checks every page opens with its athlete.
 
 ## Full athlete export (local only)
 

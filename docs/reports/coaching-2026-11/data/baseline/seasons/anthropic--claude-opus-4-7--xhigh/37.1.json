@@ -1,0 +1,185 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w5.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:03:38.398Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 6 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 14202,
+  "outputTokens": 2168,
+  "thinkingTokens": 969,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 1061,
+  "estimatedInputTokens": 6029,
+  "timing": {
+    "ttftMs": 4458,
+    "totalMs": 38499,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 4458,
+        "totalMs": 38499,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 14202,
+        "outputTokens": 2168
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 4267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "You went from \"excited for next week\" to zero runs, so this week is a careful restart at what already worked. Three walk-run sessions, same shape as two weeks ago, with a small step on Saturday.",
+    "flags": [
+      {
+        "title": "Missed week",
+        "detail": "all three planned runs were skipped with no note on why, so I need to know what got in the way before pushing on."
+      },
+      {
+        "title": "Race timing",
+        "detail": "six weeks to Nov 15, and the plan can still get you to a continuous 5K if we chain three steady weeks from here."
+      },
+      {
+        "title": "Restart, not reset",
+        "detail": "no running for seven days is enough to lose a little edge but not fitness, so I am repeating what you already handled well."
+      },
+      {
+        "title": "Sleep and mood",
+        "detail": "7.5 hours and low stress are green lights, so the limiter this week is just getting out the door."
+      }
+    ],
+    "answers": [],
+    "analysis": "## Reading the week\n\nThe plan asked for three walk-run sessions on Mon, Wed and Sat and none of them happened, which is the main thing to understand. You logged no pain, good sleep and low stress, so I am guessing life got in the way rather than your body. If something else was going on, tell me in the next check-in and I will shape the plan around it.\n\n## Why this plan\n\nI am rebuilding at the exact shape of the week of Sep 14 – 20, which you handled with low effort scores and no soreness. That week you ran 2 min, walked 1 min, eight or nine times through, and finished each session feeling 6 or 7 out of 10. Repeating it gives you a confident week back rather than a hard week back.\n\n## How to run it\n\nKeep every running minute conversational, meaning you could speak a short sentence without gasping. The walk minutes are real walks, not a slow jog, because they are what lets the run minutes stay honest. If a session feels easier than a 6 out of 10, that is good news, not a signal to push the pace.\n\n## Looking ahead\n\nIf this week lands clean, next week we step the run intervals to 3 min with 1 min walk, which starts closing the gap to a continuous 5K. You have time, but we need three unbroken weeks between now and race day to make the goal realistic. Protect Mon, Wed and Sat like appointments.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run, 8 rounds of 2 min easy run and 1 min walk, flat route. Eases you back after a week off at a shape you know.",
+          "line": "Mon 2026-09-28: easy, 24 min walk-run, 8 rounds of 2 min easy run and 1 min walk, flat route. Eases you back after a week off at a shape you know.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full recovery day, dog walk is fine.",
+          "line": "Tue 2026-09-29: rest. Full recovery day, dog walk is fine.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run, 8 rounds of 2 min easy run and 1 min walk, same effort as Monday. Second repeat of a session you already handled well.",
+          "line": "Wed 2026-09-30: easy, 24 min walk-run, 8 rounds of 2 min easy run and 1 min walk, same effort as Monday. Second repeat of a session you already handled well.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Keep it to walking only so Saturday has legs under it.",
+          "line": "Thu 2026-10-01: rest. Keep it to walking only so Saturday has legs under it.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Protects the slightly longer Saturday session.",
+          "line": "Fri 2026-10-02: rest. Protects the slightly longer Saturday session.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1620,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run, 9 rounds of 2 min easy run and 1 min walk, flat route. One extra round is your only step forward this week.",
+          "line": "Sat 2026-10-03: easy, 27 min walk-run, 9 rounds of 2 min easy run and 1 min walk, flat route. One extra round is your only step forward this week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Dog walk is welcome, no running.",
+          "line": "Sun 2026-10-04: rest. Dog walk is welcome, no running.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Add a short note on why a planned run was missed in the check-in, even one line, so the next plan can respond to it."
+    ]
+  }
+}

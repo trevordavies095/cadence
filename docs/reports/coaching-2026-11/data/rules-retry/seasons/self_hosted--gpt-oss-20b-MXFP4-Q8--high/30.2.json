@@ -1,0 +1,189 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w12.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:51:57.356Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, race week, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 17264,
+  "outputTokens": 1159,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2616,
+  "estimatedInputTokens": 9521,
+  "timing": {
+    "ttftMs": 1202,
+    "totalMs": 20601,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 1202,
+        "totalMs": 20601,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 17264,
+        "outputTokens": 1159
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-12",
+    "isoWeek": "2026-W42",
+    "recentWeeklyM": 65198.5488
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "You’re in the final week, keep the volume light and focus on staying fresh for the race.",
+    "flags": [
+      {
+        "title": "HR drift",
+        "detail": "monitor Wednesday quality session heart‑rate, Recovery: keep Thursday easy run below 150 HR, Race prep: keep Saturday light and walk off, Pace control: stay on target marathon pace on Wednesday, Confidence: trust the taper plan and aim for the 3:45 goal"
+      }
+    ],
+    "answers": [
+      {
+        "question": "Is it crazy to do one more 16-miler on Wednesday so I feel ready?",
+        "answer": "No, adding a 16‑mile run now would add too much volume early in the taper and could leave you fatigued on race day.  Keep the volume as scheduled and focus on recovery."
+      }
+    ],
+    "analysis": "The athlete completed the planned week of 2026‑W41 exactly as scheduled – all runs were done, no rest was missed, and the long run was completed in the targeted 12 mi with a normal heart‑rate drift.  The plan for the final taper week is therefore unchanged: one quality session, two short easy days and the race.  The key focus is to keep volume low, watch the heart‑rate drift during the Wednesday quality session, and stay fresh for race day.  No medical red flags appear, so the plan stays conservative.",
+    "prescribedWeek": {
+      "week": "2026-W42",
+      "days": [
+        {
+          "date": "2026-10-12",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-10-12: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-13",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, flat route. Loosens the legs after the long run.",
+          "line": "Tue 2026-10-13: easy, 6 mi, heart rate under 150, flat route. Loosens the legs after the long run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-14",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 12875,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "4 at marathon pace, heart rate under 165. Sharpen race pace.",
+          "line": "Wed 2026-10-14: quality, 8 mi, 4 at marathon pace, heart rate under 165. Sharpen race pace.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-15",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "focus on recovery, heart rate under 150. Keep legs loose.",
+          "line": "Thu 2026-10-15: easy, 5 mi, focus on recovery, heart rate under 150. Keep legs loose.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-16",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-10-16: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-17",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "very light, easy pace, run at heart rate 140 or less. Light jog before race.",
+          "line": "Sat 2026-10-17: easy, 3 mi, very light, easy pace, run at heart rate 140 or less. Light jog before race.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-18",
+          "dayType": "race",
+          "run": {
+            "type": "race",
+            "distanceM": 0,
+            "durationS": 13500,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "Stay on plan.",
+          "line": "Sun 2026-10-18: race, marathon, target under 3:45. Stay on plan.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

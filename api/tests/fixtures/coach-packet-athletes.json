@@ -1,0 +1,23 @@
+{
+  "_readme": "The coach's form (coaching-quality 07): each hard week's athlete as the coach meets them, keyed by season file stem (tests/fixtures/seasons/<stem>.json) or by root (snapshot, the demo athlete). Written by hand from each season's athlete, goal and About you: two sentences in the third person by first name, no pronouns, nothing about any week's scenario. Fictional athletes.",
+  "4-marathon": {
+    "name": "Marisol",
+    "training": "marathon training",
+    "introduction": "Marisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build."
+  },
+  "5-beginner": {
+    "name": "Nessa",
+    "training": "5K training",
+    "introduction": "Nessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days."
+  },
+  "3-return": {
+    "name": "Ines",
+    "training": "return to running",
+    "introduction": "Ines ran about 40 km a week before a stress reaction in the left shin and ten weeks off, and a physio has cleared Ines for walk-run three days a week, stopping if the shin aches. The goal is to run 30 minutes without walking by mid-October."
+  },
+  "snapshot": {
+    "name": "Johnny",
+    "training": "marathon training",
+    "introduction": "Johnny is training for a fourth marathon, the Lakeshore Marathon on 15 November, aiming for 3:30 against a best of 3:41. Johnny runs five days a week with Monday and Friday as fixed rest days, and prefers mileage to rise carefully after shin splints in a first marathon block."
+  }
+}

@@ -29,6 +29,7 @@ import {
   type LlmPort,
 } from "./port.js";
 import type { PlanLineFailure } from "../prescribed/planLines.js";
+import { checkPlan, type PlanWarning } from "../prescribed/planCheck.js";
 import { formatIsoWeekRangeShort } from "../clock/weekRangeShort.js";
 import { goalPromptLines } from "./goalLines.js";
 import {
@@ -63,6 +64,15 @@ import {
   type SchemaResult,
 } from "./schema.js";
 import { COACH_STANCE_SUMMARY, COACH_SYSTEM_STANCE } from "./stance.js";
+import {
+  JUDGE_TOOL_NAME,
+  judgeSystemPrompt,
+  judgeToolSchema,
+  judgeUserPrompt,
+  validateCoachingJudgement,
+  type CoachingJudgeInput,
+  type CoachingJudgement,
+} from "./judge.js";
 import type { TempoUnitPreference } from "../tempo/port.js";
 import { packetUnit, weeklyReplyContext } from "./weeklyContext.js";
 import {
@@ -164,6 +174,11 @@ export type AnthropicLlmPortOptions = {
   recorder?: LlmCallRecorder;
   /** Code version stamped on log rows. Defaults to APP_VERSION / `dev`. */
   appVersion?: string;
+  /**
+   * Send a weekly plan that trips a plan rule back once (ticket 11). Defaults
+   * to COACH_RULES_RETRY (rulesRetryFromEnv), on unless set off.
+   */
+  rulesRetry?: boolean;
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -468,11 +483,22 @@ function buildWeeklyUserPrompt(
     "Include a headline (the one or two sentences you would say if you could say only one thing), flags (what you are watching, one per line), answers (your answer to what the athlete asked, the answer only), the analysis (your reasoning) and the plan.",
     "Every box is plain text: write flags, safetyCallouts and settingsProposalBullets one per line, never as a list.",
     "When red flags appear, write safetyCallouts, one notice per line (escalate; do not diagnose).",
+    reviewedPlanPromptLine(packet),
     "Model packet (redacted; no identity PII or GPS):",
     JSON.stringify(packet),
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
+}
+
+/**
+ * Names the reviewed week's plan and its per-day outcomes when the packet
+ * carries them (#59), so the read is of the week against its plan. Null when
+ * no plan was stored for the week, or on a packet saved before the field.
+ */
+function reviewedPlanPromptLine(packet: ModelPacket): string | null {
+  if (!packet.prescribedWeek?.days?.length) return null;
+  return "The packet's prescribedWeek is the plan the reviewed week was meant to follow, and prescribedWeekOutcomes says what happened on each of its days (done, missed, rest, unknown or not_filed, with the distance run). Read the week against it: say what was followed, what was skipped and what was overrun.";
 }
 
 /** The weekly read's user prompt exactly as {@link createAnthropicLlmPort} sends it. */
@@ -556,6 +582,23 @@ export const RETRY_NO_TOOL_CALL_TEXT =
   "You did not call the tool. Call it now with your full answer.";
 export const RETRY_ERROR_INSTRUCTION =
   "Call the tool again with your full answer, with this fixed.";
+/** The rules retry's instruction (coaching-quality ticket 11), after the warnings the plan tripped. */
+export const RETRY_FIX_RULES_INSTRUCTION =
+  "Rewrite the plan box so the week does not do this. Keep the read, flags and answers as they are unless the plan change needs a sentence to change. Call the tool again with your full answer.";
+
+/** The warnings a plan tripped, as the athlete would see them, one per paragraph. */
+export function planWarningLines(warnings: readonly PlanWarning[]): string {
+  return warnings.map((w) => `${w.title}: ${w.body}`).join("\n\n");
+}
+
+/**
+ * Whether a weekly plan that trips a plan rule is sent back once (ticket 11).
+ * On by default since the measurement of 2026-11-04 (fewer rules tripped, the
+ * control unchanged); COACH_RULES_RETRY=off (or 0, false, no) turns it off.
+ */
+export function rulesRetryFromEnv(env: NodeJS.ProcessEnv = process.env): boolean {
+  return !/^(off|0|false|no)$/i.test(env.COACH_RULES_RETRY?.trim() ?? "");
+}
 
 /** "Thu 2026-11-12: no distance unit." one per line, in date order. */
 export function planFailureLines(failures: readonly PlanLineFailure[]): string {
@@ -582,6 +625,8 @@ type FirstReply = {
   /** Set when the reply was accepted with plan lines that did not parse, and the box they came from. */
   failures: PlanLineFailure[] | null;
   box?: string;
+  /** Set when the reply was accepted but its plan tripped plan rules, and the rules retry is on. */
+  rules?: PlanWarning[];
 };
 
 /**
@@ -598,6 +643,9 @@ type FirstReply = {
  * - Plan lines that did not parse: the assistant turn as received, then an
  *   error tool result for the call listing each failed date and its reason
  *   and the fix-only instruction (`fix_lines`).
+ * - A plan that tripped plan rules (the rules retry, ticket 11): the same,
+ *   carrying each warning as the athlete would see it and the rewrite
+ *   instruction (`fix_rules`); the second reply is a whole reply.
  * - Any other refusal: the same, carrying the validator's message (`error_result`).
  */
 export function secondRequest(
@@ -642,6 +690,9 @@ export function secondRequest(
       : withTurn({ role: "user", content: text }, kind);
 
   if (!ours) return answer(RETRY_NO_TOOL_CALL_TEXT, "no_tool_call");
+  if (reply.rules?.length) {
+    return answer(`${planWarningLines(reply.rules)}\n\n${RETRY_FIX_RULES_INSTRUCTION}`, "fix_rules");
+  }
   if (reply.failures) {
     return answer(
       `${planFailureLines(reply.failures)}\n\n${fixLinesInstruction(reply.box ?? "plan")}`,
@@ -1153,6 +1204,7 @@ export function createAnthropicLlmPort(
     });
   const recorder = options?.recorder ?? createPostgresLlmCallRecorder();
   const appVersion = options?.appVersion ?? resolveAppVersion();
+  const rulesRetry = options?.rulesRetry ?? rulesRetryFromEnv();
   /**
    * Thinking as thinkingParams sends it. tool_choice stays "auto": a forced
    * tool skips the thinking block, so the prompt asks for the tool call.
@@ -1339,9 +1391,12 @@ export function createAnthropicLlmPort(
     toolName: string,
     requestBody: AnthropicMessagesRequest,
     validate: Validate<T>,
+    rulesOf?: (value: T) => PlanWarning[],
   ): Promise<T> {
     let first: FirstReply | null = null;
     let firstRetry: PlanRetry<T> | null = null;
+    // The rules retry: the first reply and how many rules it tripped, kept if the second does no better.
+    let firstRules: { value: T; count: number } | null = null;
     return askAtMostTwice<T>(callOptions, async (a) => {
       const seen: FirstReply = { content: null, stopReason: null, error: null, failures: null };
       let body = requestBody;
@@ -1374,6 +1429,18 @@ export function createAnthropicLlmPort(
           first = { ...seen, failures: out.planRetry.failures, box: out.planRetry.box };
           firstRetry = out.planRetry;
           return new Unfinished(out.value);
+        }
+        if (rulesOf && firstRules) {
+          // The second plan replaces the first only when it trips strictly fewer rules.
+          return rulesOf(out.value).length < firstRules.count ? out.value : firstRules.value;
+        }
+        if (rulesOf && !a.last && !firstRetry) {
+          const tripped = rulesOf(out.value);
+          if (tripped.length > 0) {
+            first = { ...seen, failures: null, rules: tripped };
+            firstRules = { value: out.value, count: tripped.length };
+            return new Unfinished(out.value);
+          }
         }
         return out.value;
       } catch (err) {
@@ -1445,6 +1512,9 @@ export function createAnthropicLlmPort(
       // The plan box is parsed against the plan week here: days that do not
       // parse are stored unparsed; a box with no line for the week is refused
       // and asked for once more like any other refusal.
+      // With the rules retry on, a plan that trips a plan rule is sent back once
+      // with the warnings, here rather than in the route, so both providers and
+      // the replay take the same path; the route checks whatever plan comes back.
       return ask(
         "weekly_reply",
         callOptions,
@@ -1452,6 +1522,7 @@ export function createAnthropicLlmPort(
         WEEKLY_TOOL_NAME,
         requestBody,
         (input) => validateWeeklyReply(input, weekStartMonday, context),
+        rulesRetry ? (reply) => checkPlan(packet, reply.prescribedWeek).warnings : undefined,
       );
     },
 
@@ -1564,6 +1635,30 @@ export function createAnthropicLlmPort(
         PLAN_DAY_TOOL_NAME,
         requestBody,
         (raw) => validatePlanDayFix(raw, input),
+      );
+    },
+
+    /** The coaching judge (src/llm/judge.ts): one draft, blind, through the same ask as every coach call. */
+    async judgeCoachingDraft(
+      input: CoachingJudgeInput,
+      callOptions?: LlmCallOptions,
+    ): Promise<CoachingJudgement> {
+      const target = await targetFor(callOptions);
+      const requestBody: AnthropicMessagesRequest = {
+        model: target.model,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        system: judgeSystemPrompt(input.rubric),
+        tools: [judgeToolSchema()],
+        ...reasoningParams(target),
+        messages: [{ role: "user", content: judgeUserPrompt(input) }],
+      };
+      return ask(
+        "coaching_judge",
+        callOptions,
+        target,
+        JUDGE_TOOL_NAME,
+        requestBody,
+        validateCoachingJudgement,
       );
     },
   };

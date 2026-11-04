@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft answers Marisol's question directly and honestly. It says no to jumping straight back to 40 miles and to starting speedwork, gives the reason, and lays out a safer path toward the 10K. Two weeks after the marathon, the week is a gentle return: about 22 easy miles at a heart-rate cap, a 6-mile Sunday, and only light strides. That keeps it clear of a hard return after the race. Going from 12 to about 22 miles looks like a big jump in percentage terms, but it's still roughly half her pre-race volume and all easy, so it's sensible recovery. The plan keeps her five-day pattern with Monday and Friday off, and each day can be run as written. It loses a point because it closes on a clarifying question instead of giving a firm plan for her 10K goal. Some details, like the Thanksgiving date and the marathon being two weeks back, aren't on the card, so I can't check them.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T14:39:57.267Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2317,
+  "outputTokens": 891,
+  "thinkingTokens": 468,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1184,
+  "costUsd": 0.027088,
+  "timing": {
+    "ttftMs": 2131,
+    "totalMs": 9015,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2131,
+        "totalMs": 9015,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2317,
+        "outputTokens": 891
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft answers Marisol's question directly and honestly. It says no to jumping straight back to 40 miles and to starting speedwork, gives the reason, and lays out a safer path toward the 10K. Two weeks after the marathon, the week is a gentle return: about 22 easy miles at a heart-rate cap, a 6-mile Sunday, and only light strides. That keeps it clear of a hard return after the race. Going from 12 to about 22 miles looks like a big jump in percentage terms, but it's still roughly half her pre-race volume and all easy, so it's sensible recovery. The plan keeps her five-day pattern with Monday and Friday off, and each day can be run as written. It loses a point because it closes on a clarifying question instead of giving a firm plan for her 10K goal. Some details, like the Thanksgiving date and the marathon being two weeks back, aren't on the card, so I can't check them."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Two weeks out from the marathon your body is clearing beautifully, so add a little running this week but hold off on real speedwork. …\nAnswers: (1) Not quite yet, and here is the honest reason. … (2) Here is a safer path if you do want to race the Thanksgiving 10K, which sits about four and a half weeks… (3) | Week of | Miles | Running |. | --- | --- | --- |. (4) Before I lock that in, tell me: are you racing the 10K, treating it as a hard group run, or pointing at…\nNext week:\nMon: rest. Full day off to keep absorbing the race.\nTue: easy, 4 mi, heart rate under 140, conversational. First step back to a five-day week.\nWed: easy, 5 mi, heart rate under 140, with 4 x 20 sec strides at the end if the legs…\nThu: easy, 3 mi, very relaxed, flat route. Keeps the rhythm without stacking fatigue.\nFri: rest. Protects Saturday and Sunday.\nSat: easy, 4 mi, heart rate under 140. Shake out before the longer Sunday.\nSun: easy, 6 mi, heart rate under 145, flat if possible. A step up in duration, not a…\n\nScore this draft: call submit_coaching_score once."
+}

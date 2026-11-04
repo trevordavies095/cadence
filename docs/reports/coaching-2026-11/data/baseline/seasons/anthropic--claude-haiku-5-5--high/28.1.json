@@ -1,0 +1,209 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w10.json",
+  "originalCallAt": null,
+  "model": "claude-haiku-5-5",
+  "replayedAt": "2026-11-03T15:19:25.857Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, 2 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 23997,
+  "outputTokens": 14633,
+  "thinkingTokens": 12522,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 13182,
+  "estimatedInputTokens": 9655,
+  "timing": {
+    "ttftMs": 1505,
+    "totalMs": 67451,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 1505,
+        "totalMs": 67451,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 23997,
+        "outputTokens": 14633
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 69209.83872
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Last week matched the plan run for run, and the threshold reps and the 17-mile long run were both controlled. This week shifts the hard work toward marathon pace, adds a medium-long run, and builds the long run to 18 miles, not 22.",
+    "flags": [
+      {
+        "title": "Race date in your profile",
+        "detail": "The About you section still says Sun 1 November, but your goal race is Sun Oct 18. Accept the suggested update so the plan and your profile agree."
+      },
+      {
+        "title": "Easy share below target",
+        "detail": "Last week 61 percent of heart-rate time was in zones 1 and 2, under the 80 percent target. The 17-mile long run spent most of its time in zone 3, so keep the first 12 miles of Sunday relaxed."
+      },
+      {
+        "title": "Marathon pace is untested",
+        "detail": "Wednesday's reps and the 4 miles at race pace on Sunday will show whether 8:35 per mile is realistic. If those miles feel like effort 8/10 early, plan to aim a little slower on race day."
+      },
+      {
+        "title": "Mileage ceiling",
+        "detail": "Last week was 42 miles and this week rises to 45. Do not add more miles before the race."
+      },
+      {
+        "title": "Race nerves",
+        "detail": "You feel anxious about the new date. Keep easy days truly easy and aim for your usual 7 hours of sleep."
+      }
+    ],
+    "answers": [
+      {
+        "question": "The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?",
+        "answer": "No, skip the 22. With the race three weeks away, a 22 would add fatigue you will not fully recover from before Oct 18.\n\nYour 20 on Sep 13 and 17 on Sep 27 already give you the endurance. Sunday's 18 miles, with the last 4 at marathon pace, is the longest run that fits the final weeks."
+      }
+    ],
+    "analysis": "## What happened last week\nLast week went to plan. All five runs matched their planned distances, both rest days were taken, and nothing was added or cut.\n\nThe quality session was 9 miles with three 2-mile reps. They averaged 7:58 per mile against a target of 8:00, and the pace faded only 1 percent across the reps. Heart rate climbed about 19 beats over the session, which is normal for a hard effort in warm conditions.\n\nThe 17-mile long run averaged 9:59 per mile with even splits. The last three miles were no faster than the rest, so the pace was controlled, and heart rate drifted only 4.7 beats.\n\nThe easy share came in at 61 percent, under the 80 percent target. The easy runs themselves sat at 138 to 139 beats, which is solid zone 2, so the gap comes from the quality session and the zone 3 time on the long run.\n\n## Why this week looks like this\nRace-specific work now moves from threshold to marathon pace. Threshold builds the engine, but with the race three weeks away the goal is to rehearse your goal pace on fresh legs and on tired legs.\n\n| Pace | Per mile | Where it shows up this week |\n| --- | --- | --- |\n| Easy runs | 9:50 | Tuesday, Thursday, Saturday |\n| Long run | 9:59 | Sunday, last 12 miles |\n| Marathon pace | 8:30 to 8:45 | Wednesday reps, last 4 miles Sunday |\n| Under 3:45 goal | 8:35 | The average you need over 26.2 miles |\n\nThe Thursday run becomes a medium-long run of 8 miles. It adds time on feet in the middle of the week without making the weekend a second hard session. Volume rises from 42 to 45 miles, about 7 percent, which is enough to keep the work building without tipping into fatigue this close to the race.\n\nThe Sunday long run stays at 18 miles and finishes with 4 miles at race pace. That keeps the run near 2 hours 53 minutes, inside the 2.5 to 3 hour range, and avoids a 22 that would cost more recovery than it adds.\n\n## Is the goal realistic\nUnder 3:45 needs 8:35 per mile for the full 26.2 miles. That is about 84 seconds per mile faster than your long-run pace, so the gap is real. Your threshold reps show you can hold near 8 minutes per mile for two miles, which is encouraging, but four miles at marathon pace on Sunday is the real test. Use what those miles tell you to set the race-day target, and be ready to hold effort steady rather than chase the number early.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full rest after Sunday's 17-mile run; the legs need the day to take in the work.",
+          "line": "Mon Sep 28: rest. Full rest after Sunday's 17-mile run; the legs need the day to take in the work.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "around 9:50 per mile, heart rate under 145 bpm. Keeps the legs moving after the long run without adding fatigue.",
+          "line": "Tue Sep 29: easy, 6 mi, around 9:50 per mile, heart rate under 145 bpm. Keeps the legs moving after the long run without adding fatigue.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 14484,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "2 mi easy, then 4 x 1 mi at 8:30 to 8:40 per mile with 90 seconds of easy jogging between, then 3 mi easy. This practices race pace on fresh legs, the key test of the 3:45 goal; stop the reps early if the last one feels like effort 8/10.",
+          "line": "Wed Sep 30: quality, 9 mi: 2 mi easy, then 4 x 1 mi at 8:30 to 8:40 per mile with 90 seconds of easy jogging between, then 3 mi easy. This practices race pace on fresh legs, the key test of the 3:45 goal; stop the reps early if the last one feels like effort 8/10.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 12875,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "around 9:50 per mile, heart rate under 145 bpm. A medium-long run that adds time on feet in the middle of the week without a second hard session.",
+          "line": "Thu Oct 1: easy, 8 mi, around 9:50 per mile, heart rate under 145 bpm. A medium-long run that adds time on feet in the middle of the week without a second hard session.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full rest before the weekend's long run; keep it truly off.",
+          "line": "Fri Oct 2: rest. Full rest before the weekend's long run; keep it truly off.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "around 10:00 per mile, heart rate under 145 bpm. Short and loose to freshen up for Sunday.",
+          "line": "Sat Oct 3: easy, 4 mi, around 10:00 per mile, heart rate under 145 bpm. Short and loose to freshen up for Sunday.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 28968,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "12 mi easy at 9:50 to 10:00 per mile with heart rate under 145 bpm, then 4 mi at 8:35 to 8:45 per mile, then 2 mi easy. This is the key session; the race-pace miles at the end test the goal on tired legs, and 18 miles stays within the 2.5 to 3 hour range.",
+          "line": "Sun Oct 4: long, 18 mi: 12 mi easy at 9:50 to 10:00 per mile with heart rate under 145 bpm, then 4 mi at 8:35 to 8:45 per mile, then 2 mi easy. This is the key session; the race-pace miles at the end test the goal on tired legs, and 18 miles stays within the 2.5 to 3 hour range.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Update the About you section to say the race is the Wexley Lakes Marathon on Sun Oct 18 2026, not Sun 1 November.",
+      "Add the goal pace: under 3:45 means about 8:35 per mile for the full marathon."
+    ]
+  }
+}

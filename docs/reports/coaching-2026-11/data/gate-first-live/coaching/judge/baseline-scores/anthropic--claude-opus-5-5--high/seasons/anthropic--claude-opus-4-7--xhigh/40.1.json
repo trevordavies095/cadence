@@ -1,0 +1,61 @@
+{
+  "input": "seasons/40",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This draft is safe. It keeps her three days, Monday, Wednesday and Saturday, with rest days between and only dog walks on the other days. That suits a 41-year-old beginner coming back after two weeks off with nothing worse than stiffness from driving. The total load (about 70 minutes of walk-run) is in line with her recent best week of 7 km, and each day is clear enough to run as written. There is one thing to watch. Saturday moves straight from 2:1 to 4:1 intervals, which is a fairly quick step in her first week back. It isn't rushed enough to count as unsafe. The weak point is the second answer. Her goal is to run the whole 5K without walking, but the draft says \"Finishing it, yes, very much so.\" That avoids the question she actually asked. An honest answer would tell her whether running the full distance in four weeks is realistic from a 4-minute-interval starting point, and how the next weeks would build towards it. The first answer, a plain \"No\", is fine but would be better with a sentence on why she doesn't have to start over. The plan is sound and specific, but the main question is only half-answered.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T14:40:36.796Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2193,
+  "outputTokens": 859,
+  "thinkingTokens": 375,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1084,
+  "costUsd": 0.025952000000000003,
+  "timing": {
+    "ttftMs": 2674,
+    "totalMs": 9736,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2674,
+        "totalMs": 9736,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2193,
+        "outputTokens": 859
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This draft is safe. It keeps her three days, Monday, Wednesday and Saturday, with rest days between and only dog walks on the other days. That suits a 41-year-old beginner coming back after two weeks off with nothing worse than stiffness from driving. The total load (about 70 minutes of walk-run) is in line with her recent best week of 7 km, and each day is clear enough to run as written. There is one thing to watch. Saturday moves straight from 2:1 to 4:1 intervals, which is a fairly quick step in her first week back. It isn't rushed enough to count as unsafe. The weak point is the second answer. Her goal is to run the whole 5K without walking, but the draft says \"Finishing it, yes, very much so.\" That avoids the question she actually asked. An honest answer would tell her whether running the full distance in four weeks is realistic from a 4-minute-interval starting point, and how the next weeks would build towards it. The first answer, a plain \"No\", is fine but would be better with a sentence on why she doesn't have to start over. The plan is sound and specific, but the main question is only half-answered."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 7, 0, 5.1, 0 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"Fine, a bit stiff from all the driving.\"\nFeeling: \"Want to get going again.\"\nAsks: \"I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?\"\n\n── THE DRAFT ──\nTells Nessa: Welcome back. …\nAnswers: (1) Do you have to start from the beginning? No. (2) Is the 5K still realistic? Finishing it, yes, very much so.\nNext week:\nMon: easy, walk-run 21 min, 7 rounds of 2 min run and 1 min walk, conversational. Gentle…\nTue: rest. Dog walk only, no running.\nWed: easy, walk-run 24 min, 8 rounds of 2 min run and 1 min walk, same relaxed pace…\nThu: rest. Keep the gap between runs while you re-adapt.\nFri: rest. Optional 20 – 30 min dog walk, nothing brisker.\nSat: easy, walk-run 25 min, 5 rounds of 4 min run and 1 min walk, still easy breathing…\nSun: rest. Full day off before next week.\n\nScore this draft: call submit_coaching_score once."
+}

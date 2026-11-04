@@ -1,0 +1,198 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w13.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:47:56.144Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 16821,
+  "outputTokens": 1441,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 3677,
+  "estimatedInputTokens": 9287,
+  "timing": {
+    "ttftMs": 21247,
+    "totalMs": 45281,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 21247,
+        "totalMs": 45281,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 16821,
+        "outputTokens": 1441
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-19",
+    "isoWeek": "2026-W43",
+    "recentWeeklyM": 65673.30528
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Take it easy this week and focus on recovery. The 10‑K in five weeks is doable if you stay gentle now.",
+    "flags": [
+      {
+        "title": "Heart rate drift",
+        "detail": "watch for rising HR during easy runs."
+      },
+      {
+        "title": "Pain",
+        "detail": "monitor quad soreness from the marathon."
+      },
+      {
+        "title": "Recovery",
+        "detail": "keep mileage low and avoid hard sessions."
+      },
+      {
+        "title": "10‑K race",
+        "detail": "plan a short easy run 2‑3 weeks before."
+      },
+      {
+        "title": "Sleep",
+        "detail": "aim for 7‑8 hrs each night."
+      }
+    ],
+    "answers": [
+      {
+        "question": "How long before I can run again? A friend wants me to race the Thanksgiving 10K in five weeks.",
+        "answer": "You can start next week with 5‑6 mile easy runs. The 10‑K in five weeks is doable if you keep training low now and avoid hard work. Gradually add about a mile each week after this recovery week, keeping paces comfortable."
+      }
+    ],
+    "analysis": "After a marathon the athlete needs a low‑volume recovery week. The plan keeps volume at 5‑6 miles per easy run and eliminates any quality or long sessions. Rest days allow full recovery of the quads, calves, and overall fatigue. The 10‑K race in five weeks is realistic if the athlete stays gentle now, adds a short easy run a week, and only turns to threshold once the next recovery week is complete. Monitoring heart‑rate drift and pain will signal when to add mileage.",
+    "prescribedWeek": {
+      "week": "2026-W43",
+      "days": [
+        {
+          "date": "2026-10-19",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-10-19: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-20",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, flat route. Loosens the legs after the marathon.",
+          "line": "Tue 2026-10-20: easy, 5 mi, heart rate under 150, flat route. Loosens the legs after the marathon.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-21",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "moderate hills, keep pace comfortable. Helps stay active.",
+          "line": "Wed 2026-10-21: easy, 6 mi, moderate hills, keep pace comfortable. Helps stay active.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-22",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Thu 2026-10-22: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-23",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "smooth ride, focus on recovery. Keeps base.",
+          "line": "Fri 2026-10-23: easy, 5 mi, smooth ride, focus on recovery. Keeps base.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "longer, keep easy pace. Builds gentle mileage.",
+          "line": "Sat 2026-10-24: easy, 6 mi, longer, keep easy pace. Builds gentle mileage.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sun 2026-10-25: rest",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

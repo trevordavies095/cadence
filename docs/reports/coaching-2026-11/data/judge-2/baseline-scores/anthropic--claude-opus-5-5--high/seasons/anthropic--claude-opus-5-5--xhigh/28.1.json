@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft gives a direct, honest answer to the main question. With the race moved to three weeks out, it drops the 22-miler and tells her one 20 is enough, which is the right call. Next week adds up to about 40 mi (6+8+6+4+16), a small step down from this week's 42. The long run is 16 mi with 6 at marathon pace. Both are sensible for the start of a taper, and nothing jumps sharply. It keeps her usual layout: Monday and Friday off, the session on Wednesday, the long run on Sunday. Each day has distances, paces and heart-rate caps she can follow. The draft loses a point for two things. It mentions \"Sunday's 17-miler\" and says she ran the week \"exactly as planned,\" and neither appears on the card. It also never responds to her anxiety about the new date, beyond implying that the plan is still on track.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:30:04.947Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2321,
+  "outputTokens": 741,
+  "thinkingTokens": 339,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1160,
+  "costUsd": 0.024104,
+  "timing": {
+    "ttftMs": 3115,
+    "totalMs": 8013,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3115,
+        "totalMs": 8013,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2321,
+        "outputTokens": 741
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft gives a direct, honest answer to the main question. With the race moved to three weeks out, it drops the 22-miler and tells her one 20 is enough, which is the right call. Next week adds up to about 40 mi (6+8+6+4+16), a small step down from this week's 42. The long run is 16 mi with 6 at marathon pace. Both are sensible for the start of a taper, and nothing jumps sharply. It keeps her usual layout: Monday and Friday off, the session on Wednesday, the long run on Sunday. Each day has distances, paces and heart-rate caps she can follow. The draft loses a point for two things. It mentions \"Sunday's 17-miler\" and says she ran the week \"exactly as planned,\" and neither appears on the card. It also never responds to her anxiety about the new date, beyond implying that the plan is still on track."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: You ran this week exactly as planned, and with the race moved to Oct 18 the 22-miler is off. …\nAnswers: (1) No, drop the 22-miler. … (2) At your long-run pace, 22 miles would take about 3 hours 40 minutes. … (3) One 20 is enough. … (4) Running marathon pace on tired legs will help you more now. …\nNext week:\nMon: rest. Recovers from Sunday's 17-miler; an easy walk or light mobility is fine.\nTue: easy, 6 mi, heart rate under 145, then 6 x 20 s relaxed strides on flat ground…\nWed: quality, 8 mi: 2 mi easy, 3 x 1.5 mi at 7:55–8:05/mi with 3 min easy jog between…\nThu: easy, 6 mi, heart rate under 145, flat route. Absorbs Wednesday's work.\nFri: rest. A full day off before the weekend's key long run.\nSat: easy, 4 mi, heart rate under 145, relaxed. Loosens the legs for Sunday.\nSun: long, 16 mi: 8 mi easy at 9:50–10:10/mi with heart rate under 150, 6 mi at…\n\nScore this draft: call submit_coaching_score once."
+}

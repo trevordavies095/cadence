@@ -1,0 +1,103 @@
+{
+  "week": "2026-W38",
+  "days": [
+    {
+      "date": "2026-09-14",
+      "dayType": "rest",
+      "run": null,
+      "strength": null,
+      "notes": "wind down after travel",
+      "line": "Mon 2026-09-14: rest, wind down after travel",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-15",
+      "dayType": "easy",
+      "run": {
+        "type": "easy",
+        "distanceM": 8047,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "heart rate under 150, flat route. Keeps legs relaxed.",
+      "line": "Tue 2026-09-15: easy, 5 mi, heart rate under 150, flat route. Keeps legs relaxed.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-16",
+      "dayType": "easy",
+      "run": {
+        "type": "easy",
+        "distanceM": 9656,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "pace 9:45‑10:00/mi, HR under 150. Builds aerobic base.",
+      "line": "Wed 2026-09-16: easy, 6 mi, pace 9:45‑10:00/mi, HR under 150. Builds aerobic base.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-17",
+      "dayType": "quality",
+      "run": {
+        "type": "quality",
+        "distanceM": 4828,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "1 mi at goal‑pace (8:00/mi) in middle, heart rate under 150. Tests pacing.",
+      "line": "Thu 2026-09-17: quality, 3 mi, 1 mi at goal‑pace (8:00/mi) in middle, heart rate under 150. Tests pacing.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-18",
+      "dayType": "rest",
+      "run": null,
+      "strength": null,
+      "notes": "recover and stretch shin.",
+      "line": "Fri 2026-09-18: rest, recover and stretch shin.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-19",
+      "dayType": "easy",
+      "run": {
+        "type": "easy",
+        "distanceM": 8047,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "pace 9:45‑10:00/mi, HR under 150. Maintains mileage.",
+      "line": "Sat 2026-09-19: easy, 5 mi, pace 9:45‑10:00/mi, HR under 150. Maintains mileage.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-20",
+      "dayType": "long",
+      "run": {
+        "type": "long",
+        "distanceM": 19312,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "9:45‑9:55/mi, heart rate under 150, no goal‑pace finish. Provides volume without strain.",
+      "line": "Sun 2026-09-20: long, 12 mi, 9:45‑9:55/mi, heart rate under 150, no goal‑pace finish. Provides volume without strain.",
+      "parsed": true
+    }
+  ]
+}

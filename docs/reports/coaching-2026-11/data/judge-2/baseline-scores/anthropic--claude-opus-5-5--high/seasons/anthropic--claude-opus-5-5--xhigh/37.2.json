@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a safe, sensible restart. Nessa is a new runner who missed all three walk-runs. The draft restarts her at 2 min run / 1 min walk for 24 minutes on Monday and Wednesday, then a modest step to 3 min / 1.5 min walk on Saturday. That keeps total time and distance in line with her recent ~7 km weeks, so there's no jump. It also keeps her Mon/Wed/Sat routine, allows her dog walks and keeps every run easy, which fits her goal of running the whole 5K on 15 November. Each day can be run as written. It doesn't break any must-never check: no pain, illness or tiredness was reported, and the return isn't rushed. Points off for a thin read: \"the rest days held\" is filler for a week with no running. It doesn't ask why the runs were missed or whether she just didn't record them. It doesn't acknowledge her \"feeling great, excited\" note. It also doesn't say how this connects to the 15 November goal date.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:31:31.320Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2222,
+  "outputTokens": 746,
+  "thinkingTokens": 299,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1110,
+  "costUsd": 0.023808000000000003,
+  "timing": {
+    "ttftMs": 2513,
+    "totalMs": 8360,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2513,
+        "totalMs": 8360,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2222,
+        "outputTokens": 746
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a safe, sensible restart. Nessa is a new runner who missed all three walk-runs. The draft restarts her at 2 min run / 1 min walk for 24 minutes on Monday and Wednesday, then a modest step to 3 min / 1.5 min walk on Saturday. That keeps total time and distance in line with her recent ~7 km weeks, so there's no jump. It also keeps her Mon/Wed/Sat routine, allows her dog walks and keeps every run easy, which fits her goal of running the whole 5K on 15 November. Each day can be run as written. It doesn't break any must-never check: no pain, illness or tiredness was reported, and the return isn't rushed. Points off for a thin read: \"the rest days held\" is filler for a week with no running. It doesn't ask why the runs were missed or whether she just didn't record them. It doesn't acknowledge her \"feeling great, excited\" note. It also doesn't say how this connects to the 15 November goal date."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: None of last week's walk-runs were recorded, so the plan restarts at 2 minutes running and 1 minute walking, then steps up to 3-minute runs…\nHow the week went. None of the three planned walk-runs happened between Sep 21 and 27, though the rest days held.\nNext week:\nMon: easy, 24 min, walk-run as 8 x (2 min run, 1 min walk), running slow enough to talk…\nTue: rest. Your usual dog walk is fine. Gives your legs a day to absorb Monday.\nWed: easy, 24 min, walk-run as 8 x (2 min run, 1 min walk), same easy effort, flat…\nThu: rest. Dog walk is fine. Recovery between runs is where the fitness sinks in.\nFri: rest. Dog walk is fine. Fresh legs for Saturday's longer running stretches.\nSat: easy, 27 min, walk-run as 6 x (3 min run, 1.5 min walk), running a touch slower…\nSun: rest. Dog walk is fine. A full day off before the next week builds on Saturday.\n\nScore this draft: call submit_coaching_score once."
+}

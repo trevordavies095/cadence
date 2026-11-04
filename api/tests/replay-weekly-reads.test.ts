@@ -306,6 +306,9 @@ describe("replay matrix", () => {
 describe("replay --only", () => {
   const SEASON_PACKETS = path.join(api, "tests/fixtures/seasons/season-packets");
   const REGRESSION_SET = path.join(api, "tests/fixtures/regression-set.json");
+  /** How many inputs the seasons root has: one per season packet. */
+  const SEASON_INPUTS = readdirSync(SEASON_PACKETS).filter((f) => f.endsWith(".json")).length;
+  const pad = (n: number) => String(n).padStart(2, "0");
   /** An output root under a fresh temp folder, named as a run's root: snapshot or seasons. */
   const rootNamed = (name: string) => path.join(mkdtempSync(path.join(tmpdir(), "replay-only-")), name);
   const replies = (files: string[]) => files.filter((f) => /^\d+\.\d+\.json$/.test(f));
@@ -329,7 +332,7 @@ describe("replay --only", () => {
     expect(run.stderr).toBe("");
     expect(run.status).toBe(0);
     expect(replies(run.files())).toEqual(["02.1.json", "14.1.json"]);
-    expect(run.stdout).toContain("--only: 2 of 18 inputs under seasons (02, 14)");
+    expect(run.stdout).toContain(`--only: 2 of ${SEASON_INPUTS} inputs under seasons (02, 14)`);
     const report = run.report();
     expect(report).toContain("from 2 replayed coach calls");
     expect(report).toContain("### 02.1 (1-stay-fit-w2.json)");
@@ -369,7 +372,7 @@ describe("replay --only", () => {
     const cases: Array<[string, RegExp]> = [
       ["seasons-01", /--only "seasons-01": expected <root folder name>\/<input id>/],
       ["seasons/01,seasons/x", /--only "seasons\/x": expected/],
-      ["seasons/19", /--only "seasons\/19": seasons has inputs 01 to 18/],
+      [`seasons/${pad(SEASON_INPUTS + 1)}`, new RegExp(`--only "seasons\\/${pad(SEASON_INPUTS + 1)}": seasons has inputs 01 to ${pad(SEASON_INPUTS)}`)],
       ["@tests/fixtures/no-such-set.json", /--only @tests\/fixtures\/no-such-set.json: no file at/],
       [`@${notAList}`, /expected a non-empty JSON list of/],
       ["snapshot/01,snapshot/02", /--only names no input of this run: its inputs are seasons\/<id>/],
@@ -597,7 +600,7 @@ describe("replay measures", () => {
     expect(m.latency.totalMs.n).toBe(2);
     expect(m.latency.wallClockMs).toBeGreaterThanOrEqual(0);
     // The stub's refusal reports no usage, so each reply costs one accepted attempt.
-    expect(m.cost.priceTakenOn).toBe("2026-11-01");
+    expect(m.cost.priceTakenOn).toBe("2026-11-03");
     expect(m.cost.perReplyUsd["01.1"]).toBeCloseTo(COST, 6);
     expect(m.cost.totalUsd).toBeCloseTo(2 * COST, 6);
 
@@ -615,6 +618,7 @@ describe("replay measures", () => {
     expect(report).toContain("| Length caps hit | 1 (headline 1) |");
     expect(report).toContain("within 0.5x to 1.6x of the packet's recent weekly distance");
     expect(report).toContain("| Opus 4.7 (claude-opus-4-7) | $5 | $25 | $0.50 | $6.25 |");
+    expect(report).toContain("| Opus 5.5 (claude-opus-5-5) | $4 | $20 | $0.20 | $5 |");
   }, 30_000);
 
   it("leaves cost blank for a self-hosted configuration", () => {
@@ -711,6 +715,57 @@ describe("replay plan-lines summary", () => {
     });
     expect(saved("03.1").plan).toBeNull();
   }, 30_000);
+});
+
+describe("replay plan rules", () => {
+  const read = (file: string) => JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>;
+
+  it("saves the rules a weekly plan tripped, and the analysis counts them per configuration", async () => {
+    const { buildStubWeeklyForm } = await import("../src/llm/index.js");
+    const packet = read(path.join(FIXTURE, "01-stay-fit.json"));
+    // The stay-fit packet's report says 32 km a week; this plan is 48 km, half as much again.
+    const lines = buildStubWeeklyForm(packet as unknown as Parameters<typeof buildStubWeeklyForm>[0]).plan.split("\n");
+    const dates = lines.map((l) => l.match(/\d{4}-\d{2}-\d{2}/)![0]);
+    const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const km = [0, 10, 10, 8, 0, 8, 12];
+    const plan = dates.map((d, i) => (km[i] === 0 ? `${names[i]} ${d}: rest.` : `${names[i]} ${d}: easy, ${km[i]} km, relaxed.`)).join("\n");
+    const dir = mkdtempSync(path.join(tmpdir(), "replay-plan-rules-"));
+    writeFileSync(path.join(dir, "01-big-week.json"), JSON.stringify({ packet, stubPatch: { plan } }));
+    copyFileSync(path.join(FIXTURE, "02-10k.json"), path.join(dir, "02-10k.json"));
+    const run = dryRun(dir);
+    expect(run.status, run.stderr).toBe(0);
+    const saved = (stem: string) => read(path.join(run.out, DEFAULT_CONFIG, `${stem}.json`));
+    // The fixture reports have no long-run trend line, so that rule is skipped, not passed.
+    const skipped = [{ rule: "long-run jump", reason: "no recent long run" }];
+    expect(saved("01.1").rules).toEqual({ tripped: ["volume jump"], skipped });
+    // The stub sizes its own plan from the same report, so it trips nothing.
+    expect(saved("02.1").rules).toEqual({ tripped: [], skipped });
+
+    const out = mkdtempSync(path.join(tmpdir(), "replay-plan-rules-analysis-"));
+    const analysis = spawnSync(
+      path.join(api, "node_modules/.bin/tsx"),
+      ["scripts/replay-analysis.ts", "--roots", run.out, "--out", out],
+      { cwd: api, env: process.env, encoding: "utf8" },
+    );
+    expect(analysis.status, analysis.stderr).toBe(0);
+    const md = readFileSync(path.join(out, "analysis.md"), "utf8");
+    expect(md).toContain("### Plan rules tripped");
+    expect(md).toContain(
+      "| Configuration | Replies checked | volume jump | long-run jump | quality with pain | return from injury | Replies with any rule | volume jump skipped | long-run jump skipped | quality with pain skipped | return from injury skipped |",
+    );
+    expect(md).toContain("| claude-opus-4-7--xhigh | 2 | 1 | 0 | 0 | 0 | 1 | 0 | 2 | 0 | 0 |");
+    const json = JSON.parse(readFileSync(path.join(out, "analysis.json"), "utf8")) as { planRules: unknown[] };
+    expect(json.planRules).toEqual([
+      {
+        configuration: DEFAULT_CONFIG,
+        repliesChecked: 2,
+        byRule: { "volume jump": 1, "long-run jump": 0, "quality with pain": 0, "return from injury": 0 },
+        repliesWithAnyRule: 1,
+        skippedByRule: { "volume jump": 0, "long-run jump": 2, "quality with pain": 0, "return from injury": 0 },
+        rulesRetries: 0,
+      },
+    ]);
+  }, 60_000);
 });
 
 describe("replay against a fake self-hosted server", () => {

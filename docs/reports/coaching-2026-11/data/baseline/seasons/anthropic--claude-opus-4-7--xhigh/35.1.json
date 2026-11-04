@@ -1,0 +1,202 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w3.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:01:44.245Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 8 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 10638,
+  "outputTokens": 2344,
+  "thinkingTokens": 999,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 1105,
+  "estimatedInputTokens": 4505,
+  "timing": {
+    "ttftMs": 4326,
+    "totalMs": 41481,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 4326,
+        "totalMs": 41481,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 10638,
+        "outputTokens": 2344
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-14",
+    "isoWeek": "2026-W38",
+    "recentWeeklyM": 4220
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Welcome back after the fever: we ease in with shorter walk-runs, not catch-up sessions, and only step up on Saturday if the cough has cleared.",
+    "flags": [
+      {
+        "title": "Illness return",
+        "detail": "fever only cleared Fri and cough lingers, so the week starts shorter than planned, not longer."
+      },
+      {
+        "title": "Missed Wed and Sat",
+        "detail": "both were skipped for good reason; we do not add them on, we rebuild."
+      },
+      {
+        "title": "Cough and chest",
+        "detail": "if coughing worsens with running or you feel chest tightness, stop and get it checked."
+      },
+      {
+        "title": "Sleep at 6 hrs",
+        "detail": "a bit low while recovering, so protect bedtime this week."
+      },
+      {
+        "title": "Longest run trend",
+        "detail": "2.78 km is a real step up from a standing start four weeks ago, keep that patient line."
+      }
+    ],
+    "answers": [
+      {
+        "question": "Can I do all three runs next week and add the two I missed?",
+        "answer": "No, please do not try to add the two missed runs on top of three new ones. Missed sessions during illness are gone, not owed; piling them in now is the fastest route to another setback. Three runs this week, starting shorter than last week's plan, is the right move. If Monday feels clean and the cough is fading, Wednesday and Saturday grow back toward where you were."
+      }
+    ],
+    "analysis": "## What happened and why it matters\n\nYou got one run in on Mon Sep 7 before the cold hit, then the fever on Wed night sensibly ended the week. That is the right call, not a failure. The Monday run itself was solid: steady pace, heart rate drift basically flat, pain 0/10.\n\n## How we come back\n\nBuild phase on paper, but your real build is still \"run longer between walk breaks.\" We rebuild from a slightly easier start than last week's Monday, because you are two days past a fever and still coughing. The first run tells us how much of the week is on.\n\n## Rule for this week\n\nIf the cough gets worse during a run, or you feel chest tightness, breathlessness beyond effort, or dizziness, stop and rest the next day. Dial back the Saturday session to the Wednesday shape if you are not clearly better by Friday. We would rather land in Nov 15 slightly undercooked than miss another week.",
+    "prescribedWeek": {
+      "week": "2026-W38",
+      "days": [
+        {
+          "date": "2026-09-14",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1200,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "6 x 2 min run and 1 min walk. Short re-entry to see how the lungs feel after the fever.",
+          "line": "Mon 2026-09-14: easy, walk-run, 20 min, 6 x 2 min run and 1 min walk. Short re-entry to see how the lungs feel after the fever.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-15",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Recovery day; a dog walk is fine.",
+          "line": "Tue 2026-09-15: rest. Recovery day; a dog walk is fine.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-16",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "8 x 2 min run and 1 min walk. Back to last week's starting shape if Monday felt clean.",
+          "line": "Wed 2026-09-16: easy, walk-run, 24 min, 8 x 2 min run and 1 min walk. Back to last week's starting shape if Monday felt clean.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-17",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Space before Saturday's longer effort.",
+          "line": "Thu 2026-09-17: rest. Space before Saturday's longer effort.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-18",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Keeps the legs fresh for the week's longest run.",
+          "line": "Fri 2026-09-18: rest. Keeps the legs fresh for the week's longest run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1620,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "9 x 2 min run and 1 min walk. Nudges the long one up by one interval; drop back to 8 x 2 and 1 if the cough is still bothering you.",
+          "line": "Sat 2026-09-19: easy, walk-run, 27 min, 9 x 2 min run and 1 min walk. Nudges the long one up by one interval; drop back to 8 x 2 and 1 if the cough is still bothering you.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Dog walk only; full day off running.",
+          "line": "Sun 2026-09-20: rest. Dog walk only; full day off running.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Note that illness in week of Sep 7 caused two missed runs; return-to-run started Mon Sep 14.",
+      "Preferred run days remain Mon, Wed and Sat around a work-week morning routine."
+    ],
+    "safetyCallouts": [
+      {
+        "title": "Returning to running after a fever.",
+        "body": "You had 38.4 on Wed and are still coughing. If the cough worsens with exercise, if you feel chest pain or tightness, unusual breathlessness, a racing heart at rest, or dizziness, stop running and see your GP before the next session. Build back gradually this week rather than chasing the missed runs.",
+        "severity": "caution"
+      }
+    ]
+  }
+}

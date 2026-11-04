@@ -1,0 +1,61 @@
+{
+  "input": "seasons/40",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The plan is safe and clear. It keeps her Mon/Wed/Sat walk-runs at conversational effort, with about 14, 18 and 21 minutes of running (about 53 minutes for the week). Her earlier weeks were 7 km and 5.1 km of walk-running, so this is a restart near her old level, not a sharp jump. It also keeps her dog walks. The draft answers the first question directly: two weeks off doesn't mean starting over. Moving from 2-minute to 3-minute run intervals within her first week back is a little brisk for a new runner, but it isn't rushed. The second question, whether the 5K is still realistic, is never answered in what's shown. The draft says the race is 3 weeks away rather than 4, but the card gives no date to check that against. It also invents short sleep, which isn't in her notes; she only mentioned stiffness from driving. The vague safety flag (\"Look after yourself first\") doesn't fit a healthy week. The plan is sound, but the reply misses her main question about the race and adds details that aren't on the card.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:51:05.741Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2068,
+  "outputTokens": 988,
+  "thinkingTokens": 519,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 996,
+  "costUsd": 0.028032,
+  "timing": {
+    "ttftMs": 2872,
+    "totalMs": 10351,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2872,
+        "totalMs": 10351,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2068,
+        "outputTokens": 988
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The plan is safe and clear. It keeps her Mon/Wed/Sat walk-runs at conversational effort, with about 14, 18 and 21 minutes of running (about 53 minutes for the week). Her earlier weeks were 7 km and 5.1 km of walk-running, so this is a restart near her old level, not a sharp jump. It also keeps her dog walks. The draft answers the first question directly: two weeks off doesn't mean starting over. Moving from 2-minute to 3-minute run intervals within her first week back is a little brisk for a new runner, but it isn't rushed. The second question, whether the 5K is still realistic, is never answered in what's shown. The draft says the race is 3 weeks away rather than 4, but the card gives no date to check that against. It also invents short sleep, which isn't in her notes; she only mentioned stiffness from driving. The vague safety flag (\"Look after yourself first\") doesn't fit a healthy week. The plan is sound, but the reply misses her main question about the race and adds details that aren't on the card."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 7, 0, 5.1, 0 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"Fine, a bit stiff from all the driving.\"\nFeeling: \"Want to get going again.\"\nAsks: \"I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?\"\n\n── THE DRAFT ──\nTells Nessa: You have not lost your fitness in two weeks off, so step back in close to where you left off. …\nAnswers: (1) No, you do not start from the beginning. Two weeks off is a pause, not a wipe. (2) On the race, two things to be clear about. First, the race is 3 weeks away now, not 4, since it is Sun Nov 15.\nSafety flag: Look after yourself first\nNext week:\nMon: easy, walk-run 21 min, 7 x (2 min run, 1 min walk), conversational effort. Gentle…\nTue: rest. Full recovery between runs while sleep is short.\nWed: easy, walk-run 24 min, 6 x (3 min run, 1 min walk), conversational effort. Longer…\nThu: rest. Walk the dog as usual.\nFri: rest. Keep legs fresh for Saturday.\nSat: easy, walk-run 28 min, 7 x (3 min run, 1 min walk), conversational effort. Longest…\nSun: rest. Recovery before next week steps up.\n\nScore this draft: call submit_coaching_score once."
+}

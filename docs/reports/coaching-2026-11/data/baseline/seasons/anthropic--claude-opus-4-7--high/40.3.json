@@ -1,0 +1,194 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w8.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:36:32.238Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 3 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 12370,
+  "outputTokens": 2461,
+  "thinkingTokens": 1186,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 1380,
+  "estimatedInputTokens": 5470,
+  "timing": {
+    "ttftMs": 5870,
+    "totalMs": 44806,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 5870,
+        "totalMs": 44806,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 12370,
+        "outputTokens": 2461
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-19",
+    "isoWeek": "2026-W43",
+    "recentWeeklyM": 1267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Welcome back, and sorry about your mum. You do not need to start over, but with two weeks off and three weeks to the race, we ease in this week and then push the run intervals longer.",
+    "flags": [
+      {
+        "title": "Two weeks missed",
+        "detail": "easing back in rather than restarting, but the first run will feel harder than you remember."
+      },
+      {
+        "title": "Sleep and stress",
+        "detail": "6 hours and a lot on your plate, so cut a session if the body says no."
+      },
+      {
+        "title": "Race target at risk",
+        "detail": "running the whole 5K non-stop is tight, so we may shift to \"finish strong\" closer to race day."
+      },
+      {
+        "title": "Longest continuous run so far",
+        "detail": "still 2 minutes, we need to stretch that to 5 and beyond over the next two weeks."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?",
+        "answer": "No, you do not go back to square one. Two weeks off after the base you built in September costs some sharpness, not everything. We pick up a notch below where you left off on Monday, then push on.\n\nRunning the whole 5K on Nov 15 is still possible, but honestly it is tight. You have three weeks of training and a race week. If the run intervals stretch cleanly over the next fortnight you will be in with a shout. If not, the backup plan is to run as much as you can and walk the rest, which still finishes the race. We will decide together after next weekend's longer walk-run how to pitch race day."
+      }
+    ],
+    "analysis": "The reviewed week was a wash with your mum in hospital, which is the right call. The plan had three walk-runs and all three were missed, so there is nothing to correct in the training itself, only to restart kindly.\n\nThe shape of this week keeps your Mon/Wed/Sat pattern. Monday is a touch shorter than where you left off so the legs remember the job. Wednesday stretches the run portion from 2 minutes to 3, which is the key move for your race goal. Saturday is the longest piece and uses 5-minute run blocks for the first time, which is the real test of whether the whole-way target is on.\n\nKeep the effort conversational on all three. If you can speak a sentence while running, the pace is right. The walk breaks are brisk, not a stroll, so the heart rate stays up.\n\nSleep at 6 hours and high stress matter more than any session. If a run feels like a slog in the first five minutes, drop back to 2-min run/1-min walk and finish the time. That is a win, not a failure.",
+    "prescribedWeek": {
+      "week": "2026-W43",
+      "days": [
+        {
+          "date": "2026-10-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1260,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "7 x (2 min run, 1 min walk), conversational. Gentle re-entry after two weeks off.",
+          "line": "Mon 2026-10-19: easy, walk-run, 21 min, 7 x (2 min run, 1 min walk), conversational. Gentle re-entry after two weeks off.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Protect the return day.",
+          "line": "Tue 2026-10-20: rest. Protect the return day.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-21",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "6 x (3 min run, 1 min walk), conversational. First stretch of the run interval toward race-day continuity.",
+          "line": "Wed 2026-10-21: easy, walk-run, 24 min, 6 x (3 min run, 1 min walk), conversational. First stretch of the run interval toward race-day continuity.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-22",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Keep the dog walk, nothing more.",
+          "line": "Thu 2026-10-22: rest. Keep the dog walk, nothing more.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-23",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Legs fresh for Saturday's longer piece.",
+          "line": "Fri 2026-10-23: rest. Legs fresh for Saturday's longer piece.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1800,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "2 min walk warm-up then 4 x (5 min run, 2 min walk), conversational. The key session: can you hold 5-minute run blocks?",
+          "line": "Sat 2026-10-24: easy, walk-run, 30 min, 2 min walk warm-up then 4 x (5 min run, 2 min walk), conversational. The key session: can you hold 5-minute run blocks?",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full recovery before next week's build.",
+          "line": "Sun 2026-10-25: rest. Full recovery before next week's build.",
+          "parsed": true
+        }
+      ]
+    },
+    "safetyCallouts": [
+      {
+        "title": "Look after yourself first.",
+        "body": "You are juggling a lot with your mum home from hospital and short sleep, so skip a run without guilt if the week turns heavy, and speak to your GP if stress or sleep stay this bad.",
+        "severity": "info"
+      }
+    ]
+  }
+}

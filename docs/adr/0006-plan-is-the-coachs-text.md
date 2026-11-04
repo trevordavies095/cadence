@@ -38,6 +38,8 @@ Coach Cade's weekly read arrived as one large tool call: the headline, Watching,
 - **Caps.** Every coach call, on Anthropic and self-hosted, sends an output cap of 20,000 tokens: twice the highest valid Opus reply in the saved runs (9,264), floored at 16,000. The replay gate estimates a run's cost before it starts and refuses above $5 unless `--allow-cost` is passed.
 - **Every contract change passes the gate** on Opus 4.7 and on the weakest usable local model (gpt-oss-20b) before it ships: Opus inside the baseline band with every day structured; gpt-oss-20b at least 19 of 20 valid and at least 90 percent of days structured.
 
+*Status, 2026-11-04: ADR 0007 adds a coaching gate beside this format gate. A reply that is usable by this ADR's measure is now also scored for how well it coaches, by a judge calibrated against a certified coach on a hard set of 14 weeks, and every plan from every model passes a deterministic plan check whose warnings the athlete sees. The format gate is unchanged.*
+
 ## Evidence: the gates
 
 All on the 20-input regression set, one repeat each, 2026-11-02.

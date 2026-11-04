@@ -511,7 +511,8 @@ const IGNORED_LINE_QUOTE = 60;
  * The first field holding tool-call markup, if any. Opus 4.7 sometimes leaks
  * its own call syntax into a text box (`<parameter name="0">Workload spike...`,
  * 6 of 20 first attempts in the 2026-11-02 gate). Such a box must never reach
- * the athlete, so the reply is refused and the retry names the field.
+ * the athlete: a box leaked whole into another is moved back (moveLeakedBoxes),
+ * anything else is refused and the retry names the field.
  */
 const TOOL_MARKUP_RE = /<\/?(?:parameter|invoke|function_calls|antml:[a-z_]+)\b/i;
 
@@ -521,6 +522,54 @@ function fieldWithToolMarkup(raw: Record<string, unknown>): string | null {
     if (texts.some((t) => TOOL_MARKUP_RE.test(t))) return key;
   }
   return null;
+}
+
+/** The weekly tool's text boxes, for moving a box leaked into another back to its own field. */
+const WEEKLY_BOXES = ["headline", "flags", "answers", "analysis", "plan", "settingsProposalBullets", "safetyCallouts"] as const;
+/** The mid-week tool's text boxes. */
+const MID_WEEK_BOXES = ["body", "changes"] as const;
+
+const LEAKED_BOX_RE = /<parameter name="([^"]+)">/g;
+
+/**
+ * Boxes written inside another box, moved back to their own fields. A model
+ * sometimes closes one box and opens the next in its own call syntax inside
+ * the string (`...</answers>\n<parameter name="analysis">...`), leaving those
+ * fields out of the call; in the 2026-11-03 baseline every refused attempt of
+ * this kind (Opus 4.7 once, Haiku 5.5 three times) leaked exactly the fields
+ * it had left out, and the retry did the same in another box. Each leaked box
+ * is moved when it names one of the tool's boxes, holds text, and that field
+ * is empty; anything else (an unknown name, an empty leaked box, a field
+ * already written, markup left over)
+ * returns null and the reply is refused as before. Returns the repaired copy
+ * and a note per box moved.
+ */
+export function moveLeakedBoxes(
+  raw: Record<string, unknown>,
+  boxes: readonly string[],
+): { raw: Record<string, unknown>; repairs: string[] } | null {
+  const out: Record<string, unknown> = { ...raw };
+  const repairs: string[] = [];
+  const closing = (name: string) => new RegExp(`(?:\\s*</(?:${name}|parameter|invoke|function_calls|antml:[a-z_]+)>)+\\s*$`);
+  for (const [field, value] of Object.entries(raw)) {
+    if (typeof value !== "string" || !TOOL_MARKUP_RE.test(value)) continue;
+    const first = value.search(LEAKED_BOX_RE);
+    if (first < 0) return null;
+    out[field] = value.slice(0, first).replace(closing(field), "").trim();
+    const leaked = [...value.matchAll(LEAKED_BOX_RE)];
+    for (let i = 0; i < leaked.length; i++) {
+      const name = leaked[i]![1]!;
+      const start = leaked[i]!.index! + leaked[i]![0].length;
+      const end = i + 1 < leaked.length ? leaked[i + 1]!.index! : value.length;
+      const text = value.slice(start, end).replace(closing(name), "").trim();
+      const present = out[name];
+      // An empty leaked box may be a reply cut off mid-call: refused, not guessed at.
+      if (!text || !boxes.includes(name) || (typeof present === "string" ? present.trim() !== "" : present != null)) return null;
+      out[name] = text;
+      repairs.push(`${name} moved out of ${field}`);
+    }
+  }
+  return fieldWithToolMarkup(out) ? null : { raw: out, repairs };
 }
 
 function toolMarkupError(field: string): SchemaErr {
@@ -539,32 +588,34 @@ export function validateWeeklyReply(
     return { ok: false, error: "weekly reply must be an object" };
   }
   const markupField = fieldWithToolMarkup(raw);
-  if (markupField) return toolMarkupError(markupField);
+  const moved = markupField ? moveLeakedBoxes(raw, WEEKLY_BOXES) : { raw, repairs: [] };
+  if (!moved) return toolMarkupError(markupField!);
+  const repairs: string[] = [...moved.repairs];
+  const box = moved.raw;
   if (!DATE_RE.test(weekStartMonday)) {
     return { ok: false, error: "weekStartMonday must be YYYY-MM-DD" };
   }
-  const repairs: string[] = [];
 
-  const headline = parseHeadline(raw.headline, repairs);
+  const headline = parseHeadline(box.headline, repairs);
   if (!headline.ok) return headline;
-  const analysis = parseAnalysis(raw.analysis);
+  const analysis = parseAnalysis(box.analysis);
   if (!analysis.ok) return analysis;
 
   const unit = context.unit ?? "imperial";
-  const plan = parsePlanBox(raw.plan, weekStartMonday, unit, repairs);
+  const plan = parsePlanBox(box.plan, weekStartMonday, unit, repairs);
   if (!plan.ok) return plan;
 
-  const bullets = bulletsFromLines(raw.settingsProposalBullets, repairs);
+  const bullets = bulletsFromLines(box.settingsProposalBullets, repairs);
   if (!bullets.ok) return bullets;
 
-  const calloutObjects = calloutsFromLines(raw.safetyCallouts, repairs);
+  const calloutObjects = calloutsFromLines(box.safetyCallouts, repairs);
   if (!calloutObjects.ok) return calloutObjects;
   const callouts = validateSafetyCallouts(calloutObjects.value, { allowEmptyBody: true });
   if (!callouts.ok) return callouts;
 
-  const flags = flagsFromLines(raw.flags, repairs);
+  const flags = flagsFromLines(box.flags, repairs);
   if (!flags.ok) return flags;
-  const answers = answersFromText(raw.answers, context.questions ?? [], repairs);
+  const answers = answersFromText(box.answers, context.questions ?? [], repairs);
   if (!answers.ok) return answers;
 
   const reply: WeeklyReply = {
@@ -1089,28 +1140,30 @@ export function validateMidWeekChatReply(
     return { ok: false, error: "mid-week chat reply must be an object" };
   }
   const markupField = fieldWithToolMarkup(raw);
-  if (markupField) return toolMarkupError(markupField);
-  const repairs: string[] = [];
-  const body = parseMidWeekBody(raw.body);
+  const moved = markupField ? moveLeakedBoxes(raw, MID_WEEK_BOXES) : { raw, repairs: [] };
+  if (!moved) return toolMarkupError(markupField!);
+  const repairs: string[] = [...moved.repairs];
+  const box = moved.raw;
+  const body = parseMidWeekBody(box.body);
   if (!body.ok) return body;
 
-  const bullets = bulletsFromLines(raw.settingsProposalBullets, repairs);
+  const bullets = bulletsFromLines(box.settingsProposalBullets, repairs);
   if (!bullets.ok) return bullets;
 
-  const calloutObjects = calloutsFromLines(raw.safetyCallouts, repairs);
+  const calloutObjects = calloutsFromLines(box.safetyCallouts, repairs);
   if (!calloutObjects.ok) return calloutObjects;
   const callouts = validateSafetyCallouts(calloutObjects.value, { allowEmptyBody: true });
   if (!callouts.ok) return callouts;
 
   if (
-    raw.allowPastDayPatches !== undefined &&
-    raw.allowPastDayPatches !== null &&
-    typeof raw.allowPastDayPatches !== "boolean"
+    box.allowPastDayPatches !== undefined &&
+    box.allowPastDayPatches !== null &&
+    typeof box.allowPastDayPatches !== "boolean"
   ) {
     return { ok: false, error: "allowPastDayPatches must be a boolean" };
   }
 
-  const changes = parseChangesBox(raw.changes, weekStartMonday, context.unit ?? "imperial", repairs);
+  const changes = parseChangesBox(box.changes, weekStartMonday, context.unit ?? "imperial", repairs);
   if (!changes.ok) return changes;
 
   const reply: MidWeekChatReply = { body: body.value };
@@ -1123,7 +1176,7 @@ export function validateMidWeekChatReply(
   if (changes.value.days.length > 0) {
     reply.prescribedDayPatches = changes.value.days;
   }
-  if (raw.allowPastDayPatches === true) {
+  if (box.allowPastDayPatches === true) {
     reply.allowPastDayPatches = true;
   }
   repairs.push(...(callouts.repairs ?? []));

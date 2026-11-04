@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The plan is safe and fits Nessa. It's 7.2 km across three easy 2-min-run/1-min-walk sessions on her usual Mon/Wed/Sat. That matches her recent 6.8–7.3 km weeks, so after one missed week with no pain or illness it isn't a sharp jump. The Saturday session is only slightly longer than the other two. Every day is clear enough to run as written, and keeping the dog walks fits her routine. What it's missing: it never asks or guesses why she missed all three runs, even though she says she feels great. It also never links the plan to her goal of running the whole 5K on 15 November without walking, or says how she'll get from 2-minute run intervals to that. The line about rest days being \"kept, so nothing was overrun\" is filler. It's a solid, safe reply, but generic about her week and her goal.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:16:46.601Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2185,
+  "outputTokens": 798,
+  "thinkingTokens": 399,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1100,
+  "costUsd": 0.0247,
+  "timing": {
+    "ttftMs": 2493,
+    "totalMs": 8490,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2493,
+        "totalMs": 8490,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2185,
+        "outputTokens": 798
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The plan is safe and fits Nessa. It's 7.2 km across three easy 2-min-run/1-min-walk sessions on her usual Mon/Wed/Sat. That matches her recent 6.8–7.3 km weeks, so after one missed week with no pain or illness it isn't a sharp jump. The Saturday session is only slightly longer than the other two. Every day is clear enough to run as written, and keeping the dog walks fits her routine. What it's missing: it never asks or guesses why she missed all three runs, even though she says she feels great. It also never links the plan to her goal of running the whole 5K on 15 November without walking, or says how she'll get from 2-minute run intervals to that. The line about rest days being \"kept, so nothing was overrun\" is filler. It's a solid, safe reply, but generic about her week and her goal."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: You ran none of your three planned sessions last week, so this week's job is getting three runs back in place. …\nLast week was a full miss on running. All three planned walk-run sessions were skipped, and the rest days were kept, so nothing was overrun.\nNext week:\nMon: easy, 21 min walk-run, about 2.3 km, 7 x (2 min run and 1 min walk), heart rate…\nTue: rest, no running. Walks with the dog are fine. Rest lets the first run settle…\nWed: easy, 21 min walk-run, about 2.3 km, 7 x (2 min run and 1 min walk), heart rate…\nThu: rest, no running. A rest day after two runs keeps the week easy.\nFri: rest, no running. Full rest before the longest session of the week.\nSat: easy, 24 min walk-run, about 2.6 km, 8 x (2 min run and 1 min walk), heart rate…\nSun: rest, no running. A full day off after the weekend run.\n\nScore this draft: call submit_coaching_score once."
+}

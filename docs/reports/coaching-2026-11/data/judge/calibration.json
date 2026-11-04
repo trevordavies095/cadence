@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-11-04T01:51:16.610Z",
+  "reviewer": "coach",
+  "answerKeyGeneratedAt": "2026-11-04T01:37:43.200Z",
+  "formSeed": 1,
+  "dryRun": false,
+  "bar": {
+    "pickAgreement": 0.35714285714285715,
+    "unsafeRecall": 0.6,
+    "ratingMad": 1.170731707317073
+  },
+  "barFrom": "user",
+  "judges": [
+    {
+      "judge": "anthropic--claude-opus-5-5--high",
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "casesCompared": 14,
+      "pickAgreement": 0.21428571428571427,
+      "unsafeRecall": 0.2,
+      "unsafePrecision": 0.25,
+      "unsafeCompared": 42,
+      "unsafeAgreement": 0.8333333333333334,
+      "coachUnsafe": 5,
+      "judgeUnsafe": 4,
+      "ratingsCompared": 41,
+      "ratingMad": 1.024390243902439,
+      "ratingWithinOne": 0.7560975609756098,
+      "unscored": [],
+      "meetsBar": false,
+      "bar": {
+        "pickAgreement": 0.35714285714285715,
+        "unsafeRecall": 0.6,
+        "ratingMad": 1.170731707317073
+      }
+    }
+  ],
+  "choice": null
+}

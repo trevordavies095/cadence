@@ -6,6 +6,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { attemptCostUsd, PRICE_TABLE } from "../scripts/replayMeasures.js";
 import { describeEstimate, estimateGateCost, FALLBACK_ANTHROPIC_USD_PER_REPLY, GATE_COST_CAP_USD } from "../scripts/replayCost.js";
 
 const OPUS = { short: "opus", folder: "anthropic--claude-opus-4-7--xhigh", provider: "anthropic", inputs: 20 };
@@ -56,5 +57,16 @@ describe("the gate's cost estimate", () => {
     expect(estimateGateCost([{ ...OPUS, inputs: 21 }], [tmp])).toMatchObject({ refused: true });
     savedRun(path.join(tmp, "b", GPT_OSS.folder), { startedAt: "2026-11-01T10:00:00Z", medianUsd: 100 });
     expect(estimateGateCost([{ ...GPT_OSS, inputs: 1000 }], [tmp])).toMatchObject({ totalUsd: 0, refused: false });
+  });
+
+  it("prices the 5.5 models from the table, with Opus 5.5 and Sonnet 5.5 reading the cache at 0.05x", () => {
+    const usage = { inputTokens: 10_000, outputTokens: 2_000, thinkingTokens: null, cacheReadTokens: 1_000_000, cacheCreationTokens: 0 };
+    // Opus 5.5: $4 in, $20 out; a million cache reads at 0.05x of $4 is $0.20.
+    expect(attemptCostUsd("claude-opus-5-5", usage)).toBeCloseTo(0.04 + 0.04 + 0.2);
+    // Haiku 5.5 keeps the standard 0.1x: a million cache reads at $0.10 input is $0.01.
+    expect(attemptCostUsd("claude-haiku-5-5", usage)).toBeCloseTo(0.001 + 0.001 + 0.01);
+    expect(PRICE_TABLE.models["claude-sonnet-5-5"]).toMatchObject({ inputPerMTok: 2, outputPerMTok: 10 });
+    expect(attemptCostUsd("claude-opus-4-7", usage)).toBeCloseTo(0.05 + 0.05 + 0.5);
+    expect(attemptCostUsd("some-unpriced-model", usage)).toBeNull();
   });
 });

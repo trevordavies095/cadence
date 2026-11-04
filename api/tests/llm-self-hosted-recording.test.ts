@@ -71,6 +71,7 @@ function send(app: ReturnType<typeof createApp>, route: string, method: string, 
 }
 
 let prevProvider: string | undefined;
+let prevRulesRetry: string | undefined;
 
 beforeAll(async () => {
   process.env.DATA_PROTECTION_SECRET_KEY = TEST_DATA_PROTECTION_KEY;
@@ -82,11 +83,16 @@ beforeEach(async () => {
   await acceptAndReady();
   prevProvider = process.env.LLM_PROVIDER;
   process.env.LLM_PROVIDER = "anthropic";
+  // The recorded reply's plan trips a rule; this file is about the stream, so one request, not the rules retry.
+  prevRulesRetry = process.env.COACH_RULES_RETRY;
+  process.env.COACH_RULES_RETRY = "off";
 });
 
 afterEach(() => {
   if (prevProvider === undefined) delete process.env.LLM_PROVIDER;
   else process.env.LLM_PROVIDER = prevProvider;
+  if (prevRulesRetry === undefined) delete process.env.COACH_RULES_RETRY;
+  else process.env.COACH_RULES_RETRY = prevRulesRetry;
 });
 
 describe(`the recorded ${sidecar.server} weekly reply (${sidecar.model} at ${sidecar.effort})`, () => {

@@ -702,6 +702,39 @@ describe("the script", () => {
     expect(md).not.toContain("re-sends the identical request");
   });
 
+  it("recomputes the plan rules from each input's packet, so a rule change reaches older runs", () => {
+    const root = path.join(tmp, "rules", "packets");
+    const dir = path.join(root, "self_hosted--rules-model--high");
+    mkdirSync(dir, { recursive: true });
+    const inputs = path.join(api, "tests/fixtures/replay-packets");
+    writeFileSync(path.join(dir, "config.json"), JSON.stringify({ configuration: path.basename(dir), provider: "self_hosted", model: "rules-model", effort: "high", inputs }));
+    const reply = (extra: Any) => ({ operation: "weekly_reply", outcome: "ok", repairs: null, inputTokens: 1000, outputTokens: 100, refusedAttempts: [], ...extra });
+    // Input 01 (32 km a week): saved with a summary saying nothing tripped; checked on the packet, its plan does.
+    writeFileSync(path.join(dir, "01.1.json"), JSON.stringify(reply({ new: validWeekly(), rules: { tripped: [], skipped: [] } })));
+    // Input 02 (40 km a week): saved before the field existed, with a 56 km plan; the check is run on the packet now.
+    const big = validWeekly();
+    big.prescribedWeek.days[6].run.distanceM = 24000;
+    writeFileSync(path.join(dir, "02.1.json"), JSON.stringify(reply({ new: big })));
+    const out = path.join(tmp, "rules-analysis");
+    const res = run(["--roots", root, "--out", out]);
+    expect(res.status, res.stderr).toBe(0);
+    const json = JSON.parse(readFileSync(path.join(out, "analysis.json"), "utf8"));
+    expect(json.planRules).toEqual([
+      {
+        configuration: "self_hosted--rules-model--high",
+        repliesChecked: 2,
+        byRule: { "volume jump": 2, "long-run jump": 0, "quality with pain": 0, "return from injury": 0 },
+        repliesWithAnyRule: 2,
+        // Both recomputed: the fixture reports have no long-run trend line.
+        skippedByRule: { "volume jump": 0, "long-run jump": 2, "quality with pain": 0, "return from injury": 0 },
+        rulesRetries: 0,
+      },
+    ]);
+    const md = readFileSync(path.join(out, "analysis.md"), "utf8");
+    expect(md).toContain("### Plan rules tripped");
+    expect(md).toContain("| rules-model--high | 2 | 2 | 0 | 0 | 0 | 2 | 0 | 2 | 0 | 0 |");
+  });
+
   it("refuses an --out inside a root", () => {
     const root = path.join(tmp, "seasons");
     const res = run(["--roots", root, "--out", path.join(root, "analysis")]);

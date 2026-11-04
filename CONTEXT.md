@@ -41,6 +41,10 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | onboarding, interview, questionnaire, prompt N of M | "a few questions", "3 of 8" | The first-run questions and the check-in questions. |
 | loop status, phase, stepper | the home **banner** | The one line on Home that says what, if anything, needs the athlete. Never show the phase name. |
 | safety callout | a **notice** titled by the callout | Rendered once, styled; never as a `⚠ Safety (caution):` text prefix. |
+| plan warning, plan rule | a **notice** on the plan | Cadence's own check of next week's plan against the athlete's recent training, run after Coach Cade's reply is accepted and before the plan is stored. One notice per rule tripped, worded by Cadence in Coach Cade's voice, after any safety callout, on the plan and on the Sunday message's card. The plan itself is never changed. When a rule trips, Coach Cade is first asked once more with the warnings (the rules retry, on unless `COACH_RULES_RETRY=off`), and the second plan is kept only if it trips fewer rules; the athlete sees the plan kept and its notices. The rule's name goes in the log and the replay analysis, never on screen. |
+| coaching score, rating, unsafe | (not athlete-facing: never shown in the app) | How well one weekly read and plan coaches: a rating from 1 to 5 and unsafe yes or no, against the coaching rubric (`docs/coaching-rubric.md`), given by the reviewing coach on his form or by the judge. Averaged per configuration over the hard set in the replay analysis and held by the coaching gate. Settings recommends no model on it; the recommendation is in `docs/reports/coaching-2026-11.md`. |
+| hard set | (not athlete-facing) | The 14 Sunday reads that test coaching rather than format (`api/tests/fixtures/hard-set.json`): weeks of fictional seasons with a niggle, illness, race week, missed weeks and the like, plus the demo athlete's Achilles week. Each names the plan rules a careless plan would trip. The coaching run, the coach's form and the coaching gate all use it. |
+| judge, coaching judge | (not athlete-facing) | The model call that scores one reply blind against the coaching rubric (`coaching_judge` on the adapter; no route exposes it). Used only once calibrated: it must agree with the coach's answer key at least as well as a second reviewer does. Opus 5.5 at `high` since 2026-11-04 (ADR 0007). |
 | packet, model packet, last outbound packet | "what was sent to Coach Cade" | The redacted context sent to the model; shown under Privacy. |
 | Tempo | "your running log", "your watch" (for data that came from the watch) | The athlete's running log and the source of run data. Tempo may be named where the athlete connected it (Settings). |
 | Anthropic, LLM, stub | (never shown outside Settings) | The model provider. |
@@ -48,7 +52,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 
 ## Never on screen
 
-dossier · proposal · soft-gate · dirty · artifact · packet · prescribed · recap · subjective · ISO · week session · archived · stub · installed · phase (on the home banner; Coach Cade may say "base phase") · stepper · mid-week · interview · prompt · RPE · data-only · regenerate · 409 · any raw error code or JSON. · AI Coach · "Cade" on its own
+dossier · proposal · soft-gate · dirty · artifact · packet · prescribed · recap · subjective · ISO · week session · archived · stub · installed · phase (on the home banner; Coach Cade may say "base phase") · stepper · mid-week · interview · prompt · RPE · data-only · regenerate · 409 · any raw error code or JSON. · AI Coach · "Cade" on its own · a plan rule's name (volume jump and the rest)
 
 ## Writing rules
 

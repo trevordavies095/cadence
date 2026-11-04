@@ -1,0 +1,61 @@
+{
+  "input": "seasons/33",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a safe, sensible reply for a brand-new runner. It answers her question with a clear, honest no to running every day and explains why: fitness builds on the days between runs. It keeps her three walk-run mornings and her dog walks, so it fits her routine.\n\nIt reads the calf tightness correctly. The tightness goes by the next morning, so it's normal adaptation, not a sign of injury, and the plan uses rest days to give the calves time to recover.\n\nProgression is gentle. The runs are walk-runs of about 29 to 30 minutes, with run segments of 1:30 midweek and 2:00 on Saturday, and the times add up. There's no sharp jump in volume and no hard sessions.\n\nEach day is clear enough to run as written.\n\nTwo minor points held it back from a 5:\n- The \"ten weeks\" to race day isn't backed by anything on the card, which gives no current date, so it may be made up.\n- The Friday calf raises come the day before Saturday's longest session, which could add some calf fatigue. Putting the strength work on Tuesday or Thursday would fit better.\n\nWithout earlier sessions to compare against, it's also hard to confirm that the 29-minute sessions are only a small step up.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T13:00:47.741Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2299,
+  "outputTokens": 975,
+  "thinkingTokens": 460,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1191,
+  "costUsd": 0.028696,
+  "timing": {
+    "ttftMs": 3578,
+    "totalMs": 11403,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3578,
+        "totalMs": 11403,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2299,
+        "outputTokens": 975
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a safe, sensible reply for a brand-new runner. It answers her question with a clear, honest no to running every day and explains why: fitness builds on the days between runs. It keeps her three walk-run mornings and her dog walks, so it fits her routine.\n\nIt reads the calf tightness correctly. The tightness goes by the next morning, so it's normal adaptation, not a sign of injury, and the plan uses rest days to give the calves time to recover.\n\nProgression is gentle. The runs are walk-runs of about 29 to 30 minutes, with run segments of 1:30 midweek and 2:00 on Saturday, and the times add up. There's no sharp jump in volume and no hard sessions.\n\nEach day is clear enough to run as written.\n\nTwo minor points held it back from a 5:\n- The \"ten weeks\" to race day isn't backed by anything on the card, which gives no current date, so it may be made up.\n- The Friday calf raises come the day before Saturday's longest session, which could add some calf fatigue. Putting the strength work on Tuesday or Thursday would fit better.\n\nWithout earlier sessions to compare against, it's also hard to confirm that the 29-minute sessions are only a small step up."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: none recorded.\nThis week: 6.8 km over 3 runs.\nBody: \"Calves tight the day after each run, gone by the next morning.\"\nFeeling: \"Proud I started.\"\nAsks: \"I want to be ready for the 5K in November. Should I run every day next week to get there faster?\"\n\n── THE DRAFT ──\nTells Nessa: Keep three runs a week and don't run daily. …\nAnswers: (1) No, running every day would slow you down rather than speed you up. Your legs get fitter on the days between runs, not during the runs themselves. (2) Your calves were tight the day after each run, which tells me they are still adapting to the load. … (3) The faster route to running the whole 5K is to stay healthy for ten weeks and make your running segments a little longer each week. …\nNext week:\nMon: easy, 29 min, 5 min brisk walk, then 8 repeats of 1 min 30 run and 1 min 30 walk…\nTue: rest, usual dog walk only. Your calves get a full day to recover after Monday.\nWed: easy, 29 min, same as Monday: 5 min brisk walk, then 8 repeats of 1 min 30 run and…\nThu: rest, usual dog walk only. Recovery day so Saturday's longer run segments start on…\nFri: other, 15 min, light bodyweight strength: 2 sets of 10 calf raises, squats and…\nSat: long, 30 min, 5 min brisk walk, then 7 repeats of 2 min run and 1 min 30 walk at…\nSun: rest, usual dog walk only. Rest after your longest session of the week lets your…\n\nScore this draft: call submit_coaching_score once."
+}

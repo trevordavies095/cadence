@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft answers Marisol's question directly and correctly: skip the 22, because three weeks out it would add fatigue she can't shed before October 18. It backs that up by pointing to the 20 and the 17 she has already run. Next week adds up to about 45 mi (6+9+8+4+18), a small step from 42 and in line with the 53 peak. The 18-mile long run, with the last 4 at marathon pace, is a sensible last long run three weeks out. It follows the 17 and is shorter than the earlier 20, so it isn't a jump. The plan keeps her five days with Mon/Fri off, a Wednesday session and a Sunday long run. The 8:30–8:40 reps are close to her 3:45 goal pace (about 8:35/mi), and every day can be run as written, with paces and heart-rate caps. Nothing on the card calls for a must-never check: no pain, illness, fatigue or return from a break. I took off a point because the draft never speaks to the anxiety she mentioned about the new date. It also doesn't say how the next two weeks will taper, which would have reassured someone worried about less time.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:05:16.210Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2372,
+  "outputTokens": 1102,
+  "thinkingTokens": 614,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1200,
+  "costUsd": 0.031528,
+  "timing": {
+    "ttftMs": 3927,
+    "totalMs": 12946,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3927,
+        "totalMs": 12946,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2372,
+        "outputTokens": 1102
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft answers Marisol's question directly and correctly: skip the 22, because three weeks out it would add fatigue she can't shed before October 18. It backs that up by pointing to the 20 and the 17 she has already run. Next week adds up to about 45 mi (6+9+8+4+18), a small step from 42 and in line with the 53 peak. The 18-mile long run, with the last 4 at marathon pace, is a sensible last long run three weeks out. It follows the 17 and is shorter than the earlier 20, so it isn't a jump. The plan keeps her five days with Mon/Fri off, a Wednesday session and a Sunday long run. The 8:30–8:40 reps are close to her 3:45 goal pace (about 8:35/mi), and every day can be run as written, with paces and heart-rate caps. Nothing on the card calls for a must-never check: no pain, illness, fatigue or return from a break. I took off a point because the draft never speaks to the anxiety she mentioned about the new date. It also doesn't say how the next two weeks will taper, which would have reassured someone worried about less time."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: Last week matched the plan run for run, and the threshold reps and the 17-mile long run were both controlled. …\nAnswers: (1) No, skip the 22. With the race three weeks away, a 22 would add fatigue you will not fully recover from before Oct 18. (2) Your 20 on Sep 13 and 17 on Sep 27 already give you the endurance. Sunday's 18 miles, with the last 4 at marathon pace, is the longest run that fits the final weeks.\nNext week:\nMon: rest. Full rest after Sunday's 17-mile run; the legs need the day to take in the…\nTue: easy, 6 mi, around 9:50 per mile, heart rate under 145 bpm. Keeps the legs moving…\nWed: quality, 9 mi: 2 mi easy, then 4 x 1 mi at 8:30 to 8:40 per mile with 90 seconds of…\nThu: easy, 8 mi, around 9:50 per mile, heart rate under 145 bpm. A medium-long run that…\nFri: rest. Full rest before the weekend's long run; keep it truly off.\nSat: easy, 4 mi, around 10:00 per mile, heart rate under 145 bpm. Short and loose to…\nSun: long, 18 mi: 12 mi easy at 9:50 to 10:00 per mile with heart rate under 145 bpm…\n\nScore this draft: call submit_coaching_score once."
+}

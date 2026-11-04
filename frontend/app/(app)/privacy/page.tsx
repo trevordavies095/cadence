@@ -59,6 +59,7 @@ function SentSummary({ sent }: { sent: LastOutboundPacket }) {
       `${summary.attachmentCount} attached ${summary.attachmentCount === 1 ? "run" : "runs"}`,
     );
   }
+  if (summary.hasPlan) included.push("the plan for that week");
   if ((summary.recentHistoryCount ?? 0) > 0) {
     included.push(
       `a short look back at ${summary.recentHistoryCount} earlier ${summary.recentHistoryCount === 1 ? "week" : "weeks"}`,

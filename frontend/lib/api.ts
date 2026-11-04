@@ -82,6 +82,8 @@ export type ThreadMessage = {
   attachment?: WorkoutAttachment | null;
   /** Safety callouts that came with a coach message; empty otherwise. */
   safetyCallouts?: SafetyCallout[];
+  /** On the Sunday message: the notices on the plan it points at; empty when none. */
+  planWarnings?: PlanWarning[];
   /** The model call that wrote this coach message; links a reply to its run. */
   llmCallId?: string | null;
   /** The note this reply produced, as it stands now; null when it produced none. */
@@ -137,6 +139,18 @@ export type SafetyCallout = {
   severity?: "info" | "caution" | "urgent";
 };
 
+/**
+ * A notice on the plan from Cadence's own check of it against the athlete's
+ * recent training: a title and body in Coach Cade's voice. `rule` names the
+ * check for the log and is never shown.
+ */
+export type PlanWarning = {
+  rule: string;
+  title: string;
+  body: string;
+  figures?: Record<string, number>;
+};
+
 export type PrescribedWeekRecord = {
   weekSessionId: string;
   plan: PrescribedWeek;
@@ -145,6 +159,8 @@ export type PrescribedWeekRecord = {
   safetyCallouts: SafetyCallout[] | null;
   /** The parts of the read laid out on their own; null on plans made before them. */
   readSections?: ReadSections | null;
+  /** Notices from Cadence's check of the plan; null on plans made before the check. */
+  planWarnings?: PlanWarning[] | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -163,6 +179,7 @@ export type PrescribedWeekArtifact = {
   weekSessionId: string;
   plan: PrescribedWeek;
   safetyCallouts: SafetyCallout[];
+  planWarnings?: PlanWarning[];
   createdAt: string;
   updatedAt: string;
 };
@@ -343,6 +360,8 @@ export type LastOutboundPacketSummary = {
   /** Prior weeks in the lean recent-history window (#34). */
   recentHistoryCount?: number;
   recentHistoryLimit?: number;
+  /** The plan for that week went along; absent on packets saved before it was counted. */
+  hasPlan?: boolean;
 };
 
 /** The training goal as it went to Coach Cade (API `TrainingGoal`). */

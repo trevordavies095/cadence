@@ -1,0 +1,225 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w04.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:43:26.072Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 10 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 13118,
+  "outputTokens": 2241,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 5785,
+  "estimatedInputTokens": 7433,
+  "timing": {
+    "ttftMs": 726,
+    "totalMs": 72329,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 726,
+        "totalMs": 37254,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 13118,
+        "outputTokens": 2241
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 1975,
+        "totalMs": 35075,
+        "request": {
+          "kind": "fix_rules",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 13938,
+        "outputTokens": 2019
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-08-17",
+    "isoWeek": "2026-W34",
+    "recentWeeklyM": 51901.344
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Reduce long run to 12 mi, keep the week easy, and monitor knee pain closely.",
+    "flags": [
+      {
+        "title": "Knee pain",
+        "detail": "Right knee tight on downhill after mile 7 – watch for worsening pain, consider rest or physio."
+      },
+      {
+        "title": "Long run shortened",
+        "detail": "Cut from 13 mi to 9 mi – monitor recovery and plan to rebuild volume safely."
+      },
+      {
+        "title": "HR control",
+        "detail": "Long run HR stayed below 150 – good, keep this pattern."
+      },
+      {
+        "title": "Overall volume",
+        "detail": "32 mi total, 80 % easy – maintain this balance."
+      }
+    ],
+    "answers": [
+      {
+        "question": "Is this an IT band thing? Should I still do Wednesday's tempo?",
+        "answer": "It might be IT‑band or another lateral knee irritation. Keep the tempo run if the pain stays mild—start it slower, use a warm‑up and strides, and stop if the pain worsens. Add recovery work like foam rolling and consider cross‑training if the knee feels tight."
+      }
+    ],
+    "analysis": "The athlete’s knee tightness after mile 7 on the long run indicates a need for more recovery before adding hard work. The quality session on Wednesday can be omitted this week to give the knee time to heal while still keeping volume in the build phase. The long run is reduced to 12 mi, staying at an easy pace with HR under 150. The rest day on Monday allows for leg recovery. The other days remain easy runs, keeping the volume at about 80 % easy. This conservative approach keeps the week in the build phase, prevents further knee strain, and keeps the long run short enough to avoid adding marathon‑pace work until the knee fully recovers.",
+    "prescribedWeek": {
+      "week": "2026-W34",
+      "days": [
+        {
+          "date": "2026-08-17",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "recovery after knee pain.",
+          "line": "Mon 2026-08-17: rest – recovery after knee pain.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-18",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "HR < 150, steady pace, keeps legs loose.",
+          "line": "Tue 2026-08-18: easy, 6 mi, HR < 150, steady pace, keeps legs loose.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 12875,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "low effort, keeps legs loose.",
+          "line": "Wed 2026-08-19: easy, 8 mi, low effort, keeps legs loose.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-20",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "HR < 150, easy recovery run.",
+          "line": "Thu 2026-08-20: easy, 5 mi, HR < 150, easy recovery run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-21",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "recovery day.",
+          "line": "Fri 2026-08-21: rest – recovery day.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-22",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "low effort, prep for long.",
+          "line": "Sat 2026-08-22: easy, 4 mi, low effort, prep for long.",
+          "parsed": true
+        },
+        {
+          "date": "2026-08-23",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 19312,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy, HR < 150, steady pacing, avoid marathon pace.",
+          "line": "Sun 2026-08-23: long, 12 mi, easy, HR < 150, steady pacing, avoid marathon pace.",
+          "parsed": true
+        }
+      ]
+    },
+    "safetyCallouts": [
+      {
+        "title": "Knee discomfort during long run – monitor pain, rest if worsening, consider physiotherapy if it continues.",
+        "body": "",
+        "severity": "caution"
+      }
+    ]
+  }
+}

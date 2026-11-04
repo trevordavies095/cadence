@@ -1,0 +1,103 @@
+{
+  "week": "2026-W38",
+  "days": [
+    {
+      "date": "2026-09-14",
+      "dayType": "rest",
+      "run": null,
+      "strength": null,
+      "notes": "Fixed travel day. Walk if you can, and book the physio appointment today.",
+      "line": "Mon 2026-09-14: rest. Fixed travel day. Walk if you can, and book the physio appointment today.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-15",
+      "dayType": "easy",
+      "run": {
+        "type": "easy",
+        "distanceM": 6437,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "flat, HR under 148, pace is whatever that gives you. Test run — if the Achilles sharpens or you limp, cut it short and walk home.",
+      "line": "Tue 2026-09-15: easy, 4 mi, flat, HR under 148, pace is whatever that gives you. Test run — if the Achilles sharpens or you limp, cut it short and walk home.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-16",
+      "dayType": "easy",
+      "run": {
+        "type": "easy",
+        "distanceM": 9656,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "flat canal path, HR under 150, 9:40 – 9:55/mi. Keeps aerobic rhythm without stressing the tendon.",
+      "line": "Wed 2026-09-16: easy, 6 mi, flat canal path, HR under 150, 9:40 – 9:55/mi. Keeps aerobic rhythm without stressing the tendon.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-17",
+      "dayType": "easy",
+      "run": {
+        "type": "easy",
+        "distanceM": 8047,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "flat only (skip the hilly route this week), HR under 148. Replacing the quality session — no pace work until the Achilles is calm and checked.",
+      "line": "Thu 2026-09-17: easy, 5 mi, flat only (skip the hilly route this week), HR under 148. Replacing the quality session — no pace work until the Achilles is calm and checked.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-18",
+      "dayType": "rest",
+      "run": null,
+      "strength": null,
+      "notes": "Fixed travel day. Good day for calf and ankle mobility if the physio has given you anything to do.",
+      "line": "Fri 2026-09-18: rest. Fixed travel day. Good day for calf and ankle mobility if the physio has given you anything to do.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-19",
+      "dayType": "easy",
+      "run": {
+        "type": "easy",
+        "distanceM": 6437,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "flat, HR under 148. Shake out the legs for Sunday — properly easy, no chasing pace.",
+      "line": "Sat 2026-09-19: easy, 4 mi, flat, HR under 148. Shake out the legs for Sunday — properly easy, no chasing pace.",
+      "parsed": true
+    },
+    {
+      "date": "2026-09-20",
+      "dayType": "long",
+      "run": {
+        "type": "long",
+        "distanceM": 16093,
+        "durationS": null,
+        "structure": null,
+        "paceOrHr": null,
+        "shoes": null
+      },
+      "strength": null,
+      "notes": "flat route, 9:40 – 9:55/mi, HR under 150. Holding long-run distance flat this week; no marathon-pace finish while we're managing the Achilles.",
+      "line": "Sun 2026-09-20: long, 10 mi, flat route, 9:40 – 9:55/mi, HR under 150. Holding long-run distance flat this week; no marathon-pace finish while we're managing the Achilles.",
+      "parsed": true
+    }
+  ]
+}

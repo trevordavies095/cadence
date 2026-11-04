@@ -1,0 +1,205 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w09.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:48:28.156Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 5 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 16674,
+  "outputTokens": 1460,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2899,
+  "estimatedInputTokens": 9382,
+  "timing": {
+    "ttftMs": 21202,
+    "totalMs": 45620,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 21202,
+        "totalMs": 45620,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 16674,
+        "outputTokens": 1460
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-21",
+    "isoWeek": "2026-W39",
+    "recentWeeklyM": 63194.91552
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "This week focuses on a steady build with a marathon‑pace quality run and a longer easy run, keeping volume moderate to manage fatigue.",
+    "flags": [
+      {
+        "title": "Easy‑run HR drift",
+        "detail": "HR trend is climbing; keep an eye on heart rate during Tuesday runs."
+      },
+      {
+        "title": "Long‑run pace",
+        "detail": "maintain steady pace, avoid slowing in the last miles."
+      },
+      {
+        "title": "Total volume",
+        "detail": "stay around 70–75 miles; avoid exceeding 80."
+      },
+      {
+        "title": "Quality session spacing",
+        "detail": "one day rest before long run to aid recovery."
+      },
+      {
+        "title": "Knee recovery",
+        "detail": "ensure rest days are truly rest, monitor any tightness."
+      }
+    ],
+    "answers": [
+      {
+        "question": "My club mate runs 70 miles a week before a marathon. I'm thinking of doubling to 80 next week to catch up, running twice a day. Would that work?",
+        "answer": "I’d not recommend jumping to 80 miles a week. That’s a lot of volume and can lead to over‑training, especially if you’re doing it twice a day. Stick to about 70–75 miles and increase by 5–10% each week, building the long run gradually. Make sure you keep a solid recovery routine and monitor how you feel after each run. If you’re comfortable and your body is responding well, you can add a little mileage, but 80 miles a week is usually too much for most runners preparing for a marathon."
+      }
+    ],
+    "analysis": "The last week ran the full prescribed load: 6 runs, 40mi total, with hard minutes 0 and heart‑rate zones 1/2 at 63%. The athlete’s question was about increasing volume to 80mi by running twice a day. A jump to that volume would create a high load without the necessary base or recovery. The plan for the coming week should keep volume near 70‑75mi, with one quality session and a longer easy run. A single rest day before the long run allows recovery. The quality run will stay at 9mi with 6mi at marathon pace, keeping the intense work to one day and leaving the long run on an easy pace. The rest days are kept real to prevent fatigue accumulation. Weekly totals: Mon rest, Tue easy 5.5mi heart‑rate under 150, Wed quality 9mi with 6mi at marathon pace, Thu easy 5.5mi, Fri rest, Sat easy 5.5mi, Sun long 18mi easy under 150. The head‑line summarizes the moderate build and focus on recovery. Flags highlight easy‑run heart‑rate drift, long‑run pace consistency, total volume, quality‑session spacing, and knee recovery. No safety red flags present. The answer to the question advises against 80mi a week and suggests 70‑75mi with progressive overload.",
+    "prescribedWeek": {
+      "week": "2026-W39",
+      "days": [
+        {
+          "date": "2026-09-21",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-09-21: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-22",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8851,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, flat route. Keeps legs fresh after rest.",
+          "line": "Tue 2026-09-22: easy, 5.5 mi, heart rate under 150, flat route. Keeps legs fresh after rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-23",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 14484,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "with 6 at marathon pace, keep effort at target pace.",
+          "line": "Wed 2026-09-23: quality, 9 mi with 6 at marathon pace, keep effort at target pace.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8851,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, moderate hill terrain. Restes the legs.",
+          "line": "Thu 2026-09-24: easy, 5.5 mi, heart rate under 150, moderate hill terrain. Restes the legs.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-09-25: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-26",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8851,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, low‑intensity. Provides steady mileage.",
+          "line": "Sat 2026-09-26: easy, 5.5 mi, heart rate under 150, low‑intensity. Provides steady mileage.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-27",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 28968,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy pace, heart rate under 150. Builds endurance without hard work.",
+          "line": "Sun 2026-09-27: long, 18 mi, easy pace, heart rate under 150. Builds endurance without hard work.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

@@ -69,6 +69,24 @@ export type ModelPacketPlanWeek = {
 };
 
 /**
+ * What happened on one day of the reviewed week against its plan, as Home
+ * computes it (coaching-quality 01, #59). The read treats the week as over,
+ * so a planned run with nothing recorded is missed, never today or upcoming.
+ */
+export type ModelPacketDayOutcome = {
+  date: string;
+  /**
+   * done: something was run. missed: a run was planned and none recorded.
+   * rest: nothing was planned. unknown: a run was planned and the running log
+   * could not be read. not_filed: a day Cadence could not read from the
+   * coach's line, or a date the plan left out.
+   */
+  state: "done" | "missed" | "rest" | "unknown" | "not_filed";
+  /** Distance recorded on the date; null when the running log could not be read. */
+  actualDistanceM: number | null;
+};
+
+/**
  * One prior week in the lean recent-history window (#34).
  * Summaries/plans only — never mid-week thread chatter.
  */
@@ -148,8 +166,18 @@ export type ModelPacket = {
    * Absent for mid-week packets, which plan against `week`.
    */
   planWeek?: ModelPacketPlanWeek | null;
-  /** Current prescribed week when available (mid-week plan patches — #38). */
+  /**
+   * The focus week's stored plan. Mid-week: the current week's plan, for plan
+   * patches (#38). The weekly read: the plan the reviewed week was meant to
+   * follow, null when none was stored (#59).
+   */
   prescribedWeek?: PrescribedWeek | null;
+  /**
+   * The weekly read only: each day of the reviewed week against
+   * `prescribedWeek`, null when no plan was stored. Absent on mid-week
+   * packets. Beside the plan, not inside it: the plan stays the coach's own.
+   */
+  prescribedWeekOutcomes?: ModelPacketDayOutcome[] | null;
   /**
    * Last N prior weeks' recap/plan summaries (newest first).
    * Empty when none or limit is 0.
@@ -191,6 +219,8 @@ export type BuildModelPacketInput = {
   planWeek?: ModelPacketPlanWeek | null;
   /** Current prescribed week for mid-week patch context (#38). */
   prescribedWeek?: PrescribedWeek | null;
+  /** The reviewed week's days against its plan (weekly read, #59). */
+  prescribedWeekOutcomes?: ModelPacketDayOutcome[] | null;
   /** Prior week summaries/plans for lean recent history (#34). */
   recentHistory?: ModelPacketRecentWeek[];
   /** Window size N; defaults applied by lean assembly when omitted. */

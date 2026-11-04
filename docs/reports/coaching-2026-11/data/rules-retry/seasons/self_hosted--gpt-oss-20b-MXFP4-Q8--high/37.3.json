@@ -1,0 +1,210 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w5.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T12:02:36.394Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 6 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 9723,
+  "outputTokens": 1545,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 4042,
+  "estimatedInputTokens": 6029,
+  "timing": {
+    "ttftMs": 925,
+    "totalMs": 43578,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 925,
+        "totalMs": 25338,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 9723,
+        "outputTokens": 1545
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 1163,
+        "totalMs": 18240,
+        "request": {
+          "kind": "fix_rules",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 10362,
+        "outputTokens": 1077
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 4267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [
+      "volume jump"
+    ],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Return to training with a light three‑run week and keep rest days solid.",
+    "flags": [
+      {
+        "title": "Rest day soreness",
+        "detail": "pay attention to any lingering fatigue from the missed week."
+      },
+      {
+        "title": "Heart‑rate drift",
+        "detail": "monitor if interval blocks feel increasingly hard."
+      },
+      {
+        "title": "Continuous run pace",
+        "detail": "keep it comfortable, no faster than last week."
+      },
+      {
+        "title": "Weekly mileage",
+        "detail": "stay around 7–9 km to match previous training."
+      },
+      {
+        "title": "Quality work",
+        "detail": "introduce next week only if recovery is good."
+      }
+    ],
+    "answers": [
+      {
+        "question": "",
+        "answer": "No, keep the three‑day schedule. Rest days are essential to allow recovery after a missed week and to avoid over‑reaching. Stick to Monday, Wednesday, and Saturday and adjust volume as your body feels."
+      }
+    ],
+    "analysis": "The athlete missed the entire last week, so the priority is to re‑establish a routine without increasing load too fast. Three easy runs—one interval and two continuous—mirror the week‑36‑38 pattern while keeping total mileage near 9 km. No hard or quality session is needed this week; recovery and confidence are the goals. I watch rest‑day soreness, heart‑rate drift on the intervals, pace on the continuous run, and overall weekly mileage to ensure it stays in the 7–9 km range. The athlete asked whether to run every day; the answer keeps the three‑day schedule for safety and recovery.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 3000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk‑run 8×2 min run + 1 min walk, keep it familiar and comfortable.",
+          "line": "Mon 2026-09-28: easy, 3.0 km, walk‑run 8×2 min run + 1 min walk, keep it familiar and comfortable.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "allow recovery.",
+          "line": "Tue 2026-09-29: rest, allow recovery.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 3000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "run continuous at a relaxed pace, keep legs moving.",
+          "line": "Wed 2026-09-30: easy, 3.0 km, run continuous at a relaxed pace, keep legs moving.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no running.",
+          "line": "Thu 2026-10-01: rest, no running.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "stay off the shoes.",
+          "line": "Fri 2026-10-02: rest, stay off the shoes.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 3000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk‑run 8×2 min run + 1 min walk, finish the week.",
+          "line": "Sat 2026-10-03: easy, 3.0 km, walk‑run 8×2 min run + 1 min walk, finish the week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "prepare for the next week.",
+          "line": "Sun 2026-10-04: rest, prepare for the next week.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

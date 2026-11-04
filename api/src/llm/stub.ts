@@ -12,8 +12,15 @@ import {
 import { wholeWeeksBetween } from "../goal/context.js";
 import { goalDateLabel } from "../goal/sentence.js";
 import type { GoalKind, TrainingGoal } from "../goal/types.js";
+import { recentWeeklyDistanceM } from "../packet/recentTraining.js";
 import type { ModelPacket } from "../packet/types.js";
 import { LlmSchemaError, type LlmCallOptions, type LlmPort } from "./port.js";
+import {
+  buildStubJudgement,
+  validateCoachingJudgement,
+  type CoachingJudgeInput,
+  type CoachingJudgement,
+} from "./judge.js";
 import {
   buildStubSafetyCallouts,
 } from "./safety.js";
@@ -99,61 +106,14 @@ function stubGoalKind(packet: ModelPacket): GoalKind {
   return packet.goal?.kind ?? "fitness";
 }
 
+const METERS_PER_MILE = 1609.344;
+
 /** Weekly distance (meters) the stub plans when the report gives no history. */
 const STUB_DEFAULT_WEEK_M: Record<Exclude<GoalKind, "return">, number> = {
   race: 40000,
   speed: 30000,
   fitness: 24000,
 };
-
-const METERS_PER_MILE = 1609.344;
-
-/** Meters from a report cell such as "42.00 km" or "26.10 mi"; null otherwise. */
-function parseDistanceCell(cell: string | undefined): number | null {
-  const m = /^\s*(\d+(?:\.\d+)?)\s*(km|mi)\s*$/.exec(cell ?? "");
-  if (!m) return null;
-  const value = Number(m[1]);
-  return m[2] === "mi" ? value * METERS_PER_MILE : value * 1000;
-}
-
-/**
- * The Distance row of a report's Summary table: this week and the 3-week
- * average. Reports stored before the row was renamed call it "Mileage".
- */
-function parseDistanceRow(
-  md: string | null | undefined,
-): { thisWeekM: number | null; threeWkAvgM: number | null } | null {
-  const row = /^\|\s*(?:Distance|Mileage)\s*\|([^\n]*)$/m.exec(md ?? "");
-  if (!row) return null;
-  const cells = row[1]!.split("|").map((c) => c.trim());
-  return {
-    thisWeekM: parseDistanceCell(cells[0]),
-    threeWkAvgM: parseDistanceCell(cells[2]),
-  };
-}
-
-/**
- * Average weekly distance (meters) over the last four weeks, from the report's
- * Distance row (this week plus the 3-week average of the weeks before), else
- * from this week and the recent weeks' reports. Null when nothing says.
- */
-export function recentWeeklyDistanceM(packet: ModelPacket): number | null {
-  const current = parseDistanceRow(packet.recapMarkdown);
-  if (current?.thisWeekM != null && current.threeWkAvgM != null) {
-    const avg = (current.thisWeekM + 3 * current.threeWkAvgM) / 4;
-    return avg > 0 ? avg : null;
-  }
-  const weeks: number[] = [];
-  if (current?.thisWeekM != null) weeks.push(current.thisWeekM);
-  for (const w of packet.recentHistory ?? []) {
-    if (weeks.length >= 4) break;
-    const m = parseDistanceRow(w.recapMarkdown)?.thisWeekM;
-    if (m != null) weeks.push(m);
-  }
-  if (weeks.length === 0) return null;
-  const avg = weeks.reduce((a, b) => a + b, 0) / weeks.length;
-  return avg > 0 ? avg : null;
-}
 
 type StubDayPattern = {
   dayType: DayType;
@@ -1189,6 +1149,17 @@ export function createStubLlmPort(options?: StubLlmPortOptions): LlmPort {
         throw new LlmSchemaError(validated.error);
       }
       await recordOk("plan_day_fix", callOptions, input, validated.value);
+      return validated.value;
+    },
+    async judgeCoachingDraft(
+      input: CoachingJudgeInput,
+      callOptions?: LlmCallOptions,
+    ): Promise<CoachingJudgement> {
+      const validated = validateCoachingJudgement(buildStubJudgement());
+      if (!validated.ok) {
+        throw new LlmSchemaError(validated.error);
+      }
+      await recordOk("coaching_judge", callOptions, input, validated.value);
       return validated.value;
     },
   };

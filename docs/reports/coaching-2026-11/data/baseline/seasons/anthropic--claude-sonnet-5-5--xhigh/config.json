@@ -1,0 +1,18 @@
+{
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "provider": "anthropic",
+  "baseUrlHost": null,
+  "model": "claude-sonnet-5-5",
+  "effort": "xhigh",
+  "repeats": 3,
+  "note": "Anthropic API",
+  "startedAt": "2026-11-03T15:46:31.965Z",
+  "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614",
+  "dryRun": false,
+  "rulesRetry": false,
+  "inputs": "api/tests/fixtures/seasons/season-packets",
+  "resumedAt": [
+    "2026-11-03T16:11:52.871Z",
+    "2026-11-04T11:56:42.677Z"
+  ]
+}

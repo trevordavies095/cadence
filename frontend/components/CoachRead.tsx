@@ -13,18 +13,19 @@ function withStop(title: string): string {
 
 /**
  * Coach Cade's read of a week, the same on Plan and on Your week: safety notices
- * first, never folded away, then on Coach Cade's surface the headline, what
- * Coach Cade is watching, the answers to the athlete's questions, and the rest
- * of the read under "The full read". Once the week is under way the answers
- * fold away with it. Plans made before these parts show the read as it was,
- * with nothing folded.
+ * first, then the notices from Cadence's own check of the plan, never folded
+ * away, then on Coach Cade's surface the headline, what Coach Cade is
+ * watching, the answers to the athlete's questions, and the rest of the read
+ * under "The full read". Once the week is under way the answers fold away with
+ * it. Plans made before these parts show the read as it was, with nothing
+ * folded.
  */
 export function CoachRead({
   record,
   emptyText,
   fresh,
 }: {
-  record: Pick<PrescribedWeekRecord, "analysis" | "safetyCallouts" | "readSections">;
+  record: Pick<PrescribedWeekRecord, "analysis" | "safetyCallouts" | "readSections" | "planWarnings">;
   /** Shown when there is no read; nothing is shown when left out. */
   emptyText?: string;
   /**
@@ -62,6 +63,7 @@ export function CoachRead({
       ? "Your questions and the full read"
       : "Your questions"
     : "The full read";
+  const notices = (record.safetyCallouts ?? []).length + (record.planWarnings ?? []).length;
   return (
     <>
       {(record.safetyCallouts ?? []).map((c) => (
@@ -69,12 +71,18 @@ export function CoachRead({
           {c.body}
         </Notice>
       ))}
+      {/* Cadence's own check of the plan, worded by Coach Cade; the rule behind a notice is never shown. */}
+      {(record.planWarnings ?? []).map((w) => (
+        <Notice key={`${w.title}:${w.body}`} title={w.title} severity="caution">
+          {w.body}
+        </Notice>
+      ))}
       {headline || analysis ? (
         <CoachSurface
           className={cx(
             sections && "flex flex-col gap-4",
-            // A safety notice above gets room, so the two boxes do not read as one.
-            (record.safetyCallouts ?? []).length > 0 && "mt-3",
+            // A notice above gets room, so the two boxes do not read as one.
+            notices > 0 && "mt-3",
           )}
         >
           {headline ? (

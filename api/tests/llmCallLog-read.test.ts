@@ -111,6 +111,8 @@ describe("LLM call log read API (#72)", () => {
         cacheReadTokens: 3,
         cacheCreationTokens: 4,
         errorMessage: "third",
+        // The plan rules tripped (issue #58): null on a row the plan check never annotated.
+        planRules: null,
       });
     });
 

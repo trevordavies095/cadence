@@ -27,6 +27,7 @@ import type { TempoAthleteSettings, TempoPort } from "../tempo/port.js";
 import type {
   IdentityHints,
   ModelPacketCoaching,
+  ModelPacketDayOutcome,
   ModelPacketPlanWeek,
   ModelPacket,
   ModelPacketWeek,
@@ -42,8 +43,13 @@ export type AssembleLeanLiveContextInput = {
   /** Current-week recap markdown when already known (weekly reply / packet). */
   recapMarkdown?: string | null;
   attachments?: unknown[];
-  /** Current prescribed week for mid-week patch context. */
+  /**
+   * The focus week's stored plan: for mid-week patch context, or as the plan
+   * the reviewed week was meant to follow on the weekly read.
+   */
   prescribedWeek?: PrescribedWeek | null;
+  /** The weekly read only: each reviewed day against `prescribedWeek`. */
+  prescribedWeekOutcomes?: ModelPacketDayOutcome[] | null;
   identityHints?: IdentityHints;
   /**
    * Source of the athlete settings behind the coaching block's thresholds and
@@ -206,6 +212,7 @@ export async function assembleLeanLiveContext(
     week: toPacketWeek(input.focusSession),
     planWeek,
     prescribedWeek: input.prescribedWeek,
+    prescribedWeekOutcomes: input.prescribedWeekOutcomes,
     recentHistory,
     recentHistoryLimit: limit,
     identityHints: input.identityHints,

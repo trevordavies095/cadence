@@ -1,0 +1,205 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w14.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:55:55.938Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 15759,
+  "outputTokens": 908,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 1820,
+  "estimatedInputTokens": 8787,
+  "timing": {
+    "ttftMs": 879,
+    "totalMs": 15865,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 879,
+        "totalMs": 15865,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 15759,
+        "outputTokens": 908
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-26",
+    "isoWeek": "2026-W44",
+    "recentWeeklyM": 53603.22528
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Keep easy, moderate volume, and finish recovery before adding speedwork.",
+    "flags": [
+      {
+        "title": "Volume",
+        "detail": "target 22–26 miles, watch total load."
+      },
+      {
+        "title": "Heart rate drift",
+        "detail": "drift increased by ~6 bpm, monitor on easy runs."
+      },
+      {
+        "title": "Soreness",
+        "detail": "quads still tender, keep easy effort."
+      },
+      {
+        "title": "Rest days",
+        "detail": "important to feel rested, check sleep quality."
+      },
+      {
+        "title": "Mental fatigue",
+        "detail": "goal is to finish week without feeling over‑tired."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?",
+        "answer": "I recommend staying in recovery for this week and not back to 40 miles yet. We’ll add speedwork later when the phase moves to build."
+      }
+    ],
+    "analysis": "I used the provided recap to see that the athlete followed the recovery plan of 12 miles total (3+4+5). Their HR data shows a steady easy zone heart rate with a slight increase in drift, but no hard minutes. The phase is recovery, so I keep next week’s volume low (under 30 miles) and focus on easy runs. I also note the athlete asked about returning to 40 miles and starting speedwork. That would be premature during recovery; we’ll keep the week modest and revisit harder work after another recovery week. I flagged key observations: volume, heart‑rate drift, soreness, rest‑day effectiveness, and mental fatigue. No medical red flags appear, so no safety callouts are needed.",
+    "prescribedWeek": {
+      "week": "2026-W44",
+      "days": [
+        {
+          "date": "2026-10-26",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon Oct 26: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-27",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, flat route.",
+          "line": "Tue Oct 27: easy, 4 mi, heart rate under 150, flat route.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep pace 10:20/mi, focus on breathing.",
+          "line": "Wed Oct 28: easy, 5 mi, keep pace 10:20/mi, focus on breathing.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Thu Oct 29: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "steady effort, hill repeat of 2 × 200 ft.",
+          "line": "Fri Oct 30: easy, 6 mi, steady effort, hill repeat of 2 × 200 ft.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-31",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "recover with light jog, heart rate under 140.",
+          "line": "Sat Oct 31: easy, 3 mi, recover with light jog, heart rate under 140.",
+          "parsed": true
+        },
+        {
+          "date": "2026-11-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "slow, flat route, finish strong.",
+          "line": "Sun Nov 01: easy, 5 mi, slow, flat route, finish strong.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

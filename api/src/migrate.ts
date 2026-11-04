@@ -284,6 +284,17 @@ export async function migrate(): Promise<void> {
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS plan_changes jsonb;
 
+    -- The plan check's warnings (issue #58), stored beside the plan it judged;
+    -- the plan column stays exactly what the validator produced. Null on plans
+    -- stored before the check existed.
+    ALTER TABLE prescribed_weeks
+      ADD COLUMN IF NOT EXISTS plan_warnings jsonb;
+
+    -- The plan rules the accepted weekly reply tripped, on its own row: empty
+    -- when the plan was checked and tripped none, null when it was not checked.
+    ALTER TABLE llm_call_log
+      ADD COLUMN IF NOT EXISTS plan_rules text[];
+
     -- What the athlete is training for, as data. Append-only like About you's
     -- versions: the latest row is current and rows are never updated.
     CREATE TABLE IF NOT EXISTS training_goals (

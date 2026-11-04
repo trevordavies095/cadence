@@ -1,0 +1,61 @@
+{
+  "input": "seasons/40",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The plan itself is sound. Every session is an easy, conversational walk-run on Nessa's usual Mon/Wed/Sat. It builds gently through the week, from 7x(2 min run/1 min walk) up to 7x(3/1). There are no quality sessions, and keeping the dog walk fits her routine. It's a reasonable return for a beginner after two weeks off, and nothing in it breaks a must-never check. The first question gets a direct, honest answer: two weeks off is a pause, not a wipe.\n\nThe draft falls short in three places:\n- It never actually answers the race question. It tells Nessa the race is 3 weeks away, not 4, and stops before saying whether running the whole 5K is still realistic. That was her main worry. The correction also states a date as fact, and the card gives no 'today' to check it against.\n- It makes things up. 'Full recovery between runs while sleep is short' cites a sleep problem she never mentioned, and 'Look after yourself first' is a vague safety flag with no trigger in her week.\n- It ignores the stiffness from driving. A short mobility or walking note would have covered it.\n\nOverall it's a safe plan she can run, but the race answer is missing and some of the content doesn't come from her week.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:07:37.886Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2251,
+  "outputTokens": 1396,
+  "thinkingTokens": 869,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1132,
+  "costUsd": 0.036924000000000005,
+  "timing": {
+    "ttftMs": 3460,
+    "totalMs": 15340,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3460,
+        "totalMs": 15340,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2251,
+        "outputTokens": 1396
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The plan itself is sound. Every session is an easy, conversational walk-run on Nessa's usual Mon/Wed/Sat. It builds gently through the week, from 7x(2 min run/1 min walk) up to 7x(3/1). There are no quality sessions, and keeping the dog walk fits her routine. It's a reasonable return for a beginner after two weeks off, and nothing in it breaks a must-never check. The first question gets a direct, honest answer: two weeks off is a pause, not a wipe.\n\nThe draft falls short in three places:\n- It never actually answers the race question. It tells Nessa the race is 3 weeks away, not 4, and stops before saying whether running the whole 5K is still realistic. That was her main worry. The correction also states a date as fact, and the card gives no 'today' to check it against.\n- It makes things up. 'Full recovery between runs while sleep is short' cites a sleep problem she never mentioned, and 'Look after yourself first' is a vague safety flag with no trigger in her week.\n- It ignores the stiffness from driving. A short mobility or walking note would have covered it.\n\nOverall it's a safe plan she can run, but the race answer is missing and some of the content doesn't come from her week."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 7, 0, 5.1, 0 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"Fine, a bit stiff from all the driving.\"\nFeeling: \"Want to get going again.\"\nAsks: \"I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?\"\n\n── THE DRAFT ──\nTells Nessa: You have not lost your fitness in two weeks off, so step back in close to where you left off. …\nAnswers: (1) No, you do not start from the beginning. Two weeks off is a pause, not a wipe. (2) On the race, two things to be clear about. First, the race is 3 weeks away now, not 4, since it is Sun Nov 15.\nSafety flag: Look after yourself first\nNext week:\nMon: easy, walk-run 21 min, 7 x (2 min run, 1 min walk), conversational effort. Gentle…\nTue: rest. Full recovery between runs while sleep is short.\nWed: easy, walk-run 24 min, 6 x (3 min run, 1 min walk), conversational effort. Longer…\nThu: rest. Walk the dog as usual.\nFri: rest. Keep legs fresh for Saturday.\nSat: easy, walk-run 28 min, 7 x (3 min run, 1 min walk), conversational effort. Longest…\nSun: rest. Recovery before next week steps up.\n\nScore this draft: call submit_coaching_score once."
+}

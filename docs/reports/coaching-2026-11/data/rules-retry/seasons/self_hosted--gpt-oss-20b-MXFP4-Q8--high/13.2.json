@@ -1,0 +1,189 @@
+{
+  "operation": "weekly_reply",
+  "source": "3-return-w1.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:39:47.546Z",
+  "goal": {
+    "kind": "return",
+    "startingPoint": "Ten weeks off with a stress reaction in the left shin. My physio cleared me to start walk-run.",
+    "since": "2026-09-07"
+  },
+  "promptHead": "Athlete goal: return to running since Mon Sep 7 2026, 1 week in; the athlete says: Ten weeks off with a stress reaction in the left shin. My physio cleared me to start walk-run.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 3781,
+  "outputTokens": 1635,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 3941,
+  "estimatedInputTokens": 2528,
+  "timing": {
+    "ttftMs": 479,
+    "totalMs": 24336,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 479,
+        "totalMs": 24336,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 3781,
+        "outputTokens": 1635
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-14",
+    "isoWeek": "2026-W38",
+    "recentWeeklyM": 1270
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": [
+      {
+        "rule": "volume jump",
+        "reason": "first week: no running before"
+      }
+    ]
+  },
+  "old": null,
+  "new": {
+    "headline": "Continue gentle walk‑runs, keeping the shin quiet and adding just a few minutes each session.",
+    "flags": [
+      {
+        "title": "Shin pain",
+        "detail": "keep 0/10 or stop"
+      },
+      {
+        "title": "Run‑walk ratio",
+        "detail": "keep 2:1 minutes"
+      },
+      {
+        "title": "Weekly volume",
+        "detail": "add 3 min each week"
+      },
+      {
+        "title": "Heart rate",
+        "detail": "stay under 140"
+      },
+      {
+        "title": "Rest",
+        "detail": "two consecutive days each week"
+      }
+    ],
+    "answers": [],
+    "analysis": "You are back from a full break and a shin injury. The physio said walk‑run until the pain clears, so the first week should be very gentle. Three walks of 18 minutes total, six 2‑min running bursts each, will keep the load low and give the shin time to adjust. The Saturday session is slightly longer, 16 minutes with four 3‑minute bursts, but it still follows the walk‑run pattern and gives a small step forward. Rest the other days to allow recovery, and keep heart rate under 140 for safety. If the shin starts to hurt, stop the run immediately. This plan sticks to the recovery phase rules, adds about 3 minutes of total running each week, and maintains a 2:1 run‑walk ratio.",
+    "prescribedWeek": {
+      "week": "2026-W38",
+      "days": [
+        {
+          "date": "2026-09-14",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1080,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "total, 2 min run / 1 min walk x 6, keep pain 0/10",
+          "line": "Mon 2026-09-14: walk‑run, 18 min total, 2 min run / 1 min walk x 6, keep pain 0/10",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-15",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Tue 2026-09-15: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-16",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1080,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "total, 2 min run / 1 min walk x 6, keep pain 0/10",
+          "line": "Wed 2026-09-16: walk‑run, 18 min total, 2 min run / 1 min walk x 6, keep pain 0/10",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-17",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Thu 2026-09-17: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-18",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 960,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "total, 3 min run / 1 min walk x 4, keep pain 0/10",
+          "line": "Fri 2026-09-18: walk‑run, 16 min total, 3 min run / 1 min walk x 4, keep pain 0/10",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-19",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sat 2026-09-19: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sun 2026-09-20: rest",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

@@ -31,6 +31,7 @@ type Row = {
   cache_creation_tokens: number | null;
   outcome: string;
   error_message: string | null;
+  plan_rules: string[] | null;
 };
 
 function toRow(row: Row): LlmCallRow {
@@ -56,6 +57,7 @@ function toRow(row: Row): LlmCallRow {
     cacheCreationTokens: row.cache_creation_tokens,
     outcome: row.outcome as LlmCallOutcome,
     errorMessage: row.error_message,
+    planRules: row.plan_rules ?? null,
   };
 }
 
@@ -63,13 +65,13 @@ const FULL_COLUMNS = `id::text, created_at, operation, provider, server_host, mo
   week_session_id::text, parent_call_id::text, request,
   response_raw, http_status, latency_ms, stop_reason,
   input_tokens, output_tokens, thinking_tokens, cache_read_tokens,
-  cache_creation_tokens, outcome, error_message`;
+  cache_creation_tokens, outcome, error_message, plan_rules`;
 
 const SUMMARY_COLUMNS = `id::text, created_at, operation, provider, server_host, model, app_version,
   week_session_id::text, parent_call_id::text,
   http_status, latency_ms, stop_reason,
   input_tokens, output_tokens, thinking_tokens, cache_read_tokens,
-  cache_creation_tokens, outcome, error_message`;
+  cache_creation_tokens, outcome, error_message, plan_rules`;
 
 const EXPORT_BATCH_SIZE = 200;
 
@@ -128,12 +130,7 @@ export function createPostgresLlmCallRecorder(): LlmCallRecorder {
     async get(id: string): Promise<LlmCallRow | null> {
       if (!UUID_RE.test(id)) return null;
       const result = await pool.query<Row>(
-        `SELECT id::text, created_at, operation, provider, server_host, model, app_version,
-                week_session_id::text, parent_call_id::text, request,
-                response_raw, http_status, latency_ms, stop_reason,
-                input_tokens, output_tokens, thinking_tokens, cache_read_tokens,
-                cache_creation_tokens, outcome, error_message
-         FROM llm_call_log WHERE id = $1`,
+        `SELECT ${FULL_COLUMNS} FROM llm_call_log WHERE id = $1`,
         [id],
       );
       const row = result.rows[0];
@@ -166,6 +163,16 @@ export function createPostgresLlmCallRecorder(): LlmCallRecorder {
         const { request: _req, responseRaw: _raw, ...summary } = toRow(r);
         return summary;
       });
+    },
+
+    async notePlanRules(id: string, rules: string[]): Promise<void> {
+      if (!UUID_RE.test(id)) return;
+      try {
+        await pool.query(`UPDATE llm_call_log SET plan_rules = $2::text[] WHERE id = $1`, [id, rules]);
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        console.error(`[llm-call-log] plan rules dropped (id=${id}): ${reason}`);
+      }
     },
 
     async *exportAll(): AsyncGenerator<LlmCallRow> {

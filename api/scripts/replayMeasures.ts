@@ -10,20 +10,33 @@ import { PROBE_CUT_RATIO } from "../src/settings/selfHostedConnectionTest.js";
 // ---- Price table -----------------------------------------------------------------
 
 /**
- * Anthropic list prices, in US dollars per million tokens, taken 2026-11-01.
- * Cache reads and writes are priced from the input price at Anthropic's
- * standard multipliers: a cache read at 0.1x, a cache write at 1.25x (the
- * 5-minute cache; the call log does not say which cache a write went to).
- * Thinking tokens are billed as output and are already inside output_tokens.
+ * Anthropic list prices, in US dollars per million tokens, from
+ * platform.claude.com/docs/en/about-claude/pricing (Opus 4.7 taken 2026-11-01,
+ * the 5.5 models and Fable 5.1, the candidate coaching judge, 2026-11-03).
+ * Cache reads and writes are priced from the input price: a cache write at
+ * 1.25x (the 5-minute cache; the call log does not say which cache a write went
+ * to), a cache read at 0.1x unless the model sets its own (Opus 5.5 and Sonnet
+ * 5.5 read at 0.05x, Fable 5.1 at 0.025x). Haiku 5.5 is the up-to-100,000-
+ * token tier; a coach prompt is well under it. Thinking tokens are billed as
+ * output and are already inside output_tokens.
  */
 export const PRICE_TABLE = {
-  takenOn: "2026-11-01",
+  takenOn: "2026-11-03",
   cacheReadMultiplier: 0.1,
   cacheWriteMultiplier: 1.25,
   models: {
     "claude-opus-4-7": { label: "Opus 4.7", inputPerMTok: 5, outputPerMTok: 25 },
-  } as Record<string, { label: string; inputPerMTok: number; outputPerMTok: number }>,
+    "claude-opus-5-5": { label: "Opus 5.5", inputPerMTok: 4, outputPerMTok: 20, cacheReadMultiplier: 0.05 },
+    "claude-sonnet-5-5": { label: "Sonnet 5.5", inputPerMTok: 2, outputPerMTok: 10, cacheReadMultiplier: 0.05 },
+    "claude-haiku-5-5": { label: "Haiku 5.5", inputPerMTok: 0.1, outputPerMTok: 0.5 },
+    "claude-fable-5-1": { label: "Fable 5.1", inputPerMTok: 10, outputPerMTok: 50, cacheReadMultiplier: 0.025 },
+  } as Record<string, { label: string; inputPerMTok: number; outputPerMTok: number; cacheReadMultiplier?: number }>,
 };
+
+/** A model's cache-read multiplier: its own, else the standard one. */
+export function cacheReadMultiplierFor(price: { cacheReadMultiplier?: number }): number {
+  return price.cacheReadMultiplier ?? PRICE_TABLE.cacheReadMultiplier;
+}
 
 // ---- Plan sanity -----------------------------------------------------------------
 
@@ -200,7 +213,7 @@ export function attemptCostUsd(model: string | null, usage: Usage): number | nul
   const inPrice = price.inputPerMTok / 1e6;
   return (
     (usage.inputTokens ?? 0) * inPrice +
-    (usage.cacheReadTokens ?? 0) * inPrice * PRICE_TABLE.cacheReadMultiplier +
+    (usage.cacheReadTokens ?? 0) * inPrice * cacheReadMultiplierFor(price) +
     (usage.cacheCreationTokens ?? 0) * inPrice * PRICE_TABLE.cacheWriteMultiplier +
     (usage.outputTokens ?? 0) * (price.outputPerMTok / 1e6)
   );
@@ -481,10 +494,10 @@ export function measuresTable(m: Measures): string[] {
 
 /** The report's note on how the measures are taken: the band, the cut rule and the price table. */
 export function measuresNote(): string[] {
-  const dollars = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
+  const dollars = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(Number.isInteger(n * 100) ? 2 : 3)}`;
   const prices = Object.entries(PRICE_TABLE.models).map(
     ([id, p]) =>
-      `| ${p.label} (${id}) | ${dollars(p.inputPerMTok)} | ${dollars(p.outputPerMTok)} | ${dollars(p.inputPerMTok * PRICE_TABLE.cacheReadMultiplier)} | ${dollars(p.inputPerMTok * PRICE_TABLE.cacheWriteMultiplier)} |`,
+      `| ${p.label} (${id}) | ${dollars(p.inputPerMTok)} | ${dollars(p.outputPerMTok)} | ${dollars(p.inputPerMTok * cacheReadMultiplierFor(p))} | ${dollars(p.inputPerMTok * PRICE_TABLE.cacheWriteMultiplier)} |`,
   );
   return [
     "How the measures are taken (each configuration's measures.json holds them all):",
@@ -493,7 +506,7 @@ export function measuresNote(): string[] {
     `- Prompt cut: the server's reported input tokens (cache reads and writes included) under ${PROBE_CUT_RATIO * 100} % of the harness's own count of the prompt (system and messages, characters / 4), the probe's rule.`,
     "- Latency: first token is the first attempt's first content_block_delta; total is the whole call's wall-clock, a retry included; wall clock is the sum over every call. A dry run has no first token.",
     "- Tokens are the last attempt's usage, as medians. Thinking tokens are blank where the server never reports them (oMLX); thinking characters stand in.",
-    `- Cost, Anthropic rows only (self-hosted is blank): every attempt's usage, refused attempts included, at the prices below, in US dollars per million tokens, taken ${PRICE_TABLE.takenOn}. Cache reads at ${PRICE_TABLE.cacheReadMultiplier}x and cache writes at ${PRICE_TABLE.cacheWriteMultiplier}x the input price (Anthropic's standard multipliers; writes priced as the 5-minute cache). Thinking is billed as output and is inside the output count.`,
+    `- Cost, Anthropic rows only (self-hosted is blank): every attempt's usage, refused attempts included, at the prices below, in US dollars per million tokens, taken ${PRICE_TABLE.takenOn}. Cache reads at ${PRICE_TABLE.cacheReadMultiplier}x the input price (0.05x on Opus 5.5 and Sonnet 5.5) and cache writes at ${PRICE_TABLE.cacheWriteMultiplier}x the input price (Anthropic's standard multipliers; writes priced as the 5-minute cache). Thinking is billed as output and is inside the output count.`,
     "",
     "| Model | Input | Output | Cache read | Cache write |",
     "|---|---|---|---|---|",

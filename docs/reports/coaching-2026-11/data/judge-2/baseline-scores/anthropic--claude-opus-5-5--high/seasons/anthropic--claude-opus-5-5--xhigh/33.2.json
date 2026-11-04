@@ -1,0 +1,61 @@
+{
+  "input": "seasons/33",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft answers Nessa's question clearly and honestly: no, keep to three run days. It explains why: fitness builds during recovery, and bones and tendons adapt more slowly than the heart and lungs. That is the right call for a new runner with no earlier weeks on record. The plan keeps her Monday, Wednesday and Saturday walk-runs and grows them gently, from 25 to 26 to 30 minutes with slightly longer jog intervals. Nothing jumps sharply. Each day has a set warm-up and set rounds, so she can run it as written. The dog walks and a short strength session fill the other days without cutting into recovery, and the plan fits her schedule and what she said. Her calf tightness clears by the next morning, which is normal soreness rather than an injury sign. The draft treats the runs as pain-free, so nothing breaks a must-never rule. I took one point off for two reasons. First, the card doesn't give today's date, so the \"ten weeks\" claim may be made up. Second, the visible text doesn't say anything about her tight calves, for example calf raises or what to watch for.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:31:13.785Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2320,
+  "outputTokens": 850,
+  "thinkingTokens": 370,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1181,
+  "costUsd": 0.02628,
+  "timing": {
+    "ttftMs": 2877,
+    "totalMs": 9455,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2877,
+        "totalMs": 9455,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2320,
+        "outputTokens": 850
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft answers Nessa's question clearly and honestly: no, keep to three run days. It explains why: fitness builds during recovery, and bones and tendons adapt more slowly than the heart and lungs. That is the right call for a new runner with no earlier weeks on record. The plan keeps her Monday, Wednesday and Saturday walk-runs and grows them gently, from 25 to 26 to 30 minutes with slightly longer jog intervals. Nothing jumps sharply. Each day has a set warm-up and set rounds, so she can run it as written. The dog walks and a short strength session fill the other days without cutting into recovery, and the plan fits her schedule and what she said. Her calf tightness clears by the next morning, which is normal soreness rather than an injury sign. The draft treats the runs as pain-free, so nothing breaks a must-never rule. I took one point off for two reasons. First, the card doesn't give today's date, so the \"ten weeks\" claim may be made up. Second, the visible text doesn't say anything about her tight calves, for example calf raises or what to watch for."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: none recorded.\nThis week: 6.8 km over 3 runs.\nBody: \"Calves tight the day after each run, gone by the next morning.\"\nFeeling: \"Proud I started.\"\nAsks: \"I want to be ready for the 5K in November. Should I run every day next week to get there faster?\"\n\n── THE DRAFT ──\nTells Nessa: You made a strong start with three pain-free walk-runs. …\nAnswers: (1) No, keep to three run days. You get fitter while you recover between runs, not during the runs themselves. (2) Bones and tendons adapt more slowly than heart and lungs. … (3) Ten weeks with three runs a week is enough time to run the whole 5K. … (4) On the other days, keep walking the dog. That easy time on your feet helps without cutting into your recovery.\nNext week:\nMon: easy, 25 min walk-run: 5 min brisk walk, then 8 rounds of 1 min easy jog and 1.5…\nTue: other, 10 min bodyweight strength plus your usual dog walk: 2 sets of 10 squats…\nWed: easy, 26 min walk-run: 5 min brisk walk, then 6 rounds of 1.5 min easy jog and 2…\nThu: rest. Your usual dog walk at a relaxed pace is fine, but no running. Gives your…\nFri: rest. Your usual dog walk is fine. Fresh legs for Saturday.\nSat: easy, 30 min walk-run: 5 min brisk walk, then 7 rounds of 1.5 min easy jog and 2…\nSun: rest. A relaxed dog walk is fine, but no running. Recovery from the week's longest…\n\nScore this draft: call submit_coaching_score once."
+}
