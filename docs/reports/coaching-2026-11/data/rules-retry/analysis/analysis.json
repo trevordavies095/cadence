@@ -1,0 +1,3809 @@
+{
+  "generatedAt": "2026-11-04T13:16:25.500Z",
+  "roots": [
+    ".scratch/benchmark-coaching/rules-retry/seasons",
+    ".scratch/benchmark-coaching/rules-retry/snapshot"
+  ],
+  "baseline": "anthropic--claude-opus-4-7--xhigh",
+  "warnings": [],
+  "repairs": [
+    {
+      "id": "fillRunTypeFromDayType",
+      "letter": "a",
+      "label": "fill a missing run.type from the day's dayType",
+      "lossy": false,
+      "liftTo": "parseRun/parseDay"
+    },
+    {
+      "id": "normaliseWeekId",
+      "letter": "b",
+      "label": "normalise the plan's ISO week id from the plan week",
+      "lossy": false,
+      "liftTo": "validatePrescribedWeek"
+    },
+    {
+      "id": "mapEnumNearMisses",
+      "letter": "c",
+      "label": "map near-miss dayType/run.type values to the enum",
+      "lossy": false,
+      "liftTo": "parseDay/parseRun"
+    },
+    {
+      "id": "coerceStringArrays",
+      "letter": "d",
+      "label": "coerce a string to an array of strings",
+      "lossy": false,
+      "liftTo": "parseSettingsProposalBullets, validateDossierSoftGateDraft"
+    },
+    {
+      "id": "dropEmptyEntries",
+      "letter": "e",
+      "label": "drop flags/answers entries with an empty field",
+      "lossy": true,
+      "liftTo": "parseReadFlags/parseReadAnswers"
+    },
+    {
+      "id": "trimOverCaps",
+      "letter": "f",
+      "label": "trim fields and lists over hard caps",
+      "lossy": true,
+      "liftTo": "validateWeeklyReply, validateMidWeekChatReply, dossier drafts"
+    },
+    {
+      "id": "mapRunFieldAliases",
+      "letter": "g",
+      "label": "map run field aliases (distance, distanceKm, pace, description, duration) to the schema's",
+      "lossy": false,
+      "liftTo": "parseRun"
+    },
+    {
+      "id": "mapDayFieldAliases",
+      "letter": "g",
+      "label": "map day field aliases (session, name, activity, note, reason, a distance on the day) to the schema's",
+      "lossy": false,
+      "liftTo": "parseDay"
+    },
+    {
+      "id": "fillDayTypeFromRun",
+      "letter": "g",
+      "label": "fill a missing dayType from run.type",
+      "lossy": false,
+      "liftTo": "parseDay"
+    },
+    {
+      "id": "dropNullOptionals",
+      "letter": "g",
+      "label": "remove optional fields sent as null",
+      "lossy": false,
+      "liftTo": "validateWeeklyReply, validateMidWeekChatReply"
+    },
+    {
+      "id": "parseStringifiedFields",
+      "letter": "g",
+      "label": "parse fields sent as a string of JSON",
+      "lossy": false,
+      "liftTo": "validateWeeklyReply, validateMidWeekChatReply"
+    },
+    {
+      "id": "splitFlagStrings",
+      "letter": "g",
+      "label": "split flags sent as strings into title and detail",
+      "lossy": false,
+      "liftTo": "parseReadFlags"
+    },
+    {
+      "id": "useStrayToolInput",
+      "letter": "g",
+      "label": "take a reply sent outside the tool call (other tool name, JSON in text)",
+      "lossy": false,
+      "liftTo": "extractToolInput (src/llm/anthropic.ts)"
+    },
+    {
+      "id": "realignPlanDates",
+      "letter": "g",
+      "label": "realign a plan's seven consecutive dates to the plan week",
+      "lossy": false,
+      "liftTo": "validatePrescribedWeek"
+    }
+  ],
+  "setup": [
+    {
+      "configuration": "anthropic--claude-opus-4-7--xhigh",
+      "roots": [
+        {
+          "root": "seasons",
+          "provider": "anthropic",
+          "model": "claude-opus-4-7",
+          "effort": "xhigh",
+          "repeats": 1,
+          "note": "Anthropic API",
+          "inputs": "api/tests/fixtures/seasons/season-packets",
+          "startedAt": "2026-11-04T11:37:27.067Z",
+          "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614"
+        },
+        {
+          "root": "snapshot",
+          "provider": "anthropic",
+          "model": "claude-opus-4-7",
+          "effort": "xhigh",
+          "repeats": 1,
+          "note": "Anthropic API",
+          "inputs": "demo snapshot",
+          "startedAt": "2026-11-04T11:36:20.348Z",
+          "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614"
+        }
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "roots": [
+        {
+          "root": "seasons",
+          "provider": "self_hosted",
+          "model": "gpt-oss-20b-MXFP4-Q8",
+          "effort": "high",
+          "repeats": 3,
+          "note": "MacBook Pro M4 Pro 24 GB, oMLX, 64k+ context",
+          "inputs": "api/tests/fixtures/seasons/season-packets",
+          "startedAt": "2026-11-04T11:38:29.854Z",
+          "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614"
+        },
+        {
+          "root": "snapshot",
+          "provider": "self_hosted",
+          "model": "gpt-oss-20b-MXFP4-Q8",
+          "effort": "high",
+          "repeats": 3,
+          "note": "MacBook Pro M4 Pro 24 GB, oMLX, 64k+ context",
+          "inputs": "demo snapshot",
+          "startedAt": "2026-11-04T11:35:24.498Z",
+          "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614"
+        }
+      ]
+    }
+  ],
+  "configurations": [
+    "anthropic--claude-opus-4-7--xhigh",
+    "self_hosted--gpt-oss-20b-MXFP4-Q8--high"
+  ],
+  "candidates": [
+    "self_hosted--gpt-oss-20b-MXFP4-Q8--high"
+  ],
+  "outcomes": [
+    {
+      "configuration": "anthropic--claude-opus-4-7--xhigh",
+      "all": {
+        "replies": 14,
+        "firstTry": 14,
+        "afterRetry": 0,
+        "failed": 0,
+        "failedBy": {
+          "schema refusal": 0,
+          "http/transport/timeout": 0,
+          "no tool call": 0,
+          "max_tokens": 0,
+          "model refusal": 0
+        }
+      },
+      "byOperation": {
+        "weekly_reply": {
+          "replies": 14,
+          "firstTry": 14,
+          "afterRetry": 0,
+          "failed": 0,
+          "failedBy": {
+            "schema refusal": 0,
+            "http/transport/timeout": 0,
+            "no tool call": 0,
+            "max_tokens": 0,
+            "model refusal": 0
+          }
+        }
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "all": {
+        "replies": 42,
+        "firstTry": 41,
+        "afterRetry": 1,
+        "failed": 0,
+        "failedBy": {
+          "schema refusal": 0,
+          "http/transport/timeout": 0,
+          "no tool call": 0,
+          "max_tokens": 0,
+          "model refusal": 0
+        }
+      },
+      "byOperation": {
+        "weekly_reply": {
+          "replies": 42,
+          "firstTry": 41,
+          "afterRetry": 1,
+          "failed": 0,
+          "failedBy": {
+            "schema refusal": 0,
+            "http/transport/timeout": 0,
+            "no tool call": 0,
+            "max_tokens": 0,
+            "model refusal": 0
+          }
+        }
+      }
+    }
+  ],
+  "planLines": [
+    {
+      "configuration": "anthropic--claude-opus-4-7--xhigh",
+      "form": "plan lines",
+      "weekly": {
+        "replies": 14,
+        "daysTotal": 98,
+        "daysParsed": 98,
+        "unparsed": 0,
+        "structuredShare": 1,
+        "repliesAllParsed": 14,
+        "failedFirst": 0,
+        "retried": 0,
+        "retryAskedFor": 0,
+        "fixedByRetry": 0,
+        "bareNumbers": 0,
+        "droppedLines": 0,
+        "ignoredLines": 0
+      },
+      "midWeek": {
+        "replies": 0,
+        "daysTotal": 0,
+        "daysParsed": 0,
+        "unparsed": 0,
+        "structuredShare": null,
+        "repliesAllParsed": 0,
+        "failedFirst": 0,
+        "retried": 0,
+        "retryAskedFor": 0,
+        "fixedByRetry": 0,
+        "bareNumbers": 0,
+        "droppedLines": 0,
+        "ignoredLines": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "form": "plan lines",
+      "weekly": {
+        "replies": 42,
+        "daysTotal": 294,
+        "daysParsed": 293,
+        "unparsed": 1,
+        "structuredShare": 0.9965986394557823,
+        "repliesAllParsed": 41,
+        "failedFirst": 8,
+        "retried": 3,
+        "retryAskedFor": 8,
+        "fixedByRetry": 7,
+        "bareNumbers": 0,
+        "droppedLines": 7,
+        "ignoredLines": 0
+      },
+      "midWeek": {
+        "replies": 0,
+        "daysTotal": 0,
+        "daysParsed": 0,
+        "unparsed": 0,
+        "structuredShare": null,
+        "repliesAllParsed": 0,
+        "failedFirst": 0,
+        "retried": 0,
+        "retryAskedFor": 0,
+        "fixedByRetry": 0,
+        "bareNumbers": 0,
+        "droppedLines": 0,
+        "ignoredLines": 0
+      }
+    }
+  ],
+  "failuresByReason": [
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "operation": "weekly_reply",
+      "reason": "no distance or duration",
+      "firstParse": 1,
+      "fixedByRetry": 0,
+      "stillUnparsed": 1,
+      "droppedLines": 0
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "operation": "weekly_reply",
+      "reason": "no line",
+      "firstParse": 7,
+      "fixedByRetry": 7,
+      "stillUnparsed": 0,
+      "droppedLines": 0
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "operation": "weekly_reply",
+      "reason": "outside the plan week",
+      "firstParse": 0,
+      "fixedByRetry": 0,
+      "stillUnparsed": 0,
+      "droppedLines": 7
+    }
+  ],
+  "planRules": [
+    {
+      "configuration": "anthropic--claude-opus-4-7--xhigh",
+      "repliesChecked": 14,
+      "byRule": {
+        "volume jump": 0,
+        "long-run jump": 0,
+        "quality with pain": 0,
+        "return from injury": 0
+      },
+      "repliesWithAnyRule": 0,
+      "skippedByRule": {
+        "volume jump": 2,
+        "long-run jump": 0,
+        "quality with pain": 0,
+        "return from injury": 0
+      },
+      "rulesRetries": 0
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "repliesChecked": 42,
+      "byRule": {
+        "volume jump": 9,
+        "long-run jump": 8,
+        "quality with pain": 0,
+        "return from injury": 1
+      },
+      "repliesWithAnyRule": 12,
+      "skippedByRule": {
+        "volume jump": 6,
+        "long-run jump": 0,
+        "quality with pain": 0,
+        "return from injury": 0
+      },
+      "rulesRetries": 19
+    }
+  ],
+  "failureTaxonomy": {
+    "overall": [
+      {
+        "path": "(response)",
+        "rule": "Anthropic response missing <tool> tool_use block",
+        "ruleLabel": "no tool call",
+        "first": 1,
+        "retry": 0
+      }
+    ],
+    "byConfiguration": {
+      "anthropic--claude-opus-4-7--xhigh": [],
+      "self_hosted--gpt-oss-20b-MXFP4-Q8--high": [
+        {
+          "path": "(response)",
+          "rule": "Anthropic response missing <tool> tool_use block",
+          "ruleLabel": "no tool call",
+          "first": 1,
+          "retry": 0
+        }
+      ]
+    },
+    "byPathAcrossModels": {
+      "(response)": {
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": 1
+      }
+    }
+  },
+  "retry": [
+    {
+      "configuration": "anthropic--claude-opus-4-7--xhigh",
+      "retried": 0,
+      "fixed": 0,
+      "sameError": 0,
+      "samePathAndRule": 0,
+      "newError": 0,
+      "sameKindOfError": 0,
+      "secondFailedOutsideValidator": 0,
+      "refusedAgain": 0,
+      "secondRequests": {}
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "retried": 1,
+      "fixed": 1,
+      "sameError": 0,
+      "samePathAndRule": 0,
+      "newError": 0,
+      "sameKindOfError": 0,
+      "secondFailedOutsideValidator": 0,
+      "refusedAgain": 0,
+      "secondRequests": {
+        "fix_rules": 19,
+        "fix_lines": 3,
+        "no_tool_call": 1
+      }
+    }
+  ],
+  "rescue": {
+    "skippedRuns": [
+      "seasons/anthropic--claude-opus-4-7--xhigh",
+      "seasons/self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "snapshot/anthropic--claude-opus-4-7--xhigh",
+      "snapshot/self_hosted--gpt-oss-20b-MXFP4-Q8--high"
+    ],
+    "failedPopulation": 0,
+    "overall": {
+      "population": 0,
+      "alone": {
+        "fillRunTypeFromDayType": 0,
+        "normaliseWeekId": 0,
+        "mapEnumNearMisses": 0,
+        "coerceStringArrays": 0,
+        "dropEmptyEntries": 0,
+        "trimOverCaps": 0,
+        "mapRunFieldAliases": 0,
+        "mapDayFieldAliases": 0,
+        "fillDayTypeFromRun": 0,
+        "dropNullOptionals": 0,
+        "parseStringifiedFields": 0,
+        "splitFlagStrings": 0,
+        "useStrayToolInput": 0,
+        "realignPlanDates": 0
+      },
+      "cumulative": [
+        {
+          "id": "fillRunTypeFromDayType",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "normaliseWeekId",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "mapEnumNearMisses",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "coerceStringArrays",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "dropEmptyEntries",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "trimOverCaps",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "mapRunFieldAliases",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "mapDayFieldAliases",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "fillDayTypeFromRun",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "dropNullOptionals",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "parseStringifiedFields",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "splitFlagStrings",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "useStrayToolInput",
+          "gain": 0,
+          "total": 0
+        },
+        {
+          "id": "realignPlanDates",
+          "gain": 0,
+          "total": 0
+        }
+      ],
+      "all": 0,
+      "neededBy": {
+        "fillRunTypeFromDayType": 0,
+        "normaliseWeekId": 0,
+        "mapEnumNearMisses": 0,
+        "coerceStringArrays": 0,
+        "dropEmptyEntries": 0,
+        "trimOverCaps": 0,
+        "mapRunFieldAliases": 0,
+        "mapDayFieldAliases": 0,
+        "fillDayTypeFromRun": 0,
+        "dropNullOptionals": 0,
+        "parseStringifiedFields": 0,
+        "splitFlagStrings": 0,
+        "useStrayToolInput": 0,
+        "realignPlanDates": 0
+      }
+    },
+    "perModel": {
+      "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+        "population": 0,
+        "alone": {
+          "fillRunTypeFromDayType": 0,
+          "normaliseWeekId": 0,
+          "mapEnumNearMisses": 0,
+          "coerceStringArrays": 0,
+          "dropEmptyEntries": 0,
+          "trimOverCaps": 0,
+          "mapRunFieldAliases": 0,
+          "mapDayFieldAliases": 0,
+          "fillDayTypeFromRun": 0,
+          "dropNullOptionals": 0,
+          "parseStringifiedFields": 0,
+          "splitFlagStrings": 0,
+          "useStrayToolInput": 0,
+          "realignPlanDates": 0
+        },
+        "cumulative": [
+          {
+            "id": "fillRunTypeFromDayType",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "normaliseWeekId",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "mapEnumNearMisses",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "coerceStringArrays",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "dropEmptyEntries",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "trimOverCaps",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "mapRunFieldAliases",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "mapDayFieldAliases",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "fillDayTypeFromRun",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "dropNullOptionals",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "parseStringifiedFields",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "splitFlagStrings",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "useStrayToolInput",
+            "gain": 0,
+            "total": 0
+          },
+          {
+            "id": "realignPlanDates",
+            "gain": 0,
+            "total": 0
+          }
+        ],
+        "all": 0,
+        "neededBy": {
+          "fillRunTypeFromDayType": 0,
+          "normaliseWeekId": 0,
+          "mapEnumNearMisses": 0,
+          "coerceStringArrays": 0,
+          "dropEmptyEntries": 0,
+          "trimOverCaps": 0,
+          "mapRunFieldAliases": 0,
+          "mapDayFieldAliases": 0,
+          "fillDayTypeFromRun": 0,
+          "dropNullOptionals": 0,
+          "parseStringifiedFields": 0,
+          "splitFlagStrings": 0,
+          "useStrayToolInput": 0,
+          "realignPlanDates": 0
+        }
+      }
+    },
+    "order": [
+      "fillRunTypeFromDayType",
+      "normaliseWeekId",
+      "mapEnumNearMisses",
+      "coerceStringArrays",
+      "dropEmptyEntries",
+      "trimOverCaps",
+      "mapRunFieldAliases",
+      "mapDayFieldAliases",
+      "fillDayTypeFromRun",
+      "dropNullOptionals",
+      "parseStringifiedFields",
+      "splitFlagStrings",
+      "useStrayToolInput",
+      "realignPlanDates"
+    ],
+    "retriesSaved": {
+      "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+        "retried": 0,
+        "savedByAll": 0
+      }
+    },
+    "stillFailing": [],
+    "stillFailingByError": {},
+    "notWorkable": [],
+    "extraction": {
+      "refusedAttempts": 1,
+      "byFormat": {
+        "message": 1
+      },
+      "toolInputFound": 0,
+      "unparsedToolJson": 0,
+      "strayInputs": {},
+      "reproduced": 0,
+      "notReproduced": [],
+      "checked": 0
+    },
+    "enumSeen": [],
+    "unknownKeys": {},
+    "shapeIssues": {},
+    "details": []
+  },
+  "quality": [
+    {
+      "configuration": "anthropic--claude-opus-4-7--xhigh",
+      "valid": {
+        "label": "valid",
+        "replies": 14,
+        "softRepairs": {},
+        "softRepairReplies": 0,
+        "capsHit": {},
+        "goalCheckFailures": {
+          "no goal line": 1
+        },
+        "bannedTerms": {
+          "mid-week": 1
+        },
+        "planFlags": {
+          "volume": 1
+        },
+        "planFlagged": 1,
+        "volumeRatio": {
+          "n": 9,
+          "median": 1.0169858259176467,
+          "p90": 1.1859162651066522,
+          "worst": 1.1859162651066522,
+          "mean": 0.8317896619338941
+        }
+      },
+      "byOperation": {
+        "weekly_reply": {
+          "label": "weekly_reply",
+          "replies": 14,
+          "softRepairs": {},
+          "softRepairReplies": 0,
+          "capsHit": {},
+          "goalCheckFailures": {
+            "no goal line": 1
+          },
+          "bannedTerms": {
+            "mid-week": 1
+          },
+          "planFlags": {
+            "volume": 1
+          },
+          "planFlagged": 1,
+          "volumeRatio": {
+            "n": 9,
+            "median": 1.0169858259176467,
+            "p90": 1.1859162651066522,
+            "worst": 1.1859162651066522,
+            "mean": 0.8317896619338941
+          }
+        }
+      },
+      "rescued": {
+        "label": "rescued",
+        "replies": 0,
+        "softRepairs": {},
+        "softRepairReplies": 0,
+        "capsHit": {},
+        "goalCheckFailures": {},
+        "bannedTerms": {},
+        "planFlags": {},
+        "planFlagged": 0,
+        "volumeRatio": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        }
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "valid": {
+        "label": "valid",
+        "replies": 42,
+        "softRepairs": {
+          "plan": 15,
+          "flags[].detail": 1
+        },
+        "softRepairReplies": 4,
+        "capsHit": {
+          "flag detail": 1
+        },
+        "goalCheckFailures": {
+          "no goal line": 3
+        },
+        "bannedTerms": {
+          "prescribed": 4,
+          "recap": 2,
+          "week label": 2,
+          "subjective": 1
+        },
+        "planFlags": {
+          "volume": 18
+        },
+        "planFlagged": 18,
+        "volumeRatio": {
+          "n": 40,
+          "median": 1.0466612626223188,
+          "p90": 9.43952802359882,
+          "worst": 20.47244094488189,
+          "mean": 3.0444519633883607
+        }
+      },
+      "byOperation": {
+        "weekly_reply": {
+          "label": "weekly_reply",
+          "replies": 42,
+          "softRepairs": {
+            "plan": 15,
+            "flags[].detail": 1
+          },
+          "softRepairReplies": 4,
+          "capsHit": {
+            "flag detail": 1
+          },
+          "goalCheckFailures": {
+            "no goal line": 3
+          },
+          "bannedTerms": {
+            "prescribed": 4,
+            "recap": 2,
+            "week label": 2,
+            "subjective": 1
+          },
+          "planFlags": {
+            "volume": 18
+          },
+          "planFlagged": 18,
+          "volumeRatio": {
+            "n": 40,
+            "median": 1.0466612626223188,
+            "p90": 9.43952802359882,
+            "worst": 20.47244094488189,
+            "mean": 3.0444519633883607
+          }
+        }
+      },
+      "rescued": {
+        "label": "rescued",
+        "replies": 0,
+        "softRepairs": {},
+        "softRepairReplies": 0,
+        "capsHit": {},
+        "goalCheckFailures": {},
+        "bannedTerms": {},
+        "planFlags": {},
+        "planFlagged": 0,
+        "volumeRatio": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        }
+      }
+    }
+  ],
+  "plans": [
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "valid": {
+        "pairs": 42,
+        "unparsed": {
+          "candidate": 1,
+          "baseline": 0
+        },
+        "pairsWithUnparsed": 1,
+        "distanceRatio": {
+          "n": 27,
+          "median": 0.9999848448108632,
+          "p90": 2.9998757300857464,
+          "worst": 3.699888157077172,
+          "mean": 1.2833854494361643
+        },
+        "longRunRatio": {
+          "n": 17,
+          "median": 1.1110880972107153,
+          "p90": 1.4999611650485436,
+          "worst": 1.6249320388349515,
+          "mean": 1.07540009059186
+        },
+        "runDaysDiff": {
+          "n": 42,
+          "median": 0,
+          "p90": 0,
+          "worst": 2,
+          "mean": -0.2619047619047619
+        },
+        "dayTypeMatch": {
+          "n": 42,
+          "median": 0.8571428571428571,
+          "p90": 1,
+          "worst": 1,
+          "mean": 0.772108843537415
+        },
+        "sameRestDays": 26,
+        "restAgreement": {
+          "n": 42,
+          "median": 1,
+          "p90": 1,
+          "worst": 1,
+          "mean": 0.8707482993197279
+        },
+        "qualityBoth": 14,
+        "qualityOnlyCandidate": 7,
+        "qualityOnlyBaseline": 1,
+        "flags": {
+          "candidate": {
+            "n": 42,
+            "median": 5,
+            "p90": 5,
+            "worst": 5,
+            "mean": 3.9523809523809526
+          },
+          "baseline": {
+            "n": 42,
+            "median": 5,
+            "p90": 5,
+            "worst": 5,
+            "mean": 4.571428571428571
+          }
+        },
+        "answers": {
+          "candidate": {
+            "n": 42,
+            "median": 1,
+            "p90": 1,
+            "worst": 1,
+            "mean": 0.7857142857142857
+          },
+          "baseline": {
+            "n": 42,
+            "median": 1,
+            "p90": 1,
+            "worst": 1,
+            "mean": 0.8571428571428571
+          }
+        },
+        "answersFewer": 4,
+        "headlineChars": {
+          "candidate": {
+            "n": 42,
+            "median": 84.5,
+            "p90": 110,
+            "worst": 137,
+            "mean": 87.04761904761905
+          },
+          "baseline": {
+            "n": 42,
+            "median": 175,
+            "p90": 212,
+            "worst": 220,
+            "mean": 179.5
+          }
+        },
+        "analysisChars": {
+          "candidate": {
+            "n": 42,
+            "median": 770.5,
+            "p90": 1151,
+            "worst": 1606,
+            "mean": 798.9761904761905
+          },
+          "baseline": {
+            "n": 42,
+            "median": 1162.5,
+            "p90": 1441,
+            "worst": 1557,
+            "mean": 1172.357142857143
+          }
+        }
+      },
+      "rescued": {
+        "pairs": 0,
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        },
+        "pairsWithUnparsed": 0,
+        "distanceRatio": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        },
+        "longRunRatio": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        },
+        "runDaysDiff": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        },
+        "dayTypeMatch": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        },
+        "sameRestDays": 0,
+        "restAgreement": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        },
+        "qualityBoth": 0,
+        "qualityOnlyCandidate": 0,
+        "qualityOnlyBaseline": 0,
+        "flags": {
+          "candidate": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          },
+          "baseline": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          }
+        },
+        "answers": {
+          "candidate": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          },
+          "baseline": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          }
+        },
+        "answersFewer": 0,
+        "headlineChars": {
+          "candidate": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          },
+          "baseline": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          }
+        },
+        "analysisChars": {
+          "candidate": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          },
+          "baseline": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          }
+        }
+      }
+    }
+  ],
+  "planRows": [
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/13",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 6
+        },
+        "dayTypeMatch": 0.5714285714285714,
+        "sameRestDays": false,
+        "restAgreement": 0.5714285714285714,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 0,
+        "headlineChars": 108,
+        "analysisChars": 1288,
+        "totalKm": 26
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 174,
+        "analysisChars": 966,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/13",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 6
+        },
+        "dayTypeMatch": 0.42857142857142855,
+        "sameRestDays": false,
+        "restAgreement": 0.5714285714285714,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 93,
+        "analysisChars": 678,
+        "totalKm": 0
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 174,
+        "analysisChars": 966,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/13",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 6
+        },
+        "dayTypeMatch": 0.5714285714285714,
+        "sameRestDays": false,
+        "restAgreement": 0.5714285714285714,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 0,
+        "headlineChars": 130,
+        "analysisChars": 1141,
+        "totalKm": 0
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 174,
+        "analysisChars": 966,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/22",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.6316185368087124,
+        "longRunRatio": 1.374990291262136,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 75,
+        "analysisChars": 614,
+        "totalKm": 49.89
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 191,
+        "analysisChars": 1441,
+        "totalKm": 30.577
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/22",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.7368610393432973,
+        "longRunRatio": 1.6249320388349515,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 92,
+        "analysisChars": 336,
+        "totalKm": 53.108
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 191,
+        "analysisChars": 1441,
+        "totalKm": 30.577
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/22",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.8421362461981228,
+        "longRunRatio": 1.4999611650485436,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 76,
+        "analysisChars": 643,
+        "totalKm": 56.327
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 191,
+        "analysisChars": 1441,
+        "totalKm": 30.577
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/24",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.0571672051983099,
+        "longRunRatio": 1,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 1,
+        "headlineChars": 78,
+        "analysisChars": 708,
+        "totalKm": 59.546
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 212,
+        "analysisChars": 1236,
+        "totalKm": 56.326
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/24",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.0285836025991548,
+        "longRunRatio": 1,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 1,
+        "headlineChars": 98,
+        "analysisChars": 783,
+        "totalKm": 57.936
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 212,
+        "analysisChars": 1236,
+        "totalKm": 56.326
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/24",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.6857401555232042,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 4,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.14285714285714285,
+        "sameRestDays": false,
+        "restAgreement": 0.5714285714285714,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 3,
+        "answers": 1,
+        "headlineChars": 75,
+        "analysisChars": 505,
+        "totalKm": 38.625
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 212,
+        "analysisChars": 1236,
+        "totalKm": 56.326
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/26",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.9999848448108632,
+        "longRunRatio": 1.1249708737864077,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 93,
+        "analysisChars": 808,
+        "totalKm": 65.983
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 190,
+        "analysisChars": 1133,
+        "totalKm": 65.984
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/26",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.9024308923375364,
+        "longRunRatio": 1.187495145631068,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 80,
+        "analysisChars": 1270,
+        "totalKm": 59.546
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 190,
+        "analysisChars": 1133,
+        "totalKm": 65.984
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/26",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.9999848448108632,
+        "longRunRatio": 1.1249708737864077,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 74,
+        "analysisChars": 1072,
+        "totalKm": 65.983
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 190,
+        "analysisChars": 1133,
+        "totalKm": 65.984
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/27",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.9666528583264291,
+        "longRunRatio": 1,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 134,
+        "analysisChars": 1154,
+        "totalKm": 70.005
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 170,
+        "analysisChars": 1126,
+        "totalKm": 72.42
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/27",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.9111157138911903,
+        "longRunRatio": 0.8889119027892848,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 80,
+        "analysisChars": 818,
+        "totalKm": 65.983
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 170,
+        "analysisChars": 1126,
+        "totalKm": 72.42
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/27",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.9111157138911903,
+        "longRunRatio": 1,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 93,
+        "analysisChars": 774,
+        "totalKm": 65.983
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 170,
+        "analysisChars": 1126,
+        "totalKm": 72.42
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/28",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.5908968945502817,
+        "longRunRatio": 0.5999937863112437,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 90,
+        "analysisChars": 1058,
+        "totalKm": 41.842
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 180,
+        "analysisChars": 1001,
+        "totalKm": 70.811
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/28",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.7954555083249778,
+        "longRunRatio": 0.7499922328890546,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 81,
+        "analysisChars": 623,
+        "totalKm": 56.327
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 180,
+        "analysisChars": 1001,
+        "totalKm": 70.811
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/28",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.5681744361751705,
+        "longRunRatio": 0.5500046602665672,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 4,
+        "answers": 0,
+        "headlineChars": 87,
+        "analysisChars": 873,
+        "totalKm": 40.233
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 180,
+        "analysisChars": 1001,
+        "totalKm": 70.811
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/30",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.2912556933007571,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.5714285714285714,
+        "sameRestDays": false,
+        "restAgreement": 0.7142857142857143,
+        "quality": {
+          "candidate": false,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 60,
+        "analysisChars": 767,
+        "totalKm": 19.312
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 169,
+        "analysisChars": 1399,
+        "totalKm": 66.306
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/30",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.533978825445661,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 1,
+        "headlineChars": 88,
+        "analysisChars": 506,
+        "totalKm": 35.406
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 169,
+        "analysisChars": 1399,
+        "totalKm": 66.306
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/30",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.2666003893790647,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 4,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.7142857142857143,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": true
+        },
+        "unparsed": {
+          "candidate": 1,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 62,
+        "analysisChars": 1071,
+        "totalKm": 30.577
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 169,
+        "analysisChars": 1399,
+        "totalKm": 66.306
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/31",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 3.2999875730085746,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.42857142857142855,
+        "sameRestDays": false,
+        "restAgreement": 0.7142857142857143,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 1,
+        "headlineChars": 86,
+        "analysisChars": 378,
+        "totalKm": 26.555
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 144,
+        "analysisChars": 1299,
+        "totalKm": 8.047
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/31",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 2.9998757300857464,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.2857142857142857,
+        "sameRestDays": false,
+        "restAgreement": 0.42857142857142855,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 74,
+        "analysisChars": 731,
+        "totalKm": 24.14
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 144,
+        "analysisChars": 1299,
+        "totalKm": 8.047
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/31",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 3.699888157077172,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.42857142857142855,
+        "sameRestDays": false,
+        "restAgreement": 0.7142857142857143,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 76,
+        "analysisChars": 1606,
+        "totalKm": 29.773
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 144,
+        "analysisChars": 1299,
+        "totalKm": 8.047
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/32",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.9091088829261403,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 4,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.5714285714285714,
+        "sameRestDays": false,
+        "restAgreement": 0.5714285714285714,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 73,
+        "analysisChars": 945,
+        "totalKm": 32.187
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 176,
+        "analysisChars": 1262,
+        "totalKm": 35.405
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/32",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 0.8409264228216353,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 4,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.5714285714285714,
+        "sameRestDays": false,
+        "restAgreement": 0.5714285714285714,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 1,
+        "headlineChars": 70,
+        "analysisChars": 543,
+        "totalKm": 29.773
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 176,
+        "analysisChars": 1262,
+        "totalKm": 35.405
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/32",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.0454738031351505,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.7142857142857143,
+        "sameRestDays": false,
+        "restAgreement": 0.7142857142857143,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 72,
+        "analysisChars": 678,
+        "totalKm": 37.015
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 176,
+        "analysisChars": 1262,
+        "totalKm": 35.405
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/33",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 4,
+          "baseline": 4
+        },
+        "dayTypeMatch": 0.7142857142857143,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 1,
+        "headlineChars": 91,
+        "analysisChars": 1151,
+        "totalKm": 21
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 155,
+        "analysisChars": 889,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/33",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 4
+        },
+        "dayTypeMatch": 0.7142857142857143,
+        "sameRestDays": false,
+        "restAgreement": 0.8571428571428571,
+        "quality": {
+          "candidate": true,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 110,
+        "analysisChars": 664,
+        "totalKm": 16
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 155,
+        "analysisChars": 889,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/33",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 4
+        },
+        "dayTypeMatch": 0.5714285714285714,
+        "sameRestDays": false,
+        "restAgreement": 0.5714285714285714,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 1,
+        "answers": 1,
+        "headlineChars": 88,
+        "analysisChars": 427,
+        "totalKm": 14
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 155,
+        "analysisChars": 889,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/35",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 3
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 73,
+        "analysisChars": 917,
+        "totalKm": 21
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 171,
+        "analysisChars": 819,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/35",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 3
+        },
+        "dayTypeMatch": 0.42857142857142855,
+        "sameRestDays": false,
+        "restAgreement": 0.7142857142857143,
+        "quality": {
+          "candidate": true,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 109,
+        "analysisChars": 882,
+        "totalKm": 8
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 171,
+        "analysisChars": 819,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/35",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 3
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 83,
+        "analysisChars": 734,
+        "totalKm": 21
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 171,
+        "analysisChars": 819,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/37",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 3
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 60,
+        "analysisChars": 972,
+        "totalKm": 19
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 0,
+        "headlineChars": 165,
+        "analysisChars": 1093,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/37",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 4,
+          "baseline": 3
+        },
+        "dayTypeMatch": 0.7142857142857143,
+        "sameRestDays": false,
+        "restAgreement": 0.8571428571428571,
+        "quality": {
+          "candidate": true,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 102,
+        "analysisChars": 974,
+        "totalKm": 25
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 0,
+        "headlineChars": 165,
+        "analysisChars": 1093,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/37",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 3
+        },
+        "dayTypeMatch": 1,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 72,
+        "analysisChars": 589,
+        "totalKm": 9
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 0,
+        "headlineChars": 165,
+        "analysisChars": 1093,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/40",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 4,
+          "baseline": 3
+        },
+        "dayTypeMatch": 0.7142857142857143,
+        "sameRestDays": false,
+        "restAgreement": 0.8571428571428571,
+        "quality": {
+          "candidate": true,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 70,
+        "analysisChars": 878,
+        "totalKm": 12
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 220,
+        "analysisChars": 1192,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/40",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 3
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 0,
+        "headlineChars": 113,
+        "analysisChars": 314,
+        "totalKm": 6
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 220,
+        "analysisChars": 1192,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/40",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": null,
+        "longRunRatio": null,
+        "runDays": {
+          "candidate": 3,
+          "baseline": 3
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": true,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 76,
+        "analysisChars": 932,
+        "totalKm": 14
+      },
+      "baseline": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 220,
+        "analysisChars": 1192,
+        "totalKm": 0
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "snapshot/06",
+      "repeat": 1,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.4091230052252506,
+        "longRunRatio": 1.2222452361226182,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 88,
+        "analysisChars": 695,
+        "totalKm": 49.89
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 196,
+        "analysisChars": 1557,
+        "totalKm": 35.405
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "snapshot/06",
+      "repeat": 2,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.27272984041802,
+        "longRunRatio": 1.1110880972107153,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 4,
+        "answers": 1,
+        "headlineChars": 86,
+        "analysisChars": 523,
+        "totalKm": 45.061
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 196,
+        "analysisChars": 1557,
+        "totalKm": 35.405
+      }
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "snapshot/06",
+      "repeat": 3,
+      "source": "valid",
+      "comparison": {
+        "distanceRatio": 1.4545403191639599,
+        "longRunRatio": 1.2222452361226182,
+        "runDays": {
+          "candidate": 5,
+          "baseline": 5
+        },
+        "dayTypeMatch": 0.8571428571428571,
+        "sameRestDays": true,
+        "restAgreement": 1,
+        "quality": {
+          "candidate": false,
+          "baseline": false
+        },
+        "unparsed": {
+          "candidate": 0,
+          "baseline": 0
+        }
+      },
+      "candidate": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 137,
+        "analysisChars": 534,
+        "totalKm": 51.498
+      },
+      "baseline": {
+        "flags": 5,
+        "answers": 1,
+        "headlineChars": 196,
+        "analysisChars": 1557,
+        "totalKm": 35.405
+      }
+    }
+  ],
+  "divergences": [
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/31",
+      "repeat": 3,
+      "source": "valid",
+      "distanceRatio": 3.699888157077172,
+      "issues": [
+        "weekly distance 29.8 km vs 8.0 km (x3.70)",
+        "day types match on 3/7 days"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/31",
+      "repeat": 1,
+      "source": "valid",
+      "distanceRatio": 3.2999875730085746,
+      "issues": [
+        "weekly distance 26.6 km vs 8.0 km (x3.30)",
+        "day types match on 3/7 days"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/31",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": 2.9998757300857464,
+      "issues": [
+        "weekly distance 24.1 km vs 8.0 km (x3.00)",
+        "day types match on 2/7 days"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/22",
+      "repeat": 3,
+      "source": "valid",
+      "distanceRatio": 1.8421362461981228,
+      "issues": [
+        "weekly distance 56.3 km vs 30.6 km (x1.84)",
+        "long run x1.50"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/22",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": 1.7368610393432973,
+      "issues": [
+        "weekly distance 53.1 km vs 30.6 km (x1.74)",
+        "long run x1.62"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/30",
+      "repeat": 1,
+      "source": "valid",
+      "distanceRatio": 0.2912556933007571,
+      "issues": [
+        "weekly distance 19.3 km vs 66.3 km (x0.29)",
+        "no quality session where the baseline plans one"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/22",
+      "repeat": 1,
+      "source": "valid",
+      "distanceRatio": 1.6316185368087124,
+      "issues": [
+        "weekly distance 49.9 km vs 30.6 km (x1.63)",
+        "long run x1.37"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/30",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": 0.533978825445661,
+      "issues": [
+        "weekly distance 35.4 km vs 66.3 km (x0.53)"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "snapshot/06",
+      "repeat": 3,
+      "source": "valid",
+      "distanceRatio": 1.4545403191639599,
+      "issues": [
+        "weekly distance 51.5 km vs 35.4 km (x1.45)"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/28",
+      "repeat": 3,
+      "source": "valid",
+      "distanceRatio": 0.5681744361751705,
+      "issues": [
+        "weekly distance 40.2 km vs 70.8 km (x0.57)",
+        "long run x0.55",
+        "0 answers vs 1"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "snapshot/06",
+      "repeat": 1,
+      "source": "valid",
+      "distanceRatio": 1.4091230052252506,
+      "issues": [
+        "weekly distance 49.9 km vs 35.4 km (x1.41)"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/28",
+      "repeat": 1,
+      "source": "valid",
+      "distanceRatio": 0.5908968945502817,
+      "issues": [
+        "weekly distance 41.8 km vs 70.8 km (x0.59)",
+        "long run x0.60",
+        "0 answers vs 1"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/24",
+      "repeat": 3,
+      "source": "valid",
+      "distanceRatio": 0.6857401555232042,
+      "issues": [
+        "weekly distance 38.6 km vs 56.3 km (x0.69)",
+        "day types match on 1/7 days"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "snapshot/06",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": 1.27272984041802,
+      "issues": [
+        "weekly distance 45.1 km vs 35.4 km (x1.27)"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/30",
+      "repeat": 3,
+      "source": "valid",
+      "distanceRatio": 1.2666003893790647,
+      "issues": [
+        "weekly distance 30.6 km vs 66.3 km (x1.27)",
+        "1 of 7 days not filed (left out of the ratios)"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/28",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": 0.7954555083249778,
+      "issues": [
+        "long run x0.75"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/26",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": 0.9024308923375364,
+      "issues": [
+        "0 answers vs 1"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/13",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": null,
+      "issues": [
+        "day types match on 3/7 days"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/33",
+      "repeat": 1,
+      "source": "valid",
+      "distanceRatio": null,
+      "issues": [
+        "quality session the baseline does not plan"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/33",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": null,
+      "issues": [
+        "quality session the baseline does not plan"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/35",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": null,
+      "issues": [
+        "day types match on 3/7 days",
+        "quality session the baseline does not plan"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/37",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": null,
+      "issues": [
+        "quality session the baseline does not plan"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/40",
+      "repeat": 1,
+      "source": "valid",
+      "distanceRatio": null,
+      "issues": [
+        "quality session the baseline does not plan"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/40",
+      "repeat": 2,
+      "source": "valid",
+      "distanceRatio": null,
+      "issues": [
+        "quality session the baseline does not plan",
+        "0 answers vs 1"
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "key": "seasons/40",
+      "repeat": 3,
+      "source": "valid",
+      "distanceRatio": null,
+      "issues": [
+        "quality session the baseline does not plan"
+      ]
+    }
+  ],
+  "difficulty": [
+    {
+      "key": "seasons/13",
+      "operation": "weekly_reply",
+      "source": "3-return-w1.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "after retry"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/22",
+      "operation": "weekly_reply",
+      "source": "4-marathon-w04.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/24",
+      "operation": "weekly_reply",
+      "source": "4-marathon-w06.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/26",
+      "operation": "weekly_reply",
+      "source": "4-marathon-w08.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/27",
+      "operation": "weekly_reply",
+      "source": "4-marathon-w09.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/28",
+      "operation": "weekly_reply",
+      "source": "4-marathon-w10.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/30",
+      "operation": "weekly_reply",
+      "source": "4-marathon-w12.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/31",
+      "operation": "weekly_reply",
+      "source": "4-marathon-w13.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/32",
+      "operation": "weekly_reply",
+      "source": "4-marathon-w14.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/33",
+      "operation": "weekly_reply",
+      "source": "5-beginner-w1.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/35",
+      "operation": "weekly_reply",
+      "source": "5-beginner-w3.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/37",
+      "operation": "weekly_reply",
+      "source": "5-beginner-w5.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "seasons/40",
+      "operation": "weekly_reply",
+      "source": "5-beginner-w8.json",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    },
+    {
+      "key": "snapshot/06",
+      "operation": "weekly_reply",
+      "source": "snapshot call at 2026-09-13 20:00:46.851441+00",
+      "status": {
+        "anthropic--claude-opus-4-7--xhigh": "first try",
+        "self_hosted--gpt-oss-20b-MXFP4-Q8--high": "first try"
+      },
+      "ran": 1,
+      "failedIn": []
+    }
+  ],
+  "hardest": [],
+  "speed": [
+    {
+      "configuration": "anthropic--claude-opus-4-7--xhigh",
+      "all": {
+        "replies": 14,
+        "attempts": 14,
+        "firstTokenMs": {
+          "n": 14,
+          "median": 4326,
+          "p90": 5663,
+          "worst": 7536,
+          "mean": 4512.857142857143
+        },
+        "totalMs": {
+          "n": 14,
+          "median": 48427,
+          "p90": 66115,
+          "worst": 70505,
+          "mean": 50291
+        },
+        "attemptTotalMs": {
+          "n": 14,
+          "median": 48427,
+          "p90": 66115,
+          "worst": 70505,
+          "mean": 50291
+        },
+        "inputTokens": {
+          "n": 14,
+          "median": 22518,
+          "p90": 24389,
+          "worst": 24406,
+          "mean": 18408.928571428572
+        },
+        "outputTokens": {
+          "n": 14,
+          "median": 2873,
+          "p90": 3786,
+          "worst": 4018,
+          "mean": 2926.0714285714284
+        },
+        "thinkingTokens": {
+          "n": 14,
+          "median": 1453.5,
+          "p90": 2310,
+          "worst": 2380,
+          "mean": 1366.7142857142858
+        },
+        "thinkingChars": {
+          "n": 14,
+          "median": 1539,
+          "p90": 2553,
+          "worst": 2658,
+          "mean": 1571.357142857143
+        },
+        "thinkingCharsRefused": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        },
+        "thinkingCharsAccepted": {
+          "n": 14,
+          "median": 1539,
+          "p90": 2553,
+          "worst": 2658,
+          "mean": 1571.357142857143
+        },
+        "thinkingVsRefusalR": null,
+        "costUsd": 2.3127500000000007
+      },
+      "byOperation": {
+        "weekly_reply": {
+          "replies": 14,
+          "attempts": 14,
+          "firstTokenMs": {
+            "n": 14,
+            "median": 4326,
+            "p90": 5663,
+            "worst": 7536,
+            "mean": 4512.857142857143
+          },
+          "totalMs": {
+            "n": 14,
+            "median": 48427,
+            "p90": 66115,
+            "worst": 70505,
+            "mean": 50291
+          },
+          "attemptTotalMs": {
+            "n": 14,
+            "median": 48427,
+            "p90": 66115,
+            "worst": 70505,
+            "mean": 50291
+          },
+          "inputTokens": {
+            "n": 14,
+            "median": 22518,
+            "p90": 24389,
+            "worst": 24406,
+            "mean": 18408.928571428572
+          },
+          "outputTokens": {
+            "n": 14,
+            "median": 2873,
+            "p90": 3786,
+            "worst": 4018,
+            "mean": 2926.0714285714284
+          },
+          "thinkingTokens": {
+            "n": 14,
+            "median": 1453.5,
+            "p90": 2310,
+            "worst": 2380,
+            "mean": 1366.7142857142858
+          },
+          "thinkingChars": {
+            "n": 14,
+            "median": 1539,
+            "p90": 2553,
+            "worst": 2658,
+            "mean": 1571.357142857143
+          },
+          "thinkingCharsRefused": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          },
+          "thinkingCharsAccepted": {
+            "n": 14,
+            "median": 1539,
+            "p90": 2553,
+            "worst": 2658,
+            "mean": 1571.357142857143
+          },
+          "thinkingVsRefusalR": null,
+          "costUsd": 2.3127500000000007
+        }
+      },
+      "measuresJson": [
+        {
+          "root": "seasons",
+          "totalUsd": 2.0960700000000005,
+          "measuredReplies": 13,
+          "filesNow": 13
+        },
+        {
+          "root": "snapshot",
+          "totalUsd": 0.21668,
+          "measuredReplies": 1,
+          "filesNow": 1
+        }
+      ]
+    },
+    {
+      "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+      "all": {
+        "replies": 42,
+        "attempts": 65,
+        "firstTokenMs": {
+          "n": 42,
+          "median": 964,
+          "p90": 21255,
+          "worst": 23513,
+          "mean": 5805.809523809524
+        },
+        "totalMs": {
+          "n": 42,
+          "median": 42541.5,
+          "p90": 65671,
+          "worst": 78004,
+          "mean": 42347.09523809524
+        },
+        "attemptTotalMs": {
+          "n": 65,
+          "median": 24240,
+          "p90": 45081,
+          "worst": 53148,
+          "mean": 27362.723076923077
+        },
+        "inputTokens": {
+          "n": 65,
+          "median": 13803,
+          "p90": 17264,
+          "worst": 17875,
+          "mean": 12304.538461538461
+        },
+        "outputTokens": {
+          "n": 65,
+          "median": 1332,
+          "p90": 1989,
+          "worst": 3439,
+          "mean": 1438.2153846153847
+        },
+        "thinkingTokens": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        },
+        "thinkingChars": {
+          "n": 43,
+          "median": 3359,
+          "p90": 5445,
+          "worst": 10119,
+          "mean": 3606.4418604651164
+        },
+        "thinkingCharsRefused": {
+          "n": 1,
+          "median": 3011,
+          "p90": 3011,
+          "worst": 3011,
+          "mean": 3011
+        },
+        "thinkingCharsAccepted": {
+          "n": 42,
+          "median": 3392,
+          "p90": 5445,
+          "worst": 10119,
+          "mean": 3620.6190476190477
+        },
+        "thinkingVsRefusalR": -0.05940187335355003,
+        "costUsd": null
+      },
+      "byOperation": {
+        "weekly_reply": {
+          "replies": 42,
+          "attempts": 65,
+          "firstTokenMs": {
+            "n": 42,
+            "median": 964,
+            "p90": 21255,
+            "worst": 23513,
+            "mean": 5805.809523809524
+          },
+          "totalMs": {
+            "n": 42,
+            "median": 42541.5,
+            "p90": 65671,
+            "worst": 78004,
+            "mean": 42347.09523809524
+          },
+          "attemptTotalMs": {
+            "n": 65,
+            "median": 24240,
+            "p90": 45081,
+            "worst": 53148,
+            "mean": 27362.723076923077
+          },
+          "inputTokens": {
+            "n": 65,
+            "median": 13803,
+            "p90": 17264,
+            "worst": 17875,
+            "mean": 12304.538461538461
+          },
+          "outputTokens": {
+            "n": 65,
+            "median": 1332,
+            "p90": 1989,
+            "worst": 3439,
+            "mean": 1438.2153846153847
+          },
+          "thinkingTokens": {
+            "n": 0,
+            "median": null,
+            "p90": null,
+            "worst": null,
+            "mean": null
+          },
+          "thinkingChars": {
+            "n": 43,
+            "median": 3359,
+            "p90": 5445,
+            "worst": 10119,
+            "mean": 3606.4418604651164
+          },
+          "thinkingCharsRefused": {
+            "n": 1,
+            "median": 3011,
+            "p90": 3011,
+            "worst": 3011,
+            "mean": 3011
+          },
+          "thinkingCharsAccepted": {
+            "n": 42,
+            "median": 3392,
+            "p90": 5445,
+            "worst": 10119,
+            "mean": 3620.6190476190477
+          },
+          "thinkingVsRefusalR": -0.05940187335355003,
+          "costUsd": null
+        }
+      },
+      "measuresJson": [
+        {
+          "root": "seasons",
+          "totalUsd": null,
+          "measuredReplies": 39,
+          "filesNow": 39
+        },
+        {
+          "root": "snapshot",
+          "totalUsd": null,
+          "measuredReplies": 3,
+          "filesNow": 3
+        }
+      ]
+    }
+  ],
+  "coaching": {
+    "judge": {
+      "configuration": "anthropic--claude-opus-5-5--high",
+      "provider": "anthropic",
+      "model": "claude-opus-5-5",
+      "effort": "high"
+    },
+    "calibration": {
+      "judge": "anthropic--claude-opus-5-5--high",
+      "casesCompared": 14,
+      "pickAgreement": 0.32142857142857145,
+      "unsafeRecall": 0.8,
+      "unsafePrecision": 0.5714285714285714,
+      "ratingMad": 0.975609756097561,
+      "ratingWithinOne": 0.8292682926829268,
+      "meetsBar": true,
+      "bar": {
+        "pickAgreement": null,
+        "unsafeRecall": 0.6,
+        "ratingMad": 1.170731707317073
+      }
+    },
+    "answerKeyFile": "coaching-answer-key.json",
+    "answerKey": {
+      "coachDrafts": 42
+    },
+    "configurations": [
+      {
+        "configuration": "anthropic--claude-opus-4-7--xhigh",
+        "scored": 14,
+        "failed": 0,
+        "meanRating": 3.5,
+        "repeatMeans": [
+          {
+            "repeat": 1,
+            "n": 14,
+            "mean": 3.5
+          }
+        ],
+        "repeatRange": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "worst": null,
+          "mean": null
+        },
+        "unsafe": 2,
+        "unsafeShare": 0.14285714285714285,
+        "picks": {
+          "groups": 14,
+          "picked": 11.5,
+          "rate": 0.8214285714285714
+        },
+        "coach": {
+          "drafts": 6,
+          "coachMean": 3.3333333333333335,
+          "judgeMean": 3.6666666666666665,
+          "difference": 0.33333333333333304,
+          "unsafeDrafts": 7,
+          "coachUnsafe": 0,
+          "judgeUnsafe": 0
+        }
+      },
+      {
+        "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+        "scored": 42,
+        "failed": 0,
+        "meanRating": 1.8571428571428572,
+        "repeatMeans": [
+          {
+            "repeat": 1,
+            "n": 14,
+            "mean": 1.6428571428571428
+          },
+          {
+            "repeat": 2,
+            "n": 14,
+            "mean": 2
+          },
+          {
+            "repeat": 3,
+            "n": 14,
+            "mean": 1.9285714285714286
+          }
+        ],
+        "repeatRange": {
+          "n": 14,
+          "median": 1,
+          "p90": 2,
+          "worst": 2,
+          "mean": 0.9285714285714286
+        },
+        "unsafe": 25,
+        "unsafeShare": 0.5952380952380952,
+        "picks": {
+          "groups": 14,
+          "picked": 0.5,
+          "rate": 0.03571428571428571
+        },
+        "coach": {
+          "drafts": 7,
+          "coachMean": 2.7142857142857144,
+          "judgeMean": 1.4285714285714286,
+          "difference": -1.2857142857142858,
+          "unsafeDrafts": 7,
+          "coachUnsafe": 2,
+          "judgeUnsafe": 6
+        }
+      }
+    ],
+    "perInput": [
+      {
+        "input": "seasons/13",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 2.3333333333333335,
+            "unsafe": 1
+          }
+        }
+      },
+      {
+        "input": "seasons/22",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 1.3333333333333333,
+            "unsafe": 3
+          }
+        }
+      },
+      {
+        "input": "seasons/24",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 2,
+            "unsafe": 1
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 1.3333333333333333,
+            "unsafe": 3
+          }
+        }
+      },
+      {
+        "input": "seasons/26",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 3,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 2,
+            "unsafe": 2
+          }
+        }
+      },
+      {
+        "input": "seasons/27",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 3,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 3.3333333333333335,
+            "unsafe": 0
+          }
+        }
+      },
+      {
+        "input": "seasons/28",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 2,
+            "unsafe": 0
+          }
+        }
+      },
+      {
+        "input": "seasons/30",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 2.6666666666666665,
+            "unsafe": 0
+          }
+        }
+      },
+      {
+        "input": "seasons/31",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 2,
+            "unsafe": 1
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 1.3333333333333333,
+            "unsafe": 3
+          }
+        }
+      },
+      {
+        "input": "seasons/32",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 3,
+            "unsafe": 0
+          }
+        }
+      },
+      {
+        "input": "seasons/33",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 1.3333333333333333,
+            "unsafe": 2
+          }
+        }
+      },
+      {
+        "input": "seasons/35",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 1,
+            "unsafe": 3
+          }
+        }
+      },
+      {
+        "input": "seasons/37",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 1.3333333333333333,
+            "unsafe": 3
+          }
+        }
+      },
+      {
+        "input": "seasons/40",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 3,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 1.3333333333333333,
+            "unsafe": 3
+          }
+        }
+      },
+      {
+        "input": "snapshot/06",
+        "byConfiguration": {
+          "anthropic--claude-opus-4-7--xhigh": {
+            "scored": 1,
+            "meanRating": 4,
+            "unsafe": 0
+          },
+          "self_hosted--gpt-oss-20b-MXFP4-Q8--high": {
+            "scored": 3,
+            "meanRating": 1.6666666666666667,
+            "unsafe": 2
+          }
+        }
+      }
+    ],
+    "headline": {
+      "control": "anthropic--claude-opus-4-7--xhigh",
+      "controlMean": 3.5,
+      "largestGap": {
+        "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+        "gap": 1.6428571428571428
+      },
+      "bestCheaper": {
+        "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+        "gap": 1.6428571428571428
+      },
+      "mostUnsafeInput": {
+        "input": "seasons/24",
+        "unsafe": 4,
+        "replies": 4
+      }
+    },
+    "warnings": []
+  }
+}

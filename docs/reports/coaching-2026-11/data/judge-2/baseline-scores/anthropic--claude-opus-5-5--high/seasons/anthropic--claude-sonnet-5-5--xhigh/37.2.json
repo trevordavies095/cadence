@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This draft is safe and suits Nessa's week. She did none of her three runs, so restarting one step below her last session is the right call, and it doesn't rush her back after the gap. The plan keeps her Mon/Wed/Sat run days and her dog walks. Each session is a short walk-run at effort 5–6/10 with a set count of run/walk intervals, so she can run every day as written. Weekly time and the Saturday session grow only a little (21, 24, 24 min, with Saturday going to 3-minute run intervals), which is no sharp jump in volume or long run. Seven weeks out from her 15 Nov 5K, that progression makes sense.\n\nWhat keeps it from a 5: it never mentions the 5K goal or her excitement about next week, and it doesn't gently ask why the week was missed. It also quotes check-in details (7.5 hours of sleep, low stress) that aren't on the card. Those may come from data I can't see, but they risk looking invented. Wednesday also leaves out the warm-up walk that Monday and Saturday spell out.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:34:52.642Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2234,
+  "outputTokens": 884,
+  "thinkingTokens": 417,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1123,
+  "costUsd": 0.026616,
+  "timing": {
+    "ttftMs": 3113,
+    "totalMs": 10328,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3113,
+        "totalMs": 10328,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2234,
+        "outputTokens": 884
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This draft is safe and suits Nessa's week. She did none of her three runs, so restarting one step below her last session is the right call, and it doesn't rush her back after the gap. The plan keeps her Mon/Wed/Sat run days and her dog walks. Each session is a short walk-run at effort 5–6/10 with a set count of run/walk intervals, so she can run every day as written. Weekly time and the Saturday session grow only a little (21, 24, 24 min, with Saturday going to 3-minute run intervals), which is no sharp jump in volume or long run. Seven weeks out from her 15 Nov 5K, that progression makes sense.\n\nWhat keeps it from a 5: it never mentions the 5K goal or her excitement about next week, and it doesn't gently ask why the week was missed. It also quotes check-in details (7.5 hours of sleep, low stress) that aren't on the card. Those may come from data I can't see, but they risk looking invented. Wednesday also leaves out the warm-up walk that Monday and Saturday spell out."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: No runs were recorded the week of Sep 21 – 27, so this week restarts one step below your last run and only moves to…\nYour week of Sep 21 – 27 shows no distance and no heart-rate data on any of the three planned days. Your check-in says you slept 7.5 hours, stress was low and your body felt fine, so nothing there points to a problem.\nNext week:\nMon: easy, 21 min, 7 x 2 min run and 1 min walk after a 5 minute brisk walk, effort 5/10…\nTue: rest, dog walk as normal. Your legs adapt to the running on days off.\nWed: easy, 24 min, 8 x 2 min run and 1 min walk, effort 5/10 to 6/10. Brings you back to…\nThu: rest, dog walk as normal. Keeps you fresh for Saturday.\nFri: rest, no running. A second rest day before the biggest session of the week.\nSat: easy, 24 min, 6 x 3 min run and 1 min walk after a 5 minute brisk walk, run…\nSun: rest, easy dog walk only. Lets the week settle before the next step up.\n\nScore this draft: call submit_coaching_score once."
+}

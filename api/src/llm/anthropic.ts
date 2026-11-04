@@ -1,4 +1,4 @@
-import { SecretProtector } from "../crypto/secretProtector.js";
+import { randomUUID } from "node:crypto";
 import { resolveAppVersion } from "../llmCallLog/appVersion.js";
 import { createPostgresLlmCallRecorder } from "../llmCallLog/recorder.js";
 import type {
@@ -8,18 +8,28 @@ import type {
   LlmCallRecorder,
 } from "../llmCallLog/types.js";
 import type { ModelPacket } from "../packet/types.js";
-import { readAnthropicApiKey } from "../settings/anthropicStore.js";
+import { selfHostedHost } from "../settings/selfHostedStore.js";
 import { resolveLlmProvider } from "../settings/sources.js";
-import { resolveAnthropicEffort, type AnthropicEffort } from "./effort.js";
+import type { CoachModel } from "./coachModel.js";
+import {
+  createCoachTargetResolver,
+  type CoachProvider,
+  type CoachTarget,
+  type CoachTargetResolver,
+} from "./coachTarget.js";
+import type { AnthropicEffort } from "./effort.js";
 import { readMessageStream } from "./anthropicStream.js";
 import {
   LlmHttpError,
   LlmNotConfiguredError,
   LlmSchemaError,
   LlmTransportError,
+  type AttemptRequest,
   type LlmCallOptions,
   type LlmPort,
 } from "./port.js";
+import type { PlanLineFailure } from "../prescribed/planLines.js";
+import { checkPlan, type PlanWarning } from "../prescribed/planCheck.js";
 import { formatIsoWeekRangeShort } from "../clock/weekRangeShort.js";
 import { goalPromptLines } from "./goalLines.js";
 import {
@@ -27,16 +37,16 @@ import {
   DOSSIER_CORRECTION_SYSTEM_PROMPT,
   DOSSIER_V1_SYSTEM_PROMPT,
   midWeekSystemPrompt,
-  safetyCalloutsJsonSchema,
   weeklySystemPrompt,
 } from "./safety.js";
 import {
-  DAY_NOTES_TARGET,
   MAX_FLAG_DETAIL_LENGTH,
   MAX_FLAG_TITLE_LENGTH,
   MAX_HEADLINE_LENGTH,
-  MAX_READ_ANSWERS,
   MAX_READ_FLAGS,
+  MAX_SAFETY_CALLOUT_BODY,
+  MAX_SAFETY_CALLOUTS,
+  MAX_SETTINGS_PROPOSAL_BULLETS,
   expectedPlanDates,
   MAX_BULLET_LENGTH,
   MAX_DOSSIER_BODY_LENGTH,
@@ -44,10 +54,27 @@ import {
   validateDossierAuditDraft,
   validateDossierCorrectionDraft,
   validateDossierV1Draft,
+  midWeekPlanRetry,
   validateMidWeekChatReply,
+  validatePlanDayFix,
   validateWeeklyReply,
+  planDateLabel,
+  type PlanFixResult,
+  type PlanRetry,
+  type SchemaResult,
 } from "./schema.js";
-import { COACH_STANCE_SUMMARY } from "./stance.js";
+import { COACH_STANCE_SUMMARY, COACH_SYSTEM_STANCE } from "./stance.js";
+import {
+  JUDGE_TOOL_NAME,
+  judgeSystemPrompt,
+  judgeToolSchema,
+  judgeUserPrompt,
+  validateCoachingJudgement,
+  type CoachingJudgeInput,
+  type CoachingJudgement,
+} from "./judge.js";
+import type { TempoUnitPreference } from "../tempo/port.js";
+import { packetUnit, weeklyReplyContext } from "./weeklyContext.js";
 import {
   createStubLlmPort,
   resolvePlanWeekStartMonday,
@@ -61,6 +88,8 @@ import type {
   DossierV1Draft,
   DossierV1Input,
   MidWeekChatReply,
+  PlanDayFix,
+  PlanDayFixInput,
   WeeklyReply,
 } from "./types.js";
 
@@ -68,15 +97,29 @@ import type {
 const DEFAULT_TIMEOUT_MS = 900_000;
 /** Abort when the stream goes quiet this long (pings keep a live stream active). */
 const DEFAULT_IDLE_TIMEOUT_MS = 60_000;
-/** Thinking tokens count toward max_tokens; leave generous room for the reply. */
-const MAX_OUTPUT_TOKENS = 64_000;
-/** Match Claude app dogfood (Opus 4.7). Override with ANTHROPIC_MODEL. */
-const DEFAULT_MODEL = "claude-opus-4-7";
-const ANTHROPIC_MESSAGES_URL = "https://api.anthropic.com/v1/messages";
+/**
+ * Self-hosted silence limit: home hardware can read a 30k-token prompt for
+ * more than a minute before the first token.
+ */
+const DEFAULT_SELF_HOSTED_IDLE_TIMEOUT_MS = 600_000;
+/** How much of a non-JSON error body a self-hosted error message carries. */
+const SERVER_MESSAGE_MAX_CHARS = 200;
+/**
+ * The output cap on every coach call, Anthropic and self-hosted alike. Over 60
+ * valid Opus 4.7 replies at xhigh in the saved replay runs, the median output
+ * was 3,843 tokens, the highest weekly read 6,690 and the highest reply of any
+ * kind 9,264 (a mid-week chat). Thinking tokens count toward the cap on
+ * Anthropic (adaptive thinking is on there). Twice the maximum, floored at
+ * 16,000, is 20,000. A reply that stops at the cap is refused like a schema
+ * refusal and gets the same one retry; the old 64,000 let a runaway bill the
+ * full limit.
+ */
+export const MAX_OUTPUT_TOKENS = 20_000;
 const ANTHROPIC_VERSION = "2023-06-01";
 const WEEKLY_TOOL_NAME = "submit_weekly_reply";
 const MIDWEEK_TOOL_NAME = "submit_mid_week_chat_reply";
 const ABOUT_YOU_TOOL_NAME = "submit_about_you";
+export const PLAN_DAY_TOOL_NAME = "submit_plan_day";
 
 /**
  * Overall cap for an Anthropic call: ANTHROPIC_TIMEOUT_MS (positive integer
@@ -90,6 +133,18 @@ export function resolveAnthropicTimeoutMs(
   return DEFAULT_TIMEOUT_MS;
 }
 
+/**
+ * Silence limit for a self-hosted call: SELF_HOSTED_IDLE_TIMEOUT_MS (positive
+ * integer milliseconds), else 10 minutes. Anthropic calls keep 60 seconds.
+ */
+export function resolveSelfHostedIdleTimeoutMs(
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  const raw = env.SELF_HOSTED_IDLE_TIMEOUT_MS?.trim();
+  if (raw && /^\d+$/.test(raw) && Number(raw) > 0) return Number(raw);
+  return DEFAULT_SELF_HOSTED_IDLE_TIMEOUT_MS;
+}
+
 export type AnthropicLlmPortOptions = {
   /** Override wrapping key (tests). Defaults to DATA_PROTECTION_SECRET_KEY. */
   dataProtectionKey?: string;
@@ -97,66 +152,64 @@ export type AnthropicLlmPortOptions = {
   fetchImpl?: typeof globalThis.fetch;
   /** Overall cap per call. Defaults to ANTHROPIC_TIMEOUT_MS or 15 minutes. */
   timeoutMs?: number;
-  /** Abort after this long without stream data. Defaults to 60 seconds. */
+  /**
+   * Abort after this long without stream data, for both providers. Defaults
+   * to 60 seconds for Anthropic and SELF_HOSTED_IDLE_TIMEOUT_MS or 10 minutes
+   * for a self-hosted server.
+   */
   idleTimeoutMs?: number;
-  /** Thinking effort. Defaults to ANTHROPIC_EFFORT or xhigh. */
-  effort?: AnthropicEffort;
-  /** Anthropic model id (defaults to ANTHROPIC_MODEL or claude-opus-4-7). */
-  model?: string;
-  /** Override Messages API URL (tests). */
+  /**
+   * The target for a call that is not handed one: URL, key, model and effort,
+   * resolved once per call. Defaults to createCoachTargetResolver, built from
+   * the three options below.
+   */
+  resolveCoachTarget?: CoachTargetResolver;
+  /** Model and effort the default resolver reads (tests). Defaults to resolveCoachModel. */
+  readCoachModel?: () => Promise<CoachModel>;
+  /** Messages API URL the default resolver uses (tests). */
   apiUrl?: string;
-  /** Override credential loader (defaults to decrypting anthropic_connection). */
+  /** Key loader the default resolver uses (defaults to decrypting anthropic_connection). */
   readApiKey?: () => Promise<string | null>;
   /** LLM call log sink. Defaults to the Postgres recorder. */
   recorder?: LlmCallRecorder;
   /** Code version stamped on log rows. Defaults to APP_VERSION / `dev`. */
   appVersion?: string;
+  /**
+   * Send a weekly plan that trips a plan rule back once (ticket 11). Defaults
+   * to COACH_RULES_RETRY (rulesRetryFromEnv), on unless set off.
+   */
+  rulesRetry?: boolean;
 };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** The reason for a session, shown beside it on the plan. */
-const DAY_NOTES_DESCRIPTION = `Why this session, this week: one or two sentences, under ${DAY_NOTES_TARGET} characters. Shown beside the session.`;
-
-/** Day types; every type but rest and other carries a run. */
-const DAY_TYPE_DESCRIPTION =
-  "Every type but rest needs a run, except other: an other day with no run (run null) is strength, cross-training or a walk, and its notes must say what it is (\"30 min strength: squats, lunges, core\"). It is not counted or graded as a run.";
-
-/** A planned run, prescribed by distance, by duration, or by both. */
-export function prescribedRunJsonSchema(): Record<string, unknown> {
-  return {
-    type: ["object", "null"],
-    additionalProperties: false,
-    properties: {
-      type: {
-        type: "string",
-        enum: ["easy", "quality", "long", "race", "other"],
-      },
-      distanceM: {
-        type: "number",
-        description:
-          "Planned distance in meters. 0 when the run is prescribed by duration only.",
-      },
-      durationS: {
-        type: ["number", "null"],
-        description:
-          "Planned duration in seconds, for a run prescribed by time (2400 for 40 minutes). Set it with distanceM 0 for a time-only run, or beside a distance to give both.",
-      },
-      structure: { type: ["string", "null"] },
-      paceOrHr: { type: ["string", "null"] },
-      shoes: { type: ["string", "null"] },
-    },
-    required: ["type", "distanceM"],
-  };
+/** "miles" or "kilometres": the word the weekly form and prompt use for the athlete's unit. */
+function unitWord(unit: TempoUnitPreference): string {
+  return unit === "metric" ? "kilometres" : "miles";
 }
 
-function weeklyReplyToolSchema() {
+/**
+ * One example plan line, dated the plan week's Tuesday, in the athlete's unit.
+ * The same line is in the tool description and the prompt.
+ */
+export function examplePlanLine(weekStartMonday: string, unit: TempoUnitPreference): string {
+  const tuesday = expectedPlanDates(weekStartMonday)[1]!;
+  const distance = unit === "metric" ? "8 km" : "5 mi";
+  return `Tue ${tuesday}: easy, ${distance}, heart rate under 150, flat route. Loosens the legs after the long run.`;
+}
+
+/**
+ * The weekly form: every box a string (lists are lines in one string), each
+ * with a description, nothing nested (.scratch/plan-as-text/spec.md, "The forms").
+ * Built per call: the plan box names the athlete's unit and the plan week.
+ */
+export function weeklyReplyToolSchema(weekStartMonday: string, unit: TempoUnitPreference) {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["headline", "analysis", "prescribedWeek"],
+    required: ["headline", "analysis", "plan"],
     properties: {
       headline: {
         type: "string",
@@ -164,124 +217,114 @@ function weeklyReplyToolSchema() {
           `One or two plain sentences, at most ${MAX_HEADLINE_LENGTH} characters: what you would say if you could say only one thing about the week and the plan. No markdown, no label.`,
       },
       flags: {
-        type: "array",
-        maxItems: MAX_READ_FLAGS,
+        type: "string",
         description:
-          "What you are watching, not a summary of the week. Shown as a short list under \"Watching\".",
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: ["title", "detail"],
-          properties: {
-            title: {
-              type: "string",
-              description: `A few words, at most ${MAX_FLAG_TITLE_LENGTH} characters.`,
-            },
-            detail: {
-              type: "string",
-              description: `One line, at most ${MAX_FLAG_DETAIL_LENGTH} characters.`,
-            },
-          },
-        },
+          `What you are watching, not a summary of the week, shown under "Watching". One per line, at most ${MAX_READ_FLAGS} lines: a few-word title (at most ${MAX_FLAG_TITLE_LENGTH} characters), a colon, then one line of detail (at most ${MAX_FLAG_DETAIL_LENGTH} characters). Example line: Heart rate drift: it crept up on the long run, so watch it on Sunday.`,
       },
       answers: {
-        type: "array",
-        maxItems: MAX_READ_ANSWERS,
+        type: "string",
         description:
-          "One per question the athlete asked in the check-in or the conversation. Empty when they asked nothing.",
-        items: {
-          type: "object",
-          additionalProperties: false,
-          required: ["question", "answer"],
-          properties: {
-            question: {
-              type: "string",
-              description: "The athlete's question, quoted exactly as they wrote it.",
-            },
-            answer: {
-              type: "string",
-              description: "Your answer, in markdown if it needs more than a paragraph.",
-            },
-          },
-        },
+          "Your answer to the questions the athlete asked in the check-in or the conversation, check-in questions first, in the order asked, in markdown. The answers only, not the questions. Leave it empty when they asked nothing.",
       },
       analysis: {
         type: "string",
         description:
-          "The rest of your read in markdown: your reasoning about the week and the plan. The athlete sees the headline, flags and answers above it.",
+          "The rest of your read in markdown: your reasoning about the week and the plan. The athlete sees the headline, flags and answers above it, and the plan lines beside each day, so do not restate the plan day by day.",
       },
-      prescribedWeek: {
-        type: "object",
-        additionalProperties: false,
-        required: ["week", "days"],
-        properties: {
-          week: {
-            type: "string",
-            description: "ISO week id, e.g. 2026-W43",
-          },
-          days: {
-            type: "array",
-            minItems: 7,
-            maxItems: 7,
-            items: {
-              type: "object",
-              additionalProperties: false,
-              required: ["date", "dayType"],
-              properties: {
-                date: {
-                  type: "string",
-                  description: "Local calendar date YYYY-MM-DD",
-                },
-                dayType: {
-                  type: "string",
-                  enum: ["rest", "easy", "quality", "long", "race", "other"],
-                  description: DAY_TYPE_DESCRIPTION,
-                },
-                run: prescribedRunJsonSchema(),
-                strength: { type: ["string", "null"] },
-                notes: {
-                  type: ["string", "null"],
-                  description: DAY_NOTES_DESCRIPTION,
-                },
-              },
-            },
-          },
-        },
+      plan: {
+        type: "string",
+        description:
+          `Next week's plan as seven lines, one per day Monday to Sunday, each written as ${planLineGrammar(unit)}. Example: ${examplePlanLine(weekStartMonday, unit)}`,
       },
       settingsProposalBullets: {
-        type: "array",
-        items: { type: "string" },
-        description:
-          "Optional soft-gate dossier/settings proposal bullets (short).",
+        type: "string",
+        description: SETTINGS_BULLET_LINES_DESCRIPTION,
       },
-      safetyCallouts: safetyCalloutsJsonSchema(),
+      safetyCallouts: {
+        type: "string",
+        description: SAFETY_CALLOUT_LINES_DESCRIPTION,
+      },
     },
   };
 }
 
-export function prescribedDayJsonSchema(): Record<string, unknown> {
+/** The plan grammar in one sentence, in the athlete's unit; the weekly plan box and the mid-week changes box share it. */
+function planLineGrammar(unit: TempoUnitPreference): string {
+  return `"weekday date: day type, distance in ${unitWord(unit)} or time in minutes, then how to run it and why", where the day type is rest, easy, quality, long, race or other (strength, cross-training or a walk), a rest day needs no amount, and every number carries its unit`;
+}
+
+/** One example line for `date`, in the athlete's unit: the plan day form's example. */
+export function examplePlanDayLine(date: string, unit: TempoUnitPreference): string {
+  const distance = unit === "metric" ? "8 km" : "5 mi";
+  return `${planDateLabel(date)}: easy, ${distance}, heart rate under 150, flat route.`;
+}
+
+/**
+ * The plan day form ("Add the details", plan-as-text ticket 09): one string,
+ * the line for the date asked, described with the plan grammar and an example
+ * dated that day in the athlete's unit.
+ */
+export function planDayToolSchema(date: string, unit: TempoUnitPreference) {
   return {
-    type: "object",
-    additionalProperties: false,
-    required: ["date", "dayType"],
-    properties: {
-      date: {
-        type: "string",
-        description: "Local calendar date YYYY-MM-DD within the plan week",
+    name: PLAN_DAY_TOOL_NAME,
+    description: `Submit the one plan line for ${planDateLabel(date)}.`,
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["line"],
+      properties: {
+        line: {
+          type: "string",
+          description:
+            `The plan line for ${planDateLabel(date)} only, one line, written as ${planLineGrammar(unit)}. Example: ${examplePlanDayLine(date, unit)}`,
+        },
       },
-      dayType: {
-        type: "string",
-        enum: ["rest", "easy", "quality", "long", "race", "other"],
-        description: DAY_TYPE_DESCRIPTION,
-      },
-      run: prescribedRunJsonSchema(),
-      strength: { type: ["string", "null"] },
-      notes: { type: ["string", "null"], description: DAY_NOTES_DESCRIPTION },
     },
   };
 }
 
-function midWeekChatReplyToolSchema() {
+/** The plan day call's system prompt: the stance, the grammar, one line for one date. Kept short: no packet goes with it. */
+export function planDaySystemPrompt(unit: TempoUnitPreference): string {
+  return [
+    COACH_SYSTEM_STANCE,
+    `You wrote this week's plan as one line per day, each written as ${planLineGrammar(unit)}.`,
+    "Cadence could not read one day's line. Write one line for this date only, keeping what the day was meant to be. Do not change or mention any other day.",
+  ].join("\n\n");
+}
+
+/** The plan day call's user turn: the plan week, the unit, the other days' lines, the date, its line and the reason. Never the packet. */
+export function planDayUserPrompt(input: PlanDayFixInput): string {
+  const label = planDateLabel(input.date);
+  return [
+    `The plan week, Monday to Sunday: ${expectedPlanDates(input.weekStartMonday).join(", ")}.`,
+    `Write distances in ${unitWord(input.unit)}.`,
+    input.otherDays?.length
+      ? `The rest of the week as you wrote it:\n${input.otherDays.join("\n")}`
+      : null,
+    `The day to fill in: ${label}.`,
+    input.line === null
+      ? "No line was written for this date."
+      : `Its line as written: ${JSON.stringify(input.line)}`,
+    input.reason ? `Why Cadence could not read it: ${input.reason}.` : null,
+    `Example line: ${examplePlanDayLine(input.date, input.unit)}`,
+    `Call the ${PLAN_DAY_TOOL_NAME} tool exactly once with the one line for ${label}.`,
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
+/** Notices, one per line; the weekly and mid-week forms share it. */
+const SAFETY_CALLOUT_LINES_DESCRIPTION = `Notices when red flags appear: escalate to a professional, do not diagnose. One per line, at most ${MAX_SAFETY_CALLOUTS} lines: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then one or two short sentences for the athlete, under ${MAX_SAFETY_CALLOUT_BODY} characters. Example line: Caution: See a physio about the Achilles. Stop running if it hurts more each day.`;
+
+/** Suggested changes to what Coach Cade knows about the athlete, one per line; both forms share it. */
+const SETTINGS_BULLET_LINES_DESCRIPTION = `Optional. Suggested additions or changes to what you know about the athlete, which they accept or decline; never applied silently. One per line, at most ${MAX_SETTINGS_PROPOSAL_BULLETS} lines, each a short sentence under ${MAX_BULLET_LENGTH} characters.`;
+
+/**
+ * The mid-week form: strings (lists are lines in one string) and one boolean, each with a description,
+ * nothing nested (.scratch/plan-as-text/spec.md, "The forms"). Built per call:
+ * the changes box names the athlete's unit and the plan week.
+ */
+export function midWeekChatReplyToolSchema(weekStartMonday: string, unit: TempoUnitPreference) {
   return {
     type: "object",
     additionalProperties: false,
@@ -290,26 +333,26 @@ function midWeekChatReplyToolSchema() {
       body: {
         type: "string",
         description:
-          "Athlete-facing mid-week coach prose. When attachments are present, include concrete run feedback from metrics/splits.",
+          "Your reply to the athlete in markdown. When runs are attached, give concrete feedback from their metrics and splits. When you change the plan, say why; the athlete sees the changed days under your reply.",
       },
-      settingsProposalBullets: {
-        type: "array",
-        items: { type: "string" },
+      changes: {
+        type: "string",
         description:
-          "Optional soft-gate dossier/settings proposal bullets when the mid-week note is a significant memory update. Never silent-apply.",
-      },
-      prescribedDayPatches: {
-        type: "array",
-        description:
-          "Optional day replacements for remaining plan days (date >= local today). Full PrescribedDay objects.",
-        items: prescribedDayJsonSchema(),
+          `The plan days you change, one line per changed day, each written as ${planLineGrammar(unit)}. Only the days you write change; the others stay as they are. Leave it empty when the plan does not change. Example: ${examplePlanLine(weekStartMonday, unit)}`,
       },
       allowPastDayPatches: {
         type: "boolean",
         description:
-          "When true, past-day patches may be applied. Default false — past days stay stable.",
+          "True only when the athlete asks to change a day that has already passed. Otherwise lines in changes for past days are ignored.",
       },
-      safetyCallouts: safetyCalloutsJsonSchema(),
+      settingsProposalBullets: {
+        type: "string",
+        description: `${SETTINGS_BULLET_LINES_DESCRIPTION} Use it when the athlete's note is a significant memory update.`,
+      },
+      safetyCallouts: {
+        type: "string",
+        description: SAFETY_CALLOUT_LINES_DESCRIPTION,
+      },
     },
   };
 }
@@ -423,20 +466,24 @@ function buildDossierAuditUserPrompt(input: DossierAuditInput): string {
 function buildWeeklyUserPrompt(
   packet: ModelPacket,
   weekStartMonday: string,
-  planIsoWeek: string | null,
 ): string {
   const dates = expectedPlanDates(weekStartMonday);
   const reviewed = packet.week?.isoWeek?.trim();
+  const unit = packetUnit(packet);
   return [
     ...goalPromptLines(packet, weekStartMonday),
     reviewed ? `Reviewed week (already happened): ${reviewed}` : null,
-    `Plan week ISO label: ${planIsoWeek ?? reviewed ?? "unknown"}`,
     `Plan week Monday (YYYY-MM-DD): ${weekStartMonday}`,
-    `prescribedWeek.days must use these exact dates Mon–Sun: ${dates.join(", ")}`,
+    `The plan box has one line per day, for these dates Mon–Sun: ${dates.join(", ")}`,
+    `Write distances in ${unitWord(unit)}.`,
+    `Example plan line: ${examplePlanLine(weekStartMonday, unit)}`,
     "Prescribe one coherent week of running training for this athlete.",
+    "The plan box is the plan: the athlete sees each line beside its day. The analysis explains the week; do not restate the plan in it day by day.",
     "Call the submit_weekly_reply tool exactly once with your full answer.",
-    "Include a headline (the one or two sentences you would say if you could say only one thing), flags (what you are watching), answers (one per question the athlete asked, quoted as written) and the analysis (your reasoning).",
-    "When red flags appear, populate safetyCallouts (escalate; do not diagnose).",
+    "Include a headline (the one or two sentences you would say if you could say only one thing), flags (what you are watching, one per line), answers (your answer to what the athlete asked, the answer only), the analysis (your reasoning) and the plan.",
+    "Every box is plain text: write flags, safetyCallouts and settingsProposalBullets one per line, never as a list.",
+    "When red flags appear, write safetyCallouts, one notice per line (escalate; do not diagnose).",
+    reviewedPlanPromptLine(packet),
     "Model packet (redacted; no identity PII or GPS):",
     JSON.stringify(packet),
   ]
@@ -444,10 +491,19 @@ function buildWeeklyUserPrompt(
     .join("\n");
 }
 
+/**
+ * Names the reviewed week's plan and its per-day outcomes when the packet
+ * carries them (#59), so the read is of the week against its plan. Null when
+ * no plan was stored for the week, or on a packet saved before the field.
+ */
+function reviewedPlanPromptLine(packet: ModelPacket): string | null {
+  if (!packet.prescribedWeek?.days?.length) return null;
+  return "The packet's prescribedWeek is the plan the reviewed week was meant to follow, and prescribedWeekOutcomes says what happened on each of its days (done, missed, rest, unknown or not_filed, with the distance run). Read the week against it: say what was followed, what was skipped and what was overrun.";
+}
+
 /** The weekly read's user prompt exactly as {@link createAnthropicLlmPort} sends it. */
 export function weeklyUserPromptFor(packet: ModelPacket): string {
-  const planWeek = resolveWeeklyPlanWeek(packet);
-  return buildWeeklyUserPrompt(packet, planWeek.weekStartMonday, planWeek.isoWeek);
+  return buildWeeklyUserPrompt(packet, resolveWeeklyPlanWeek(packet).weekStartMonday);
 }
 
 function buildMidWeekUserPrompt(
@@ -460,18 +516,24 @@ function buildMidWeekUserPrompt(
       ? `Packet includes ${attachCount} workout attachment${attachCount === 1 ? "" : "s"}. Give concrete coaching feedback on the attached run(s) using metrics/splits only.`
       : "No workout attachments — answer the athlete's mid-week note.";
   const dates = expectedPlanDates(weekStartMonday);
+  const unit = packetUnit(packet);
   const hasPlan = Boolean(packet.prescribedWeek?.days?.length);
-  const planLine = hasPlan
-    ? `Current prescribed week is in the packet. To change remaining days, emit prescribedDayPatches using only these dates: ${dates.join(", ")}. Past days stay stable unless allowPastDayPatches is true.`
-    : "No prescribed week in packet — reply in prose only (no prescribedDayPatches).";
+  const planLines = hasPlan
+    ? [
+        `This week's plan is in the packet. To change remaining days, write one line per changed day in the changes box, using only these dates: ${dates.join(", ")}. Days you do not write stay as they are. Past days stay as they are unless allowPastDayPatches is true.`,
+        `Write distances in ${unitWord(unit)}.`,
+        `Example change line: ${examplePlanLine(weekStartMonday, unit)}`,
+        "Do not rewrite the whole week unless the athlete asks.",
+      ]
+    : ["No plan for this week in the packet: reply in prose and leave changes empty."];
   return [
     ...goalPromptLines(packet, weekStartMonday),
     "Call the submit_mid_week_chat_reply tool exactly once with your full answer.",
     attachLine,
-    planLine,
-    "Do not rewrite the full prescribed week unless the athlete asks.",
-    "When the athlete reports a significant memory update (new constraint, niggle, schedule change), populate settingsProposalBullets for soft-gate Accept — never mutate the dossier directly.",
-    "When red flags appear, populate safetyCallouts (escalate; do not diagnose).",
+    ...planLines,
+    "When the athlete reports a significant memory update (new constraint, niggle, schedule change), write settingsProposalBullets, one per line, for soft-gate Accept — never mutate the dossier directly.",
+    "When red flags appear, write safetyCallouts, one notice per line (escalate; do not diagnose).",
+    "Every box is plain text: write settingsProposalBullets and safetyCallouts one per line, never as a list.",
     "Model packet (redacted; no identity PII or GPS):",
     JSON.stringify(packet),
   ].join("\n");
@@ -496,7 +558,168 @@ function extractToolInput(body: unknown, toolName: string): unknown {
   );
 }
 
-type AnthropicMessagesRequest = {
+/**
+ * The assistant message's content blocks, copied as the stream assembled them
+ * (anthropicStream.ts keeps every field of each block: a thinking block's text
+ * and signature, a redacted block's data, a tool call's id, name and input).
+ * Sent back unchanged on a retry: Anthropic refuses a thinking block altered.
+ */
+function contentAsReceived(message: unknown): MessageBlock[] {
+  if (!isPlainObject(message) || !Array.isArray(message.content)) return [];
+  return (message.content as unknown[])
+    .filter(isPlainObject)
+    .map((block) => structuredClone(block));
+}
+
+/** The second request's wording, fixed: quoted by the tests and the spec. */
+export const RETRY_FIX_LINES_INSTRUCTION =
+  "Send the plan box again with these lines fixed. Change nothing else.";
+/** The same instruction for a box other than the weekly plan (mid-week's changes). */
+export function fixLinesInstruction(box: string): string {
+  return RETRY_FIX_LINES_INSTRUCTION.replace("the plan box", `the ${box} box`);
+}
+export const RETRY_NO_TOOL_CALL_TEXT =
+  "You did not call the tool. Call it now with your full answer.";
+export const RETRY_ERROR_INSTRUCTION =
+  "Call the tool again with your full answer, with this fixed.";
+/** The rules retry's instruction (coaching-quality ticket 11), after the warnings the plan tripped. */
+export const RETRY_FIX_RULES_INSTRUCTION =
+  "Rewrite the plan box so the week does not do this. Keep the read, flags and answers as they are unless the plan change needs a sentence to change. Call the tool again with your full answer.";
+
+/** The warnings a plan tripped, as the athlete would see them, one per paragraph. */
+export function planWarningLines(warnings: readonly PlanWarning[]): string {
+  return warnings.map((w) => `${w.title}: ${w.body}`).join("\n\n");
+}
+
+/**
+ * Whether a weekly plan that trips a plan rule is sent back once (ticket 11).
+ * On by default since the measurement of 2026-11-04 (fewer rules tripped, the
+ * control unchanged); COACH_RULES_RETRY=off (or 0, false, no) turns it off.
+ */
+export function rulesRetryFromEnv(env: NodeJS.ProcessEnv = process.env): boolean {
+  return !/^(off|0|false|no)$/i.test(env.COACH_RULES_RETRY?.trim() ?? "");
+}
+
+/** "Thu 2026-11-12: no distance unit." one per line, in date order. */
+export function planFailureLines(failures: readonly PlanLineFailure[]): string {
+  return failures
+    .map((f) => {
+      const weekday = new Date(`${f.date}T00:00:00.000Z`).toLocaleDateString("en-US", {
+        weekday: "short",
+        timeZone: "UTC",
+      });
+      return `${weekday} ${f.date}: ${f.reason}.`;
+    })
+    .join("\n");
+}
+
+/** A validator as the adapter calls it: SchemaResult, with planRetry when lines did not parse. */
+type Validate<T> = (toolInput: unknown) => SchemaResult<T> | PlanFixResult<T>;
+
+/** What the first attempt got back, as the second request is built from it. */
+type FirstReply = {
+  content: MessageBlock[] | null;
+  stopReason: string | null;
+  /** The refusal's message; null when the reply was accepted. */
+  error: string | null;
+  /** Set when the reply was accepted with plan lines that did not parse, and the box they came from. */
+  failures: PlanLineFailure[] | null;
+  box?: string;
+  /** Set when the reply was accepted but its plan tripped plan rules, and the rules retry is on. */
+  rules?: PlanWarning[];
+};
+
+/**
+ * The second request, built from the first and what it got back (ADR 0002, the
+ * spec's "Degradation ladder"). The system prompt, tools, model, effort and
+ * thinking are the first request's; only the turns grow.
+ *
+ * - A stop at the output cap or a model refusal, or no message at all: the
+ *   assistant turn is incomplete or absent, and Anthropic will not take a cut
+ *   tool call back, so the first request is sent again unchanged (`resend`).
+ * - No call to the tool: the assistant turn as received, then a plain
+ *   "call the tool" turn (`no_tool_call`). A call to some other tool still
+ *   needs its tool result, so that is answered with the same words as an error.
+ * - Plan lines that did not parse: the assistant turn as received, then an
+ *   error tool result for the call listing each failed date and its reason
+ *   and the fix-only instruction (`fix_lines`).
+ * - A plan that tripped plan rules (the rules retry, ticket 11): the same,
+ *   carrying each warning as the athlete would see it and the rewrite
+ *   instruction (`fix_rules`); the second reply is a whole reply.
+ * - Any other refusal: the same, carrying the validator's message (`error_result`).
+ */
+export function secondRequest(
+  first: AnthropicMessagesRequest,
+  toolName: string,
+  reply: FirstReply,
+): { body: AnthropicMessagesRequest; kind: AttemptRequest["kind"] } {
+  const content = reply.content ?? [];
+  const cut =
+    reply.stopReason === "max_tokens" ||
+    reply.stopReason === "refusal" ||
+    content.length === 0;
+  if (cut) return { body: first, kind: "resend" };
+
+  const toolUses = content.filter((b) => b.type === "tool_use");
+  const ours = toolUses.find((b) => b.name === toolName);
+  const withTurn = (
+    user: AnthropicMessage,
+    kind: AttemptRequest["kind"],
+  ): { body: AnthropicMessagesRequest; kind: AttemptRequest["kind"] } => ({
+    body: {
+      ...first,
+      messages: [...first.messages, { role: "assistant", content }, user],
+    },
+    kind,
+  });
+  /** An error tool result for every tool call, `text` on each; plain text when a call has no id. */
+  const answer = (text: string, kind: AttemptRequest["kind"]) =>
+    toolUses.length > 0 && toolUses.every((b) => typeof b.id === "string")
+      ? withTurn(
+          {
+            role: "user",
+            content: toolUses.map((b) => ({
+              type: "tool_result",
+              tool_use_id: b.id,
+              is_error: true,
+              content: text,
+            })),
+          },
+          kind,
+        )
+      : withTurn({ role: "user", content: text }, kind);
+
+  if (!ours) return answer(RETRY_NO_TOOL_CALL_TEXT, "no_tool_call");
+  if (reply.rules?.length) {
+    return answer(`${planWarningLines(reply.rules)}\n\n${RETRY_FIX_RULES_INSTRUCTION}`, "fix_rules");
+  }
+  if (reply.failures) {
+    return answer(
+      `${planFailureLines(reply.failures)}\n\n${fixLinesInstruction(reply.box ?? "plan")}`,
+      "fix_lines",
+    );
+  }
+  const said = (reply.error ?? "the reply was refused").trim();
+  return answer(
+    `${/[.!?]$/.test(said) ? said : `${said}.`}\n\n${RETRY_ERROR_INSTRUCTION}`,
+    "error_result",
+  );
+}
+
+/** Each message's role and block types, for the replay and the smoke script. */
+export function turnsOf(messages: readonly AnthropicMessage[]): string[] {
+  return messages.map((m) => {
+    if (typeof m.content === "string") return `${m.role}: text`;
+    const kinds = m.content.map((b) =>
+      b.type === "tool_result" && b.is_error === true
+        ? "tool_result (error)"
+        : String(b.type),
+    );
+    return `${m.role}: ${kinds.join(", ")}`;
+  });
+}
+
+export type AnthropicMessagesRequest = {
   model: string;
   max_tokens: number;
   system: string;
@@ -505,12 +728,24 @@ type AnthropicMessagesRequest = {
     description: string;
     input_schema: Record<string, unknown>;
   }>;
-  thinking: { type: "adaptive"; display: "summarized" };
+  thinking?: { type: "adaptive"; display: "summarized" };
   output_config: { effort: AnthropicEffort };
   tool_choice: { type: "auto" };
   stream: true;
-  messages: Array<{ role: "user"; content: string }>;
+  messages: AnthropicMessage[];
 };
+
+/** A content block as the server sent it, or as Cadence sends one back. */
+export type MessageBlock = Record<string, unknown>;
+
+/**
+ * One turn of a request: the user's prompt, or on a retry the assistant turn
+ * as received (thinking blocks with their signatures, text, the tool call with
+ * its id) and the user turn answering it (a tool result, or plain text).
+ */
+export type AnthropicMessage =
+  | { role: "user"; content: string | MessageBlock[] }
+  | { role: "assistant"; content: MessageBlock[] };
 
 type AnthropicUsage = {
   inputTokens: number | null;
@@ -522,6 +757,8 @@ type AnthropicUsage = {
 
 type AnthropicCallResult = {
   toolInput: unknown;
+  /** The assistant message's content blocks as received. */
+  content: MessageBlock[];
   responseText: string;
   httpStatus: number;
   stopReason: string | null;
@@ -536,6 +773,8 @@ type AnthropicFailureMeta = {
   latencyMs: number;
   stopReason: string | null;
   usage: AnthropicUsage | null;
+  /** The assistant message's content blocks as received; null when no message came. */
+  content: MessageBlock[] | null;
 };
 
 const failureMeta = new WeakMap<object, AnthropicFailureMeta>();
@@ -566,7 +805,7 @@ function readUsage(body: unknown): AnthropicUsage {
   };
 }
 
-function describeStopReason(body: unknown): string | null {
+function describeStopReason(body: unknown, maxTokens: number): string | null {
   if (!isPlainObject(body)) return null;
   if (body.stop_reason === "refusal") {
     const details = isPlainObject(body.stop_details) ? body.stop_details : null;
@@ -577,13 +816,111 @@ function describeStopReason(body: unknown): string | null {
       : "Anthropic refused the request (stop_reason=refusal)";
   }
   if (body.stop_reason === "max_tokens") {
-    return "Anthropic stopped at max_tokens before completing the reply tool call (stop_reason=max_tokens)";
+    return `Anthropic stopped at max_tokens before completing the reply tool call (stop_reason=max_tokens, output cap ${maxTokens} tokens)`;
   }
   return null;
 }
 
+/**
+ * The self-hosted server's own words from an error body: `error.message` when
+ * the body is an Anthropic-shaped error, else the start of the body.
+ */
+function serverErrorMessage(text: string | null): string | null {
+  const trimmed = text?.trim();
+  if (!trimmed) return null;
+  try {
+    const body: unknown = JSON.parse(trimmed);
+    if (isPlainObject(body) && isPlainObject(body.error)) {
+      const message = body.error.message;
+      if (typeof message === "string" && message.trim()) return message.trim();
+    }
+  } catch {
+    // Not JSON; fall through to the raw body.
+  }
+  return trimmed.slice(0, SERVER_MESSAGE_MAX_CHARS);
+}
+
+/**
+ * Wording for HTTP and transport failures. Anthropic: as it always was.
+ * Self-hosted: names the model server, so the athlete does not blame Anthropic.
+ */
+function failureWording(provider: CoachProvider) {
+  if (provider === "anthropic") {
+    return {
+      idle: (ms: number) => `Anthropic stream idle for ${ms}ms; aborted`,
+      overall: (ms: number) => `Anthropic call exceeded ${ms}ms overall; aborted`,
+      fetchFailed: (reason: string | null) => reason ?? "anthropic_fetch_failed",
+      http: (status: number, _text: string | null) =>
+        `Anthropic Messages API returned ${status}`,
+      streamError: (error: string) => `Anthropic stream error: ${error}`,
+      incomplete: "Anthropic stream ended before message_stop",
+    };
+  }
+  return {
+    idle: (ms: number) => `The model server sent nothing for ${ms}ms; aborted`,
+    overall: (ms: number) => `The model server call exceeded ${ms}ms overall; aborted`,
+    fetchFailed: (reason: string | null) =>
+      reason
+        ? `Could not reach the model server: ${reason}`
+        : "Could not reach the model server",
+    http: (status: number, text: string | null) => {
+      const said = serverErrorMessage(text);
+      return said
+        ? `The model server returned ${status}: ${said}`
+        : `The model server returned ${status}`;
+    },
+    streamError: (error: string) => `The model server sent a stream error: ${error}`,
+    incomplete: "The model server's stream ended before message_stop",
+  };
+}
+
+/**
+ * Request headers. Anthropic: the key in `x-api-key`, as always. Self-hosted:
+ * the key, when there is one, in both `x-api-key` and `Authorization: Bearer`,
+ * so the athlete need not know which their server checks; no key, neither.
+ */
+export function messagesHeaders(
+  provider: CoachProvider,
+  apiKey: string | null,
+): Record<string, string> {
+  if (provider === "anthropic") {
+    return {
+      "content-type": "application/json",
+      "x-api-key": apiKey ?? "",
+      "anthropic-version": ANTHROPIC_VERSION,
+    };
+  }
+  return {
+    "content-type": "application/json",
+    ...(apiKey ? { "x-api-key": apiKey, authorization: `Bearer ${apiKey}` } : {}),
+    "anthropic-version": ANTHROPIC_VERSION,
+  };
+}
+
+/**
+ * The thinking half of a request. Anthropic: adaptive thinking with readable
+ * summaries. Self-hosted: thinking enabled, with no `display`, since a local
+ * server may not know adaptive mode or summaries. Shared with the self-hosted
+ * connection test, so it asks the way a coach call does.
+ */
+/**
+ * Thinking for the provider. Anthropic gets adaptive thinking with summaries. A self-hosted
+ * call leaves `thinking` out and sends only the effort: the field is optional in the
+ * Messages spec, and servers disagree on it (vLLM refuses `enabled` without a budget, then
+ * refuses the budget unless the server has a reasoning config; Ollama has no adaptive mode).
+ * Reasoning models think by the server's own default, with the effort as a hint.
+ */
+export function thinkingParams(provider: CoachProvider, effort: AnthropicEffort) {
+  if (provider === "self_hosted") return { output_config: { effort } } as const;
+  return {
+    thinking: { type: "adaptive", display: "summarized" } as const,
+    output_config: { effort },
+  } as const;
+}
+
 async function callAnthropicMessages(options: {
-  apiKey: string;
+  provider: CoachProvider;
+  apiKey: string | null;
   apiUrl: string;
   timeoutMs: number;
   idleTimeoutMs: number;
@@ -592,6 +929,7 @@ async function callAnthropicMessages(options: {
   toolName: string;
 }): Promise<AnthropicCallResult> {
   const {
+    provider,
     apiKey,
     apiUrl,
     timeoutMs,
@@ -601,6 +939,7 @@ async function callAnthropicMessages(options: {
     toolName,
   } = options;
 
+  const wording = failureWording(provider);
   const startedAt = Date.now();
   const controller = new AbortController();
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -609,7 +948,7 @@ async function callAnthropicMessages(options: {
     idleTimer = setTimeout(
       () =>
         controller.abort(
-          new Error(`Anthropic stream idle for ${idleTimeoutMs}ms; aborted`),
+          new Error(wording.idle(idleTimeoutMs)),
         ),
       idleTimeoutMs,
     );
@@ -617,7 +956,7 @@ async function callAnthropicMessages(options: {
   const totalTimer = setTimeout(
     () =>
       controller.abort(
-        new Error(`Anthropic call exceeded ${timeoutMs}ms overall; aborted`),
+        new Error(wording.overall(timeoutMs)),
       ),
     timeoutMs,
   );
@@ -625,12 +964,10 @@ async function callAnthropicMessages(options: {
     clearTimeout(idleTimer);
     clearTimeout(totalTimer);
   };
-  const abortMessage = (err: unknown, fallback: string): string =>
+  const abortMessage = (err: unknown): string =>
     controller.signal.aborted && controller.signal.reason instanceof Error
       ? controller.signal.reason.message
-      : err instanceof Error
-        ? err.message
-        : fallback;
+      : wording.fetchFailed(err instanceof Error ? err.message : null);
 
   try {
     armIdle();
@@ -638,18 +975,14 @@ async function callAnthropicMessages(options: {
     try {
       response = await fetchImpl(apiUrl, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": ANTHROPIC_VERSION,
-        },
+        headers: messagesHeaders(provider, apiKey),
         body: JSON.stringify(requestBody),
         signal: controller.signal,
         credentials: "omit",
       });
     } catch (err) {
       throw failWith(
-        new LlmTransportError(abortMessage(err, "anthropic_fetch_failed"), {
+        new LlmTransportError(abortMessage(err), {
           cause: err,
         }),
         {
@@ -658,6 +991,7 @@ async function callAnthropicMessages(options: {
           latencyMs: Date.now() - startedAt,
           stopReason: null,
           usage: null,
+          content: null,
         },
       );
     }
@@ -670,16 +1004,14 @@ async function callAnthropicMessages(options: {
         // Error body unreadable; the status alone is still logged.
       }
       throw failWith(
-        new LlmHttpError(
-          response.status,
-          `Anthropic Messages API returned ${response.status}`,
-        ),
+        new LlmHttpError(response.status, wording.http(response.status, text)),
         {
           httpStatus: response.status,
           responseText: text,
           latencyMs: Date.now() - startedAt,
           stopReason: null,
           usage: null,
+          content: null,
         },
       );
     }
@@ -695,13 +1027,14 @@ async function callAnthropicMessages(options: {
     const partial = {
       stopReason: message ? readStopReason(message) : null,
       usage: message ? readUsage(message) : null,
+      content: message ? contentAsReceived(message) : null,
     };
 
     if (read.streamError) {
       throw failWith(
         new LlmTransportError(
           message && !controller.signal.aborted
-            ? `Anthropic stream error: ${read.streamError}`
+            ? wording.streamError(read.streamError)
             : read.streamError,
         ),
         { ...base, ...partial },
@@ -715,12 +1048,12 @@ async function callAnthropicMessages(options: {
     }
     if (!read.complete) {
       throw failWith(
-        new LlmTransportError("Anthropic stream ended before message_stop"),
+        new LlmTransportError(wording.incomplete),
         { ...base, ...partial },
       );
     }
 
-    const stopProblem = describeStopReason(message);
+    const stopProblem = describeStopReason(message, requestBody.max_tokens);
     if (stopProblem) {
       throw failWith(new LlmSchemaError(stopProblem), { ...base, ...partial });
     }
@@ -735,6 +1068,7 @@ async function callAnthropicMessages(options: {
 
     return {
       toolInput,
+      content: partial.content ?? [],
       responseText: responseText ?? "",
       httpStatus: response.status,
       stopReason: readStopReason(message),
@@ -743,6 +1077,104 @@ async function callAnthropicMessages(options: {
     };
   } finally {
     cleanup();
+  }
+}
+
+/** Attempts at most for one coach call: the reply, and once more if it is refused or has unread plan lines (ADR 0002). */
+export const COACH_CALL_ATTEMPTS = 2;
+
+/** One attempt as askAtMostTwice hands it to the code that sends it. */
+export type CoachAttempt = {
+  /** 1 or 2. */
+  attempt: number;
+  /** True when no attempt follows this one, whatever it ends with. */
+  last: boolean;
+  /**
+   * The id this attempt's row is written under when it is not refused: the
+   * caller's call id, except on a retry that fixes lines of an accepted reply,
+   * which gets a fresh id (the caller's names the accepted first reply).
+   */
+  callId: string | undefined;
+  /** A fresh id: the row's when this attempt is refused for its shape and another follows. */
+  refusedCallId: string | undefined;
+  /** The row this one follows (a refused attempt, or the accepted reply it fixes); null on the first. */
+  parentCallId: string | null;
+  /** How `once` built this attempt's request; reported to onAttempt. Set by the live adapter. */
+  request?: AttemptRequest;
+};
+
+/**
+ * An attempt's reply accepted, but with plan lines that did not parse: the
+ * loop asks once more, for those lines alone, and keeps this value if that
+ * second attempt fails in any way.
+ */
+export class Unfinished<T> {
+  constructor(readonly value: T) {}
+}
+
+/**
+ * The id an attempt's call log row is written under. The caller's call id
+ * names the reply it gets back (or the failure it is handed), so the messages
+ * it links stay on the attempt that counted; a refused attempt that is asked
+ * for again is written under its own id, and the next one links to it.
+ */
+export function attemptRowId(a: CoachAttempt, err: unknown): string | undefined {
+  return !a.last && err instanceof LlmSchemaError ? a.refusedCallId : a.callId;
+}
+
+/**
+ * The one attempt loop every coach call goes through: the six operations of
+ * the live adapter, the replay harness's dry run and the smoke script. `once`
+ * sends one attempt. Two attempts at most, on the target resolved before the
+ * loop, never inside it (ADR 0004):
+ * - an attempt refused for its shape (LlmSchemaError: validation, the plan's
+ *   dates, a missing tool call, a stop at the output cap) is followed by one
+ *   more; the last one's error is thrown as it came; any other error is thrown
+ *   at once;
+ * - an attempt returned as Unfinished (accepted with plan lines that did not
+ *   parse) is followed by one more, whose value is returned when it succeeds;
+ *   when it fails in any way the first value is returned, and the first row
+ *   (the caller's call id) stays the reply that counted.
+ * `once` decides what the second request holds (secondRequest in the live
+ * adapter); the loop only decides whether there is one.
+ */
+export async function askAtMostTwice<T>(
+  callOptions: LlmCallOptions | undefined,
+  once: (attempt: CoachAttempt) => Promise<T | Unfinished<T>>,
+): Promise<T> {
+  const callId = callOptions?.callId;
+  let parentCallId: string | null = callOptions?.parentCallId ?? null;
+  let accepted: { value: T } | null = null;
+  for (let n = 1; ; n++) {
+    const a: CoachAttempt = {
+      attempt: n,
+      last: n >= COACH_CALL_ATTEMPTS,
+      // The retry of an accepted reply is its own row; the caller's id stays on the reply.
+      callId: accepted && callId ? randomUUID() : callId,
+      refusedCallId: callId ? randomUUID() : undefined,
+      parentCallId,
+    };
+    const report = (rowId: string | undefined, error: unknown) =>
+      callOptions?.onAttempt?.({
+        attempt: n,
+        callId: rowId ?? null,
+        error,
+        ...(a.request ? { request: a.request } : {}),
+      });
+    try {
+      const out = await once(a);
+      report(a.callId, null);
+      if (!(out instanceof Unfinished)) return out;
+      if (a.last || accepted) return out.value;
+      accepted = { value: out.value };
+      parentCallId = a.callId ?? null;
+    } catch (err) {
+      const rowId = attemptRowId(a, err);
+      report(rowId, err);
+      if (accepted) return accepted.value;
+      if (a.last || !(err instanceof LlmSchemaError)) throw err;
+      parentCallId = rowId ?? null;
+    }
   }
 }
 
@@ -756,31 +1188,68 @@ export function createAnthropicLlmPort(
 ): LlmPort {
   const fetchImpl = options?.fetchImpl ?? globalThis.fetch.bind(globalThis);
   const timeoutMs = options?.timeoutMs ?? resolveAnthropicTimeoutMs();
-  const idleTimeoutMs = options?.idleTimeoutMs ?? DEFAULT_IDLE_TIMEOUT_MS;
-  const effort = options?.effort ?? resolveAnthropicEffort();
-  const model =
-    options?.model?.trim() ||
-    process.env.ANTHROPIC_MODEL?.trim() ||
-    DEFAULT_MODEL;
-  const apiUrl = options?.apiUrl?.trim() || ANTHROPIC_MESSAGES_URL;
-  const readApiKey =
-    options?.readApiKey ??
-    (() => {
-      const protector = new SecretProtector(options?.dataProtectionKey);
-      return readAnthropicApiKey(protector);
+  /** The silence limit for one call: the option when given, else per provider. */
+  const idleTimeoutFor = (provider: CoachProvider): number =>
+    options?.idleTimeoutMs ??
+    (provider === "self_hosted"
+      ? resolveSelfHostedIdleTimeoutMs()
+      : DEFAULT_IDLE_TIMEOUT_MS);
+  const resolveCoachTarget =
+    options?.resolveCoachTarget ??
+    createCoachTargetResolver({
+      dataProtectionKey: options?.dataProtectionKey,
+      readApiKey: options?.readApiKey,
+      readCoachModel: options?.readCoachModel,
+      messagesUrl: options?.apiUrl,
     });
   const recorder = options?.recorder ?? createPostgresLlmCallRecorder();
   const appVersion = options?.appVersion ?? resolveAppVersion();
+  const rulesRetry = options?.rulesRetry ?? rulesRetryFromEnv();
   /**
-   * Adaptive thinking with readable summaries. tool_choice stays "auto": a
-   * forced tool skips the thinking block, so the prompt asks for the tool call.
+   * Thinking as thinkingParams sends it. tool_choice stays "auto": a forced
+   * tool skips the thinking block, so the prompt asks for the tool call.
    */
-  const REASONING_PARAMS = {
-    thinking: { type: "adaptive", display: "summarized" },
-    output_config: { effort },
-    tool_choice: { type: "auto" },
-    stream: true,
-  } as const;
+  function reasoningParams(target: CoachTarget) {
+    return {
+      ...thinkingParams(target.provider, target.effort),
+      tool_choice: { type: "auto" },
+      stream: true,
+    } as const;
+  }
+
+  /**
+   * The target the call was handed, else the one in force now: read once, and
+   * the request is built from it and nothing else. Anthropic with no key, no
+   * call; a self-hosted server may need no key.
+   */
+  async function targetFor(
+    callOptions: LlmCallOptions | undefined,
+  ): Promise<CoachTarget> {
+    const target = callOptions?.coachTarget ?? (await resolveCoachTarget());
+    if (target.provider === "anthropic" && !target.credentials.apiKey) {
+      throw new LlmNotConfiguredError();
+    }
+    return target;
+  }
+
+  /** The HTTP side of one call, sent to the target. */
+  function send(
+    target: CoachTarget,
+    toolName: string,
+    requestBody: AnthropicMessagesRequest,
+  ) {
+    return () =>
+      callAnthropicMessages({
+        provider: target.provider,
+        apiKey: target.credentials.apiKey,
+        apiUrl: target.messagesUrl,
+        timeoutMs,
+        idleTimeoutMs: idleTimeoutFor(target.provider),
+        fetchImpl,
+        toolName,
+        requestBody,
+      });
+  }
 
   /** Append one row; a failing recorder never changes the caller's outcome. */
   async function safeRecord(row: LlmCallRecord): Promise<void> {
@@ -796,42 +1265,46 @@ export function createAnthropicLlmPort(
   }
 
   /**
-   * One attempt = one row, on every branch. A missing key throws before this
-   * runs, so it writes nothing.
+   * One attempt = one row, on every branch, under the id attemptRowId names. A
+   * missing key throws before this runs, so it writes nothing. `seen` is told
+   * what came back (content, stop reason), so a second request can be built
+   * from it; `validate`'s planRetry, when present, comes back with the value.
    */
   async function attempt<T>(
     operation: LlmCallOperation,
+    a: CoachAttempt,
     callOptions: LlmCallOptions | undefined,
+    target: CoachTarget,
     requestBody: AnthropicMessagesRequest,
     call: () => Promise<AnthropicCallResult>,
-    validate: (
-      toolInput: unknown,
-    ) =>
-      | { ok: true; value: T; repairs?: string[] }
-      | { ok: false; error: string },
-  ): Promise<T> {
+    validate: Validate<T>,
+    seen: FirstReply,
+  ): Promise<{ value: T; planRetry?: PlanRetry<T>; fixed?: string[] }> {
     const startedAt = Date.now();
-    const callId = callOptions?.callId;
     const base = {
       operation,
-      provider: "anthropic" as const,
-      model,
+      provider: target.provider,
+      serverHost:
+        target.provider === "self_hosted" ? selfHostedHost(target.messagesUrl) : null,
+      model: requestBody.model,
       appVersion,
       weekSessionId: callOptions?.weekSessionId ?? null,
-      parentCallId: null,
+      parentCallId: a.parentCallId,
       request: requestBody,
     };
     let result: AnthropicCallResult | undefined;
     try {
       result = await call();
+      seen.content = result.content;
+      seen.stopReason = result.stopReason;
       const validated = validate(result.toolInput);
       if (!validated.ok) {
         throw new LlmSchemaError(validated.error);
       }
-      if (callId) {
+      if (a.callId) {
         await safeRecord({
           ...base,
-          id: callId,
+          id: a.callId,
           responseRaw: result.responseText,
           httpStatus: result.httpStatus,
           latencyMs: result.latencyMs,
@@ -845,26 +1318,38 @@ export function createAnthropicLlmPort(
           errorMessage: validated.repairs?.join("; ") ?? null,
         });
       }
-      return validated.value;
+      return {
+        value: validated.value,
+        ...(validated.planRetry ? { planRetry: validated.planRetry } : {}),
+        ...("fixed" in validated && Array.isArray(validated.fixed)
+          ? { fixed: validated.fixed as string[] }
+          : {}),
+      };
     } catch (err) {
-      if (callId) {
-        const meta: AnthropicFailureMeta =
-          (err instanceof Error ? failureMeta.get(err) : undefined) ??
-          (result
-            ? {
-                httpStatus: result.httpStatus,
-                responseText: result.responseText,
-                latencyMs: result.latencyMs,
-                stopReason: result.stopReason,
-                usage: result.usage,
-              }
-            : {
-                httpStatus: null,
-                responseText: null,
-                latencyMs: Date.now() - startedAt,
-                stopReason: null,
-                usage: null,
-              });
+      const meta: AnthropicFailureMeta =
+        (err instanceof Error ? failureMeta.get(err) : undefined) ??
+        (result
+          ? {
+              httpStatus: result.httpStatus,
+              responseText: result.responseText,
+              latencyMs: result.latencyMs,
+              stopReason: result.stopReason,
+              usage: result.usage,
+              content: result.content,
+            }
+          : {
+              httpStatus: null,
+              responseText: null,
+              latencyMs: Date.now() - startedAt,
+              stopReason: null,
+              usage: null,
+              content: null,
+            });
+      seen.content = meta.content;
+      seen.stopReason = meta.stopReason;
+      seen.error = err instanceof Error ? err.message : String(err);
+      const rowId = attemptRowId(a, err);
+      if (rowId) {
         const outcome: LlmCallOutcome =
           err instanceof LlmHttpError
             ? "http_error"
@@ -873,7 +1358,7 @@ export function createAnthropicLlmPort(
               : "transport_error";
         await safeRecord({
           ...base,
-          id: callId,
+          id: rowId,
           responseRaw: meta.responseText,
           httpStatus: meta.httpStatus,
           latencyMs: meta.latencyMs,
@@ -891,6 +1376,80 @@ export function createAnthropicLlmPort(
     }
   }
 
+  /**
+   * One coach call, every operation: the caller resolved the target once and
+   * built the request once from it, so both attempts go to the identical
+   * server with the identical key, model, effort, system prompt and tools.
+   * The second request is the first plus the turns secondRequest adds; when
+   * the first reply was accepted with plan lines that did not parse, the
+   * second reply is read by its planRetry, which takes only the failed dates.
+   */
+  function ask<T>(
+    operation: LlmCallOperation,
+    callOptions: LlmCallOptions | undefined,
+    target: CoachTarget,
+    toolName: string,
+    requestBody: AnthropicMessagesRequest,
+    validate: Validate<T>,
+    rulesOf?: (value: T) => PlanWarning[],
+  ): Promise<T> {
+    let first: FirstReply | null = null;
+    let firstRetry: PlanRetry<T> | null = null;
+    // The rules retry: the first reply and how many rules it tripped, kept if the second does no better.
+    let firstRules: { value: T; count: number } | null = null;
+    return askAtMostTwice<T>(callOptions, async (a) => {
+      const seen: FirstReply = { content: null, stopReason: null, error: null, failures: null };
+      let body = requestBody;
+      let check: Validate<T> = validate;
+      if (a.attempt === 1 || !first) {
+        a.request = { kind: "first", turns: turnsOf(body.messages) };
+      } else {
+        const next = secondRequest(requestBody, toolName, first);
+        body = next.body;
+        a.request = { kind: next.kind, turns: turnsOf(body.messages) };
+        if (firstRetry) {
+          const retry = firstRetry;
+          check = (input) => retry.takeFixes(input);
+          a.request.fixDates = [...retry.dates];
+        }
+      }
+      try {
+        const out = await attempt(
+          operation,
+          a,
+          callOptions,
+          target,
+          body,
+          send(target, toolName, body),
+          check,
+          seen,
+        );
+        if (out.fixed && a.request) a.request.fixed = out.fixed;
+        if (out.planRetry && !a.last) {
+          first = { ...seen, failures: out.planRetry.failures, box: out.planRetry.box };
+          firstRetry = out.planRetry;
+          return new Unfinished(out.value);
+        }
+        if (rulesOf && firstRules) {
+          // The second plan replaces the first only when it trips strictly fewer rules.
+          return rulesOf(out.value).length < firstRules.count ? out.value : firstRules.value;
+        }
+        if (rulesOf && !a.last && !firstRetry) {
+          const tripped = rulesOf(out.value);
+          if (tripped.length > 0) {
+            first = { ...seen, failures: null, rules: tripped };
+            firstRules = { value: out.value, count: tripped.length };
+            return new Unfinished(out.value);
+          }
+        }
+        return out.value;
+      } catch (err) {
+        first = seen;
+        throw err;
+      }
+    });
+  }
+
   /** One About you call: same key check, reasoning params, logging and validation as the coach replies. */
   async function aboutYou<T>(
     operation: LlmCallOperation,
@@ -900,87 +1459,70 @@ export function createAnthropicLlmPort(
     userPrompt: string,
     validate: (raw: unknown) => { ok: true; value: T } | { ok: false; error: string },
   ): Promise<T> {
-    const apiKey = await readApiKey();
-    if (!apiKey) {
-      throw new LlmNotConfiguredError();
-    }
+    const target = await targetFor(callOptions);
     const requestBody: AnthropicMessagesRequest = {
-      model,
+      model: target.model,
       max_tokens: MAX_OUTPUT_TOKENS,
       system,
       tools: [aboutYouToolSchema(toolDescription)],
-      ...REASONING_PARAMS,
+      ...reasoningParams(target),
       messages: [{ role: "user", content: userPrompt }],
     };
-    return attempt(
+    return ask(
       operation,
       callOptions,
+      target,
+      ABOUT_YOU_TOOL_NAME,
       requestBody,
-      () =>
-        callAnthropicMessages({
-          apiKey,
-          apiUrl,
-          timeoutMs,
-          idleTimeoutMs,
-          fetchImpl,
-          toolName: ABOUT_YOU_TOOL_NAME,
-          requestBody,
-        }),
       validate,
     );
   }
 
   return {
+    resolveCoachTarget,
+
     async generateWeeklyReply(
       packet: ModelPacket,
       callOptions?: LlmCallOptions,
     ): Promise<WeeklyReply> {
-      const apiKey = await readApiKey();
-      if (!apiKey) {
-        throw new LlmNotConfiguredError();
-      }
+      const target = await targetFor(callOptions);
 
-      const planWeek = resolveWeeklyPlanWeek(packet);
-      const weekStartMonday = planWeek.weekStartMonday;
+      const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
+      const context = weeklyReplyContext(packet);
       const requestBody: AnthropicMessagesRequest = {
-        model,
+        model: target.model,
         max_tokens: MAX_OUTPUT_TOKENS,
         system: weeklySystemPrompt(packet.goal),
         tools: [
           {
             name: WEEKLY_TOOL_NAME,
             description:
-              "Submit the weekly coaching analysis and structured 7-day prescribed week.",
-            input_schema: weeklyReplyToolSchema(),
+              "Submit the weekly read and next week's plan as seven lines.",
+            input_schema: weeklyReplyToolSchema(weekStartMonday, context.unit ?? "imperial"),
           },
         ],
-        ...REASONING_PARAMS,
+        ...reasoningParams(target),
         messages: [
           {
             role: "user",
-            content: buildWeeklyUserPrompt(
-              packet,
-              weekStartMonday,
-              planWeek.isoWeek,
-            ),
+            content: buildWeeklyUserPrompt(packet, weekStartMonday),
           },
         ],
       };
-      return attempt(
+      // The plan box is parsed against the plan week here: days that do not
+      // parse are stored unparsed; a box with no line for the week is refused
+      // and asked for once more like any other refusal.
+      // With the rules retry on, a plan that trips a plan rule is sent back once
+      // with the warnings, here rather than in the route, so both providers and
+      // the replay take the same path; the route checks whatever plan comes back.
+      return ask(
         "weekly_reply",
         callOptions,
+        target,
+        WEEKLY_TOOL_NAME,
         requestBody,
-        () =>
-          callAnthropicMessages({
-            apiKey,
-            apiUrl,
-            timeoutMs,
-            idleTimeoutMs,
-            fetchImpl,
-            toolName: WEEKLY_TOOL_NAME,
-            requestBody,
-          }),
-        (input) => validateWeeklyReply(input, weekStartMonday),
+        (input) => validateWeeklyReply(input, weekStartMonday, context),
+        rulesRetry ? (reply) => checkPlan(packet, reply.prescribedWeek).warnings : undefined,
       );
     },
 
@@ -988,25 +1530,23 @@ export function createAnthropicLlmPort(
       packet: ModelPacket,
       callOptions?: LlmCallOptions,
     ): Promise<MidWeekChatReply> {
-      const apiKey = await readApiKey();
-      if (!apiKey) {
-        throw new LlmNotConfiguredError();
-      }
+      const target = await targetFor(callOptions);
 
       const weekStartMonday = resolvePlanWeekStartMonday(packet);
+      const unit = packetUnit(packet);
       const requestBody: AnthropicMessagesRequest = {
-        model,
+        model: target.model,
         max_tokens: MAX_OUTPUT_TOKENS,
         system: midWeekSystemPrompt(packet.goal),
         tools: [
           {
             name: MIDWEEK_TOOL_NAME,
             description:
-              "Submit the mid-week coach reply (attached-run feedback and optional remaining-day plan patches when present).",
-            input_schema: midWeekChatReplyToolSchema(),
+              "Submit the mid-week coach reply, with any changed plan days as lines.",
+            input_schema: midWeekChatReplyToolSchema(weekStartMonday, unit),
           },
         ],
-        ...REASONING_PARAMS,
+        ...reasoningParams(target),
         messages: [
           {
             role: "user",
@@ -1014,21 +1554,20 @@ export function createAnthropicLlmPort(
           },
         ],
       };
-      return attempt(
+      return ask(
         "mid_week_chat",
         callOptions,
+        target,
+        MIDWEEK_TOOL_NAME,
         requestBody,
-        () =>
-          callAnthropicMessages({
-            apiKey,
-            apiUrl,
-            timeoutMs,
-            idleTimeoutMs,
-            fetchImpl,
-            toolName: MIDWEEK_TOOL_NAME,
-            requestBody,
-          }),
-        (input) => validateMidWeekChatReply(input, weekStartMonday),
+        // Changed days that do not parse are stored unparsed for their date
+        // only, and asked for once more, those dates alone (planFailures).
+        (input) => {
+          const validated = validateMidWeekChatReply(input, weekStartMonday, { unit });
+          if (!validated.ok) return validated;
+          const planRetry = midWeekPlanRetry(validated, weekStartMonday, unit);
+          return planRetry ? { ...validated, planRetry } : validated;
+        },
       );
     },
 
@@ -1071,6 +1610,55 @@ export function createAnthropicLlmPort(
         "Submit the tidied About you document and what changed.",
         buildDossierAuditUserPrompt(input),
         validateAboutYou(validateDossierAuditDraft),
+      );
+    },
+
+    async generatePlanDayFix(
+      input: PlanDayFixInput,
+      callOptions?: LlmCallOptions,
+    ): Promise<PlanDayFix> {
+      const target = await targetFor(callOptions);
+      const requestBody: AnthropicMessagesRequest = {
+        model: target.model,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        system: planDaySystemPrompt(input.unit),
+        tools: [planDayToolSchema(input.date, input.unit)],
+        ...reasoningParams(target),
+        messages: [{ role: "user", content: planDayUserPrompt(input) }],
+      };
+      // A line that still does not read for the date is refused, so it is
+      // asked for once more with the reason, like any refusal.
+      return ask(
+        "plan_day_fix",
+        callOptions,
+        target,
+        PLAN_DAY_TOOL_NAME,
+        requestBody,
+        (raw) => validatePlanDayFix(raw, input),
+      );
+    },
+
+    /** The coaching judge (src/llm/judge.ts): one draft, blind, through the same ask as every coach call. */
+    async judgeCoachingDraft(
+      input: CoachingJudgeInput,
+      callOptions?: LlmCallOptions,
+    ): Promise<CoachingJudgement> {
+      const target = await targetFor(callOptions);
+      const requestBody: AnthropicMessagesRequest = {
+        model: target.model,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        system: judgeSystemPrompt(input.rubric),
+        tools: [judgeToolSchema()],
+        ...reasoningParams(target),
+        messages: [{ role: "user", content: judgeUserPrompt(input) }],
+      };
+      return ask(
+        "coaching_judge",
+        callOptions,
+        target,
+        JUDGE_TOOL_NAME,
+        requestBody,
+        validateCoachingJudgement,
       );
     },
   };

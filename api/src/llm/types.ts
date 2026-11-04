@@ -96,6 +96,17 @@ export type PrescribedDay = {
   strength?: string | null;
   /** Day-level coaching notes. */
   notes?: string | null;
+  /**
+   * The plan line Coach Cade wrote for this day, as written; null when the
+   * plan gave no line for the date. Absent on rows stored before plans were
+   * text.
+   */
+  line?: string | null;
+  /**
+   * Whether Cadence derived this day's structure from its line. False means
+   * the day carries only the line (or no line). Absent reads as parsed.
+   */
+  parsed?: boolean;
 };
 
 export type PrescribedWeek = {
@@ -126,7 +137,11 @@ export type SafetyCallout = {
 /** Something Coach Cade is watching: a short title and one line of detail. */
 export type ReadFlag = { title: string; detail: string };
 
-/** An answer to the athlete's own question, quoted as they wrote it. */
+/**
+ * An answer to the athlete's own question. `question` is the athlete's
+ * question as Cadence holds it, or empty when Cadence cannot tell which
+ * question the answer is for: Coach Cade sends the answers only.
+ */
 export type ReadAnswer = { question: string; answer: string };
 
 /** The parts of Coach Cade's read the pages lay out on their own, stored beside the full read. */
@@ -139,6 +154,28 @@ export type ReadSections = {
   answers: ReadAnswer[];
 };
 
+/**
+ * The weekly reply as Coach Cade sends it: every box plain text or a list of
+ * lines (.scratch/plan-as-text/spec.md, "The forms"). Cadence turns it into a
+ * {@link WeeklyReply}, deriving the plan's structure from its lines.
+ */
+export type WeeklyReplyForm = {
+  headline: string;
+  /** "Title: detail", one per line; a line with no colon is all title. At most five kept. */
+  flags?: string;
+  /** The answer to the athlete's questions, markdown; stored as one answer. */
+  answers?: string;
+  /** The full read, markdown. */
+  analysis: string;
+  /** Seven lines, one per day, in the plan grammar. */
+  plan: string;
+  /** One suggestion per line; a leading "- " or "* " is stripped. */
+  settingsProposalBullets?: string;
+  /** One notice per line, with an optional leading "Urgent:", "Caution:" or "Info:". */
+  safetyCallouts?: string;
+};
+
+/** The weekly reply as Cadence stores it. */
 export type WeeklyReply = {
   /** The one or two sentences that matter most; opens the read on Plan. */
   headline: string;
@@ -155,9 +192,30 @@ export type WeeklyReply = {
 };
 
 /**
- * Free-form mid-week coach chat reply (issue #35 / #37 / #38 / #39).
- * When the packet includes workout attachments, `body` should include
- * concrete run feedback (metrics/splits). Optional day patches update the
+ * The mid-week reply as Coach Cade sends it: every box plain text, a list of
+ * lines or a boolean (.scratch/plan-as-text/spec.md, "The forms"). Cadence
+ * turns it into a {@link MidWeekChatReply}, reading the changed days from the
+ * `changes` lines.
+ */
+export type MidWeekChatReplyForm = {
+  /** Coach prose for the thread, markdown. */
+  body: string;
+  /**
+   * Zero or more lines in the plan grammar, one per changed day. Empty or
+   * absent: the plan does not change. A date with no line is not changed.
+   */
+  changes?: string;
+  allowPastDayPatches?: boolean;
+  /** One suggestion per line; a leading "- " or "* " is stripped. */
+  settingsProposalBullets?: string;
+  /** One notice per line, with an optional leading "Urgent:", "Caution:" or "Info:". */
+  safetyCallouts?: string;
+};
+
+/**
+ * Free-form mid-week coach chat reply as Cadence stores it (issue #35 / #37 /
+ * #38 / #39). When the packet includes workout attachments, `body` should
+ * include concrete run feedback (metrics/splits). Changed days update the
  * persisted prescribed week for remaining days (#38). Significant memory
  * updates emit settingsProposalBullets for soft-gate Accept (#39).
  */
@@ -172,9 +230,10 @@ export type MidWeekChatReply = {
   /** Visible escalate-not-diagnose callouts when red flags appear. */
   safetyCallouts?: SafetyCallout[];
   /**
-   * Structured day replacements for the current prescribed week (#38).
-   * Applied only for remaining days (date >= local today) unless
-   * `allowPastDayPatches` is true.
+   * The days as Coach Cade's `changes` lines read them, one per changed date
+   * of the plan week, each with `line` and `parsed` (an unparsed line is a
+   * day with `parsed: false`). Each replaces its date whole, for remaining
+   * days only (date >= local today) unless `allowPastDayPatches` is true.
    */
   prescribedDayPatches?: PrescribedDay[];
   /**
@@ -182,4 +241,32 @@ export type MidWeekChatReply = {
    * remain stable.
    */
   allowPastDayPatches?: boolean;
+};
+
+/**
+ * One unread plan day sent back to Coach Cade to fill in ("Add the details",
+ * plan-as-text ticket 09): the plan week, the unit, the date, its line as
+ * stored and why Cadence could not read it. No packet.
+ */
+export type PlanDayFixInput = {
+  /** Monday of the plan week, YYYY-MM-DD. */
+  weekStartMonday: string;
+  unit: "metric" | "imperial";
+  /** The day to fill in, YYYY-MM-DD, inside the plan week. */
+  date: string;
+  /** The day's line as stored; null when the plan gave no line for the date. */
+  line: string | null;
+  /** Why the line could not be read, re-read now; null when it cannot be told. */
+  reason: string | null;
+  /**
+   * The other six days as written, for context: a day with no line is filled
+   * knowing what the rest of the week asks (no hard day after a hard day, an
+   * injury week stays easy). Days with no line are left out.
+   */
+  otherDays?: string[];
+};
+
+/** Coach Cade's new line for the date, read into a stored day (`parsed: true`). */
+export type PlanDayFix = {
+  day: PrescribedDay;
 };

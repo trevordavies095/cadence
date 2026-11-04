@@ -27,6 +27,9 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | weekly_read message | the Sunday message, with **Open the plan** | The headline posted into the reviewed week's conversation instead of the whole read. Its link opens the plan, or that week's Your week page once the planned week is over. |
 | reply run | "Coach Cade is reading your week" | One server-side execution of the weekly reply, with status pending, ok or failed. |
 | prescribed week, prescribed day | **plan**, **next week's plan**, **today's session** | The seven-day plan stored on a week session. |
+| plan line, `line` | (no label: Coach Cade's sentence on a day of the plan) | The sentence Coach Cade wrote for one day, one line per day, such as "Tue 2026-11-10: easy, 5 mi, HR under 150". Cadence reads the date, day type and distance or time from it; the rest is the day's notes. The Plan page shows the sentence as written. |
+| unparsed day, `parsed: false` | **Not yet filed** (the mark), "Coach Cade wrote this day; Cadence couldn’t read the details yet."; **Coach Cade gave no plan for this day** (a date with no line) | A day whose line Cadence could not read, or a date Coach Cade left out. The Plan page shows the sentence, or the no-plan line, with the mark. On Home it has nothing planned and is never missed. |
+| plan day fix, `plan_day_fix` | **Add the details** (the action), "Asking Coach Cade" (while it runs), "Coach Cade couldn’t fill in this day. The plan above still stands." (when it fails) | One more try for one unparsed day: Coach Cade, on the model saved now, writes that day's line again and Cadence files it if it reads. The read and the other days never change. |
 | day patch | a card under the reply: **Coach Cade changed Thu and Sun** | A change to the remaining days made by the coach from chat. The reply keeps a snapshot of the days as they were changed then, so a later change never rewrites an old card. |
 | mid-week chat, thread | **Coach Cade** (the page), "the conversation" | The current week's conversation with the coach. |
 | athlete / coach (roles) | **You** / **Coach Cade** | Message labels. |
@@ -38,6 +41,10 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | onboarding, interview, questionnaire, prompt N of M | "a few questions", "3 of 8" | The first-run questions and the check-in questions. |
 | loop status, phase, stepper | the home **banner** | The one line on Home that says what, if anything, needs the athlete. Never show the phase name. |
 | safety callout | a **notice** titled by the callout | Rendered once, styled; never as a `⚠ Safety (caution):` text prefix. |
+| plan warning, plan rule | a **notice** on the plan | Cadence's own check of next week's plan against the athlete's recent training, run after Coach Cade's reply is accepted and before the plan is stored. One notice per rule tripped, worded by Cadence in Coach Cade's voice, after any safety callout, on the plan and on the Sunday message's card. The plan itself is never changed. When a rule trips, Coach Cade is first asked once more with the warnings (the rules retry, on unless `COACH_RULES_RETRY=off`), and the second plan is kept only if it trips fewer rules; the athlete sees the plan kept and its notices. The rule's name goes in the log and the replay analysis, never on screen. |
+| coaching score, rating, unsafe | (not athlete-facing: never shown in the app) | How well one weekly read and plan coaches: a rating from 1 to 5 and unsafe yes or no, against the coaching rubric (`docs/coaching-rubric.md`), given by the reviewing coach on his form or by the judge. Averaged per configuration over the hard set in the replay analysis and held by the coaching gate. Settings recommends no model on it; the recommendation is in `docs/reports/coaching-2026-11.md`. |
+| hard set | (not athlete-facing) | The 14 Sunday reads that test coaching rather than format (`api/tests/fixtures/hard-set.json`): weeks of fictional seasons with a niggle, illness, race week, missed weeks and the like, plus the demo athlete's Achilles week. Each names the plan rules a careless plan would trip. The coaching run, the coach's form and the coaching gate all use it. |
+| judge, coaching judge | (not athlete-facing) | The model call that scores one reply blind against the coaching rubric (`coaching_judge` on the adapter; no route exposes it). Used only once calibrated: it must agree with the coach's answer key at least as well as a second reviewer does. Opus 5.5 at `high` since 2026-11-04 (ADR 0007). |
 | packet, model packet, last outbound packet | "what was sent to Coach Cade" | The redacted context sent to the model; shown under Privacy. |
 | Tempo | "your running log", "your watch" (for data that came from the watch) | The athlete's running log and the source of run data. Tempo may be named where the athlete connected it (Settings). |
 | Anthropic, LLM, stub | (never shown outside Settings) | The model provider. |
@@ -45,7 +52,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 
 ## Never on screen
 
-dossier · proposal · soft-gate · dirty · artifact · packet · prescribed · recap · subjective · ISO · week session · archived · stub · installed · phase (on the home banner; Coach Cade may say "base phase") · stepper · mid-week · interview · prompt · RPE · data-only · regenerate · 409 · any raw error code or JSON. · AI Coach · "Cade" on its own
+dossier · proposal · soft-gate · dirty · artifact · packet · prescribed · recap · subjective · ISO · week session · archived · stub · installed · phase (on the home banner; Coach Cade may say "base phase") · stepper · mid-week · interview · prompt · RPE · data-only · regenerate · 409 · any raw error code or JSON. · AI Coach · "Cade" on its own · a plan rule's name (volume jump and the rest)
 
 ## Writing rules
 

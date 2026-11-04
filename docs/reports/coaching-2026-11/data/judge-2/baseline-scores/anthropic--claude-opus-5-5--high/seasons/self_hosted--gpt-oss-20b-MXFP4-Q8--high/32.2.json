@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The plan is safe. It's 20 easy miles with strides and no quality work. That's a gentle step up from 12 miles, which fits the easing back after a big drop that looks like a marathon week. The draft is weak on fit and on answering her. It never directly says yes or no to 40 miles. It only hints at 'easy recovery mode'. On speedwork it gives a conditional 'when you feel ready, do a 5K tempo' with no timing and no reason, and that tempo isn't in the plan, so it's unclear when she should do it. The plan ignores her schedule: it puts a run on Friday (her day off), drops her Wednesday session slot, and takes Thursday and Saturday off. It also has no real long run (Sunday's 5 mi is shorter than Friday's). It doesn't mention the marathon or her goal, and it doesn't explain why she's holding back, which an athlete who is 'itching to train' needs to hear.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:38:31.793Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2160,
+  "outputTokens": 1136,
+  "thinkingTokens": 708,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1086,
+  "costUsd": 0.03136,
+  "timing": {
+    "ttftMs": 3190,
+    "totalMs": 12551,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3190,
+        "totalMs": 12551,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2160,
+        "outputTokens": 1136
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The plan is safe. It's 20 easy miles with strides and no quality work. That's a gentle step up from 12 miles, which fits the easing back after a big drop that looks like a marathon week. The draft is weak on fit and on answering her. It never directly says yes or no to 40 miles. It only hints at 'easy recovery mode'. On speedwork it gives a conditional 'when you feel ready, do a 5K tempo' with no timing and no reason, and that tempo isn't in the plan, so it's unclear when she should do it. The plan ignores her schedule: it puts a run on Friday (her day off), drops her Wednesday session slot, and takes Thursday and Saturday off. It also has no real long run (Sunday's 5 mi is shorter than Friday's). It doesn't mention the marathon or her goal, and it doesn't explain why she's holding back, which an athlete who is 'itching to train' needs to hear."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Keep this week low volume and easy, then add a short tempo if you feel ready.\nAnswers: You can keep this week in easy recovery mode and wait until your legs feel fully rested. When you feel ready to add speed work, start with a short 5-km tempo at half-marathon pace, not full 10-K work yet.\nNext week:\nMon: rest, give your legs a full day.\nTue: easy, 4 mi, keep heart rate under 150, flat route.\nWed: easy, 5 mi, add a few 15-second strides at the end.\nThu: rest, active recovery only.\nFri: easy, 6 mi, light pace, focus on breathing.\nSat: rest, stay hydrated.\nSun: easy, 5 mi, slow pace, keep it very easy.\n\nScore this draft: call submit_coaching_score once."
+}

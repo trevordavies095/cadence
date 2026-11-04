@@ -13,7 +13,7 @@ import {
   validateMidWeekChatReply,
   validateWeeklyReply,
 } from "../src/llm/index.js";
-import { prescribedDayJsonSchema } from "../src/llm/anthropic.js";
+import { midWeekChatReplyToolSchema } from "../src/llm/anthropic.js";
 import { migrate } from "../src/migrate.js";
 import { savePrescribedWeek } from "../src/prescribed/store.js";
 import { gradePrescribedVsActual } from "../src/recap/buildGrading.js";
@@ -25,109 +25,90 @@ import {
   resetAppTables,
   TEST_DATA_PROTECTION_KEY,
 } from "./helpers.js";
+import { planLinesWith, weeklyForm } from "./weeklyForms.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP = path.join(__dirname, "fixtures", "tempo-export-mini.zip");
 
 const NEXT_MONDAY = "2026-10-26";
 
-/** A weekly reply whose Tuesday is `tuesday`, every other day rest. */
-function replyWithTuesday(tuesday: Record<string, unknown>) {
-  return {
-    headline: "A steady week.",
-    analysis: "## Why this plan\nKeep it easy.",
-    prescribedWeek: {
-      week: "2026-W44",
-      days: expectedPlanDates(NEXT_MONDAY).map((date, i) =>
-        i === 1 ? { date, ...tuesday } : { date, dayType: "rest", run: null },
-      ),
-    },
-  };
+/** A weekly form whose Tuesday line reads `tuesday` after the day token. */
+function replyWithTuesday(tuesday: string) {
+  return weeklyForm(NEXT_MONDAY, {
+    plan: planLinesWith(NEXT_MONDAY, 1, tuesday).join("\n"),
+  });
 }
 
 describe("a planned day that is not a run", () => {
-  it("accepts an other day with no run, its notes saying what the day is", () => {
-    const checked = validateWeeklyReply(
-      replyWithTuesday({ dayType: "other", run: null, notes: "45 min on the bike, easy." }),
-      NEXT_MONDAY,
-    );
+  it("accepts an other line with no amount as a day with no run, the rest of the line saying what it is", () => {
+    const checked = validateWeeklyReply(replyWithTuesday("other, bike, easy spin."), NEXT_MONDAY);
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
     expect(checked.value.prescribedWeek.days[1]).toEqual({
       date: "2026-10-27",
       dayType: "other",
       run: null,
-      notes: "45 min on the bike, easy.",
+      strength: null,
+      notes: "bike, easy spin.",
+      line: "Tue 2026-10-27: other, bike, easy spin.",
+      parsed: true,
     });
   });
 
-  it("accepts an other day with the run left out", () => {
-    const checked = validateWeeklyReply(
-      replyWithTuesday({ dayType: "other", notes: "Strength: squats and lunges." }),
-      NEXT_MONDAY,
-    );
-    expect(checked.ok).toBe(true);
-    expect(checked.ok && checked.value.prescribedWeek.days[1]!.run).toBeUndefined();
-  });
-
-  it("accepts an other day with no run and no notes, and notes the gap", () => {
-    for (const notes of [undefined, null, "  "]) {
-      const checked = validateWeeklyReply(
-        replyWithTuesday({ dayType: "other", run: null, notes }),
-        NEXT_MONDAY,
-      );
-      expect(checked.ok, String(notes)).toBe(true);
-      if (!checked.ok) continue;
-      expect(checked.value.prescribedWeek.days[1]).toMatchObject({ dayType: "other", run: null });
-      expect(checked.repairs ?? []).toEqual(
-        expect.arrayContaining([expect.stringMatching(/other\) with no run has no notes/)]),
-      );
+  it("files a synonym for other (strength, walk, swim) the same way", () => {
+    for (const word of ["strength", "walk", "swim", "yoga"]) {
+      const checked = validateWeeklyReply(replyWithTuesday(`${word}, legs and core.`), NEXT_MONDAY);
+      expect(checked.ok, word).toBe(true);
+      expect(checked.ok && checked.value.prescribedWeek.days[1]).toMatchObject({
+        dayType: "other",
+        run: null,
+        parsed: true,
+      });
     }
   });
 
-  it("still requires a run on easy, quality, long and race days", () => {
+  it("does not file an easy, quality, long or race line with no amount, and keeps the reply", () => {
     for (const dayType of ["easy", "quality", "long", "race"]) {
-      const checked = validateWeeklyReply(
-        replyWithTuesday({ dayType, run: null, notes: "A walk." }),
-        NEXT_MONDAY,
-      );
-      expect(checked.ok, dayType).toBe(false);
-      expect(!checked.ok && checked.error).toMatch(/requires a run object/);
+      const checked = validateWeeklyReply(replyWithTuesday(`${dayType}, by feel.`), NEXT_MONDAY);
+      expect(checked.ok, dayType).toBe(true);
+      if (!checked.ok) continue;
+      expect(checked.value.prescribedWeek.days[1]).toMatchObject({
+        dayType: "other",
+        run: null,
+        parsed: false,
+        notes: `Tue 2026-10-27: ${dayType}, by feel.`,
+      });
+      expect(checked.repairs).toContain("plan 2026-10-27 not filed: no distance or duration");
     }
   });
 
-  it("keeps an other day with a run as a run", () => {
-    const checked = validateWeeklyReply(
-      replyWithTuesday({ dayType: "other", run: { type: "other", distanceM: 5000 } }),
-      NEXT_MONDAY,
-    );
+  it("keeps an other line with an amount as a run", () => {
+    const checked = validateWeeklyReply(replyWithTuesday("other, 5 km trail hike-run."), NEXT_MONDAY);
     expect(checked.ok && checked.value.prescribedWeek.days[1]!.run).toEqual({
       type: "other",
       distanceM: 5000,
+      durationS: null,
+      structure: null,
+      paceOrHr: null,
+      shoes: null,
     });
   });
 
   it("accepts a run-less day in a mid-week change", () => {
     const checked = validateMidWeekChatReply(
-      {
-        body: "Thursday is a swim instead.",
-        prescribedDayPatches: [
-          { date: "2026-10-29", dayType: "other", run: null, notes: "30 min easy swim." },
-        ],
-      },
+      { body: "Thursday is a swim instead.", changes: "Thu 2026-10-29: swim instead, relaxed." },
       NEXT_MONDAY,
     );
-    expect(checked.ok && checked.value.prescribedDayPatches).toEqual([
-      { date: "2026-10-29", dayType: "other", run: null, notes: "30 min easy swim." },
+    expect(checked.ok && checked.value.prescribedDayPatches).toMatchObject([
+      { date: "2026-10-29", dayType: "other", run: null, parsed: true },
     ]);
   });
 
-  it("tells Coach Cade an other day may have no run, with notes saying what it is", () => {
-    const schema = prescribedDayJsonSchema() as {
+  it("tells Coach Cade an other day is strength, cross-training or a walk, on the changes box", () => {
+    const schema = midWeekChatReplyToolSchema(NEXT_MONDAY, "imperial") as {
       properties: Record<string, { description?: string }>;
     };
-    expect(schema.properties.dayType!.description).toMatch(/other.*no run/i);
-    expect(schema.properties.dayType!.description).toMatch(/notes/);
+    expect(schema.properties.changes!.description).toMatch(/other \(strength, cross-training or a walk\)/);
   });
 });
 

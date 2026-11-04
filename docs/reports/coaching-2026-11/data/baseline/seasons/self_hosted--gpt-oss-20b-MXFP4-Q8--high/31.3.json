@@ -1,0 +1,198 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w13.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:49:06.050Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 16821,
+  "outputTokens": 2352,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 7158,
+  "estimatedInputTokens": 9287,
+  "timing": {
+    "ttftMs": 966,
+    "totalMs": 40876,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 966,
+        "totalMs": 40876,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 16821,
+        "outputTokens": 2352
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-19",
+    "isoWeek": "2026-W43",
+    "recentWeeklyM": 65673.30528
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "A light recovery week with easy runs and rest, leaving the hard work for later.",
+    "flags": [
+      {
+        "title": "Soreness",
+        "detail": "monitor quad soreness; if pain rises reduce mileage."
+      },
+      {
+        "title": "Heart rate",
+        "detail": "keep easy runs in zones 1‑2, watch for drift."
+      },
+      {
+        "title": "Sleep",
+        "detail": "target 7‑8 hrs nightly to aid recovery."
+      },
+      {
+        "title": "Nutrition",
+        "detail": "focus on protein and carbs post‑run to replenish glycogen."
+      },
+      {
+        "title": "Flexibility",
+        "detail": "include gentle stretches after each run."
+      }
+    ],
+    "answers": [
+      {
+        "question": "How long before I can run again? A friend wants me to race the Thanksgiving 10K in five weeks.",
+        "answer": "- You can start a light jog 2–3 days after the race, but it’s safer to begin with next week’s easy runs to ensure full recovery.\n- A Thanksgiving 10‑k in five weeks is well‑timed; you can rebuild mileage and add a short threshold session before that race."
+      }
+    ],
+    "analysis": "We had a big hard week with a 26‑mile marathon that put us in a very high relative‑effort zone and left the quads and calves sore. The recovery phase calls for low‑intensity, low‑volume training to allow tissue repair while preventing loss of fitness. The plan keeps quality sessions to a minimum, uses only easy runs and rests, and places emphasis on heart‑rate monitoring and soreness. The athlete asked when they can start running again. A light jog 2‑3 days after the marathon is fine, but it’s safer to start with the next week’s easy sessions to ensure recovery. They also asked about a 10‑k in five weeks – that gives ample time to rebuild mileage, add a short threshold session, and feel fresh. The flags highlight soreness, heart‑rate drift, sleep and nutrition, all of which influence recovery.",
+    "prescribedWeek": {
+      "week": "2026-W43",
+      "days": [
+        {
+          "date": "2026-10-19",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-10-19: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-20",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate under 150, flat route. Gives leg relief after the marathon.",
+          "line": "Tue 2026-10-20: easy, 5 mi, keep heart rate under 150, flat route. Gives leg relief after the marathon.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-21",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "add 1‑mile strides at the end, keeps movement healthy.",
+          "line": "Wed 2026-10-21: easy, 5 mi, add 1‑mile strides at the end, keeps movement healthy.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-22",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Thu 2026-10-22: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-23",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "focus on recovery, short distance.",
+          "line": "Fri 2026-10-23: easy, 3 mi, focus on recovery, short distance.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "relaxed pace, finish week with low load.",
+          "line": "Sat 2026-10-24: easy, 5 mi, relaxed pace, finish week with low load.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sun 2026-10-25: rest.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

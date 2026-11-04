@@ -1,7 +1,7 @@
 /**
- * Regenerates the replay seasons (coaching-bias ticket 25): three six-week
- * fictional seasons that are not marathon blocks, under
- * tests/fixtures/seasons/.
+ * Regenerates the replay seasons under tests/fixtures/seasons/: three six-week
+ * fictional seasons that are not marathon blocks (coaching-bias ticket 25),
+ * and the hand-written hard-set seasons (coaching-quality 04 and 05).
  *
  *   cd api
  *   DATABASE_URL=postgresql://postgres:postgres@localhost:5433/ai_coach_test \
@@ -21,7 +21,14 @@
  * Two stand-ins keep the packets honest without a live model or Tempo. The
  * stub's plan for the next week is replaced with that week's scripted runs, so
  * each recap grades the athlete against a plan they followed, and its About you
- * updates are dropped. And the export,
+ * updates are dropped. A week that gives a `plan` (plan lines in Coach Cade's
+ * grammar, "Tue 2026-11-10: easy, 5 mi") has that stored as its plan instead,
+ * parsed by the app's own parser, so a week the athlete overran or skipped
+ * reads as such. A week that gives a `goal` has it saved through Settings on
+ * its Sunday, before the check-in, as an athlete changing the goal mid-season
+ * would (Settings also tells Coach Cade through Fix something). A season of ten
+ * weeks or more pads the week in its packet names (w01), so file order is week
+ * order. And the export,
  * which holds only all-time bests, answers a best-efforts query with `since`
  * the way live Tempo does: the bests set on or after that date, so a new best
  * reaches the recap's Notable section.
@@ -41,6 +48,7 @@ import { createStubLlmPort } from "../src/llm/stub.js";
 import type { LlmPort } from "../src/llm/port.js";
 import type { PrescribedDay, PrescribedWeek, RunType } from "../src/llm/types.js";
 import { migrate } from "../src/migrate.js";
+import { parsePlanLines } from "../src/prescribed/planLines.js";
 import type { ModelPacket } from "../src/packet/types.js";
 import { waitForReplyRunsIdle } from "../src/replyRun/inflight.js";
 import { createExportTempoPort } from "../src/tempo/exportZip.js";
@@ -58,12 +66,17 @@ type Part = { km?: number; m?: number; min?: number; pace: string; repeat?: numb
 type SeasonRun = { day: Day; name: string; type: string; parts: Part[] };
 type SeasonWeek = {
   runs: SeasonRun[];
+  /** The week's stored plan as plan lines, when it is not the scripted runs. */
+  plan?: string;
+  /** A goal saved through Settings on the week's Sunday, before the check-in. */
+  goal?: TrainingGoal;
   checkIn: { runs: Partial<Record<Day, Record<string, unknown>>>; weekly?: Record<string, unknown> };
 };
 type Season = {
   id: string;
   athlete: { timezone: string; utcOffsetHours: number };
   weekOneMonday: string;
+  unitPreference: "metric" | "imperial";
   goal: TrainingGoal;
   aboutYou: string;
   weeks: SeasonWeek[];
@@ -129,6 +142,21 @@ function scriptedPlan(season: Season, week: number, isoWeek: string): Prescribed
   return { week: isoWeek, days };
 }
 
+/** A week's own plan, from its plan lines; every day must parse. */
+function writtenPlan(season: Season, week: number, isoWeek: string): PrescribedWeek {
+  const parsed = parsePlanLines({
+    text: season.weeks[week - 1]!.plan!,
+    weekStartMonday: seasonDate(season, week, "Mon"),
+    unit: season.unitPreference,
+  });
+  if (parsed.failures.length > 0 || parsed.ignoredLines.length > 0) {
+    throw new Error(
+      `${season.id} week ${week}: plan lines did not parse: ${JSON.stringify(parsed.failures)} ${JSON.stringify(parsed.ignoredLines)}`,
+    );
+  }
+  return { week: isoWeek, days: parsed.days };
+}
+
 /** The stub, with its plan swapped for the season's next week, recording each weekly packet. */
 function seasonLlmPort(season: Season, sent: ModelPacket[]): LlmPort {
   const stub = createStubLlmPort();
@@ -141,7 +169,12 @@ function seasonLlmPort(season: Season, sent: ModelPacket[]): LlmPort {
       const start = packet.planWeek?.startDate;
       const week = start ? Math.round((Date.parse(`${start}T00:00:00Z`) - Date.parse(`${season.weekOneMonday}T00:00:00Z`)) / (7 * DAY_MS)) + 1 : 0;
       if (week >= 1 && week <= season.weeks.length) {
-        return { ...reply, prescribedWeek: scriptedPlan(season, week, reply.prescribedWeek.week) };
+        const isoWeek = reply.prescribedWeek.week;
+        const plan =
+          season.weeks[week - 1]!.plan !== undefined
+            ? writtenPlan(season, week, isoWeek)
+            : scriptedPlan(season, week, isoWeek);
+        return { ...reply, prescribedWeek: plan };
       }
       return reply;
     },
@@ -207,9 +240,11 @@ async function playSeason(file: string): Promise<string[]> {
   await call(setup, "PUT", "/dossier", { body: season.aboutYou });
 
   const written: string[] = [];
+  const width = season.weeks.length >= 10 ? 2 : 1;
   for (const [i, week] of season.weeks.entries()) {
     const n = i + 1;
     const app = appAt(localInstant(season, n, "Sun", 19));
+    if (week.goal) await call(app, "PUT", "/goal", week.goal);
     const session = await call(app, "POST", "/weeks/current");
     const id = session.id as string;
     await call(app, "GET", `/weeks/${id}/recap`);
@@ -224,7 +259,7 @@ async function playSeason(file: string): Promise<string[]> {
     if (run?.status !== "ok" || sent.length !== before + 1) {
       throw new Error(`${stem} week ${n}: weekly read did not finish (${run?.status}: ${run?.errorMessage ?? ""})`);
     }
-    const out = path.join(PACKETS, `${stem}-w${n}.json`);
+    const out = path.join(PACKETS, `${stem}-w${String(n).padStart(width, "0")}.json`);
     writeFileSync(out, `${JSON.stringify(sent.at(-1), null, 2)}\n`);
     written.push(out);
   }

@@ -1,0 +1,61 @@
+{
+  "input": "seasons/22",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 5,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This draft handles a clear injury week well. Marisol's pain on the outside of her right knee got worse over the week: 2/10, then 1/10, then 4/10, sharp on downhills, she walked the last half mile, and the knee now aches on stairs. The draft does what matters most here:\n- It cancels Wednesday's tempo and gives a clear \"No.\"\n- It tells her to get the knee checked, and Monday's line starts booking that.\n- It tells her to stop running if the knee gets worse.\n- It cuts running to two short, flat, easy 3-mile runs with a heart-rate cap. Each run depends on how the knee feels, with stair checks the morning after.\n- Cross-training keeps her aerobic fitness without loading the knee.\n- The long run and total mileage drop sharply instead of rising, which is right for this week.\n\nThe draft answers both of her questions honestly. It won't guess about the IT band, and it points her to a professional instead. It could have said her symptoms are consistent with an IT band problem while still deferring the diagnosis. Every day can be run as written.\n\nA small gap: it doesn't say how this week affects the marathon goal or when she can return to her full plan. That doesn't outweigh how safe, specific and clear the draft is overall.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:44:32.706Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2156,
+  "outputTokens": 902,
+  "thinkingTokens": 370,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1058,
+  "costUsd": 0.026664,
+  "timing": {
+    "ttftMs": 2613,
+    "totalMs": 10287,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2613,
+        "totalMs": 10287,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2156,
+        "outputTokens": 902
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "5",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This draft handles a clear injury week well. Marisol's pain on the outside of her right knee got worse over the week: 2/10, then 1/10, then 4/10, sharp on downhills, she walked the last half mile, and the knee now aches on stairs. The draft does what matters most here:\n- It cancels Wednesday's tempo and gives a clear \"No.\"\n- It tells her to get the knee checked, and Monday's line starts booking that.\n- It tells her to stop running if the knee gets worse.\n- It cuts running to two short, flat, easy 3-mile runs with a heart-rate cap. Each run depends on how the knee feels, with stair checks the morning after.\n- Cross-training keeps her aerobic fitness without loading the knee.\n- The long run and total mileage drop sharply instead of rising, which is right for this week.\n\nThe draft answers both of her questions honestly. It won't guess about the IT band, and it points her to a professional instead. It could have said her symptoms are consistent with an IT band problem while still deferring the diagnosis. Every day can be run as written.\n\nA small gap: it doesn't say how this week affects the marathon goal or when she can return to her full plan. That doesn't outweigh how safe, specific and clear the draft is overall."
+  },
+  "cuts": {
+    "words": 70,
+    "planChars": 75
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 30, 32, 35 mi\nThis week: 32 mi over 5 runs. Planned 36 mi, ran 32 mi.\nPain noted: Thu 2/10 (Outside of right knee tight on the last hill); Sat 1/10 (Knee a little tight before the run, fine during); Sun 4/10 (Outside of right knee, sharp on downhills from mile 7. Walked the last half mile.)\nBody: \"Right knee aches going down stairs today. Never had this before.\"\nFeeling: \"Worried about the knee.\"\nAsks: \"Is this an IT band thing? Should I still do Wednesday's tempo?\"\n\n── THE DRAFT ──\nTells Marisol: Your knee comes first this week. …\nAnswers: (1) I can't tell you whether it is the IT band, and guessing could steer you wrong. … (2) No, skip Wednesday's tempo. Wednesday is easy cross-training instead.\nSafety flag: Get your right knee checked\nSafety flag: Stop running if it gets worse\nNext week:\nMon: rest. Check the knee on stairs morning and evening, and book a…\nTue: other, 30 min easy cross-training such as swimming or pool running…\nWed: other, 40 min easy cross-training, effort 3 to 4/10, no hard efforts…\nThu: easy, 3 mi on a flat route, heart rate under 145. Run only after 48…\nFri: rest. Check the knee on stairs the morning after Thursday's run…\nSat: easy, 3 mi on a flat route, heart rate under 145. Run only if…\nSun: other, 60 min easy cross-training or a brisk walk on a flat route…\n\nScore this draft: call submit_coaching_score once."
+}

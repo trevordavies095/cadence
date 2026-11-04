@@ -1,0 +1,61 @@
+{
+  "input": "seasons/33",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Safe and well fitted to Nessa. It answers her question with a clear no and an honest reason: her legs need time to adapt, and the gains show up on rest days. It also keeps her Monday, Wednesday and Saturday routine. Volume goes from 6.8 km to 8 km on the same walk-run intervals. That is a modest step for a beginner, and the 3 km Saturday is a small long-run step, so the progression is sensible. Calf tightness that is gone by the next morning is normal adaptation, not a sign of injury. The draft handles it well by putting rest days after each run and keeping dog walks easy. Each day can be run as written. It loses a point for not tying the plan to the 15 November goal. Her real worry is being ready in time, and a sentence on how the weeks build toward running the whole 5K (for example, longer run segments in later weeks) would answer that. It also gives no guidance on what calf signs should make her stop or back off.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:27:13.984Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2206,
+  "outputTokens": 711,
+  "thinkingTokens": 280,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1141,
+  "costUsd": 0.023044000000000002,
+  "timing": {
+    "ttftMs": 2534,
+    "totalMs": 7517,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2534,
+        "totalMs": 7517,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2206,
+        "outputTokens": 711
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Safe and well fitted to Nessa. It answers her question with a clear no and an honest reason: her legs need time to adapt, and the gains show up on rest days. It also keeps her Monday, Wednesday and Saturday routine. Volume goes from 6.8 km to 8 km on the same walk-run intervals. That is a modest step for a beginner, and the 3 km Saturday is a small long-run step, so the progression is sensible. Calf tightness that is gone by the next morning is normal adaptation, not a sign of injury. The draft handles it well by putting rest days after each run and keeping dog walks easy. Each day can be run as written. It loses a point for not tying the plan to the 15 November goal. Her real worry is being ready in time, and a sentence on how the weeks build toward running the whole 5K (for example, longer run segments in later weeks) would answer that. It also gives no guidance on what calf signs should make her stop or back off."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: none recorded.\nThis week: 6.8 km over 3 runs.\nBody: \"Calves tight the day after each run, gone by the next morning.\"\nFeeling: \"Proud I started.\"\nAsks: \"I want to be ready for the 5K in November. Should I run every day next week to get there faster?\"\n\n── THE DRAFT ──\nTells Nessa: Strong first week on the road, and the smart move now is to keep three run days and add a little time, not add days. …\nAnswers: No, please do not run every day yet. Your legs, tendons and feet are still getting used to the pounding, and the gains from a run actually show up on the rest day that follows.\nNext week:\nMon: easy, 2.5 km walk-run, same intervals as last week, keep it conversational. Repeats…\nTue: rest, dog walk is fine, nothing brisk. Lets the calves settle before Wednesday.\nWed: easy, 2.5 km walk-run, same effort as Monday, flat route. A second easy repeat so…\nThu: rest, dog walk only. Protects Saturday's longer effort.\nFri: rest or 20 minute walk. Keeps the legs loose without adding running load.\nSat: easy, 3 km walk-run, same intervals, finish feeling you could do more. The week's…\nSun: rest, dog walk fine. Full recovery before the new week.\n\nScore this draft: call submit_coaching_score once."
+}

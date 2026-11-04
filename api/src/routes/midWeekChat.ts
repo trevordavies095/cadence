@@ -16,8 +16,8 @@ import {
   LlmNotConfiguredError,
   LlmSchemaError,
   LlmTransportError,
+  checkMidWeekChatReply,
   resolvePlanWeekStartMonday,
-  validateMidWeekChatReply,
   type LlmPort,
   type SafetyCallout,
 } from "../llm/index.js";
@@ -53,6 +53,7 @@ import {
   deleteThreadMessage,
   listThreadMessages,
 } from "../thread/store.js";
+import { coachNotConfiguredBody } from "../settings/coachSetup.js";
 import { getWeekSessionById, type WeekSession } from "../week/store.js";
 import type { PrescribedWeekArtifact } from "./thread.js";
 
@@ -117,6 +118,7 @@ function toPrescribedArtifact(
     weekSessionId: record.weekSessionId,
     plan: record.plan,
     safetyCallouts: (record.safetyCallouts ?? []) as SafetyCallout[],
+    planWarnings: record.planWarnings ?? [],
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -309,7 +311,7 @@ export function createMidWeekChatRoutes(
           weekSessionId: session.id,
         });
         const weekStartMonday = resolvePlanWeekStartMonday(packet);
-        const checked = validateMidWeekChatReply(rawReply, weekStartMonday);
+        const checked = checkMidWeekChatReply(rawReply, weekStartMonday);
         if (!checked.ok) {
           await recordRouteRejection(llmCallRecorder, {
             parentCallId: callId,
@@ -343,7 +345,9 @@ export function createMidWeekChatRoutes(
           at: clock.now(),
         });
         // Work out which days actually change (past days stay put) before the
-        // message is written, so it can carry them as a card.
+        // message is written, so it can carry them as a card. The port read
+        // Coach Cade's changes lines into days: each replaces its date whole,
+        // an unparsed line included; dates with no line are not touched.
         const patches = reply.prescribedDayPatches ?? [];
         const applied =
           patches.length > 0 && existingPrescribed
@@ -382,6 +386,8 @@ export function createMidWeekChatRoutes(
                 existingPrescribed.settingsProposalBullets,
               safetyCallouts: existingPrescribed.safetyCallouts,
               readSections: existingPrescribed.readSections,
+              // Sunday's notices stay as they were: a change from chat is not a new plan.
+              planWarnings: existingPrescribed.planWarnings,
               at: clock.now(),
             });
             threadArtifact = toPrescribedArtifact(prescribed);
@@ -402,7 +408,7 @@ export function createMidWeekChatRoutes(
         );
       } catch (err) {
         if (err instanceof LlmNotConfiguredError) {
-          return c.json({ error: err.code, message: err.message }, 400);
+          return c.json(await coachNotConfiguredBody(), 400);
         }
         if (err instanceof LlmHttpError) {
           return c.json(

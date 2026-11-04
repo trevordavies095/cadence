@@ -1,0 +1,196 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w10.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:50:43.743Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, 2 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 17242,
+  "outputTokens": 1197,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2837,
+  "estimatedInputTokens": 9655,
+  "timing": {
+    "ttftMs": 822,
+    "totalMs": 20848,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 822,
+        "totalMs": 20848,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 17242,
+        "outputTokens": 1197
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 69209.83872
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "This week cuts volume but keeps a race‑pace session to lock in feel before the marathon",
+    "flags": [
+      {
+        "title": "Long run HR",
+        "detail": "keep under 150, easy pace"
+      },
+      {
+        "title": "Race‑pace session",
+        "detail": "3 mi at 3:45 target"
+      },
+      {
+        "title": "Easy runs",
+        "detail": "4‑5 mi, stay in recovery zone"
+      },
+      {
+        "title": "Recovery day",
+        "detail": "Saturday 3 mi, keep fresh"
+      }
+    ],
+    "answers": [],
+    "analysis": "The athlete is two weeks from the race, so this week is a taper week in the peak phase. The goal is to cut overall volume, especially the long run, while keeping a single race‑pace quality effort to lock in pacing and keep the legs primed. Easy runs should remain in the recovery zone to allow full recovery. The long run is reduced from 17 miles to 11 miles and kept at an easy pace with HR under 150 to avoid fatigue. A short 3‑mile quality session at marathon pace provides the necessary race‑pace rehearsal without pushing too hard. Rest days are left untouched to preserve recovery.\n\nThe plan follows the structure requested: Monday rest, Tuesday and Thursday easy 4 mi, Wednesday a 3‑mile quality, Saturday easy 3 mi, Sunday long 11 mi. Distances are in miles. Heart‑rate zones are highlighted where relevant.\n\nNo red flags or medical concerns are noted in the recap.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-09-28: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 150, flat route",
+          "line": "Tue 2026-09-29: easy, 4 mi, heart rate under 150, flat route",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "marathon pace, short rest, lock in race rhythm",
+          "line": "Wed 2026-09-30: quality, 3 mi, marathon pace, short rest, lock in race rhythm",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep comfortable",
+          "line": "Thu 2026-10-01: easy, 4 mi, keep comfortable",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-10-02: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "recovery run",
+          "line": "Sat 2026-10-03: easy, 3 mi, recovery run",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 17703,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy pace, HR under 150, build confidence",
+          "line": "Sun 2026-10-04: long, 11 mi, easy pace, HR under 150, build confidence",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

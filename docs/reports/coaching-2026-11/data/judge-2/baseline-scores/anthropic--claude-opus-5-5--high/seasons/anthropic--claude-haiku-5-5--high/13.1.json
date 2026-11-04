@@ -1,0 +1,61 @@
+{
+  "input": "seasons/13",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a safe plan that fits the physio's limits. It has exactly three walk-run days (Mon/Wed/Sat), each with a day off running in between, so the shin gets recovery. Each session is short: 16 min, with 5 rounds of 2 min easy running and 1 min walking, about 10 min of running in total. The heart-rate cap of 135 keeps it easy. The two other days are the physio's calf and hip routine, which is sensible. Next to a 5.1 km week this is a modest step, so the returning runner isn't rushed and the volume doesn't jump. The opening reassures Ines about her nerves by pointing to real signs that the restart went well, which fits her \"nervous but happy\" note.\n\nWhy it isn't a 5: none of the lines I can see repeats the physio's rule to stop if the shin aches. For a runner coming back from a stress reaction, that rule belongs in the plan in plain words. The draft also cites 0/10 pain and heart rates of 121–123 bpm against a 178 ceiling, none of which are on the card. They are probably from her logged data, but I couldn't check them. Finally, it gives no sense of how this week moves her toward 30 minutes of continuous running by mid-October.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:03:31.201Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2194,
+  "outputTokens": 938,
+  "thinkingTokens": 415,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1119,
+  "costUsd": 0.027536,
+  "timing": {
+    "ttftMs": 2161,
+    "totalMs": 9536,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2161,
+        "totalMs": 9536,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2194,
+        "outputTokens": 938
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a safe plan that fits the physio's limits. It has exactly three walk-run days (Mon/Wed/Sat), each with a day off running in between, so the shin gets recovery. Each session is short: 16 min, with 5 rounds of 2 min easy running and 1 min walking, about 10 min of running in total. The heart-rate cap of 135 keeps it easy. The two other days are the physio's calf and hip routine, which is sensible. Next to a 5.1 km week this is a modest step, so the returning runner isn't rushed and the volume doesn't jump. The opening reassures Ines about her nerves by pointing to real signs that the restart went well, which fits her \"nervous but happy\" note.\n\nWhy it isn't a 5: none of the lines I can see repeats the physio's rule to stop if the shin aches. For a runner coming back from a stress reaction, that rule belongs in the plan in plain words. The draft also cites 0/10 pain and heart rates of 121–123 bpm against a 178 ceiling, none of which are on the card. They are probably from her logged data, but I couldn't check them. Finally, it gives no sense of how this week moves her toward 30 minutes of continuous running by mid-October."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── INES'S WEEK ──\nInes ran about 40 km a week before a stress reaction in the left shin and ten weeks off, and a physio has cleared Ines for walk-run three days a week, stopping if the shin aches. The goal is to run 30 minutes without walking by mid-October.\nRecent weeks: none recorded.\nThis week: 5.1 km over 3 runs.\nBody: \"Shin quiet.\"\nFeeling: \"Nervous but happy to be back.\"\n\n── THE DRAFT ──\nTells Ines: Week one went well: three walk-runs, zero pain, and heart rate far inside easy effort. …\nWeek one was a sound restart, and the data shows your shin handled it. All three sessions stayed at 0 out of 10 pain, the shin was quiet afterwards, and average heart rate sat around 121 to 123 bpm, well under your 178 bpm ceiling.\nNext week:\nMon: easy, 16 min, walk-run: 1 min walk, then 5 rounds of 2 min easy running and 1 min…\nTue: other, 15 min, your physio calf and hip routine as your physio set it. Keeps the…\nWed: easy, 16 min, same walk-run as Monday, heart rate under 135. Repeats the pattern so…\nThu: rest, no running. Gives the shin a full day between runs.\nFri: other, 15 min, your physio calf and hip routine as your physio set it. Second…\nSat: easy, 16 min, same walk-run as Monday, heart rate under 135. Third run of the week…\nSun: rest, no running. Full rest before the next week begins.\n\nScore this draft: call submit_coaching_score once."
+}

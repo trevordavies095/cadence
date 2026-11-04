@@ -3,7 +3,11 @@ export type LlmCallOperation =
   | "mid_week_chat"
   | "dossier_v1"
   | "dossier_correction"
-  | "dossier_audit";
+  | "dossier_audit"
+  /** "Add the details": one unread plan day filled in (plan-as-text ticket 09). */
+  | "plan_day_fix"
+  /** The coaching judge scoring one draft (coaching-quality 09); the replay harness only. */
+  | "coaching_judge";
 
 export type LlmCallOutcome =
   | "ok"
@@ -19,7 +23,9 @@ export type LlmCallRecord = {
   /** Caller-chosen call id (routes generate it before calling the port). */
   id: string;
   operation: LlmCallOperation;
-  provider: "anthropic" | "stub";
+  provider: "anthropic" | "self_hosted" | "stub";
+  /** Hostname of the self-hosted base URL; null for Anthropic and stub rows. */
+  serverHost: string | null;
   model: string | null;
   appVersion: string;
   weekSessionId: string | null;
@@ -40,7 +46,15 @@ export type LlmCallRecord = {
   errorMessage: string | null;
 };
 
-export type LlmCallRow = LlmCallRecord & { createdAt: string };
+export type LlmCallRow = LlmCallRecord & {
+  createdAt: string;
+  /**
+   * The plan rules the weekly reply on this row tripped (issue #58): empty
+   * when the plan was checked and tripped none, null when it was not checked
+   * (another operation, a refused reply, or a row written before the check).
+   */
+  planRules: string[] | null;
+};
 
 /** A list row: everything except the request and raw response bodies. */
 export type LlmCallSummary = Omit<LlmCallRow, "request" | "responseRaw">;
@@ -59,4 +73,10 @@ export type LlmCallRecorder = {
   list(filter: LlmCallListFilter): Promise<LlmCallSummary[]>;
   /** Every full row, oldest first, fetched in batches so the log need not fit in memory. */
   exportAll(): AsyncIterable<LlmCallRow>;
+  /**
+   * Record the plan rules the accepted weekly reply on row `id` tripped, once
+   * the plan check has run. Best-effort, like `record`. Optional: a recorder
+   * that keeps no rows (the replay's, a test's) need not implement it.
+   */
+  notePlanRules?(id: string, rules: string[]): Promise<void>;
 };

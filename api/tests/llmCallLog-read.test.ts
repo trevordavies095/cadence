@@ -22,6 +22,7 @@ function row(overrides: Partial<LlmCallRecord> = {}): LlmCallRecord {
     id: randomUUID(),
     operation: "weekly_reply",
     provider: "anthropic",
+    serverHost: null,
     model: "claude-test",
     appVersion: "1.2.3",
     weekSessionId: SESSION_A,
@@ -95,6 +96,7 @@ describe("LLM call log read API (#72)", () => {
         createdAt: expect.any(String),
         operation: "weekly_reply",
         provider: "anthropic",
+        serverHost: null,
         model: "claude-test",
         appVersion: "1.2.3",
         weekSessionId: SESSION_A,
@@ -109,6 +111,8 @@ describe("LLM call log read API (#72)", () => {
         cacheReadTokens: 3,
         cacheCreationTokens: 4,
         errorMessage: "third",
+        // The plan rules tripped (issue #58): null on a row the plan check never annotated.
+        planRules: null,
       });
     });
 

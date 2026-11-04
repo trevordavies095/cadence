@@ -6,7 +6,9 @@ import { createApp } from "../src/app.js";
 import { DISCLAIMER_TEXT } from "../src/disclaimer/text.js";
 import {
   buildStubMidWeekChatReply,
+  buildStubWeeklyForm,
   buildStubWeeklyReply,
+  checkWeeklyReply,
   COACH_SYSTEM_STANCE,
   createStubLlmPort,
   fitSafetyCalloutBody,
@@ -16,6 +18,7 @@ import {
   MIDWEEK_SYSTEM_PROMPT,
   SAFETY_CALLOUT_PROMPT,
   SAFETY_ESCALATION_LINE,
+  checkMidWeekChatReply,
   validateMidWeekChatReply,
   validateSafetyCallouts,
   validateWeeklyReply,
@@ -182,8 +185,8 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
     const long = "Keep it easy. ".repeat(100);
     const weekly = validateWeeklyReply(
       {
-        ...buildStubWeeklyReply(samplePacket()),
-        safetyCallouts: [{ title: "Achilles", body: long }],
+        ...buildStubWeeklyForm(samplePacket()),
+        safetyCallouts: `Caution: Achilles. ${long}`,
       },
       PLAN_WEEK_START,
     );
@@ -192,7 +195,7 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
 
     const mid = validateMidWeekChatReply({
       body: "Easy week.",
-      safetyCallouts: [{ title: "Achilles", body: long }],
+      safetyCallouts: `Caution: Achilles. ${long}`,
     });
     expect(mid.ok).toBe(true);
     if (mid.ok) expect(mid.repairs).toHaveLength(1);
@@ -224,12 +227,12 @@ describe("safety callouts + non-diagnose prompt (#32)", () => {
       /does not diagnose/,
     );
 
-    const checked = validateWeeklyReply(reply, PLAN_WEEK_START);
+    const checked = checkWeeklyReply(reply, PLAN_WEEK_START);
     expect(checked.ok).toBe(true);
 
     const mid = buildStubMidWeekChatReply(flagged);
     expect(mid.safetyCallouts?.length).toBeGreaterThan(0);
-    expect(validateMidWeekChatReply(mid).ok).toBe(true);
+    expect(checkMidWeekChatReply(mid).ok).toBe(true);
   });
 
   it("stub ignores red flags in About you, the report and earlier messages (#9)", () => {
@@ -389,7 +392,8 @@ describe("mid-week chat surfaces safety callouts as structured data (#95)", () =
     expect(coach.body).not.toContain("⚠");
     expect(coach.body).not.toMatch(/Safety \(/);
     expect(coach.safetyCallouts.length).toBe(1);
-    expect(coach.safetyCallouts[0]!.title).toBe("See a professional");
+    // The stub writes the notice as one line, so its title is the first sentence.
+    expect(coach.safetyCallouts[0]!.title).toBe("See a professional.");
     expect((body.safetyCallouts as SafetyCallout[]).length).toBe(1);
 
     // A later read of the thread still carries them.

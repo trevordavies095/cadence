@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This reads as Marisol's second week after the marathon. The draft answers both of her questions directly and gives the right answer: not back to 40 miles yet, and no speedwork until recovery is done. Next week is 23 easy miles over five days. That nearly doubles this week's 12, but it is still about half her usual 41–46 miles, and the long run is only 5 miles, so it doesn't count as a hard or rushed return.\n\nWhat costs it points:\n- The plan contradicts its own advice. Friday has hill repeats and Sunday says \"finish strong,\" even though the draft says to finish recovery before adding faster work.\n- It ignores her schedule. She normally rests Monday and Friday, but the draft runs Friday and rests Thursday instead.\n- It never mentions the marathon or says how long recovery will take, which would help a runner who is itching to train.\n- It gives no path toward the 10K, and the reason for \"later\" is vague.\n\nThe plan is safe and the answers are right, but the inconsistencies and the poor fit with her week keep it in the middle.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T13:01:27.633Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2148,
+  "outputTokens": 1125,
+  "thinkingTokens": 662,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1066,
+  "costUsd": 0.031092,
+  "timing": {
+    "ttftMs": 2207,
+    "totalMs": 11542,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2207,
+        "totalMs": 11542,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2148,
+        "outputTokens": 1125
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This reads as Marisol's second week after the marathon. The draft answers both of her questions directly and gives the right answer: not back to 40 miles yet, and no speedwork until recovery is done. Next week is 23 easy miles over five days. That nearly doubles this week's 12, but it is still about half her usual 41–46 miles, and the long run is only 5 miles, so it doesn't count as a hard or rushed return.\n\nWhat costs it points:\n- The plan contradicts its own advice. Friday has hill repeats and Sunday says \"finish strong,\" even though the draft says to finish recovery before adding faster work.\n- It ignores her schedule. She normally rests Monday and Friday, but the draft runs Friday and rests Thursday instead.\n- It never mentions the marathon or says how long recovery will take, which would help a runner who is itching to train.\n- It gives no path toward the 10K, and the reason for \"later\" is vague.\n\nThe plan is safe and the answers are right, but the inconsistencies and the poor fit with her week keep it in the middle."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Keep easy, moderate volume, and finish recovery before adding speedwork.\nAnswers: I recommend staying in recovery for this week and not back to 40 miles yet. We’ll add speedwork later when the phase moves to build.\nNext week:\nMon: rest.\nTue: easy, 4 mi, heart rate under 150, flat route.\nWed: easy, 5 mi, keep pace 10:20/mi, focus on breathing.\nThu: rest.\nFri: easy, 6 mi, steady effort, hill repeat of 2 × 200 ft.\nSat: easy, 3 mi, recover with light jog, heart rate under 140.\nSun: easy, 5 mi, slow, flat route, finish strong.\n\nScore this draft: call submit_coaching_score once."
+}

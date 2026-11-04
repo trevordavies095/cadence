@@ -1,0 +1,61 @@
+{
+  "input": "seasons/27",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This draft gets right the three things the rubric weighs most. It answers the question directly and honestly: no to going from 40 to 80 miles with doubles, and it says why (\"you are not behind\"). Next week adds up to 44 miles (5+10+8+4+17), a sensible step after 53 then 40. The long run goes up 2 miles, from 15 to 17. The plan keeps Marisol's usual pattern: Monday and Friday off, the session on Wednesday, the long run on Sunday. Each day can be run as written, and the Sunday marathon-pace miles at 8:30–8:40 match her 3:45 goal. Points off for \"nothing invented\": the card doesn't say the week went \"exactly as planned\", that there were \"6 miles at goal pace\", or that last week's long run was 15 miles. \"3:45 is on track\" rests on those unsupported claims. The draft also doesn't mention the heavy legs early in the week, though they had cleared by Thursday, so that's a small miss.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:29:46.256Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2353,
+  "outputTokens": 923,
+  "thinkingTokens": 476,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1188,
+  "costUsd": 0.027872,
+  "timing": {
+    "ttftMs": 2992,
+    "totalMs": 9548,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2992,
+        "totalMs": 9548,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2353,
+        "outputTokens": 923
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This draft gets right the three things the rubric weighs most. It answers the question directly and honestly: no to going from 40 to 80 miles with doubles, and it says why (\"you are not behind\"). Next week adds up to 44 miles (5+10+8+4+17), a sensible step after 53 then 40. The long run goes up 2 miles, from 15 to 17. The plan keeps Marisol's usual pattern: Monday and Friday off, the session on Wednesday, the long run on Sunday. Each day can be run as written, and the Sunday marathon-pace miles at 8:30–8:40 match her 3:45 goal. Points off for \"nothing invented\": the card doesn't say the week went \"exactly as planned\", that there were \"6 miles at goal pace\", or that last week's long run was 15 miles. \"3:45 is on track\" rests on those unsupported claims. The draft also doesn't mention the heavy legs early in the week, though they had cleared by Thursday, so that's a small miss."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 24, 27, 37, 53 mi\nThis week: 40 mi over 5 runs.\nBody: \"Legs a bit heavy early in the week, fine by Thursday.\"\nAsks: \"My club mate runs 70 miles a week before a marathon. I'm thinking of doubling to 80 next week to catch up, running twice a day. Would that work?\"\n\n── THE DRAFT ──\nTells Marisol: You ran this week exactly as planned, and 6 miles at goal pace felt controlled, so 3:45 is on track. …\nAnswers: (1) No. Going from 40 to 80 miles in one week, with doubles, is the fastest way to reach the start line hurt or flat. (2) You are not behind. Your club mate's 70 miles took years to build. (3) What moves you toward 3:45 is steady weeks and long runs with marathon-pace miles. …\nNext week:\nMon: rest. Recovers from the 15-mile long run and keeps your usual rest day.\nTue: easy, 5 mi, heart rate under 145, then 6 x 20 s strides with a full walk back…\nWed: quality, 10 mi: 2 mi easy warm-up, 3 x 2 mi at 7:55–8:05/mi with 3 min easy jogs…\nThu: easy, 8 mi, heart rate under 145, flat route. This is your medium-long run of the…\nFri: rest. A real rest before the weekend, with no make-up miles.\nSat: easy, 4 mi, heart rate under 145, relaxed. A short, easy run so Sunday starts on…\nSun: long, 17 mi: first 10 mi easy with heart rate under 148, then 5 mi at 8:30–8:40/mi…\n\nScore this draft: call submit_coaching_score once."
+}

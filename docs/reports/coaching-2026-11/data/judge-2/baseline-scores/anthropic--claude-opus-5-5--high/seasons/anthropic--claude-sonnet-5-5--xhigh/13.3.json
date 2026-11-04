@@ -1,0 +1,61 @@
+{
+  "input": "seasons/13",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft is safe and well judged for a return after a stress reaction. It keeps to the physio's limits: walk-run on three days, all at easy effort 3/10 on flat ground, with rest days placed sensibly. The only increase is one extra 1-minute round on Saturday, which is a very gentle step. That doesn't rush Ines and still moves toward the goal of 30 minutes without walking by mid-October. Each day can be run exactly as written. Small weaknesses: it states \"pain stayed at 0/10\" and prescribes a \"physio calf and hip routine at your usual load\", but neither appears on the card, so both may be made up. In the visible text it also doesn't repeat the physio's rule to stop if the shin aches, and it doesn't directly speak to Ines feeling nervous. There's no question to answer. Overall this is a good, specific plan, with points off for the details it may have invented and for not restating the stop rule.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:59:05.760Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2177,
+  "outputTokens": 775,
+  "thinkingTokens": 351,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1117,
+  "costUsd": 0.024208,
+  "timing": {
+    "ttftMs": 3661,
+    "totalMs": 8291,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3661,
+        "totalMs": 8291,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2177,
+        "outputTokens": 775
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft is safe and well judged for a return after a stress reaction. It keeps to the physio's limits: walk-run on three days, all at easy effort 3/10 on flat ground, with rest days placed sensibly. The only increase is one extra 1-minute round on Saturday, which is a very gentle step. That doesn't rush Ines and still moves toward the goal of 30 minutes without walking by mid-October. Each day can be run exactly as written. Small weaknesses: it states \"pain stayed at 0/10\" and prescribes a \"physio calf and hip routine at your usual load\", but neither appears on the card, so both may be made up. In the visible text it also doesn't repeat the physio's rule to stop if the shin aches, and it doesn't directly speak to Ines feeling nervous. There's no question to answer. Overall this is a good, specific plan, with points off for the details it may have invented and for not restating the stop rule."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── INES'S WEEK ──\nInes ran about 40 km a week before a stress reaction in the left shin and ten weeks off, and a physio has cleared Ines for walk-run three days a week, stopping if the shin aches. The goal is to run 30 minutes without walking by mid-October.\nRecent weeks: none recorded.\nThis week: 5.1 km over 3 runs.\nBody: \"Shin quiet.\"\nFeeling: \"Nervous but happy to be back.\"\n\n── THE DRAFT ──\nTells Ines: Week one was clean, so next week adds only one extra minute of running, on Saturday, with the same three days and easy effort. …\nWeek one went as well as a return week can. You ran all three planned sessions, pain stayed at 0/10, and your shin was quiet afterwards.\nNext week:\nMon: easy, 15 min, 5 rounds of 1 min running and 2 min walking at effort 3/10 on a flat…\nTue: other, 20 min, physio calf and hip routine at your usual load. Keeps the supporting…\nWed: easy, 15 min, 5 rounds of 1 min running and 2 min walking, same easy effort and…\nThu: other, 20 min, physio calf and hip routine, second session of the week. Completes…\nFri: rest. Full rest the day before the slightly longer session on Saturday.\nSat: easy, 18 min, 6 rounds of 1 min running and 2 min walking at effort 3/10. One extra…\nSun: rest. A quiet day after the longest session so you can check how the shin feels on…\n\nScore this draft: call submit_coaching_score once."
+}

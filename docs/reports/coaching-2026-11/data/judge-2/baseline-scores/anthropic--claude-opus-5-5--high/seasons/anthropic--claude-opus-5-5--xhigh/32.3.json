@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Marisol asks for 40 miles and speedwork in the second week after a marathon. The draft answers both questions directly: \"Not yet on either, but you're close.\" It backs that up with a stepped return for the 10K and an honest point that four weeks won't get her to her peak. The plan comes to about 21 easy miles with heart rate under 140. That's a sensible rise from her 12-mile recovery week and well under 40. The long run is 6 miles, so it isn't a sharp jump, and she keeps both of her usual rest days (Mon and Fri). Two sets of short strides are the only faster running, so this eases her back to consistency rather than bringing her back hard. It also respects how she feels without rushing her. Every day is clear enough to run as written. I took off a point because the stepped table is cut off in the review, so I can't check the later weeks. The Thanksgiving 10K date may also be a detail she never gave.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:58:21.835Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2336,
+  "outputTokens": 1048,
+  "thinkingTokens": 629,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1191,
+  "costUsd": 0.030304000000000005,
+  "timing": {
+    "ttftMs": 2681,
+    "totalMs": 10710,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2681,
+        "totalMs": 10710,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2336,
+        "outputTokens": 1048
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Marisol asks for 40 miles and speedwork in the second week after a marathon. The draft answers both questions directly: \"Not yet on either, but you're close.\" It backs that up with a stepped return for the 10K and an honest point that four weeks won't get her to her peak. The plan comes to about 21 easy miles with heart rate under 140. That's a sensible rise from her 12-mile recovery week and well under 40. The long run is 6 miles, so it isn't a sharp jump, and she keeps both of her usual rest days (Mon and Fri). Two sets of short strides are the only faster running, so this eases her back to consistency rather than bringing her back hard. It also respects how she feels without rushing her. Every day is clear enough to run as written. I took off a point because the stepped table is cut off in the review, so I can't check the later weeks. The Thanksgiving 10K date may also be a detail she never gave."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Your recovery week went exactly to plan, and Sunday's run matched your easy runs from before the race, but 40 miles and speedwork are still…\nAnswers: (1) Not yet on either, but you're close. … (2) If you race the Thanksgiving 10K on Thu Nov 26, faster running comes back in steps: (3) | Week | Miles | Faster running |. | --- | --- | --- |. (4) Four weeks is enough to sharpen up for a good 10K, though you won't be at your peak. …\nNext week:\nMon: rest. Your usual rest day, and a week after the marathon your legs still benefit…\nTue: easy, 4 mi, heart rate under 140, about 10:00/mi or slower, flat route. A short run…\nWed: easy, 4 mi, heart rate under 140, flat route, then 4 x 20 s strides on flat ground…\nThu: easy, 3 mi, heart rate under 140, then 20 min of bodyweight strength: squats…\nFri: rest. A second full rest day while the legs finish repairing.\nSat: easy, 4 mi, heart rate under 140, finish with 4 x 20 s strides on flat ground. A…\nSun: easy, 6 mi, heart rate under 140, flat route, no pace target. Your longest run…\n\nScore this draft: call submit_coaching_score once."
+}

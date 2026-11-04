@@ -1,0 +1,61 @@
+{
+  "input": "seasons/26",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This draft gets the main call right. Marisol asked whether she can keep running 53 miles, and it tells her plainly and honestly that she can't. It explains that the jump was too big: going from 27 to 37 to 53 miles means a rise of about 40% two weeks in a row. Next week adds up to about 39 miles (6+8+5+4+16). That pulls back to her planned level, close to the 37 miles of the week before, which is a sensible next step for her build. It also keeps her usual pattern: rest on Monday and Friday, the session on Wednesday and the long run on Sunday. Each day is clear enough to run as written. Her calves are only tight, not painful, and the draft does flag them, so running the 4 miles at marathon pace on Wednesday doesn't break the rule against quality work through pain. I marked it down for three reasons. First, it says she ran a 20-mile long run, which the card never mentions. Second, it starts the mileage at \"about 30\", which blurs the numbers. Third, the calf flag says only \"watch the calves\" and doesn't tell her what to do if the tightness turns into pain, such as dropping the Wednesday session or seeing a professional.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:01:26.841Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2317,
+  "outputTokens": 1124,
+  "thinkingTokens": 619,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1171,
+  "costUsd": 0.031748000000000005,
+  "timing": {
+    "ttftMs": 2813,
+    "totalMs": 12592,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2813,
+        "totalMs": 12592,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2317,
+        "outputTokens": 1124
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This draft gets the main call right. Marisol asked whether she can keep running 53 miles, and it tells her plainly and honestly that she can't. It explains that the jump was too big: going from 27 to 37 to 53 miles means a rise of about 40% two weeks in a row. Next week adds up to about 39 miles (6+8+5+4+16). That pulls back to her planned level, close to the 37 miles of the week before, which is a sensible next step for her build. It also keeps her usual pattern: rest on Monday and Friday, the session on Wednesday and the long run on Sunday. Each day is clear enough to run as written. Her calves are only tight, not painful, and the draft does flag them, so running the 4 miles at marathon pace on Wednesday doesn't break the rule against quality work through pain. I marked it down for three reasons. First, it says she ran a 20-mile long run, which the card never mentions. Second, it starts the mileage at \"about 30\", which blurs the numbers. Third, the calf flag says only \"watch the calves\" and doesn't tell her what to do if the tightness turns into pain, such as dropping the Wednesday session or seeing a professional."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 24, 27, 37 mi\nThis week: 53 mi over 6 runs. Planned 38 mi, ran 53 mi.\nBody: \"Calves tight on Sunday night, otherwise great.\"\nFeeling: \"Like I've turned a corner.\"\nAsks: \"I ran way more than the plan and felt fine. Can I keep this up?\"\n\n── THE DRAFT ──\nTells Marisol: You turned a corner, then jumped two steps at once; next week pulls back on purpose so the gains stick instead of turning into an…\nAnswers: No, please do not keep this up. You felt fine in the moment, but weekly mileage went from about 30 to 37 to 53 in three weeks, and that is roughly a 40 percent jump two weeks running.\nSafety flag: Watch the calves this week\nNext week:\nMon: rest. Full day off after a 20 mi long run and a heavy week.\nTue: easy, 6 mi, heart rate under 145. Flush the legs with nothing clever.\nWed: quality, 8 mi with 2 mi warm-up, 4 mi at 8:35/mi, 2 mi cool-down. First taste of…\nThu: easy, 5 mi, heart rate under 145. Keep it conversational, no stretching the distance.\nFri: rest. Real rest, not a sneaky shakeout, to set up Sunday.\nSat: easy, 4 mi with 4 x 20 sec strides at the end. Short and light to prime the long run.\nSun: long, 16 mi easy, heart rate under 150, first half closer to 10:30/mi. A deliberate…\n\nScore this draft: call submit_coaching_score once."
+}

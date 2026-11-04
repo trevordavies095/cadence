@@ -66,9 +66,9 @@ export const SAFETY_CALLOUT_PROMPT = [
   "Safety callouts:",
   "- Never diagnose injury, illness, or medical conditions; do not prescribe treatment.",
   "- Coach running from the athlete's volunteered context and Tempo-derived training data.",
-  "- When red flags appear (pain that worsens, chest pain, dizziness, sudden injury, illness), emit safetyCallouts and urge a qualified professional.",
-  "- Each callout needs a short title, athlete-facing body (escalate, do not diagnose), and optional severity (info|caution|urgent).",
-  `- Keep each callout body under ${MAX_SAFETY_CALLOUT_BODY} characters: one or two short paragraphs.`,
+  "- When red flags appear (pain that worsens, chest pain, dizziness, sudden injury, illness), write safetyCallouts and urge a qualified professional.",
+  "- Write safetyCallouts one per line: start with Urgent:, Caution: or Info:, then a short title as the first sentence, then the athlete-facing body (escalate, do not diagnose).",
+  `- Keep each callout body under ${MAX_SAFETY_CALLOUT_BODY} characters: one or two short sentences.`,
   "- Keep the training plan/reply conservative when callouts are present.",
 ].join(" ");
 
@@ -150,13 +150,19 @@ export const MIDWEEK_REPLY_SHAPE_PROMPT = [
 /** How the weekly read is split into parts the pages lay out. */
 export const WEEKLY_READ_SHAPE_PROMPT = [
   "The headline is the sentence you would say if you could say only one thing about the week and the plan: one or two plain sentences, no label.",
-  "Flags are what you are watching, not a summary of the week: at most five, each a few-word title and one line of detail.",
+  "Flags are what you are watching, not a summary of the week: at most five, one per line, each a few-word title, a colon, and one line of detail.",
   "Choose flags by what the athlete needs to act on. A correction comes first: when the athlete ran a session differently from the plan, flag it, and explain in the analysis what happened and why it matters.",
-  "Answers are one per question the athlete asked in the weekly check-in or the conversation, with the question quoted exactly as they wrote it. When they asked nothing, leave answers empty.",
-  "Put the reason for each session in that day's notes: one or two sentences on why this session, this week, under 200 characters. The athlete sees them beside the session.",
+  "Answers is your answer to the questions the athlete asked in the weekly check-in or the conversation, check-in questions first, in the order asked, in markdown. Write the answers only, not the questions. When they asked nothing, leave answers empty.",
+  "The plan box is next week's plan: one line per day, the day, its type, the distance or time, how to run it, and one short sentence on why this session, this week. The athlete sees each line beside its day.",
   "The athlete reads the headline, then the flags, then the answers, then the analysis, and the analysis may be folded away. Make each flag and answer stand on its own: never point to something \"above\" or \"below\", or to a table in another part.",
-  "The analysis holds your reasoning. Do not restate the headline, flags or answers in it, and never repeat an answer's table or list there. Do not list the days or describe each session in it, as a list or as a table; the day rows already show them.",
+  "The analysis holds your reasoning and explains the week. Do not restate the headline, flags or answers in it, and never repeat an answer's table or list there. Do not restate the plan day by day or describe each session in it, as a list or as a table; the plan lines already show them.",
 ].join(" ");
+
+/**
+ * The weekly read's notices: the same rules as {@link SAFETY_CALLOUT_PROMPT};
+ * both forms take notices one per line with a leading severity word.
+ */
+export const WEEKLY_SAFETY_CALLOUT_PROMPT = SAFETY_CALLOUT_PROMPT;
 
 function joinPrompt(parts: Array<string | null>): string {
   return parts.filter((part): part is string => part !== null).join(" ");
@@ -176,7 +182,7 @@ export function weeklySystemPrompt(goal: TrainingGoal | null | undefined): strin
     ATHLETE_WRITING_PROMPT,
     WEEKLY_READ_SHAPE_PROMPT,
     coachingBlock(goal),
-    SAFETY_CALLOUT_PROMPT,
+    WEEKLY_SAFETY_CALLOUT_PROMPT,
     "Think it through first, then call the submit_weekly_reply tool exactly once with your full answer. Do not write the answer as plain text.",
   ]);
 }
@@ -199,10 +205,10 @@ export function midWeekSystemPrompt(goal: TrainingGoal | null | undefined): stri
     coachingBlock(goal),
     SAFETY_CALLOUT_PROMPT,
     "When workout attachments are present, give concrete coaching feedback on those runs using metrics and splits only (no GPS or route geometry).",
-    "When the athlete asks to change remaining plan days, emit prescribedDayPatches with full day objects for those dates only (do not rewrite past days unless allowPastDayPatches is true).",
-    "The athlete sees each changed day as a card under your reply, showing its distance, structure, effort, shoes and notes. Put the structure, paces and rules in those day fields, with the reason for the session in its notes. In the reply, say only why you changed the week; do not repeat what the cards show.",
+    "When the athlete asks to change remaining plan days, write those days in the changes box, one line per day in the same form as the weekly plan, for those dates only (do not change past days unless allowPastDayPatches is true).",
+    "The athlete sees each changed day as a card under your reply, showing your line for it. Put the session, paces and rules in the line, with the reason for it. In the reply, say only why you changed the week; do not repeat what the cards show.",
     "Do not rewrite the full week plan unless asked.",
-    "For significant memory updates, emit settingsProposalBullets (soft-gate); never silent-apply dossier changes.",
+    "For significant memory updates, write settingsProposalBullets, one per line (soft-gate); never silent-apply dossier changes.",
     "Think it through first, then call the submit_mid_week_chat_reply tool exactly once with your full answer. Do not write the answer as plain text.",
   ]);
 }
@@ -210,38 +216,42 @@ export function midWeekSystemPrompt(goal: TrainingGoal | null | undefined): stri
 /** The conversation system prompt with no goal stored: no coaching block. */
 export const MIDWEEK_SYSTEM_PROMPT = midWeekSystemPrompt(null);
 
-/** Soft signals the stub uses to emit a deterministic callout for tests/UI. */
-const STUB_RED_FLAG_RE =
-  /\b(achilles|niggle|pain|sore|injury|injured|swelling|fracture|chest|dizzy|dizziness|fever|doctor|physio|pt|surgeon|ER|emergency)\b/i;
-
 /**
- * JSON Schema fragment for Anthropic tool input (optional safetyCallouts).
+ * Words that say the athlete is hurt. One list, shared by the stub's red-flag
+ * notice below and the plan check's pain rules (src/prescribed/planCheck.ts,
+ * issue #58), so what counts as a pain report is decided once. Grows only by
+ * decision, as the plan-line vocabulary does.
  */
-export function safetyCalloutsJsonSchema(): Record<string, unknown> {
-  return {
-    type: "array",
-    maxItems: MAX_SAFETY_CALLOUTS,
-    description:
-      "Visible safety callouts when red flags appear — escalate to professionals; do not diagnose.",
-    items: {
-      type: "object",
-      additionalProperties: false,
-      required: ["title", "body"],
-      properties: {
-        title: { type: "string", maxLength: MAX_SAFETY_CALLOUT_TITLE },
-        body: {
-          type: "string",
-          maxLength: MAX_SAFETY_CALLOUT_BODY,
-          description: `At most ${MAX_SAFETY_CALLOUT_BODY} characters. One or two short paragraphs; the reply carries the detail.`,
-        },
-        severity: {
-          type: "string",
-          enum: ["info", "caution", "urgent"],
-        },
-      },
-    },
-  };
-}
+export const PAIN_WORDS = [
+  "achilles",
+  "niggle",
+  "pain",
+  "sore",
+  "injury",
+  "injured",
+  "swelling",
+  "fracture",
+] as const;
+
+/** Words that say something medical is going on, beyond pain. */
+const MEDICAL_WORDS = [
+  "chest",
+  "dizzy",
+  "dizziness",
+  "fever",
+  "doctor",
+  "physio",
+  "pt",
+  "surgeon",
+  "ER",
+  "emergency",
+] as const;
+
+/** Soft signals the stub uses to emit a deterministic callout for tests/UI. */
+const STUB_RED_FLAG_RE = new RegExp(
+  `\\b(${[...PAIN_WORDS, ...MEDICAL_WORDS].join("|")})\\b`,
+  "i",
+);
 
 /**
  * Deterministic stub callout when the athlete's latest message mentions a soft

@@ -9,6 +9,7 @@ import type {
 } from "../tempo/port.js";
 import type { RecapThresholdKnobs } from "./goalKnobs.js";
 import { isQualityFamily, isRace } from "./runTypes.js";
+import { formatMinutesDuration } from "./format.js";
 
 const METERS_PER_MILE = 1609.344;
 
@@ -25,22 +26,13 @@ export type SummaryGoalLine = {
   id: SummaryGoalLineId;
   /** "Hard minutes (zones 4 and 5)"; for a statement line, the whole sentence. */
   label: string;
-  /** "22 min, up 8"; null for a statement line. */
+  /** "22 min, up 8 min"; null for a statement line. */
   value: string | null;
   /** The goal leads the summary with this number. */
   headline: boolean;
   /** A line Coach Cade wants the athlete to notice (a return athlete's hard minutes). */
   flag: boolean;
 };
-
-/** "36 min", "1 h 12 min", "4 h" (rounded to the minute). */
-export function formatMinutesDuration(seconds: number): string {
-  const total = Math.max(0, Math.round(seconds / 60));
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  if (h === 0) return `${m} min`;
-  return m === 0 ? `${h} h` : `${h} h ${m} min`;
-}
 
 function formatDistanceOneDecimal(
   meters: number,
@@ -136,16 +128,16 @@ export function buildSummaryGoalLines(args: {
     let value = "not available (no heart-rate data)";
     if (current !== undefined) {
       const minutes = Math.round(current / 60);
-      value = `${minutes} min`;
+      value = formatMinutesDuration(current);
       const previous =
         hardSeconds(stats, "previous") ?? fromSeries?.previous;
       if (previous !== undefined) {
         const delta = minutes - Math.round(previous / 60);
         value +=
           delta > 0
-            ? `, up ${delta}`
+            ? `, up ${formatMinutesDuration(delta * 60)}`
             : delta < 0
-              ? `, down ${-delta}`
+              ? `, down ${formatMinutesDuration(-delta * 60)}`
               : ", same as last week";
       }
       if (k.hardMinutes.flagAboveZero && minutes > 0) {
@@ -195,7 +187,7 @@ export function buildSummaryGoalLines(args: {
     lines.push({
       id: "thresholdMinutes",
       label: "Threshold minutes",
-      value: `${Math.max(0, Math.round(args.thresholdSeconds / 60))} min`,
+      value: formatMinutesDuration(args.thresholdSeconds),
       headline: false,
       flag: false,
     });

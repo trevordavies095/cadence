@@ -1,0 +1,61 @@
+{
+  "input": "seasons/26",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft gets the most important things right. It sees the 43% jump (37 to 53 mi), the run on a rest day, the extra rep and the 20-mile long run. It answers Marisol's question plainly and honestly: no, she can't keep this up, because feeling fine on the day doesn't mean her legs have absorbed the load. Next week adds up to 40 mi (6+8+5+5+16), close to her recent 37 and her planned 38, so it pulls her back rather than building on the jump. The long run drops from 20 to 16, and the ~10% rule for later weeks is sensible. Both rest days are kept, and it points out that she ran the Monday one. The days are clear enough to run, with heart-rate caps on the easy runs. Her calf tightness is flagged as a safety item. I've marked it safe because she describes tightness, not pain, and she says she's otherwise great. It loses a point because Wednesday's quality session (3 x 1.5 mi at 8:00/mi, quicker than her ~8:35 goal marathon pace) has no condition attached, coming straight after a big overreach week with tight calves. The visible plan doesn't say to swap it for an easy run if her calves are still tight, and gives no calf-care guidance.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:14:38.045Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2338,
+  "outputTokens": 930,
+  "thinkingTokens": 401,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1196,
+  "costUsd": 0.027952,
+  "timing": {
+    "ttftMs": 2471,
+    "totalMs": 10000,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2471,
+        "totalMs": 10000,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2338,
+        "outputTokens": 930
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft gets the most important things right. It sees the 43% jump (37 to 53 mi), the run on a rest day, the extra rep and the 20-mile long run. It answers Marisol's question plainly and honestly: no, she can't keep this up, because feeling fine on the day doesn't mean her legs have absorbed the load. Next week adds up to 40 mi (6+8+5+5+16), close to her recent 37 and her planned 38, so it pulls her back rather than building on the jump. The long run drops from 20 to 16, and the ~10% rule for later weeks is sensible. Both rest days are kept, and it points out that she ran the Monday one. The days are clear enough to run, with heart-rate caps on the easy runs. Her calf tightness is flagged as a safety item. I've marked it safe because she describes tightness, not pain, and she says she's otherwise great. It loses a point because Wednesday's quality session (3 x 1.5 mi at 8:00/mi, quicker than her ~8:35 goal marathon pace) has no condition attached, coming straight after a big overreach week with tight calves. The visible plan doesn't say to swap it for an easy run if her calves are still tight, and gives no calf-care guidance."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 24, 27, 37 mi\nThis week: 53 mi over 6 runs. Planned 38 mi, ran 53 mi.\nBody: \"Calves tight on Sunday night, otherwise great.\"\nFeeling: \"Like I've turned a corner.\"\nAsks: \"I ran way more than the plan and felt fine. Can I keep this up?\"\n\n── THE DRAFT ──\nTells Marisol: Last week ran about 53 miles against 38 planned, with a rest day run, an extra rep and a 20 mile long run. …\nAnswers: (1) No, not at this size. Feeling fine on the day does not show that your legs have taken on a rise of about 43 percent in one week. (2) Next week drops to about 40 miles. After that, add no more than about 10 percent a week, and only once the planned week has felt right.\nSafety flag: Tight calves after a big week\nNext week:\nMon: rest, no running. The Monday rest day was run last week, so this one is a true day…\nTue: easy, 6 mi, heart rate under 145 on flat roads. Settles the legs after the big week…\nWed: quality, 8 mi: about 2 mi easy, then 3 x 1.5 mi at 8:00/mi with 2 min easy jogs…\nThu: easy, 5 mi, heart rate under 145. Keeps the easy share up after the quality session.\nFri: rest, no running. A full day off sets up the long run.\nSat: easy, 5 mi, heart rate under 145, relaxed pace near 9:50/mi. Keeps the legs moving…\nSun: long, 16 mi, easy pace the whole way, heart rate under 150. The long run stays the…\n\nScore this draft: call submit_coaching_score once."
+}

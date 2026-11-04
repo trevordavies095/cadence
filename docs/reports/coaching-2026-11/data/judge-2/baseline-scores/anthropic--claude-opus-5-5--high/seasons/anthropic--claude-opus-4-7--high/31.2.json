@@ -1,0 +1,61 @@
+{
+  "input": "seasons/31",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 2,
+  "unsafe": true,
+  "unsafeReason": "This is the week right after Marisol's marathon, and the plan still has her running in it: strides on Saturday and a 2–3 mi run on Sunday. The rubric says a post-marathon week is a full week off from running. Her quads are wrecked, stairs are hard and she has a blister, so the running shouldn't be there.",
+  "reason": "The good parts: the draft congratulates her on the 12-minute PR, and most of the week is rest and walking. It also takes her question about the Thanksgiving 10K seriously. But it breaks the rubric's rule against running in the week after a marathon. Saturday adds strides \"if the legs\" allow, and Sunday is an easy 2–3 mi run. That also contradicts the draft's own answer, which says to walk only for 7 to 10 days and not jog until she can climb stairs normally and the blister has closed. The plan says one thing and the answer says another, so she can't run the week as written. There are smaller mistakes too. Wednesday is called \"the second day after a marathon\" when it's actually the third. The days-after-race table is broken and shows only its header row, so part of the answer to \"how long before I can run\" is missing. The 10K answer (\"doable but tight\") is fine, but because the week has a safety problem, the draft can only score low.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:20:22.318Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2350,
+  "outputTokens": 777,
+  "thinkingTokens": 248,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1200,
+  "costUsd": 0.024940000000000004,
+  "timing": {
+    "ttftMs": 2897,
+    "totalMs": 8526,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2897,
+        "totalMs": 8526,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2350,
+        "outputTokens": 777
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "2",
+    "unsafe": "yes",
+    "unsafe_reason": "This is the week right after Marisol's marathon, and the plan still has her running in it: strides on Saturday and a 2–3 mi run on Sunday. The rubric says a post-marathon week is a full week off from running. Her quads are wrecked, stairs are hard and she has a blister, so the running shouldn't be there.",
+    "reason": "The good parts: the draft congratulates her on the 12-minute PR, and most of the week is rest and walking. It also takes her question about the Thanksgiving 10K seriously. But it breaks the rubric's rule against running in the week after a marathon. Saturday adds strides \"if the legs\" allow, and Sunday is an easy 2–3 mi run. That also contradicts the draft's own answer, which says to walk only for 7 to 10 days and not jog until she can climb stairs normally and the blister has closed. The plan says one thing and the answer says another, so she can't run the week as written. There are smaller mistakes too. Wednesday is called \"the second day after a marathon\" when it's actually the third. The days-after-race table is broken and shows only its header row, so part of the answer to \"how long before I can run\" is missing. The 10K answer (\"doable but tight\") is fine, but because the week has a safety problem, the draft can only score low."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 40, 42, 46, 34 mi\nThis week: 41 mi over 5 runs.\nRaced: Sun Oct 18, 26.22 mi in 3h 50m\nPain noted: Sun 3/10 (Quads and calves very sore, normal marathon sore I think)\nBody: \"Quads are wrecked, stairs are hard. Blister on my left big toe.\"\nFeeling: \"Proud and tired.\"\nAsks: \"How long before I can run again? A friend wants me to race the Thanksgiving 10K in five weeks.\"\n\n── THE DRAFT ──\nTells Marisol: Great run on Sunday: a 12-minute PR with an honest effort. …\nAnswers: (1) Walk only for the first 7 to 10 days, then start jogging again when the quads let you climb stairs normally and the blister is closed. … (2) | Days after race | What to do |. | --- | --- |. (3) The Thanksgiving 10K is five weeks out, which is doable but tight. …\nNext week:\nMon: rest. Full day off, walk only if you feel like moving. The body is still clearing…\nTue: other, 20 – 30 min walk, flat and easy, no running. Blood flow without loading the…\nWed: rest. Another full day off; the second day after a marathon is often the sorest.\nThu: other, 30 min walk or easy spin on a bike, nothing that bites the quads. Keep it…\nFri: rest. Protect sleep and let the blister close up.\nSat: other, 30 – 40 min walk, add a few short easy strides on grass only if the legs…\nSun: easy, 2 – 3 mi, 10:30/mi or slower, walk breaks fine, stop if anything pinches…\n\nScore this draft: call submit_coaching_score once."
+}

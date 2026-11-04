@@ -1,0 +1,211 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w8.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T12:05:03.575Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 3 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 8264,
+  "outputTokens": 1362,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 3350,
+  "estimatedInputTokens": 5470,
+  "timing": {
+    "ttftMs": 448,
+    "totalMs": 41771,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 448,
+        "totalMs": 21372,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 8264,
+        "outputTokens": 1362
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 1292,
+        "totalMs": 20399,
+        "request": {
+          "kind": "fix_rules",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 8938,
+        "outputTokens": 1224
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-19",
+    "isoWeek": "2026-W43",
+    "recentWeeklyM": 1267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [
+      "volume jump",
+      "long-run jump"
+    ],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Light, three‑run week with a single race‑pace effort to prepare for the 5‑K.",
+    "flags": [
+      {
+        "title": "Volume",
+        "detail": "keep total km under 16 to avoid overload."
+      },
+      {
+        "title": "Quality",
+        "detail": "Wednesday 3 km at 5‑K pace to build race feel."
+      },
+      {
+        "title": "Recovery",
+        "detail": "monitor sleep and stress, use Sunday for full rest."
+      },
+      {
+        "title": "Pace",
+        "detail": "easy sessions under 150 bpm, quality at target pace."
+      },
+      {
+        "title": "Adaptation",
+        "detail": "cut 1 km next Monday if soreness persists."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?",
+        "answer": "You can restart from the beginning – the body will adapt quickly once you get back to regular running.  The 5‑K in three weeks is realistic if you stay on the plan and manage stress and recovery well."
+      }
+    ],
+    "analysis": "This week is the first run after a two‑week break, so we keep the total volume light but introduce a single quality effort to start building race‑pace confidence.  The new‑runner profile and the fact that the athlete is in the peak phase with only three runs per week means a 5 km easy on Monday, a 3 km quality on Wednesday, and a longer 6 km easy on Saturday gives a sensible progression without overreaching.  Rest days on Tue, Thu, Fri and Sun are kept long to allow full recovery; sleep and stress are high so monitoring these will keep the training plan safe.\n\nFlag: Volume: total 14 km stays below 16 km to avoid overloading the 41‑year‑old newcomer.\nFlag: Quality: Wednesday 3 km at 5‑K pace prepares the body for the race feel.\nFlag: Recovery: monitor sleep and stress; keep Sunday full rest.\nFlag: Pace: keep easy sessions below 150 bpm, quality at target pace.\nFlag: Adaptation: if soreness appears, cut 1 km next Monday.",
+    "prescribedWeek": {
+      "week": "2026-W43",
+      "days": [
+        {
+          "date": "2026-10-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 5000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate under 150, flat route. Loosen legs after early month.",
+          "line": "Mon 2026-10-19: easy, 5 km, keep heart rate under 150, flat route. Loosen legs after early month.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Tue 2026-10-20: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-21",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 3000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "run at target 5‑K pace, feel race rhythm.",
+          "line": "Wed 2026-10-21: quality, 3 km, run at target 5‑K pace, feel race rhythm.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-22",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Thu 2026-10-22: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-23",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-10-23: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "steady run, recovery focus.",
+          "line": "Sat 2026-10-24: easy, 6 km, steady run, recovery focus.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sun 2026-10-25: rest",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

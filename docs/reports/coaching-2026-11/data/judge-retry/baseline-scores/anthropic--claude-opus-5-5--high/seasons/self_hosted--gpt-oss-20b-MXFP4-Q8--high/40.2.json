@@ -1,0 +1,61 @@
+{
+  "input": "seasons/40",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 2,
+  "unsafe": true,
+  "unsafeReason": "Nessa is a new walk-runner coming back after two weeks off, yet her first week back includes a race-pace interval. That rushes a returning runner. She needed a gentle walk-run return, not quality work.",
+  "reason": "The total volume of about 6 km is in line with her earlier 7 and 5.1 km weeks, and the long run is not a jump. Two things decide the score. First, the draft adds a race-pace interval on Wednesday for a beginner whose goal is just to run 5K without walking, in her first week back. Second, it ignores both of her questions: whether she has to start from the beginning, and whether the 5K in four weeks is still realistic. It isn't specific to her, either. It drops her walk-run format, gives heart-rate caps she may not be able to follow, calls a zero-km week a \"short week\", and tells her to \"preserve legs for race\" and \"stay fresh\" when the race is four weeks away, so this isn't a taper. The days can be run as written and there are three runs on her usual days, but the plan doesn't fit her or answer her.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T13:03:02.035Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2165,
+  "outputTokens": 953,
+  "thinkingTokens": 494,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1081,
+  "costUsd": 0.02772,
+  "timing": {
+    "ttftMs": 2716,
+    "totalMs": 10373,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2716,
+        "totalMs": 10373,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2165,
+        "outputTokens": 953
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "2",
+    "unsafe": "yes",
+    "unsafe_reason": "Nessa is a new walk-runner coming back after two weeks off, yet her first week back includes a race-pace interval. That rushes a returning runner. She needed a gentle walk-run return, not quality work.",
+    "reason": "The total volume of about 6 km is in line with her earlier 7 and 5.1 km weeks, and the long run is not a jump. Two things decide the score. First, the draft adds a race-pace interval on Wednesday for a beginner whose goal is just to run 5K without walking, in her first week back. Second, it ignores both of her questions: whether she has to start from the beginning, and whether the 5K in four weeks is still realistic. It isn't specific to her, either. It drops her walk-run format, gives heart-rate caps she may not be able to follow, calls a zero-km week a \"short week\", and tells her to \"preserve legs for race\" and \"stay fresh\" when the race is four weeks away, so this isn't a taper. The days can be run as written and there are three runs on her usual days, but the plan doesn't fit her or answer her."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 7, 0, 5.1, 0 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"Fine, a bit stiff from all the driving.\"\nFeeling: \"Want to get going again.\"\nAsks: \"I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?\"\n\n── THE DRAFT ──\nTells Nessa: This week, come back gradually with a single quality interval and keep plenty of rest to stay fresh for the race.\nThe week after a full missed week should bring back mileage slowly. I cut the easy run to 3 km, the quality work to a single 0.8 km interval, and the Saturday run to 2 km.\nNext week:\nMon: easy, 3 km, keep heart rate under 140, flat route. Loosen legs after short week.\nTue: rest.\nWed: quality, 1 km, 1x0.8 km at race pace with 0.2 km jog, heart rate 145-155, sharpen…\nThu: rest.\nFri: rest.\nSat: easy, 2 km, keep heart rate 130-140, relaxed pace, preserve legs for race.\nSun: rest.\n\nScore this draft: call submit_coaching_score once."
+}

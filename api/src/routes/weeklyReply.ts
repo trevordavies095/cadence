@@ -9,14 +9,14 @@ import {
   LlmTransportError,
   type LlmPort,
   resolveWeeklyPlanWeek,
-  validateWeeklyReply,
+  checkWeeklyReply,
 } from "../llm/index.js";
-import { askOnceMore } from "../llm/askOnceMore.js";
 import { recordRouteRejection, type LlmCallRecorder } from "../llmCallLog/index.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
 import {
   assembleLeanLiveContext,
   assertPacketHasNoPiiOrGps,
+  loadReviewedWeekPlan,
   rememberLastOutboundPacket,
   resolveFocusWeekSession,
   resolveRecentHistoryLimit,
@@ -36,8 +36,10 @@ import {
   TempoTransportError,
   type TempoPort,
 } from "../tempo/port.js";
+import { checkPlan, rulesTripped } from "../prescribed/planCheck.js";
 import { savePrescribedWeek } from "../prescribed/store.js";
 import { getWeekRecapBySessionId } from "../recap/recapStore.js";
+import { coachNotConfiguredBody } from "../settings/coachSetup.js";
 import { createCoachMessage } from "../thread/store.js";
 import { nextIsoWeekBounds } from "../clock/isoWeek.js";
 import { trackReplyRun } from "../replyRun/inflight.js";
@@ -142,12 +144,17 @@ async function assemblePacket(
     (await getWeekRecapBySessionId(focus.session.id))?.markdown ??
     null;
 
+  // The plan the reviewed week was meant to follow, with each day's outcome,
+  // so the read is of the week against its plan (#59). Null with no plan.
+  const reviewedPlan = await loadReviewedWeekPlan(focus.session, tempoPort);
+
   const packet = await assembleLeanLiveContext({
     focusSession: focus.session,
     recentHistoryLimit: resolveRecentHistoryLimit(body.recentHistoryLimit),
     recapMarkdown,
     includePlanWeek: true,
     attachments,
+    ...reviewedPlan,
     identityHints: body.identityHints,
     tempoPort,
   });
@@ -275,29 +282,26 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       await rememberLastOutboundPacket(packet);
     }
 
-    let callId = randomUUID();
+    const callId = randomUUID();
     try {
-      // A reply refused for its shape is asked for once more before the athlete
-      // sees a failed read. Each attempt keeps its own call log row.
-      const weekStartMonday = resolveWeeklyPlanWeek(packet).weekStartMonday;
-      const checked = await askOnceMore(async (attempt) => {
-        if (attempt > 1) callId = randomUUID();
-        const reply = await llmPort.generateWeeklyReply(packet, {
-          callId,
-          weekSessionId: focusSession.id,
-        });
-        const validated = validateWeeklyReply(reply, weekStartMonday);
-        if (!validated.ok) {
-          await recordRouteRejection(llmCallRecorder, {
-            parentCallId: callId,
-            operation: "weekly_reply",
-            weekSessionId: focusSession.id,
-            errorMessage: validated.error,
-          });
-        }
-        return validated;
+      // The adapter asks once more for a reply refused for its shape (the plan's
+      // dates included), on one target (ADR 0002, ADR 0004); callId names the
+      // attempt that came back. This is the final check, for any port.
+      const reply = await llmPort.generateWeeklyReply(packet, {
+        callId,
+        weekSessionId: focusSession.id,
       });
+      const checked = checkWeeklyReply(
+        reply,
+        resolveWeeklyPlanWeek(packet).weekStartMonday,
+      );
       if (!checked.ok) {
+        await recordRouteRejection(llmCallRecorder, {
+          parentCallId: callId,
+          operation: "weekly_reply",
+          weekSessionId: focusSession.id,
+          errorMessage: checked.error,
+        });
         return {
           status: 502,
           body: {
@@ -307,6 +311,13 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
           callId,
         };
       }
+
+      // The plan check (issue #58): the validated plan against the packet's
+      // recent training, on every provider and model. It never changes the
+      // plan; its warnings are stored beside it and the rules tripped go on
+      // the accepted attempt's call-log row (empty when none tripped).
+      const planCheck = checkPlan(packet, checked.value.prescribedWeek);
+      await llmCallRecorder?.notePlanRules?.(callId, rulesTripped(planCheck));
 
       // Plan lands on N+1's session; the analysis stays in N's thread.
       const reviewedSessionId =
@@ -346,6 +357,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
               flags: checked.value.flags ?? [],
               answers: checked.value.answers ?? [],
             },
+            planWarnings: planCheck.warnings,
             at: clock.now(),
           });
           // The headline and a link; the full read is on the plan, not repeated here.
@@ -366,6 +378,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         callId,
         body: {
           reply: checked.value,
+          planWarnings: planCheck.warnings,
           packetWeek: packet.week,
           prescribed,
           coachMessage,
@@ -377,6 +390,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
                 weekSessionId: prescribed.weekSessionId,
                 plan: prescribed.plan,
                 safetyCallouts: prescribed.safetyCallouts ?? [],
+                planWarnings: prescribed.planWarnings ?? [],
                 createdAt: prescribed.createdAt,
                 updatedAt: prescribed.updatedAt,
               }
@@ -385,7 +399,7 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
       };
     } catch (err) {
       if (err instanceof LlmNotConfiguredError) {
-        return { status: 400, body: { error: err.code, message: err.message }, callId };
+        return { status: 400, body: await coachNotConfiguredBody(), callId };
       }
       if (err instanceof LlmHttpError) {
         return {

@@ -1,0 +1,61 @@
+{
+  "input": "seasons/26",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Marisol ran 53 miles when 38 were planned, after weeks of 32, 24, 27 and 37. The draft treats that as the risk it is and answers her question with a direct, honest no. It explains why: feeling fine during a run doesn't mean the body has absorbed the load, and the jump was about 40 percent. Next week drops to about 39 miles (6+8+6+5+14), close to what was planned. The long run comes down from 20 to 14 miles at an easy pace. That is sensible progression and avoids the volume and long-run jump checks. The plan keeps her schedule (Monday and Friday off, the session on Wednesday, the long run on Sunday). Each day has a distance and a heart-rate cap or pace, so it can be run as written. The threshold pace of 8:00/mi is reasonable for a sub-3:45 goal. It says the build resumes gradually and that marathon-pace work waits until the calves settle. The tight calves are tightness, not pain, so keeping a modest three-rep session is acceptable. The draft also limits it with \"stop after three.\" Marks off: the safety flag names a \"right knee\" that Marisol never mentioned, which may be invented. The draft also doesn't say what to do if the calf tightness turns into pain, such as dropping the quality session or seeing a physio. Otherwise it is a strong, specific, safe reply.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:55:10.924Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2391,
+  "outputTokens": 1049,
+  "thinkingTokens": 478,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1236,
+  "costUsd": 0.030544,
+  "timing": {
+    "ttftMs": 2938,
+    "totalMs": 11777,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2938,
+        "totalMs": 11777,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2391,
+        "outputTokens": 1049
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Marisol ran 53 miles when 38 were planned, after weeks of 32, 24, 27 and 37. The draft treats that as the risk it is and answers her question with a direct, honest no. It explains why: feeling fine during a run doesn't mean the body has absorbed the load, and the jump was about 40 percent. Next week drops to about 39 miles (6+8+6+5+14), close to what was planned. The long run comes down from 20 to 14 miles at an easy pace. That is sensible progression and avoids the volume and long-run jump checks. The plan keeps her schedule (Monday and Friday off, the session on Wednesday, the long run on Sunday). Each day has a distance and a heart-rate cap or pace, so it can be run as written. The threshold pace of 8:00/mi is reasonable for a sub-3:45 goal. It says the build resumes gradually and that marathon-pace work waits until the calves settle. The tight calves are tightness, not pain, so keeping a modest three-rep session is acceptable. The draft also limits it with \"stop after three.\" Marks off: the safety flag names a \"right knee\" that Marisol never mentioned, which may be invented. The draft also doesn't say what to do if the calf tightness turns into pain, such as dropping the quality session or seeing a physio. Otherwise it is a strong, specific, safe reply."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 24, 27, 37 mi\nThis week: 53 mi over 6 runs. Planned 38 mi, ran 53 mi.\nBody: \"Calves tight on Sunday night, otherwise great.\"\nFeeling: \"Like I've turned a corner.\"\nAsks: \"I ran way more than the plan and felt fine. Can I keep this up?\"\n\n── THE DRAFT ──\nTells Marisol: You ran 53 miles against 38 planned, with a 20-mile long run and an extra threshold rep, so the load rose faster than the plan…\nAnswers: (1) No, not at this level next week. Feeling fine during a run does not show the load is absorbed, and a jump of about 40 percent in weekly miles needs a step back before more volume. (2) Next week runs about 39 miles, with three threshold reps and a 14-mile long run. From the week of Sep 21 the volume builds again gradually, with marathon-pace work in some long runs once the calves feel settled.\nSafety flag: Calves and right knee to watch\nNext week:\nMon: rest. No added run; last week's extra Monday run added load the legs did not need.\nTue: easy, 6 mi, heart rate under 145 on flat or gentle ground. Restarts the week and…\nWed: quality, 8 mi with 3 x 1.5 mi at 8:00/mi and 3 min easy rests. Stop after three…\nThu: easy, 6 mi, heart rate under 145; finish with 4 relaxed strides of 20 seconds…\nFri: rest. A full rest day before the weekend keeps the legs fresh for the long run.\nSat: easy, 5 mi, heart rate under 145. A short easy run keeps the legs moving before…\nSun: long, 14 mi at about 10:00/mi, heart rate under 150. Run your own pace even with…\n\nScore this draft: call submit_coaching_score once."
+}

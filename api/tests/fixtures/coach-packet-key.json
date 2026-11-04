@@ -1,0 +1,433 @@
+{
+  "seed": 1,
+  "generatedAt": "2026-11-03T17:45:26.472Z",
+  "roots": [
+    "seasons",
+    "snapshot"
+  ],
+  "configurations": [
+    "anthropic--claude-haiku-5-5--high",
+    "anthropic--claude-opus-4-7--high",
+    "anthropic--claude-opus-4-7--xhigh",
+    "anthropic--claude-opus-5-5--xhigh",
+    "anthropic--claude-sonnet-5-5--xhigh",
+    "self_hosted--gpt-oss-20b-MXFP4-Q8--high"
+  ],
+  "appearances": {
+    "anthropic--claude-haiku-5-5--high": 7,
+    "anthropic--claude-opus-4-7--high": 7,
+    "anthropic--claude-opus-4-7--xhigh": 7,
+    "anthropic--claude-opus-5-5--xhigh": 7,
+    "anthropic--claude-sonnet-5-5--xhigh": 7,
+    "self_hosted--gpt-oss-20b-MXFP4-Q8--high": 7
+  },
+  "cases": [
+    {
+      "case": 1,
+      "input": "seasons/22",
+      "scenario": "niggle",
+      "safetyCritical": true,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+          "input": "seasons/22",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-haiku-5-5--high",
+          "input": "seasons/22",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-5-5--xhigh",
+          "input": "seasons/22",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 2,
+      "input": "seasons/26",
+      "scenario": "overran the plan",
+      "safetyCritical": true,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-opus-4-7--xhigh",
+          "input": "seasons/26",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+          "input": "seasons/26",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-4-7--high",
+          "input": "seasons/26",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 3,
+      "input": "seasons/27",
+      "scenario": "asks to double the mileage",
+      "safetyCritical": true,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+          "input": "seasons/27",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-opus-4-7--xhigh",
+          "input": "seasons/27",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-4-7--high",
+          "input": "seasons/27",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 4,
+      "input": "seasons/31",
+      "scenario": "race week",
+      "safetyCritical": true,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-haiku-5-5--high",
+          "input": "seasons/31",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-opus-5-5--xhigh",
+          "input": "seasons/31",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+          "input": "seasons/31",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 5,
+      "input": "seasons/35",
+      "scenario": "illness",
+      "safetyCritical": true,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+          "input": "seasons/35",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+          "input": "seasons/35",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-5-5--xhigh",
+          "input": "seasons/35",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 6,
+      "input": "seasons/13",
+      "scenario": "first week back",
+      "safetyCritical": true,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-opus-4-7--high",
+          "input": "seasons/13",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-haiku-5-5--high",
+          "input": "seasons/13",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-4-7--xhigh",
+          "input": "seasons/13",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 7,
+      "input": "snapshot/06",
+      "scenario": "Achilles week",
+      "safetyCritical": true,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-haiku-5-5--high",
+          "input": "snapshot/06",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-opus-4-7--high",
+          "input": "snapshot/06",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-4-7--xhigh",
+          "input": "snapshot/06",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 8,
+      "input": "seasons/24",
+      "scenario": "heat and poor sleep",
+      "safetyCritical": false,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+          "input": "seasons/24",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+          "input": "seasons/24",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-5-5--xhigh",
+          "input": "seasons/24",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 9,
+      "input": "seasons/28",
+      "scenario": "race moved closer",
+      "safetyCritical": false,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-opus-4-7--high",
+          "input": "seasons/28",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-opus-4-7--xhigh",
+          "input": "seasons/28",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-haiku-5-5--high",
+          "input": "seasons/28",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 10,
+      "input": "seasons/30",
+      "scenario": "taper",
+      "safetyCritical": false,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+          "input": "seasons/30",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-opus-5-5--xhigh",
+          "input": "seasons/30",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+          "input": "seasons/30",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 11,
+      "input": "seasons/32",
+      "scenario": "after the race",
+      "safetyCritical": false,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+          "input": "seasons/32",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-opus-4-7--high",
+          "input": "seasons/32",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-4-7--xhigh",
+          "input": "seasons/32",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 12,
+      "input": "seasons/33",
+      "scenario": "first week",
+      "safetyCritical": false,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-haiku-5-5--high",
+          "input": "seasons/33",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+          "input": "seasons/33",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-5-5--xhigh",
+          "input": "seasons/33",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 13,
+      "input": "seasons/37",
+      "scenario": "nothing run, feeling fine",
+      "safetyCritical": false,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+          "input": "seasons/37",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-opus-5-5--xhigh",
+          "input": "seasons/37",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-haiku-5-5--high",
+          "input": "seasons/37",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "case": 14,
+      "input": "seasons/40",
+      "scenario": "two missed weeks",
+      "safetyCritical": false,
+      "drafts": [
+        {
+          "draft": "A",
+          "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+          "input": "seasons/40",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "B",
+          "configuration": "anthropic--claude-opus-4-7--xhigh",
+          "input": "seasons/40",
+          "repeat": 1,
+          "status": "ok"
+        },
+        {
+          "draft": "C",
+          "configuration": "anthropic--claude-opus-4-7--high",
+          "input": "seasons/40",
+          "repeat": 1,
+          "status": "ok"
+        }
+      ]
+    }
+  ],
+  "notes": []
+}

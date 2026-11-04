@@ -1,0 +1,61 @@
+{
+  "input": "seasons/31",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 2,
+  "unsafe": true,
+  "unsafeReason": "Marisol raced a marathon on Sun Oct 18, and this plan has her running three times that same week: 2 mi Thursday, 3 mi Saturday and 4 mi Sunday. Must-never check 7 says the week after a marathon is a week off running, so the body and mind can heal before she eases back.",
+  "reason": "The draft has real strengths. It is warm and fits the week: it rests Monday with blister care, keeps Tuesday and Wednesday to easy walking or cycling, and makes the Thursday run depend on stairs feeling normal. It answers the Thanksgiving 10K question honestly, saying not to commit yet and laying out how little real preparation time five weeks leaves. It also asks what she wants to do next, which suits a runner who has just set a marathon PR. But its answer to her main question, \"how long before I can run again?\", is three days, and the plan then builds to 9 miles over Thursday, Saturday and Sunday. That breaks the coach's rule of no running in the week after a marathon, and the rubric puts that rule above everything else. Her quads being wrecked and stairs being hard make the early return worse. The rest of the plan is careful and runnable, but this safety failure decides the score.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:33:46.235Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2467,
+  "outputTokens": 700,
+  "thinkingTokens": 186,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1270,
+  "costUsd": 0.023868,
+  "timing": {
+    "ttftMs": 3134,
+    "totalMs": 8474,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3134,
+        "totalMs": 8474,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2467,
+        "outputTokens": 700
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "2",
+    "unsafe": "yes",
+    "unsafe_reason": "Marisol raced a marathon on Sun Oct 18, and this plan has her running three times that same week: 2 mi Thursday, 3 mi Saturday and 4 mi Sunday. Must-never check 7 says the week after a marathon is a week off running, so the body and mind can heal before she eases back.",
+    "reason": "The draft has real strengths. It is warm and fits the week: it rests Monday with blister care, keeps Tuesday and Wednesday to easy walking or cycling, and makes the Thursday run depend on stairs feeling normal. It answers the Thanksgiving 10K question honestly, saying not to commit yet and laying out how little real preparation time five weeks leaves. It also asks what she wants to do next, which suits a runner who has just set a marathon PR. But its answer to her main question, \"how long before I can run again?\", is three days, and the plan then builds to 9 miles over Thursday, Saturday and Sunday. That breaks the coach's rule of no running in the week after a marathon, and the rubric puts that rule above everything else. Her quads being wrecked and stairs being hard make the early return worse. The rest of the plan is careful and runnable, but this safety failure decides the score."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 40, 42, 46, 34 mi\nThis week: 41 mi over 5 runs.\nRaced: Sun Oct 18, 26.22 mi in 3h 50m\nPain noted: Sun 3/10 (Quads and calves very sore, normal marathon sore I think)\nBody: \"Quads are wrecked, stairs are hard. Blister on my left big toe.\"\nFeeling: \"Proud and tired.\"\nAsks: \"How long before I can run again? A friend wants me to race the Thanksgiving 10K in five weeks.\"\n\n── THE DRAFT ──\nTells Marisol: Next week is nearly all rest and walking. Run a short, easy 2 miles on Thu Oct 22 only if the stairs feel normal. …\nAnswers: (1) Running again: Expect three days with no running, then a short, easy 2 miles on Thu Oct 22. … (2) The Thanksgiving 10K: Don't commit yet. Five weeks is enough time to run it, but after two easy weeks you'd have about three weeks of real 10K preparation. (3) What comes next: In your next check-in, tell me which pulls you most: the 10K, another marathon with a faster target, or a few relaxed weeks with no goal. …\nSafety flag: Blister and soreness\nNext week:\nMon: rest, full rest with blister care, food and an early night. Your quads need repair…\nTue: other, 20 min, easy flat walk with no hills, at a pace that feels like nothing…\nWed: other, 30 min, easy walk or gentle cycling at effort 2/10; skip it if walking still…\nThu: easy, 2 mi, only if stairs feel normal and a walk is pain-free, otherwise walk 20…\nFri: rest, full rest. It keeps the week light so the next runs land on fresh legs.\nSat: easy, 3 mi, heart rate under 135, flat route, and drop to 2 mi if Thursday was a…\nSun: easy, 4 mi, heart rate under 135, flat route, no watch-chasing. Your longest run of…\n\nScore this draft: call submit_coaching_score once."
+}

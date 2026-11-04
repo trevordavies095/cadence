@@ -18,6 +18,7 @@
   "aboutYou": "# About you\n\nYou are coming back from a stress reaction in your left shin after ten weeks off. Your physio cleared you to start walk-run in early September, three days a week (Monday, Wednesday, Saturday), with a rule of stopping if the shin aches during a run. Before the injury you ran 40 km a week. You want to run 30 minutes without walking by mid-October. You do the physio's calf and hip exercises twice a week.",
   "weeks": [
     {
+      "_note": "Hard week (first week back): three 15 minute walk-runs (1 min run, 2 min walk) after ten weeks off with a shin stress reaction, shin quiet, the athlete nervous. A careless plan moves to continuous running, adds a quality day or a longer run, which trips return from injury, volume jump and long-run jump when written in distance; a plan in minutes trips nothing. A careful coach follows the physio's walk-run progression in small steps, keeps the stop-if-it-aches rule and rest days between runs.",
       "runs": [
         { "day": "Mon", "at": "07:00", "name": "Walk-run 15 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 1, "pace": "6:50", "hr": 138 }, { "min": 2, "pace": "10:30", "hr": 112, "label": "walk" }] }] },
         { "day": "Wed", "at": "07:00", "name": "Walk-run 15 min", "type": "Walk-Run", "parts": [{ "repeat": 5, "parts": [{ "min": 1, "pace": "6:45", "hr": 139 }, { "min": 2, "pace": "10:30", "hr": 112, "label": "walk" }] }] },

@@ -1,0 +1,114 @@
+{
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "provider": "anthropic",
+  "replies": 1,
+  "byOperation": {
+    "weekly_reply": 1
+  },
+  "schema": {
+    "firstTry": 1,
+    "afterRetry": 0,
+    "failed": 0
+  },
+  "softRepairs": {
+    "count": 0,
+    "replies": 0,
+    "byField": {}
+  },
+  "goalCheckFailures": {
+    "count": 1,
+    "byCheck": {
+      "no goal line": 1
+    }
+  },
+  "bannedVocabulary": {
+    "hits": 0,
+    "replies": 0,
+    "byTerm": {}
+  },
+  "planSanity": {
+    "band": {
+      "low": 0.5,
+      "high": 1.6
+    },
+    "weeklyReplies": 1,
+    "flaggedReplies": 0,
+    "byCheck": {},
+    "skipped": {},
+    "volumeRatio": {
+      "median": 0.5792810759308225,
+      "worst": 0.5792810759308225,
+      "n": 1
+    },
+    "flags": []
+  },
+  "lengthCaps": {
+    "hits": 0,
+    "byField": {}
+  },
+  "latency": {
+    "firstTokenMs": {
+      "median": 4979,
+      "worst": 4979,
+      "n": 1
+    },
+    "totalMs": {
+      "median": 66115,
+      "worst": 66115,
+      "n": 1
+    },
+    "wallClockMs": 66115
+  },
+  "tokens": {
+    "input": {
+      "median": 24406,
+      "n": 1
+    },
+    "output": {
+      "median": 3786,
+      "n": 1
+    },
+    "thinking": {
+      "median": 1590,
+      "n": 1
+    },
+    "thinkingChars": {
+      "median": 1643,
+      "n": 1
+    },
+    "cacheRead": {
+      "median": 0,
+      "n": 1
+    },
+    "cacheCreation": {
+      "median": 0,
+      "n": 1
+    }
+  },
+  "promptCut": {
+    "ratio": 0.9,
+    "checked": 1,
+    "cut": [],
+    "lowestRatio": 2.3852619233776386
+  },
+  "cost": {
+    "priceTakenOn": "2026-11-03",
+    "prices": {
+      "claude-opus-4-7": {
+        "label": "Opus 4.7",
+        "inputPerMTok": 5,
+        "outputPerMTok": 25
+      }
+    },
+    "cacheReadMultiplier": 0.1,
+    "cacheWriteMultiplier": 1.25,
+    "unpricedModels": [],
+    "pricedReplies": 1,
+    "totalUsd": 0.21668,
+    "medianUsd": 0.21668,
+    "worstUsd": 0.21668,
+    "perReplyUsd": {
+      "06.1": 0.21668
+    }
+  }
+}

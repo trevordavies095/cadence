@@ -1,0 +1,61 @@
+{
+  "input": "seasons/33",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft says a clear no to running every day and gives an honest reason: the body adapts on rest days, and running daily this early risks a calf or shin injury. It keeps Nessa's own Mon/Wed/Sat schedule, with dog walks and full rest days in between. The calf tightness she described clears by the next morning, so it's normal soreness. The draft still handles it well: Tuesday is a rest day so the calves can settle, and there's a flag telling her what to watch for if calf or shin pain appears. The progression is gentle and suits a beginner. Monday and Wednesday are 22 min of walk-run, and only Saturday goes up, to 28 min with 90 sec jog intervals. That isn't a sharp jump from about 2.3 km per session. Friday adds light calf and leg strength work, which is useful. Each day is clear enough to follow. One point holds it back from a 5: Nessa asked about being ready by 15 November, and the draft never tells her that building steadily on three days a week can get her there. It explains why not to run daily but gives her nothing about how the next few weeks lead to the race.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T14:40:07.495Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2233,
+  "outputTokens": 900,
+  "thinkingTokens": 417,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1136,
+  "costUsd": 0.026932,
+  "timing": {
+    "ttftMs": 3095,
+    "totalMs": 10226,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3095,
+        "totalMs": 10226,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2233,
+        "outputTokens": 900
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft says a clear no to running every day and gives an honest reason: the body adapts on rest days, and running daily this early risks a calf or shin injury. It keeps Nessa's own Mon/Wed/Sat schedule, with dog walks and full rest days in between. The calf tightness she described clears by the next morning, so it's normal soreness. The draft still handles it well: Tuesday is a rest day so the calves can settle, and there's a flag telling her what to watch for if calf or shin pain appears. The progression is gentle and suits a beginner. Monday and Wednesday are 22 min of walk-run, and only Saturday goes up, to 28 min with 90 sec jog intervals. That isn't a sharp jump from about 2.3 km per session. Friday adds light calf and leg strength work, which is useful. Each day is clear enough to follow. One point holds it back from a 5: Nessa asked about being ready by 15 November, and the draft never tells her that building steadily on three days a week can get her there. It explains why not to run daily but gives her nothing about how the next few weeks lead to the race."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: none recorded.\nThis week: 6.8 km over 3 runs.\nBody: \"Calves tight the day after each run, gone by the next morning.\"\nFeeling: \"Proud I started.\"\nAsks: \"I want to be ready for the 5K in November. Should I run every day next week to get there faster?\"\n\n── THE DRAFT ──\nTells Nessa: A strong, sensible first week. …\nAnswers: No, please do not run every day yet. Your legs, tendons and feet adapt on the rest days, not on the run days, and daily running this early is the fastest way to a calf or shin problem that costs you the race.\nSafety flag: New calf or shin pain\nNext week:\nMon: easy, 22 min walk-run, 1 min easy jog then 90 sec walk, repeat, conversational…\nTue: rest, dog walk only. Lets the calves settle before Wednesday.\nWed: easy, 22 min walk-run, same 1 min jog / 90 sec walk pattern, keep it easy enough to…\nThu: rest, dog walk only. A full day off running helps new-runner legs absorb the work.\nFri: other, 20 min easy walk plus 2 rounds of 10 calf raises and 10 squats. Builds the…\nSat: easy, 28 min walk-run, try 90 sec jog / 90 sec walk, still conversational. The…\nSun: rest, dog walk only. Sets Monday up fresh.\n\nScore this draft: call submit_coaching_score once."
+}

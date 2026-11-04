@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The plan is safe and fits Nessa. It keeps her Monday, Wednesday and Saturday walk-run routine and leaves dog walks free on the other days. Every session is easy and can be run as written: 8×(2 min run / 1 min walk) on Monday and Wednesday, then 9 rounds on Saturday. After one missed week with no illness or pain, coming back at a similar level is reasonable. It's a small step up at most, not a rushed return. Nothing in the week calls for a referral or extra rest.\n\nIt loses a point for a few things:\n- The opening misreads her note. She wrote \"excited for next week\" this week, but the draft treats it as a mood that came before the zero.\n- It doesn't ask why she missed the week.\n- It says the plan repeats \"what already worked\", which the card doesn't support.\n- From what is shown, it never ties the week to the 15 November 5K or her goal of running it without walking. That is likely only a few weeks away.\n\nA solid, runnable restart, but it could fit this week more closely.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:28:03.321Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2173,
+  "outputTokens": 1099,
+  "thinkingTokens": 643,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1085,
+  "costUsd": 0.030672000000000005,
+  "timing": {
+    "ttftMs": 2909,
+    "totalMs": 11733,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2909,
+        "totalMs": 11733,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2173,
+        "outputTokens": 1099
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The plan is safe and fits Nessa. It keeps her Monday, Wednesday and Saturday walk-run routine and leaves dog walks free on the other days. Every session is easy and can be run as written: 8×(2 min run / 1 min walk) on Monday and Wednesday, then 9 rounds on Saturday. After one missed week with no illness or pain, coming back at a similar level is reasonable. It's a small step up at most, not a rushed return. Nothing in the week calls for a referral or extra rest.\n\nIt loses a point for a few things:\n- The opening misreads her note. She wrote \"excited for next week\" this week, but the draft treats it as a mood that came before the zero.\n- It doesn't ask why she missed the week.\n- It says the plan repeats \"what already worked\", which the card doesn't support.\n- From what is shown, it never ties the week to the 15 November 5K or her goal of running it without walking. That is likely only a few weeks away.\n\nA solid, runnable restart, but it could fit this week more closely."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: You went from \"excited for next week\" to zero runs, so this week is a careful restart at what already worked. …\nReading the week. The plan asked for three walk-run sessions on Mon, Wed and Sat and none of them happened, which is the main thing to understand.\nNext week:\nMon: easy, 24 min walk-run, 8 rounds of 2 min easy run and 1 min walk, flat route. Eases…\nTue: rest. Full recovery day, dog walk is fine.\nWed: easy, 24 min walk-run, 8 rounds of 2 min easy run and 1 min walk, same effort as…\nThu: rest. Keep it to walking only so Saturday has legs under it.\nFri: rest. Protects the slightly longer Saturday session.\nSat: easy, 27 min walk-run, 9 rounds of 2 min easy run and 1 min walk, flat route. One…\nSun: rest. Dog walk is welcome, no running.\n\nScore this draft: call submit_coaching_score once."
+}

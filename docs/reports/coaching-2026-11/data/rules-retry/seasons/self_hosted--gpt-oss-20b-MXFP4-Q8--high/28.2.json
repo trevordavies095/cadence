@@ -1,0 +1,205 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w10.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:50:22.894Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, 2 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 17242,
+  "outputTokens": 1667,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 4169,
+  "estimatedInputTokens": 9655,
+  "timing": {
+    "ttftMs": 1056,
+    "totalMs": 29020,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 1056,
+        "totalMs": 29020,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 17242,
+        "outputTokens": 1667
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 69209.83872
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Keep the long short, the quality sharp, and the volume steady for race freshness.",
+    "flags": [
+      {
+        "title": "Long run distance",
+        "detail": "15 mi"
+      },
+      {
+        "title": "Quality session",
+        "detail": "keep effort solid, no overload"
+      },
+      {
+        "title": "Rest days",
+        "detail": "observe full recovery"
+      },
+      {
+        "title": "Heart rate",
+        "detail": "monitor drift on long"
+      },
+      {
+        "title": "Volume",
+        "detail": "stay ~36‑38 mi"
+      }
+    ],
+    "answers": [
+      {
+        "question": "The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?",
+        "answer": "Yes, a 15‑mile long this week and a 20‑mile long next week will give you the mileage you need while keeping your legs fresh for the race. You don’t need to add a 22‑mile now – keep the peak workouts clean and you’ll be ready."
+      }
+    ],
+    "analysis": "The athlete is two weeks from the race, in the peak phase.  He has only done one 20‑mile long, so we’ll keep volume moderate, still include a quality session, and run a 15‑mile long this week.  The question asks whether there’s time for a 22‑mile long; we’ll reassure him that a 15‑mile long now and a 20‑mile long next week will give enough mileage without over‑exertion.  No medical red flags, so no safety callouts.  The plan will have rest on Mon, easy runs on Tue/Thu, a quality on Wed, easy Saturday, long on Sun.  Flags focus on monitoring long distance, quality effort, recovery, heart‑rate drift, and total volume.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-09-28: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep HR under 150, flat route. Light jog to keep the legs loose.",
+          "line": "Tue 2026-09-29: easy, 6 mi, keep HR under 150, flat route. Light jog to keep the legs loose.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "3 x 1.5 mi at marathon pace, good for race‑specific feel.",
+          "line": "Wed 2026-09-30: quality, 5 mi, 3 x 1.5 mi at marathon pace, good for race‑specific feel.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "recovery, focus on smooth pacing.",
+          "line": "Thu 2026-10-01: easy, 5 mi, recovery, focus on smooth pacing.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-10-02: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep it breezy, focus on leg turnover.",
+          "line": "Sat 2026-10-03: easy, 4 mi, keep it breezy, focus on leg turnover.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 24140,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy to moderate, keep HR in zone 2, finish 5 min before the target time.",
+          "line": "Sun 2026-10-04: long, 15 mi, easy to moderate, keep HR in zone 2, finish 5 min before the target time.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

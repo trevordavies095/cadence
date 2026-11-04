@@ -359,6 +359,117 @@ describe("GET /home (#100)", () => {
       expect((body.totals as { plannedDistanceM: number }).plannedDistanceM).toBe(0);
     });
 
+    it("a plan stored before plans were text reads every day as parsed", async () => {
+      const { app, id } = await ready(SAT);
+      await withPlan(id);
+      const week = (await home(app)).week as Array<Record<string, unknown>>;
+      expect(week.every((d) => d.parsed === true && d.line === null)).toBe(true);
+    });
+
+    describe("a day Cadence could not read (plan-as-text 07)", () => {
+      // Mon and Sat carry a line Cadence could not read; Sun was left out of the plan.
+      const UNREAD_MON = "Monday: something gentle, see how the legs feel";
+      const UNREAD_SAT = "Saturday: easy, about as long as last Saturday";
+      const withUnreadDays = (id: string) =>
+        savePrescribedWeek({
+          at: new Date(),
+          weekSessionId: id,
+          plan: {
+            ...THIS_WEEK_PLAN,
+            days: THIS_WEEK_PLAN.days.map((d) => {
+              if (d.date === "2026-10-19") {
+                return { date: d.date, dayType: "other", run: null, notes: UNREAD_MON, line: UNREAD_MON, parsed: false };
+              }
+              if (d.date === "2026-10-24") {
+                return { date: d.date, dayType: "other", run: null, notes: UNREAD_SAT, line: UNREAD_SAT, parsed: false };
+              }
+              if (d.date === "2026-10-25") {
+                return { date: d.date, dayType: "other", run: null, notes: "Coach Cade gave no plan for this day", line: null, parsed: false };
+              }
+              return { ...d, line: `${d.date}: as planned`, parsed: true };
+            }),
+          } as never,
+          analysis: "Fixture plan.",
+        });
+
+      it("is never missed once the day passes with no run, and has nothing planned", async () => {
+        // Moved past the whole week: Mon, Sat and Sun all passed with no run.
+        const { app, id } = await ready(SAT);
+        await withUnreadDays(id);
+        const later = makeApp("2026-10-26T03:00:00.000Z"); // Sun Oct 25, 23:00 in New York
+        const body = await home(later);
+        const week = body.week as Array<Record<string, unknown>>;
+
+        expect(states(body)).toEqual([
+          "not_filed", // Mon: unread, no run in Tempo, not missed
+          "done",
+          "rest",
+          "done",
+          "rest",
+          "not_filed", // Sat: unread, passed with no run
+          "not_filed", // Sun: left out of the plan, and today
+        ]);
+        for (const i of [0, 5, 6]) {
+          expect(week[i]).toMatchObject({ parsed: false, plannedDistanceM: null, plannedDurationS: null });
+        }
+        expect(week[0]!.line).toBe(UNREAD_MON);
+        expect(week[6]).toMatchObject({ line: null, isToday: true });
+        expect(week[1]).toMatchObject({ parsed: true });
+        expect(states(body)).not.toContain("missed");
+
+        // Totals count only the days Cadence read: Tue, Thu.
+        const totals = body.totals as { plannedDistanceM: number; plannedDurationS: number };
+        expect(totals.plannedDistanceM).toBe(6000 + 10000);
+        expect(totals.plannedDurationS).toBe(0);
+      });
+
+      it("today carries the line and parsed: false for the Today card", async () => {
+        const { app, id } = await ready(SAT);
+        await withUnreadDays(id);
+        const body = await home(app);
+        expect(states(body)[5]).toBe("not_filed");
+        expect((body.week as Array<Record<string, unknown>>)[5]).toMatchObject({ isToday: true });
+        expect(body.today).toMatchObject({
+          date: "2026-10-24",
+          dayType: "other",
+          run: null,
+          line: UNREAD_SAT,
+          parsed: false,
+        });
+      });
+
+      it("a run on an unread day is done", async () => {
+        const { app, id } = await ready(SAT);
+        await savePrescribedWeek({
+          at: new Date(),
+          weekSessionId: id,
+          plan: {
+            ...THIS_WEEK_PLAN,
+            days: THIS_WEEK_PLAN.days.map((d) =>
+              d.date === "2026-10-20"
+                ? { date: d.date, dayType: "other", run: null, notes: "Tue: up to you", line: "Tue: up to you", parsed: false }
+                : d,
+            ),
+          } as never,
+          analysis: "Fixture plan.",
+        });
+        expect(states(await home(app))[1]).toBe("done");
+      });
+
+      it("Tempo being unreachable does not make an unread day unknown", async () => {
+        const base = createExportTempoPort({ exportPath: FIXTURE_ZIP });
+        const down: TempoPort = {
+          ...base,
+          listWorkouts: async () => {
+            throw new Error("Tempo is unreachable");
+          },
+        };
+        const { app, id } = await ready(SAT, { tempoPort: down });
+        await withUnreadDays(id);
+        expect(states(await home(app))[0]).toBe("not_filed");
+      });
+    });
+
     it("degrades to the plan alone when Tempo cannot be read", async () => {
       const base = createExportTempoPort({ exportPath: FIXTURE_ZIP });
       const down: TempoPort = {

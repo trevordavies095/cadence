@@ -1,0 +1,186 @@
+{
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "provider": "anthropic",
+  "replies": 39,
+  "byOperation": {
+    "weekly_reply": 39
+  },
+  "schema": {
+    "firstTry": 39,
+    "afterRetry": 0,
+    "failed": 0
+  },
+  "softRepairs": {
+    "count": 0,
+    "replies": 0,
+    "byField": {}
+  },
+  "goalCheckFailures": {
+    "count": 0,
+    "byCheck": {}
+  },
+  "bannedVocabulary": {
+    "hits": 0,
+    "replies": 0,
+    "byTerm": {}
+  },
+  "planSanity": {
+    "band": {
+      "low": 0.5,
+      "high": 1.6
+    },
+    "weeklyReplies": 39,
+    "flaggedReplies": 6,
+    "byCheck": {
+      "volume": 6
+    },
+    "skipped": {
+      "volume": 15
+    },
+    "volumeRatio": {
+      "median": 0.9858960805836261,
+      "worst": 1.1459782706265416,
+      "n": 24
+    },
+    "flags": [
+      {
+        "reply": "22.1",
+        "check": "volume",
+        "detail": "9.7 km planned is 0.19x the recent 51.9 km"
+      },
+      {
+        "reply": "22.2",
+        "check": "volume",
+        "detail": "16.1 km planned is 0.31x the recent 51.9 km"
+      },
+      {
+        "reply": "22.3",
+        "check": "volume",
+        "detail": "11.3 km planned is 0.22x the recent 51.9 km"
+      },
+      {
+        "reply": "31.1",
+        "check": "volume",
+        "detail": "14.5 km planned is 0.22x the recent 65.7 km"
+      },
+      {
+        "reply": "31.2",
+        "check": "volume",
+        "detail": "8.0 km planned is 0.12x the recent 65.7 km"
+      },
+      {
+        "reply": "31.3",
+        "check": "volume",
+        "detail": "8.0 km planned is 0.12x the recent 65.7 km"
+      }
+    ]
+  },
+  "lengthCaps": {
+    "hits": 0,
+    "byField": {}
+  },
+  "latency": {
+    "firstTokenMs": {
+      "median": 3501,
+      "worst": 5167,
+      "n": 39
+    },
+    "totalMs": {
+      "median": 114222,
+      "worst": 174123,
+      "n": 39
+    },
+    "wallClockMs": 4604221
+  },
+  "tokens": {
+    "input": {
+      "median": 21971,
+      "n": 39
+    },
+    "output": {
+      "median": 11512,
+      "n": 39
+    },
+    "thinking": {
+      "median": 9616,
+      "n": 39
+    },
+    "thinkingChars": {
+      "median": 10135,
+      "n": 39
+    },
+    "cacheRead": {
+      "median": 0,
+      "n": 39
+    },
+    "cacheCreation": {
+      "median": 0,
+      "n": 39
+    }
+  },
+  "promptCut": {
+    "ratio": 0.9,
+    "checked": 39,
+    "cut": [],
+    "lowestRatio": 2.189762340036563
+  },
+  "cost": {
+    "priceTakenOn": "2026-11-03",
+    "prices": {
+      "claude-opus-5-5": {
+        "label": "Opus 5.5",
+        "inputPerMTok": 4,
+        "outputPerMTok": 20,
+        "cacheReadMultiplier": 0.05
+      }
+    },
+    "cacheReadMultiplier": 0.1,
+    "cacheWriteMultiplier": 1.25,
+    "unpricedModels": [],
+    "pricedReplies": 39,
+    "totalUsd": 12.029836,
+    "medianUsd": 0.302856,
+    "worstUsd": 0.438804,
+    "perReplyUsd": {
+      "13.1": 0.23211600000000002,
+      "13.2": 0.24725600000000003,
+      "13.3": 0.302856,
+      "22.1": 0.24954,
+      "22.2": 0.28886,
+      "22.3": 0.25234,
+      "24.1": 0.348264,
+      "24.2": 0.438804,
+      "24.3": 0.392964,
+      "26.1": 0.361104,
+      "26.2": 0.347044,
+      "26.3": 0.393084,
+      "27.1": 0.35477600000000004,
+      "27.2": 0.389056,
+      "27.3": 0.415856,
+      "28.1": 0.396628,
+      "28.2": 0.35862800000000006,
+      "28.3": 0.38690800000000003,
+      "30.1": 0.313456,
+      "30.2": 0.352696,
+      "30.3": 0.331836,
+      "31.1": 0.323712,
+      "31.2": 0.315292,
+      "31.3": 0.308492,
+      "32.1": 0.286244,
+      "32.2": 0.29892399999999997,
+      "32.3": 0.346804,
+      "33.1": 0.276936,
+      "33.2": 0.25203600000000004,
+      "33.3": 0.22335600000000003,
+      "35.1": 0.208744,
+      "35.2": 0.204424,
+      "35.3": 0.197184,
+      "37.1": 0.25044,
+      "37.2": 0.2817,
+      "37.3": 0.28164,
+      "40.1": 0.280052,
+      "40.2": 0.255052,
+      "40.3": 0.28473200000000004
+    }
+  }
+}

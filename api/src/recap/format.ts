@@ -28,6 +28,15 @@ export function formatDistanceM(
   return `${(meters / 1000).toFixed(2)} km`;
 }
 
+/** "36 min", "1 h 12 min", "4 h", rounded to whole minutes before splitting. */
+export function formatMinutesDuration(seconds: number): string {
+  const total = Math.max(0, Math.round(seconds / 60));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
 export function formatDuration(sec: number): string {
   if (!Number.isFinite(sec) || sec < 0) return "n/a";
   const h = Math.floor(sec / 3600);

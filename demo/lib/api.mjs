@@ -59,12 +59,12 @@ export function api(method, route, body, { allow = [] } = {}) {
 }
 
 /**
- * Restart the API with "now" pinned to `when` (any Date-parseable string), and the live
- * model's thinking effort set to `effort` when given. Returns the ISO instant.
+ * Restart the API with "now" pinned to `when` (any Date-parseable string). Returns the ISO
+ * instant.
  */
-export function setClock(when, effort) {
+export function setClock(when) {
   const iso = new Date(when).toISOString();
-  const r = spawnSync(DEMO_SH, effort ? ["_clock", iso, effort] : ["_clock", iso], { stdio: "inherit" });
+  const r = spawnSync(DEMO_SH, ["_clock", iso], { stdio: "inherit" });
   if (r.status !== 0) throw new Error(`could not restart the API at ${iso}`);
   return iso;
 }

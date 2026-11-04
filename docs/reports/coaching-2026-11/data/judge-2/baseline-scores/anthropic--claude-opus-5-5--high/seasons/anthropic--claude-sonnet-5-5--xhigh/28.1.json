@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft answers her question directly and honestly. It says no to the 22-miler and gives specific reasons: it would fall on Oct 4, 14 days before the race. At her long-run pace it would take about 3:40, well past the 3-hour mark. It also points to the 20 and the 17 she has already run, which should help with her worry. Mileage is sensible: about 40 mi against 42 this week, so a gentle start to the taper with no jump. The long run is 18 mi at about 10:00/mi, roughly 3 hours, which fits the draft's own 3-hour reasoning and is a reasonable last long run two weeks out. The Wednesday session of 2 x 2 mi at 7:55–8:00/mi is a controlled effort, a bit faster than her goal marathon pace. Each day is clear enough to run, with heart-rate caps and the same rest days as her normal week. Nothing in her week calls for an unsafe check: no pain, illness or exhaustion. I took off points for three reasons. The visible text doesn't clearly acknowledge her anxiety about the new date. Using Oct 4 as the reason to drop the 22 while still putting an 18 on that day needed one more line of explanation. And the taper is still only lightly cut back at three weeks out.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:33:19.178Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2376,
+  "outputTokens": 1038,
+  "thinkingTokens": 501,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1202,
+  "costUsd": 0.030264,
+  "timing": {
+    "ttftMs": 2840,
+    "totalMs": 11097,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2840,
+        "totalMs": 11097,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2376,
+        "outputTokens": 1038
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft answers her question directly and honestly. It says no to the 22-miler and gives specific reasons: it would fall on Oct 4, 14 days before the race. At her long-run pace it would take about 3:40, well past the 3-hour mark. It also points to the 20 and the 17 she has already run, which should help with her worry. Mileage is sensible: about 40 mi against 42 this week, so a gentle start to the taper with no jump. The long run is 18 mi at about 10:00/mi, roughly 3 hours, which fits the draft's own 3-hour reasoning and is a reasonable last long run two weeks out. The Wednesday session of 2 x 2 mi at 7:55–8:00/mi is a controlled effort, a bit faster than her goal marathon pace. Each day is clear enough to run, with heart-rate caps and the same rest days as her normal week. Nothing in her week calls for an unsafe check: no pain, illness or exhaustion. I took off points for three reasons. The visible text doesn't clearly acknowledge her anxiety about the new date. Using Oct 4 as the reason to drop the 22 while still putting an 18 on that day needed one more line of explanation. And the taper is still only lightly cut back at three weeks out."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: Skip the 22-miler. Your 20 and your 17 already give you the long-run base. …\nAnswers: (1) No, the 22-miler no longer fits. It would land on Sun Oct 4, 14 days before the race, and you would still be paying for it in race week. (2) At your long-run pace, 22 miles is about 3 hours 40 minutes. That is well past the 3-hour mark where extra time on your feet adds more fatigue than fitness. (3) You have the 20 from Sep 13 and the 17 from last Sunday. …\nNext week:\nMon: rest. Full recovery after the 17-miler, and the taper starts here.\nTue: easy, 5 mi, heart rate 135 to 143, about 9:50/mi on a flat route. One mile shorter…\nWed: quality, 8 mi, 2 mi easy warm-up, then 2 x 2 mi at 7:55 to 8:00/mi with 3 min easy…\nThu: easy, 5 mi, heart rate under 143, flat route. Absorbs Wednesday's work without…\nFri: rest. Keeps the legs fresh for the last long run.\nSat: easy, 4 mi, heart rate under 143, then 4 x 20 sec relaxed strides with full walking…\nSun: long, 18 mi, miles 1 to 10 easy at about 10:00/mi with heart rate under 145, miles…\n\nScore this draft: call submit_coaching_score once."
+}

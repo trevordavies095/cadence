@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Nessa missed all three runs this week, and the draft repeats the plan she missed instead of moving her forward. That's a sensible call. The sessions are 24, 24 and 27 min of 2-min run / 1-min walk, roughly 8–9 km for the week. That's only a little above her recent ~7 km weeks, and she's healthy and rested, so it isn't rushing her back or a sharp jump. The draft keeps her Mon/Wed/Sat days, uses the dog walks as easy rest days, and sets each day out clearly enough to run as written. It also uses what she reported (good sleep, low stress, body fine) rather than inventing anything. Why not a 5: it never acknowledges how excited she said she is. It doesn't link the plan to the 15 November 5K, which is about seven weeks away. And \"the numbers don't explain the gap\" reads a little cold, when a friendly line asking what got in the way would serve a new runner better. She asked no questions, so nothing went unanswered.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:34:42.312Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2259,
+  "outputTokens": 826,
+  "thinkingTokens": 377,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1132,
+  "costUsd": 0.025556,
+  "timing": {
+    "ttftMs": 2713,
+    "totalMs": 8646,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2713,
+        "totalMs": 8646,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2259,
+        "outputTokens": 826
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Nessa missed all three runs this week, and the draft repeats the plan she missed instead of moving her forward. That's a sensible call. The sessions are 24, 24 and 27 min of 2-min run / 1-min walk, roughly 8–9 km for the week. That's only a little above her recent ~7 km weeks, and she's healthy and rested, so it isn't rushing her back or a sharp jump. The draft keeps her Mon/Wed/Sat days, uses the dog walks as easy rest days, and sets each day out clearly enough to run as written. It also uses what she reported (good sleep, low stress, body fine) rather than inventing anything. Why not a 5: it never acknowledges how excited she said she is. It doesn't link the plan to the 15 November 5K, which is about seven weeks away. And \"the numbers don't explain the gap\" reads a little cold, when a friendly line asking what got in the way would serve a new runner better. She asked no questions, so nothing went unanswered."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: None of the three planned runs happened in the week of Sep 21 – 27, so next week repeats that same walk-run plan instead of…\nThe week of Sep 21 – 27 had three planned walk-runs (24, 24 and 27 min) and none were done. Your check-in shows 7.5 hours of sleep, low stress and nothing wrong with your body, so the numbers don't explain the gap.\nNext week:\nMon: easy, 24 min, walk-run of 8 x 2 min run and 1 min walk, running at a pace where you…\nTue: rest. An easy dog walk is fine. Gives your legs a day between runs.\nWed: easy, 24 min, 8 x 2 min run and 1 min walk, same conversational pace, aiming to…\nThu: rest. Easy dog walk only. Keeps your legs fresh for the weekend.\nFri: rest. Easy dog walk only. Makes sure you arrive at Saturday's longer session rested.\nSat: easy, 27 min, 9 x 2 min run and 1 min walk, about 3 km at an easy pace. If Monday…\nSun: rest. A relaxed dog walk is fine. Lets the week sink in before the run segments get…\n\nScore this draft: call submit_coaching_score once."
+}

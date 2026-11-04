@@ -1,0 +1,61 @@
+{
+  "input": "seasons/24",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft answers Marisol's question directly and correctly: don't make up the missed miles. It backs that up with a sensible point about building fitness through steady weeks. The plan is clear enough to run, and the days add up to the stated 31 mi (5+6+4+4+12). The volume isn't a sharp jump: 31 mi is up from 27 but below her recent 32–35 mi weeks. A 12 mi long run is reasonable mid-build. Nothing breaks a must-never rule. She reported no pain or illness, and the draft flags seeing a doctor if the tiredness lingers.\n\nWhat holds it back:\n- **Fatigue:** She says she's \"tired all the time\" and \"drained\" after two short weeks. A coach could reasonably hold volume around 27 mi or soften Wednesday's marathon-effort session, rather than adding miles and keeping quality work. The rest-and-sleep note helps, but the plan doesn't change much for her fatigue.\n- **Details not on the card:** The draft mentions heat, a \"deadline,\" a Nov 1 race date and a hip and glute routine. None of these appear on the card, and she said her knee is fine, so the hip and glute work looks generic or invented.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:48:12.411Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2162,
+  "outputTokens": 1232,
+  "thinkingTokens": 715,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1053,
+  "costUsd": 0.033288,
+  "timing": {
+    "ttftMs": 2571,
+    "totalMs": 12729,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2571,
+        "totalMs": 12729,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2162,
+        "outputTokens": 1232
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft answers Marisol's question directly and correctly: don't make up the missed miles. It backs that up with a sensible point about building fitness through steady weeks. The plan is clear enough to run, and the days add up to the stated 31 mi (5+6+4+4+12). The volume isn't a sharp jump: 31 mi is up from 27 but below her recent 32–35 mi weeks. A 12 mi long run is reasonable mid-build. Nothing breaks a must-never rule. She reported no pain or illness, and the draft flags seeing a doctor if the tiredness lingers.\n\nWhat holds it back:\n- **Fatigue:** She says she's \"tired all the time\" and \"drained\" after two short weeks. A coach could reasonably hold volume around 27 mi or soften Wednesday's marathon-effort session, rather than adding miles and keeping quality work. The rest-and-sleep note helps, but the plan doesn't change much for her fatigue.\n- **Details not on the card:** The draft mentions heat, a \"deadline,\" a Nov 1 race date and a hip and glute routine. None of these appear on the card, and she said her knee is fine, so the hip and glute work looks generic or invented."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 35, 32, 24 mi\nThis week: 27 mi over 4 runs. Planned 36 mi, ran 27 mi. Missed 1 of 5 planned runs.\nBody: \"Tired all the time. Knee is fine.\"\nFeeling: \"Drained.\"\nAsks: \"I missed Thursday and cut the long run short. Should I make up the miles next week?\"\n\n── THE DRAFT ──\nTells Marisol: Skip the make-up miles. …\nAnswers: (1) No, don't make up the miles. You've lost the missed Thursday and the 2 mi cut from Sunday, and that's fine. (2) Your fitness for Nov 1 will come from stringing together steady weeks over the next two months, not from any single run. Next week is about 31 mi with a 12 mi long run.\nSafety flag: Know the heat warning signs\nSafety flag: See a doctor if the tiredness lingers\nNext week:\nMon: rest. Sleep is the best training you can do while the deadline and the heat last.\nTue: easy, 5 mi, heart rate under 145 at whatever pace that takes, before sunrise or on…\nWed: quality, 6 mi: 1.5 mi easy, 3 x 1 mi at marathon effort (about 8:35/mi in cool air…\nThu: easy, 4 mi, heart rate under 145, then 15 min hip and glute routine. Skip the run…\nFri: rest. Keeps your legs fresh for the weekend.\nSat: easy, 4 mi, heart rate under 145, early morning, flat route. Loosens the legs…\nSun: long, 12 mi, heart rate under 150, start at first light, carry water and drink…\n\nScore this draft: call submit_coaching_score once."
+}

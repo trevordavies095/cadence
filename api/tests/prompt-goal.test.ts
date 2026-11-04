@@ -5,7 +5,7 @@ import {
   MIDWEEK_SYSTEM_PROMPT,
   WEEKLY_SYSTEM_PROMPT,
   buildStubMidWeekChatReply,
-  buildStubWeeklyReply,
+  buildStubWeeklyForm,
   createAnthropicLlmPort,
 } from "../src/llm/index.js";
 import { bannedTermsIn, bannerBannedTermsIn } from "../src/llm/vocabulary.js";
@@ -59,7 +59,7 @@ function capture() {
   const port = createAnthropicLlmPort({ fetchImpl, readApiKey: async () => "sk-ant-test" });
   return {
     async weekly(packet: ModelPacket): Promise<string> {
-      reply = buildStubWeeklyReply(packet);
+      reply = buildStubWeeklyForm(packet);
       await port.generateWeeklyReply(packet);
       return prompts.at(-1)!;
     },

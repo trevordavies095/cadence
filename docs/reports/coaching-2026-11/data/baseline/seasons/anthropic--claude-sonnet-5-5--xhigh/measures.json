@@ -1,0 +1,188 @@
+{
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "provider": "anthropic",
+  "replies": 39,
+  "byOperation": {
+    "weekly_reply": 39
+  },
+  "schema": {
+    "firstTry": 37,
+    "afterRetry": 2,
+    "failed": 0
+  },
+  "softRepairs": {
+    "count": 0,
+    "replies": 0,
+    "byField": {}
+  },
+  "goalCheckFailures": {
+    "count": 0,
+    "byCheck": {}
+  },
+  "bannedVocabulary": {
+    "hits": 1,
+    "replies": 1,
+    "byTerm": {
+      "prompt": 1
+    }
+  },
+  "planSanity": {
+    "band": {
+      "low": 0.5,
+      "high": 1.6
+    },
+    "weeklyReplies": 39,
+    "flaggedReplies": 6,
+    "byCheck": {
+      "volume": 6
+    },
+    "skipped": {
+      "volume": 15
+    },
+    "volumeRatio": {
+      "median": 0.962670159878071,
+      "worst": 1.134273334158121,
+      "n": 24
+    },
+    "flags": [
+      {
+        "reply": "22.1",
+        "check": "volume",
+        "detail": "16.1 km planned is 0.31x the recent 51.9 km"
+      },
+      {
+        "reply": "22.2",
+        "check": "volume",
+        "detail": "19.3 km planned is 0.37x the recent 51.9 km"
+      },
+      {
+        "reply": "22.3",
+        "check": "volume",
+        "detail": "19.3 km planned is 0.37x the recent 51.9 km"
+      },
+      {
+        "reply": "31.1",
+        "check": "volume",
+        "detail": "14.5 km planned is 0.22x the recent 65.7 km"
+      },
+      {
+        "reply": "31.2",
+        "check": "volume",
+        "detail": "14.5 km planned is 0.22x the recent 65.7 km"
+      },
+      {
+        "reply": "31.3",
+        "check": "volume",
+        "detail": "14.5 km planned is 0.22x the recent 65.7 km"
+      }
+    ]
+  },
+  "lengthCaps": {
+    "hits": 0,
+    "byField": {}
+  },
+  "latency": {
+    "firstTokenMs": {
+      "median": 3376,
+      "worst": 8034,
+      "n": 39
+    },
+    "totalMs": {
+      "median": 98050,
+      "worst": 283488,
+      "n": 39
+    },
+    "wallClockMs": 4254808
+  },
+  "tokens": {
+    "input": {
+      "median": 21971,
+      "n": 39
+    },
+    "output": {
+      "median": 12030,
+      "n": 39
+    },
+    "thinking": {
+      "median": 10015,
+      "n": 39
+    },
+    "thinkingChars": {
+      "median": 10631,
+      "n": 39
+    },
+    "cacheRead": {
+      "median": 0,
+      "n": 39
+    },
+    "cacheCreation": {
+      "median": 0,
+      "n": 39
+    }
+  },
+  "promptCut": {
+    "ratio": 0.9,
+    "checked": 39,
+    "cut": [],
+    "lowestRatio": 2.189762340036563
+  },
+  "cost": {
+    "priceTakenOn": "2026-11-03",
+    "prices": {
+      "claude-sonnet-5-5": {
+        "label": "Sonnet 5.5",
+        "inputPerMTok": 2,
+        "outputPerMTok": 10,
+        "cacheReadMultiplier": 0.05
+      }
+    },
+    "cacheReadMultiplier": 0.1,
+    "cacheWriteMultiplier": 1.25,
+    "unpricedModels": [],
+    "pricedReplies": 39,
+    "totalUsd": 6.704483999999999,
+    "medianUsd": 0.15878,
+    "worstUsd": 0.447734,
+    "perReplyUsd": {
+      "13.1": 0.11693800000000001,
+      "13.2": 0.107078,
+      "13.3": 0.09431800000000001,
+      "22.1": 0.13207000000000002,
+      "22.2": 0.15313,
+      "22.3": 0.12144,
+      "24.1": 0.217482,
+      "24.2": 0.177592,
+      "24.3": 0.224852,
+      "26.1": 0.447734,
+      "26.2": 0.18607200000000002,
+      "26.3": 0.23643200000000003,
+      "27.1": 0.20405800000000002,
+      "27.2": 0.204608,
+      "27.3": 0.23520800000000003,
+      "28.1": 0.21994400000000003,
+      "28.2": 0.216794,
+      "28.3": 0.446408,
+      "30.1": 0.165298,
+      "30.2": 0.18782800000000002,
+      "30.3": 0.150778,
+      "31.1": 0.163526,
+      "31.2": 0.166236,
+      "31.3": 0.147086,
+      "32.1": 0.16504200000000002,
+      "32.2": 0.168252,
+      "32.3": 0.156912,
+      "33.1": 0.077728,
+      "33.2": 0.09119800000000002,
+      "33.3": 0.12770800000000002,
+      "35.1": 0.093242,
+      "35.2": 0.105102,
+      "35.3": 0.086192,
+      "37.1": 0.13726000000000002,
+      "37.2": 0.15878,
+      "37.3": 0.14792,
+      "40.1": 0.17572600000000002,
+      "40.2": 0.144356,
+      "40.3": 0.146156
+    }
+  }
+}

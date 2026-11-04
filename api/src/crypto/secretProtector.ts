@@ -4,11 +4,11 @@ const NONCE_LEN = 12;
 const TAG_LEN = 16;
 const KEY_LEN = 32;
 
-export type SecretPurpose = "tempo-api-key" | "anthropic-api-key";
+export type SecretPurpose = "tempo-api-key" | "anthropic-api-key" | "self-hosted-api-key";
 
 /**
  * AES-256-GCM protector. Wrapping key is HKDF-SHA256 of DATA_PROTECTION_SECRET_KEY
- * with a purpose string so Tempo and Anthropic ciphertext are not interchangeable.
+ * with a purpose string so Tempo, Anthropic and self-hosted ciphertext are not interchangeable.
  *
  * Blob layout: nonce (12) || ciphertext || tag (16)
  */

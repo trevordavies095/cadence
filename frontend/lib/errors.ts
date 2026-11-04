@@ -52,8 +52,7 @@ const BY_CODE: Record<string, string> = {
     "Coach Cade is already reading your week. Check back in a couple of minutes.",
   nothing_to_restore: "There is nothing earlier to go back to.",
   not_applied: "That change was already handled.",
-  llm_not_configured:
-    "Coach Cade isn’t connected yet. Add the Anthropic key in Settings.",
+  llm_not_configured: "Coach Cade isn’t connected yet. Set it up in Settings.",
   llm_http_error: COACH_UNAVAILABLE,
   llm_transport_error: COACH_UNAVAILABLE,
   llm_schema_invalid: COACH_UNAVAILABLE,
@@ -81,6 +80,8 @@ const BY_CODE: Record<string, string> = {
     "Couldn’t save that securely. Ask whoever set up the app to check the server settings.",
   goal_required: "Tell Coach Cade what you are training for.",
   schedule_required: "Tell Coach Cade which days you can run.",
+  unknown_model: "That model isn’t available with your key. Choose another one.",
+  effort_not_supported: "That model can’t think at that level. Choose another level.",
 };
 
 function isValidationCode(code: string): boolean {
@@ -100,6 +101,9 @@ function isNetworkFailure(err: unknown): boolean {
  */
 export function describeError(err: unknown, fallback?: string): UiError {
   if (err instanceof ApiError) {
+    // The API words this one for the provider the athlete chose (an Anthropic key
+    // or their own model server); the sentence above is the fallback.
+    if (err.code === "llm_not_configured" && err.apiMessage) return err.apiMessage;
     if (err.code && BY_CODE[err.code]) return BY_CODE[err.code];
     if (err.code && isValidationCode(err.code)) return CHECK_YOUR_ANSWER;
     if (err.status === 502 || err.status === 503 || err.status === 504) {

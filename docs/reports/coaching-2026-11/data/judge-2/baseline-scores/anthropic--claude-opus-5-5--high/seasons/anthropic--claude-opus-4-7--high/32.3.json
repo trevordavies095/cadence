@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Marisol's 12-mile week with \"legs came back by Thursday\" looks like recovery from a big effort, probably a race. The draft handles her return carefully. It answers both questions directly: no jump back to 40 miles and no speedwork yet. The plan comes to about 24 miles, all easy. The only faster running is 4 x 20-second strides, which counts as light touch, not quality work. The long run is a modest 8 miles. The week is well under her recent 41–46 miles but sensibly above 12, so there's no sharp jump. It also follows her usual pattern of Monday and Friday off with the long run on Sunday. Every day is clear enough to run as written, and it gives an honest view of the 10K as a tune-up. Two things hold it back from a 5. It doesn't lay out what the following weeks look like on the way back to 40 miles and speedwork, which matters for someone this eager to train. Some details, like the HR cap under 140 and the Thanksgiving date, are asserted without anything on the card to back them up.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:20:53.844Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2257,
+  "outputTokens": 984,
+  "thinkingTokens": 528,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1147,
+  "costUsd": 0.028708000000000004,
+  "timing": {
+    "ttftMs": 2168,
+    "totalMs": 10439,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2168,
+        "totalMs": 10439,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2257,
+        "outputTokens": 984
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Marisol's 12-mile week with \"legs came back by Thursday\" looks like recovery from a big effort, probably a race. The draft handles her return carefully. It answers both questions directly: no jump back to 40 miles and no speedwork yet. The plan comes to about 24 miles, all easy. The only faster running is 4 x 20-second strides, which counts as light touch, not quality work. The long run is a modest 8 miles. The week is well under her recent 41–46 miles but sensibly above 12, so there's no sharp jump. It also follows her usual pattern of Monday and Friday off with the long run on Sunday. Every day is clear enough to run as written, and it gives an honest view of the 10K as a tune-up. Two things hold it back from a 5. It doesn't lay out what the following weeks look like on the way back to 40 miles and speedwork, which matters for someone this eager to train. Some details, like the HR cap under 140 and the Thanksgiving date, are asserted without anything on the card to back them up."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Last week landed cleanly, so we add a little running this week but hold off on speedwork. …\nAnswers: (1) Short answer: not yet on either one. … (2) Here is what I would like to do instead. … (3) On the Thanksgiving 10K: it is five weeks out, which is enough time to sharpen if you want it, but I would treat it as a tune-up effort rather than…\nNext week:\nMon: rest. Full day off to keep protecting the recovery.\nTue: easy, 4 mi, conversational, heart rate under 140. Eases back into the normal weekly…\nWed: easy, 5 mi, with 4 x 20-second strides on flat ground late in the run. Wakes up the…\nThu: easy, 4 mi, flat and relaxed. Keeps the week aerobic and simple.\nFri: rest. Standard rest day, honor it.\nSat: easy, 3 mi, very relaxed. Shakeout before the longer Sunday.\nSun: easy, 8 mi, steady and conversational, no pace target. First real long-ish run…\n\nScore this draft: call submit_coaching_score once."
+}

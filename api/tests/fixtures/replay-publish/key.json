@@ -1,0 +1,33 @@
+{
+  "baseline": "anthropic--claude-opus-4-7--xhigh",
+  "candidate": "self_hosted--test-model--high",
+  "seed": 1,
+  "generatedAt": "2026-11-01T23:53:53.655Z",
+  "roots": ["snapshot", "seasons"],
+  "sample": "rule",
+  "notes": [],
+  "pairs": {
+    "seasons-03": {
+      "A": "anthropic--claude-opus-4-7--xhigh",
+      "B": "self_hosted--test-model--high",
+      "input": "seasons/03",
+      "operation": "weekly_reply",
+      "source": "1-stay-fit-w3.json",
+      "why": "stay-fit season, week 3 (mid-season)",
+      "baselineStatus": "ok",
+      "candidateStatus": "ok",
+      "excerpts": { "baseline": "A steady week, nothing to change.", "candidate": "Good week. Keep going." }
+    },
+    "snapshot-06": {
+      "A": "self_hosted--test-model--high",
+      "B": "anthropic--claude-opus-4-7--xhigh",
+      "input": "snapshot/06",
+      "operation": "weekly_reply",
+      "source": "snapshot call",
+      "why": "injury-flag week",
+      "baselineStatus": "ok",
+      "candidateStatus": "failed",
+      "excerpts": { "baseline": "The right Achilles is signaling, so this week is easy miles only.", "candidate": "(refused)" }
+    }
+  }
+}

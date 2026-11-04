@@ -78,9 +78,12 @@ export function assertProvider(expected) {
   return rows.length;
 }
 
-/** Delete the saved Anthropic key and Tempo credentials. The LLM call log stays. */
+/**
+ * Delete the saved Anthropic key and Tempo credentials, and the coach model setting the build
+ * used, so the demo shows the tested default. The LLM call log stays.
+ */
 export function scrubSecrets() {
-  sql("DELETE FROM anthropic_connection; DELETE FROM tempo_connection;");
+  sql("DELETE FROM anthropic_connection; DELETE FROM tempo_connection; DELETE FROM coach_model_settings;");
 }
 
 /** Strings that must never appear in a published snapshot. */

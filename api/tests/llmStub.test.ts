@@ -8,6 +8,7 @@ import {
   expectedPlanDates,
   validatePrescribedWeek,
   validateWeeklyReply,
+  checkWeeklyReply,
   type LlmPort,
   type WeeklyReply,
 } from "../src/llm/index.js";
@@ -21,6 +22,7 @@ import {
   TEST_DATA_PROTECTION_KEY,
   unlockPlanCheckIn,
 } from "./helpers.js";
+import { weeklyForm } from "./weeklyForms.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP = path.join(__dirname, "fixtures", "tempo-export-mini.zip");
@@ -115,21 +117,7 @@ describe("prescribed-week schema validation", () => {
     expect(noRun.ok).toBe(false);
     if (!noRun.ok) expect(noRun.error).toMatch(/requires a run/);
 
-    const badReply = validateWeeklyReply(
-      {
-        headline: "A steady week.",
-        analysis: "",
-        prescribedWeek: {
-          week: ISO_WEEK,
-          days: dates.map((date) => ({
-            date,
-            dayType: "rest",
-            run: null,
-          })),
-        },
-      },
-      WEEK_START,
-    );
+    const badReply = validateWeeklyReply(weeklyForm(WEEK_START, { analysis: "" }), WEEK_START);
     expect(badReply.ok).toBe(false);
     if (!badReply.ok) expect(badReply.error).toMatch(/analysis/);
   });
@@ -151,7 +139,7 @@ describe("createStubLlmPort", () => {
     // The soft-tissue concern is something Coach Cade is watching.
     expect(reply.flags?.map((f) => f.title).join(" ")).toMatch(/soft-tissue/i);
 
-    const checked = validateWeeklyReply(reply, PLAN_WEEK_START);
+    const checked = checkWeeklyReply(reply, PLAN_WEEK_START);
     expect(checked.ok).toBe(true);
     if (!checked.ok) return;
 
@@ -159,9 +147,10 @@ describe("createStubLlmPort", () => {
     expect(checked.value.prescribedWeek.days).toHaveLength(7);
     expect(checked.value.prescribedWeek.days[0]!.date).toBe(PLAN_WEEK_START);
     expect(checked.value.prescribedWeek.days[6]!.dayType).toBe("long");
-    expect(checked.value.prescribedWeek.days[3]!.run?.structure).toBeTruthy();
-    expect(checked.value.prescribedWeek.days[3]!.run?.paceOrHr).toBeTruthy();
-    expect(checked.value.prescribedWeek.days[3]!.run?.shoes).toBeTruthy();
+    // The workout, effort and shoes are written in the day's line; every line files.
+    expect(checked.value.prescribedWeek.days[3]!.line).toMatch(/threshold/);
+    expect(checked.value.prescribedWeek.days[3]!.line).toMatch(/race flat/);
+    expect(checked.value.prescribedWeek.days.every((d) => d.parsed === true && Boolean(d.line))).toBe(true);
     expect(checked.value.settingsProposalBullets?.length).toBeGreaterThan(0);
   });
 
@@ -230,7 +219,7 @@ describe("POST /week/reply week-loop (export TempoPort + LlmPort stub)", () => {
     expect(reply.headline).toMatch(/looks workable/);
     // Reviewed week is 2026-W43 (Mon 2026-10-19); the plan is for 2026-W44.
     const weekStart = "2026-10-26";
-    const validated = validateWeeklyReply(reply, weekStart);
+    const validated = checkWeeklyReply(reply, weekStart);
     expect(validated.ok).toBe(true);
     if (!validated.ok) return;
 
@@ -240,7 +229,7 @@ describe("POST /week/reply week-loop (export TempoPort + LlmPort stub)", () => {
       (d) => d.dayType === "quality",
     );
     expect(quality?.run?.distanceM).toBeGreaterThan(0);
-    expect(quality?.run?.shoes).toBeTruthy();
+    expect(quality?.line).toMatch(/lighter trainer/);
   });
 
   it("uses injected LlmPort (weekly reply flow seam)", async () => {

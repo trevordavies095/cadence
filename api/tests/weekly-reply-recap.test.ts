@@ -4,7 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
-import { buildStubWeeklyReply } from "../src/llm/index.js";
+import { buildStubWeeklyForm } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket } from "../src/packet/index.js";
 import { saveWeekRecap } from "../src/recap/recapStore.js";
@@ -28,7 +28,7 @@ const STORED_RECAP =
 const EXPLICIT_RECAP = "## Explicit\nEXPLICIT-MARKER-XYZ";
 
 function stubReply() {
-  return buildStubWeeklyReply(
+  return buildStubWeeklyForm(
     buildModelPacket({
       dossier: null,
       recapMarkdown: null,

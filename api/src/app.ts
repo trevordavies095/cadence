@@ -66,8 +66,10 @@ export type CreateAppOptions = {
    * stub remains the CI default.
    */
   llmPort?: LlmPort;
-  /** Injected fetch for the default Anthropic LlmPort (tests). */
+  /** Injected fetch for the default Anthropic LlmPort and the model listing (tests). */
   llmFetch?: typeof globalThis.fetch;
+  /** Cap on a self-hosted Test connection probe (tests). Defaults to the self-hosted idle limit. */
+  selfHostedTestTimeoutMs?: number;
   /** LLM call log sink (tests inject a failing one). Defaults to Postgres. */
   llmCallRecorder?: LlmCallRecorder;
   /**
@@ -143,19 +145,27 @@ export function createApp(options?: CreateAppOptions): Hono {
   app.route("/", healthRoutes);
   app.route("/", disclaimerRoutes);
   app.route("/", privacyRoutes);
-  app.route("/", createSettingsRoutes({ dataProtectionKey: options?.dataProtectionKey, sources }));
+  app.route(
+    "/",
+    createSettingsRoutes({
+      dataProtectionKey: options?.dataProtectionKey,
+      sources,
+      anthropicFetch: options?.llmFetch,
+      selfHostedTestTimeoutMs: options?.selfHostedTestTimeoutMs,
+    }),
+  );
   app.route("/", createTempoRoutes({ tempoPort }));
   app.route("/", createThreadRoutes({ clock }));
   app.route("/", createLlmCallLogRoutes({ recorder: llmCallRecorder }));
   app.route("/", createDossierCorrectionRoutes({ llmPort, clock }));
   app.route("/", createDossierAuditRoutes({ llmPort, clock }));
   app.route("/", createDossierRoutes({ clock }));
-  app.route("/", createOnboardingRoutes({ tempoPort, llmPort, clock }));
+  app.route("/", createOnboardingRoutes({ tempoPort, llmPort, clock, sources }));
   app.route("/", createGoalRoutes({ clock, llmPort }));
   app.route("/", createWeekRoutes(clock, athleteTimezone, tempoPort));
   app.route("/", createLoopStatusRoutes(clock, athleteTimezone, sources));
   app.route("/", createHomeRoutes({ clock, athleteTimezone, tempoPort, sources }));
-  app.route("/", createPrescribedRoutes({ tempoPort, clock }));
+  app.route("/", createPrescribedRoutes({ tempoPort, clock, llmPort }));
   app.route("/", createRecapRoutes({ tempoPort }));
   app.route("/", createRecapDepthRoutes({ tempoPort }));
   app.route("/", createRecapSubjectiveRoutes({ tempoPort, runner: replyRunner, clock }));

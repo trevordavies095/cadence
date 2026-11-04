@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 2,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Not unsafe. Nessa reported no pain or illness. The plan has about 16–18 minutes of running a session, which roughly matches the ~7 km weeks she was doing before. That isn't a sharp jump back after one missed week. The plan is also clear enough to follow day by day.\n\nBut the draft doesn't fit her. Her goal is to run the whole 5K on 15 Nov without walking. What she needs is longer continuous running, not more speed. Even so, the draft adds a \"quality\" session at race pace to \"raise your speed\". It wraps a beginner's walk-run plan in jargon (\"build phase\", \"80% easy\", \"back-to-back hard day\"). It also claims it \"keeps the easy volume high\" after a week with zero runs. It notes she missed all three runs but never asks why or how to help her get the runs done. It ignores her excitement, never mentions the race date, and doesn't plan the run segments toward running the full distance in the two weeks or so before the race. The plan can be run, but it's generic and misses what matters this week.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:50:25.688Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 1992,
+  "outputTokens": 852,
+  "thinkingTokens": 393,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 962,
+  "costUsd": 0.025008000000000002,
+  "timing": {
+    "ttftMs": 2940,
+    "totalMs": 9662,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2940,
+        "totalMs": 9662,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 1992,
+        "outputTokens": 852
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "2",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Not unsafe. Nessa reported no pain or illness. The plan has about 16–18 minutes of running a session, which roughly matches the ~7 km weeks she was doing before. That isn't a sharp jump back after one missed week. The plan is also clear enough to follow day by day.\n\nBut the draft doesn't fit her. Her goal is to run the whole 5K on 15 Nov without walking. What she needs is longer continuous running, not more speed. Even so, the draft adds a \"quality\" session at race pace to \"raise your speed\". It wraps a beginner's walk-run plan in jargon (\"build phase\", \"80% easy\", \"back-to-back hard day\"). It also claims it \"keeps the easy volume high\" after a week with zero runs. It notes she missed all three runs but never asks why or how to help her get the runs done. It ignores her excitement, never mentions the race date, and doesn't plan the run segments toward running the full distance in the two weeks or so before the race. The plan can be run, but it's generic and misses what matters this week."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: This week keeps the easy volume high and adds one quality interval session to raise your speed without overloading.\nThe athlete missed all runs for the week that was reviewed. They are a beginner with a 5-K goal and we are in the build phase, so the focus is on keeping 80 % of the volume easy and inserting only one quality session that is not placed on a back-to-back hard day.\nNext week:\nMon: easy, 24 min, 8 x 2 min run and 1 min walk, keep pace easy to build aerobic base.\nTue: rest, allow muscle recovery.\nWed: easy, 27 min, 9 x 2 min run and 1 min walk, maintain easy tempo.\nThu: rest, keep overall rest ratio.\nFri: rest, no hard work before Saturday quality.\nSat: quality, 30 min, 6 x 3 min run and 1 min walk, target steady effort around race pace.\nSun: rest, allow full recovery before next week.\n\nScore this draft: call submit_coaching_score once."
+}

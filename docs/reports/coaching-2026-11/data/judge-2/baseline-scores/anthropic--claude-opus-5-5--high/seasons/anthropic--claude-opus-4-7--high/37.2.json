@@ -1,0 +1,61 @@
+{
+  "input": "seasons/37",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft is safe. Nessa reported no pain and feels great. It keeps her three days (Mon/Wed/Sat), keeps every run conversational, and the week's total time is close to her recent ~7 km weeks. It also deals with the missed week directly and sensibly: just get all three runs done. That covers fitting the athlete and answering what she said. The weakness is how fast the run intervals grow after a week of no running. They go from 2/1 to 3/1 to 4/1 in one week, and Saturday is 30 min with 24 min of running. That is the steepest step and may be well beyond what this new runner has done. A gentler build, or repeating a known level first, would suit someone coming back from a gap better. The draft says she is restarting \"at the level you handled well two weeks ago\", but the card gives no detail of her past sessions, so that may be made up. It also never mentions the 15 November 5K goal or ties the plan to it, even though she said she's \"excited for next week\". The plan is clear enough to run as written.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:22:18.883Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2172,
+  "outputTokens": 1077,
+  "thinkingTokens": 627,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1098,
+  "costUsd": 0.030227999999999998,
+  "timing": {
+    "ttftMs": 2754,
+    "totalMs": 12443,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2754,
+        "totalMs": 12443,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2172,
+        "outputTokens": 1077
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft is safe. Nessa reported no pain and feels great. It keeps her three days (Mon/Wed/Sat), keeps every run conversational, and the week's total time is close to her recent ~7 km weeks. It also deals with the missed week directly and sensibly: just get all three runs done. That covers fitting the athlete and answering what she said. The weakness is how fast the run intervals grow after a week of no running. They go from 2/1 to 3/1 to 4/1 in one week, and Saturday is 30 min with 24 min of running. That is the steepest step and may be well beyond what this new runner has done. A gentler build, or repeating a known level first, would suit someone coming back from a gap better. The draft says she is restarting \"at the level you handled well two weeks ago\", but the card gives no detail of her past sessions, so that may be made up. It also never mentions the 15 November 5K goal or ties the plan to it, even though she said she's \"excited for next week\". The plan is clear enough to run as written."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 6.8, 7.3, 2.8, 7 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"All good.\"\nFeeling: \"Feeling great, excited for next week.\"\n\n── THE DRAFT ──\nTells Nessa: You missed all three runs last week, so we restart at the level you handled well two weeks ago and then stretch the run intervals…\nThe gap matters more than any single session, so the priority is simply getting the three runs done this week. Your note said you felt great, which suggests life got in the way rather than your body.\nNext week:\nMon: easy, walk-run 24 min, 8 x (2 min run / 1 min walk), conversational effort. Eases…\nTue: rest. Full recovery day, a dog walk is fine.\nWed: easy, walk-run 24 min, 6 x (3 min run / 1 min walk), conversational effort. First…\nThu: rest. Keep it light, dog walk only.\nFri: rest. Legs fresh for Saturday.\nSat: easy, walk-run 30 min, 6 x (4 min run / 1 min walk), conversational effort. Longest…\nSun: rest. Recover and tell me how the week felt in your check-in.\n\nScore this draft: call submit_coaching_score once."
+}

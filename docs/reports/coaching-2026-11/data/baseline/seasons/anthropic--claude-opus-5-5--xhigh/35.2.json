@@ -1,0 +1,200 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w3.json",
+  "originalCallAt": null,
+  "model": "claude-opus-5-5",
+  "replayedAt": "2026-11-03T17:22:27.135Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 8 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 10246,
+  "outputTokens": 8172,
+  "thinkingTokens": 6278,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 7242,
+  "estimatedInputTokens": 4505,
+  "timing": {
+    "ttftMs": 3289,
+    "totalMs": 80505,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3289,
+        "totalMs": 80505,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 10246,
+        "outputTokens": 8172
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-14",
+    "isoWeek": "2026-W38",
+    "recentWeeklyM": 4220
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Recovery comes first next week. Don't add back the runs you missed, and only start walk-running again on Wednesday if the fever has stayed away and the cough is easing.",
+    "flags": [
+      {
+        "title": "Missed runs",
+        "detail": "The cold took out Wednesday and Saturday. Leave them missed and don't add them to next week."
+      },
+      {
+        "title": "Check before running",
+        "detail": "Run on Wed Sep 16 only if the fever hasn't come back, the cough is easing and you feel more like yourself. Otherwise, walk."
+      },
+      {
+        "title": "Heart rate when you return",
+        "detail": "Monday averaged 139, against your usual 132 to 136. If it sits clearly higher on the same walk-run, add more walking."
+      },
+      {
+        "title": "The day after each run",
+        "detail": "If you feel more tired or the cough is worse the next day, repeat the shorter session rather than stepping up."
+      },
+      {
+        "title": "Sleep",
+        "detail": "You averaged 6 hours this week, down from 7. Aim for at least 7 hours while you recover."
+      }
+    ],
+    "answers": [
+      {
+        "question": "Can I do all three runs next week and add the two I missed?",
+        "answer": "No. Missed runs are best left missed. Adding them would squeeze five sessions into one week while you're still getting over a fever.\n\nNext week has two slightly shorter walk-runs, on Wednesday and Saturday. Monday stays a rest day while you finish recovering. Run on Wednesday only if the fever has stayed away, the cough is easing and you no longer feel wiped out.\n\nIf Wednesday goes well, Saturday is a little longer. The week after can go back to your full 24-minute session."
+      }
+    ],
+    "analysis": "## How the week went\nYou did Monday exactly as planned: 24 minutes of 2 minutes running and 1 minute walking, at effort 6/10. Then the cold wiped out Wednesday and Saturday. That left one run and 2.78 km for the week, against about 7 km in each of the two weeks before. Not running with a fever was the right call.\n\n## Why next week steps back\nAfter a fever and several days of feeling wiped out, the goal is to come back without setting yourself back. The two walk-runs use the same 2-minute run, 1-minute walk pattern you already know, just with fewer repeats. Starting smaller lets you test how your body copes before going back to your full session.\n\n## Monday's heart rate\nMonday's heart rate ran higher than your earlier runs, even though it didn't feel any harder.\n\n| Run | Avg heart rate | Time in zone 3 | Effort |\n| --- | --- | --- | --- |\n| Sat Aug 29 | 132 | 25% | 7/10 |\n| Mon Aug 31 | 133 | 33% | 6/10 |\n| Wed Sep 2 | 132 | 24% | 5/10 |\n| Sat Sep 5 | 136 | 45% | 7/10 |\n| Mon Sep 7 | 139 | 83% | 6/10 |\n\nThe cold showed up the next day, but one run on its own doesn't tell us much. When you're back, compare your runs with the 132 to 136 range. It's a simple way to see whether you're ready for more.\n\n## The road to November\nRunning the whole 5K is still realistic in eight weeks, though it will take steady weeks from here. At your stage, building means making the running stretches longer bit by bit, not running faster. Pushing through now and getting ill again would cost far more time than one easy week.",
+    "prescribedWeek": {
+      "week": "2026-W38",
+      "days": [
+        {
+          "date": "2026-09-14",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "No running while you still feel wiped out, though the usual gentle dog walk is fine if you're up to it. Gives your body room to finish getting over the fever.",
+          "line": "Mon 2026-09-14: rest. No running while you still feel wiped out, though the usual gentle dog walk is fine if you're up to it. Gives your body room to finish getting over the fever.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-15",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Dog walk only, at an easy pace. One more quiet day before you try a run.",
+          "line": "Tue 2026-09-15: rest. Dog walk only, at an easy pace. One more quiet day before you try a run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-16",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1080,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run of 6 x 2 min run and 1 min walk, slow enough to talk. Only do it if the fever has stayed away, the cough is easing and you feel more like yourself, otherwise walk for 20 min instead. A shorter version of a session you already handle, to test how you feel.",
+          "line": "Wed 2026-09-16: easy, 18 min, walk-run of 6 x 2 min run and 1 min walk, slow enough to talk. Only do it if the fever has stayed away, the cough is easing and you feel more like yourself, otherwise walk for 20 min instead. A shorter version of a session you already handle, to test how you feel.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-17",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "A dog walk is fine. Notice how you feel the day after your first run back.",
+          "line": "Thu 2026-09-17: rest. A dog walk is fine. Notice how you feel the day after your first run back.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-18",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "A dog walk is fine. Keeps your usual two quiet days before Saturday.",
+          "line": "Fri 2026-09-18: rest. A dog walk is fine. Keeps your usual two quiet days before Saturday.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1260,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "walk-run of 7 x 2 min run and 1 min walk, at an easy pace where you can still talk. Only do it if Wednesday felt fine and the cough hasn't got worse. If Wednesday felt hard, repeat Wednesday's 18 min instead. One small step back toward your normal 24 min session.",
+          "line": "Sat 2026-09-19: easy, 21 min, walk-run of 7 x 2 min run and 1 min walk, at an easy pace where you can still talk. Only do it if Wednesday felt fine and the cough hasn't got worse. If Wednesday felt hard, repeat Wednesday's 18 min instead. One small step back toward your normal 24 min session.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "A dog walk is fine. Recovery before next week, when the plan aims to get you back to the full 24 min.",
+          "line": "Sun 2026-09-20: rest. A dog walk is fine. Recovery before next week, when the plan aims to get you back to the full 24 min.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "You had a cold with a fever from Tue Sep 8 to Thu Sep 10, and the cough was still there going into the week of Sep 14.",
+      "Before the cold, your walk-run session was 8 x 2 min run and 1 min walk, about 24 min in total."
+    ],
+    "safetyCallouts": [
+      {
+        "title": "Get the cough checked if it hangs on.",
+        "body": "If it isn't clearly easing over the next week, gets worse, or the fever comes back, see your GP before running again.",
+        "severity": "caution"
+      },
+      {
+        "title": "Stop if you get chest symptoms.",
+        "body": "If you feel chest pain, a racing or fluttering heartbeat, dizziness or unusual breathlessness while running, stop and see a doctor promptly.",
+        "severity": "caution"
+      }
+    ]
+  }
+}

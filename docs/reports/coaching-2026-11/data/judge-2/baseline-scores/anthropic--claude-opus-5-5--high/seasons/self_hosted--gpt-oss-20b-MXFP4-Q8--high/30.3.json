@@ -1,0 +1,61 @@
+{
+  "input": "seasons/30",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a safe draft that answers the question correctly. It's a clear no to the 16-miler, and the reason it gives (it would throw off the taper and raise injury risk) is the right one. Race week totals about 16 miles plus the race, which follows sensibly from the 34-mile week. No must-never check is triggered: nothing hurts, and her heavy legs are a normal taper feeling, not a red flag.\n\nIt loses points in three places:\n1) It barely speaks to how she feels. She's nervous and thinks she's losing fitness, and the draft never tells her that heavy, flat legs are normal in a taper or that her fitness is already built. That reassurance is what she was really asking for.\n2) Some days contradict themselves, so they can't be run as written. Wednesday is labelled \"easy\" but also \"gentle tempo,\" under a heart-rate cap. Saturday says \"easy… at marathon pace\" while keeping heart rate under 150. The Tuesday note about loosening up \"after the long\" run doesn't fit, because Monday is a rest day. Sunday promises split targets and a race-pace plan but gives no splits.\n3) It doesn't fit her schedule. It runs on Friday, her usual day off, and rests on Thursday. That's minor in race week, but the draft doesn't explain the swap.\n\nThe summary line (\"Keep the volume low, rest hard, and finish the race fresh\") is generic. The decision is right but the details are sloppy, so it gets a middling score.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:37:55.203Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2202,
+  "outputTokens": 979,
+  "thinkingTokens": 376,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1100,
+  "costUsd": 0.028388,
+  "timing": {
+    "ttftMs": 3427,
+    "totalMs": 11038,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3427,
+        "totalMs": 11038,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2202,
+        "outputTokens": 979
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a safe draft that answers the question correctly. It's a clear no to the 16-miler, and the reason it gives (it would throw off the taper and raise injury risk) is the right one. Race week totals about 16 miles plus the race, which follows sensibly from the 34-mile week. No must-never check is triggered: nothing hurts, and her heavy legs are a normal taper feeling, not a red flag.\n\nIt loses points in three places:\n1) It barely speaks to how she feels. She's nervous and thinks she's losing fitness, and the draft never tells her that heavy, flat legs are normal in a taper or that her fitness is already built. That reassurance is what she was really asking for.\n2) Some days contradict themselves, so they can't be run as written. Wednesday is labelled \"easy\" but also \"gentle tempo,\" under a heart-rate cap. Saturday says \"easy… at marathon pace\" while keeping heart rate under 150. The Tuesday note about loosening up \"after the long\" run doesn't fit, because Monday is a rest day. Sunday promises split targets and a race-pace plan but gives no splits.\n3) It doesn't fit her schedule. It runs on Friday, her usual day off, and rests on Thursday. That's minor in race week, but the draft doesn't explain the swap.\n\nThe summary line (\"Keep the volume low, rest hard, and finish the race fresh\") is generic. The decision is right but the details are sloppy, so it gets a middling score."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 53, 40, 42, 46 mi\nThis week: 34 mi over 5 runs.\nBody: \"Legs heavy and flat. Nothing hurts, they just feel dead.\"\nFeeling: \"Nervous. I feel like I'm losing fitness.\"\nAsks: \"Is it crazy to do one more 16-miler on Wednesday so I feel ready?\"\n\n── THE DRAFT ──\nTells Marisol: Keep the volume low, rest hard, and finish the race fresh.\nAnswers: Adding a 16-mile run on Wednesday would throw off your taper and raise injury risk. Stick to the shorter runs you have planned and let the race be the only long effort this week.\nNext week:\nMon: rest\nTue: easy, 5 mi, keep heart rate under 150, flat route. Loosens the legs after the long…\nWed: easy, 6 mi, keep heart rate under 150, gentle tempo. Light building.\nThu: rest\nFri: easy, 3 mi, very light, strides optional. Refresh.\nSat: easy, 2 mi, at marathon pace with 4 strides, keep heart rate under 150. Familiarity.\nSun: race, 26.2 mi, aim under 3:45. Race-pace plan, split targets.\n\nScore this draft: call submit_coaching_score once."
+}

@@ -1,0 +1,234 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w06.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:45:45.778Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 8 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "repaired",
+  "repairs": "plan 2026-08-31 not filed: no line; plan line for 2026-09-07 dropped: outside the plan week",
+  "stopReason": "tool_use",
+  "inputTokens": 15908,
+  "outputTokens": 1669,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 4289,
+  "estimatedInputTokens": 9075,
+  "timing": {
+    "ttftMs": 399,
+    "totalMs": 52981,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 399,
+        "totalMs": 28136,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "repaired",
+        "repairs": "plan 2026-08-31 not filed: no line; plan line for 2026-09-07 dropped: outside the plan week",
+        "inputTokens": 15908,
+        "outputTokens": 1669
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 1194,
+        "totalMs": 24845,
+        "request": {
+          "kind": "fix_lines",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ],
+          "fixDates": [
+            "2026-08-31"
+          ],
+          "fixed": [
+            "2026-08-31"
+          ]
+        },
+        "outcome": "repaired",
+        "repairs": "plan 2026-08-31 filed by the retry",
+        "inputTokens": 16427,
+        "outputTokens": 1421
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-08-31",
+    "isoWeek": "2026-W36",
+    "recentWeeklyM": 47495.764800000004
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [
+      {
+        "date": "2026-08-31",
+        "reason": "no line"
+      }
+    ],
+    "retried": true,
+    "retryAskedFor": [
+      "2026-08-31"
+    ],
+    "fixedByRetry": [
+      "2026-08-31"
+    ],
+    "bareNumbers": 0,
+    "droppedLines": [
+      {
+        "date": "2026-09-07",
+        "reason": "outside the plan week"
+      }
+    ],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Add the missed miles next week by extending Saturday easy and the long run.",
+    "flags": [
+      {
+        "title": "Missed Thursday easy",
+        "detail": "0 mi, add 5 mi next week."
+      },
+      {
+        "title": "Long run short",
+        "detail": "11 vs 13 mi, add 4 mi next week."
+      },
+      {
+        "title": "Heat & sleep",
+        "detail": "high HR drift, low sleep, watch for fatigue."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I missed Thursday and cut the long run short. Should I make up the miles next week?",
+        "answer": "Yes, add the missing mileage next week by extending Saturday easy and the long run."
+      }
+    ],
+    "analysis": "After reviewing your week, you missed the Thursday easy run and finished the long run 2 miles short of the plan. You still ran 27 miles instead of the planned 36, so you are 9 miles behind. To keep building while respecting recovery, add 5 miles of easy running on Saturday and 4 miles to the long run. This keeps the total volume close to the target, spreads hard work on one day, and respects your body’s needs. Heat and sleep were a challenge, so keep the long run under 150 bpm and stay well‑hydrated.",
+    "prescribedWeek": {
+      "week": "2026-W36",
+      "days": [
+        {
+          "date": "2026-08-31",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-08-31: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-01",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-09-01: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-02",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate below 150, flat route.",
+          "line": "Tue 2026-09-02: easy, 6 mi, keep heart rate below 150, flat route.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-03",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 12875,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "include 2 x 1.5 mi at threshold.",
+          "line": "Wed 2026-09-03: quality, 8 mi, include 2 x 1.5 mi at threshold.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-04",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate under 150.",
+          "line": "Thu 2026-09-04: easy, 5 mi, keep heart rate under 150.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-05",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-09-05: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-06",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "add 1 mile to previous 4 mi to catch up.",
+          "line": "Sat 2026-09-06: easy, 5 mi, add 1 mile to previous 4 mi to catch up.",
+          "parsed": true
+        }
+      ]
+    },
+    "safetyCallouts": [
+      {
+        "title": "Heat and Sleep: The hot weather and low sleep may increase fatigue and HR drift.",
+        "body": "Stay hydrated, avoid running in the hottest part of the day, and consider adjusting the long run pace if you feel dizzy or unusually tired.",
+        "severity": "caution"
+      }
+    ]
+  }
+}

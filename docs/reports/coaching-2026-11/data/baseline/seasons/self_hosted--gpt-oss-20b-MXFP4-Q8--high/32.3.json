@@ -1,0 +1,175 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w14.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:50:18.425Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 15759,
+  "outputTokens": 1008,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2143,
+  "estimatedInputTokens": 8787,
+  "timing": {
+    "ttftMs": 891,
+    "totalMs": 17555,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 891,
+        "totalMs": 17555,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 15759,
+        "outputTokens": 1008
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-26",
+    "isoWeek": "2026-W44",
+    "recentWeeklyM": 53603.22528
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "This week ran too much; keep it easy next week and defer hard work until recovery improves.",
+    "flags": [
+      {
+        "title": "Overrun",
+        "detail": "ran 18.5 mi vs 12 planned, consider lighter week. Heart‑rate low, zone 1–2, so easy effort is appropriate. Rest days were respected. Recovery state strong, but avoid high intensity until volume is back. Watch for lingering muscle soreness."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?",
+        "answer": "Yes, you can start thinking about a 10K effort next week, but keep the mileage low this week. Aim for 25–30 miles of easy running and add a very short, light speed piece if you feel good, otherwise stay at easy pace."
+      }
+    ],
+    "analysis": "This week the athlete completed all easy sessions and ran 18.5 miles, far above the planned 12 miles. No sessions were missed or missed rest days. Heart‑rate numbers stayed in zones 1–2, but the volume suggests the body is still on a buildup. The athlete asked if they can jump back to 40 miles and add speedwork for a 10K. In recovery phase the focus should stay on easy mileage, gradual return to volume, and a very light speed session if any, to avoid overloading after the race. The plan for the next week keeps volume low, all easy runs, and no hard work. The athlete can then plan the 10K effort for the week after, once recovery is clear.",
+    "prescribedWeek": {
+      "week": "2026-W44",
+      "days": [
+        {
+          "date": "2026-10-26",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no run.",
+          "line": "Mon 2026-10-26: rest, no run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-27",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no run.",
+          "line": "Tue 2026-10-27: rest, no run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep pace under 10:45/mi to stay in recovery.",
+          "line": "Wed 2026-10-28: easy, 3 mi, keep pace under 10:45/mi to stay in recovery.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no run.",
+          "line": "Thu 2026-10-29: rest, no run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "flat route, keep heart rate in zone 1.",
+          "line": "Fri 2026-10-30: easy, 4 mi, flat route, keep heart rate in zone 1.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-31",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "no run.",
+          "line": "Sat 2026-10-31: rest, no run.",
+          "parsed": true
+        },
+        {
+          "date": "2026-11-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "light hill, finish in comfort.",
+          "line": "Sun 2026-11-01: easy, 5 mi, light hill, finish in comfort.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

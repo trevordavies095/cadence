@@ -5,6 +5,7 @@ import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { createStubLlmPort } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
+import { savePrescribedWeek } from "../src/prescribed/store.js";
 import { waitForReplyRunsIdle } from "../src/replyRun/inflight.js";
 import { createExportTempoPort } from "../src/tempo/exportZip.js";
 import {
@@ -106,5 +107,33 @@ describe("what was last sent to the coach (#114)", () => {
     expect(lastPacket).not.toBeNull();
     expect(lastPacket.summary.weekSessionId).toBe(id);
     expect(lastPacket.summary.hasRecap).toBe(true);
+    // No plan was stored for the week, so none went along.
+    expect(lastPacket.summary.hasPlan).toBe(false);
+    expect(lastPacket.packet.prescribedWeek).toBeNull();
+  });
+
+  it("says the plan for that week went along with the coach's read of it (#59)", async () => {
+    const { app, id } = await ready();
+    await savePrescribedWeek({
+      at: new Date(SUN),
+      weekSessionId: id,
+      plan: {
+        week: "2026-W43",
+        days: Array.from({ length: 7 }, (_, i) => ({
+          date: `2026-10-${19 + i}`,
+          dayType: i === 1 ? ("easy" as const) : ("rest" as const),
+          run: i === 1 ? { type: "easy" as const, distanceM: 6000 } : null,
+        })),
+      },
+      analysis: "The plan the week was meant to follow.",
+    });
+    const res = await app.request(`/weeks/${id}/recap?skip_subjective=true`);
+    expect(res.status).toBe(200);
+    await waitForReplyRunsIdle();
+
+    const { lastPacket } = await json(await app.request("/settings/last-packet"));
+    expect(lastPacket.summary.hasPlan).toBe(true);
+    expect(lastPacket.packet.prescribedWeek.days).toHaveLength(7);
+    expect(lastPacket.packet.prescribedWeekOutcomes).toHaveLength(7);
   });
 });

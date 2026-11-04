@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The card reads as the recovery week after the marathon: legs came back by Thursday, the blister healed and she ran 12 easy miles. The draft passes the must-never checks. It turns down both the jump straight back to 40 miles and the start of speedwork. Next week is about 16 easy miles under a heart-rate cap, with two rest days and a cross-training day. The longest run is 5 miles. That's a gentle step up from 12 and eases her back to consistency instead of rushing a hard return. Each day is clear enough to run as written.\n\nWhat keeps it from a 5: the answers are bare (\"No\", \"Not yet\") with no reasons given to a runner who is keen and says she feels ready. The read also says little about her race or what comes next, apart from asking which race she wants and whether the Thanksgiving 10K is still on. That's a fair question, but it leaves the 10K plan undecided. A short explanation of why she's waiting and roughly when speedwork could start would answer her more fully.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:15:54.207Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2277,
+  "outputTokens": 883,
+  "thinkingTokens": 442,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1171,
+  "costUsd": 0.026768,
+  "timing": {
+    "ttftMs": 2670,
+    "totalMs": 9871,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2670,
+        "totalMs": 9871,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2277,
+        "outputTokens": 883
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The card reads as the recovery week after the marathon: legs came back by Thursday, the blister healed and she ran 12 easy miles. The draft passes the must-never checks. It turns down both the jump straight back to 40 miles and the start of speedwork. Next week is about 16 easy miles under a heart-rate cap, with two rest days and a cross-training day. The longest run is 5 miles. That's a gentle step up from 12 and eases her back to consistency instead of rushing a hard return. Each day is clear enough to run as written.\n\nWhat keeps it from a 5: the answers are bare (\"No\", \"Not yet\") with no reasons given to a runner who is keen and says she feels ready. The read also says little about her race or what comes next, apart from asking which race she wants and whether the Thanksgiving 10K is still on. That's a fair question, but it leaves the 10K plan undecided. A short explanation of why she's waiting and roughly when speedwork could start would answer her more fully."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Last week went exactly to plan: three easy runs for 12 miles, with rest on the other days. …\nAnswers: (1) Can I go back to 40 miles next week? No. (2) Can I start speedwork for the 10K? Not yet. (3) What comes next? Tell me which race you want next, its date, and whether the Thanksgiving 10K is still on, so I can build toward it.\nNext week:\nMon: rest. Full rest gives the legs a clean break before the easy running starts again.\nTue: easy, 3 mi, heart rate under 140, flat route. Restarts the week at a light load and…\nWed: other, 30 min easy walk or easy bike, no hard effort. Keeps you moving without…\nThu: easy, 4 mi, heart rate under 140, conversational pace. Adds a little volume while…\nFri: rest. A second rest day keeps the week light while volume grows slowly.\nSat: easy, 4 mi, heart rate under 140, flat route. Builds the weekly total toward about…\nSun: easy, 5 mi, heart rate under 140, no pace target. The longest run of the week stays…\n\nScore this draft: call submit_coaching_score once."
+}

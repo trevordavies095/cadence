@@ -13,6 +13,8 @@ export type LastOutboundPacketSummary = {
   /** Prior weeks included via lean recent-history window (#34). */
   recentHistoryCount: number;
   recentHistoryLimit: number;
+  /** The focus week's plan went along (the reviewed week's on a Sunday read, #59). */
+  hasPlan: boolean;
 };
 
 /** Persisted last outbound redacted packet for athlete inspection. */
@@ -47,6 +49,7 @@ export function summarizePacket(packet: ModelPacket): LastOutboundPacketSummary 
     attachmentWorkoutIds: packet.attachments.map((a) => a.workoutId),
     recentHistoryCount: packet.recentHistory?.length ?? 0,
     recentHistoryLimit: packet.recentHistoryLimit ?? 0,
+    hasPlan: Boolean(packet.prescribedWeek?.days?.length),
   };
 }
 

@@ -18,7 +18,8 @@ import {
   DOSSIER_V1_SYSTEM_PROMPT,
   MIDWEEK_SYSTEM_PROMPT,
   WEEKLY_SYSTEM_PROMPT,
-  buildStubMidWeekChatReply,
+  buildStubMidWeekForm,
+  buildStubWeeklyForm,
   buildStubWeeklyReply,
   createAnthropicLlmPort,
   LlmHttpError,
@@ -26,11 +27,12 @@ import {
   LlmSchemaError,
   LlmTransportError,
   resolveDefaultLlmPort,
-  validateMidWeekChatReply,
-  validateWeeklyReply,
+  checkMidWeekChatReply,
+  checkWeeklyReply,
   withCanonicalStance,
-  type MidWeekChatReply,
+  type MidWeekChatReplyForm,
   type WeeklyReply,
+  type WeeklyReplyForm,
 } from "../src/llm/index.js";
 import { migrate } from "../src/migrate.js";
 import { buildModelPacket, type ModelPacket } from "../src/packet/index.js";
@@ -70,13 +72,13 @@ function samplePacket(): ModelPacket {
   });
 }
 
-function anthropicToolResponse(reply: WeeklyReply): Response {
+function anthropicToolResponse(reply: WeeklyReplyForm | Record<string, unknown>): Response {
   return anthropicStreamResponse(
     anthropicToolMessage("submit_weekly_reply", reply),
   );
 }
 
-function anthropicMidWeekToolResponse(reply: MidWeekChatReply): Response {
+function anthropicMidWeekToolResponse(reply: MidWeekChatReplyForm): Response {
   return anthropicStreamResponse(
     anthropicToolMessage("submit_mid_week_chat_reply", reply, {
       id: "msg_midweek",
@@ -133,7 +135,7 @@ describe("Coach Cade's writing shape", () => {
 describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
   it("posts Messages API with stored key and returns validated weekly reply", async () => {
     const packet = samplePacket();
-    const expected = buildStubWeeklyReply(packet);
+    const expected = buildStubWeeklyForm(packet);
     let sawAuth = false;
     let sawToolChoice = false;
 
@@ -147,7 +149,9 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
         stream?: boolean;
         system?: string;
         messages?: Array<{ content: string }>;
+        max_tokens?: number;
       };
+      expect(body.max_tokens).toBe(20_000);
       expect(body.tool_choice).toEqual({ type: "auto" });
       expect(body.stream).toBe(true);
       expect(body.system).toContain("submit_weekly_reply");
@@ -169,12 +173,13 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
     expect(sawToolChoice).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
 
-    const checked = validateWeeklyReply(reply, PLAN_WEEK_START);
+    const checked = checkWeeklyReply(reply, PLAN_WEEK_START);
     expect(checked.ok).toBe(true);
     if (checked.ok) {
       expect(checked.value.prescribedWeek.week).toBe(PLAN_ISO_WEEK);
       expect(checked.value.prescribedWeek.days).toHaveLength(7);
     }
+    expect(reply).toEqual(buildStubWeeklyReply(packet));
   });
 
   it("throws LlmNotConfiguredError when key is missing", async () => {
@@ -245,7 +250,7 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
         activityName: "Monday 10k",
       },
     ];
-    const expected = buildStubMidWeekChatReply(packet);
+    const expected = buildStubMidWeekForm(packet);
     let sawTool = false;
 
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -277,7 +282,7 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
     const reply = await port.generateMidWeekChatReply(packet);
     expect(sawTool).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    const checked = validateMidWeekChatReply(reply);
+    const checked = checkMidWeekChatReply(reply);
     expect(checked.ok).toBe(true);
     if (checked.ok) {
       expect(checked.value.body).toContain("Attached run feedback");
@@ -296,16 +301,18 @@ describe("createAnthropicLlmPort (mocked Anthropic HTTP)", () => {
 });
 
 describe("safety callout limits in the tool schema", () => {
-  it("tells the model the same limits the validator enforces", async () => {
-    const { safetyCalloutsJsonSchema, MAX_SAFETY_CALLOUT_BODY, MAX_SAFETY_CALLOUT_TITLE, MAX_SAFETY_CALLOUTS } =
-      await import("../src/llm/index.js");
-    const schema = safetyCalloutsJsonSchema() as {
-      maxItems: number;
-      items: { properties: { title: { maxLength: number }; body: { maxLength: number } } };
-    };
-    expect(schema.maxItems).toBe(MAX_SAFETY_CALLOUTS);
-    expect(schema.items.properties.title.maxLength).toBe(MAX_SAFETY_CALLOUT_TITLE);
-    expect(schema.items.properties.body.maxLength).toBe(MAX_SAFETY_CALLOUT_BODY);
+  it("tells the model the same limits the validator enforces, on both forms, in the description", async () => {
+    const { MAX_SAFETY_CALLOUT_BODY, MAX_SAFETY_CALLOUTS } = await import("../src/llm/index.js");
+    const { midWeekChatReplyToolSchema, weeklyReplyToolSchema } = await import("../src/llm/anthropic.js");
+    for (const schema of [
+      midWeekChatReplyToolSchema(WEEK_START, "imperial"),
+      weeklyReplyToolSchema(PLAN_WEEK_START, "imperial"),
+    ]) {
+      const box = schema.properties.safetyCallouts as { type: string; description: string };
+      expect(box.type).toBe("string");
+      expect(box.description).toContain(`One per line, at most ${MAX_SAFETY_CALLOUTS} lines`);
+      expect(box.description).toContain(`under ${MAX_SAFETY_CALLOUT_BODY} characters`);
+    }
   });
 });
 
@@ -432,7 +439,7 @@ describe("resolveDefaultLlmPort + createApp LLM_PROVIDER", () => {
 
   it("selects anthropic when LLM_PROVIDER=anthropic", async () => {
     const fetchImpl = vi.fn(async () =>
-      anthropicToolResponse(buildStubWeeklyReply(samplePacket())),
+      anthropicToolResponse(buildStubWeeklyForm(samplePacket())),
     ) as unknown as typeof globalThis.fetch;
     const port = resolveDefaultLlmPort({
       env: { LLM_PROVIDER: "anthropic" },
@@ -520,7 +527,7 @@ describe("POST /week/reply live Anthropic error surfacing", () => {
     try {
       const fetchImpl = vi.fn(async (_url, init) => {
         expect(new Headers(init?.headers).get("x-api-key")).toBe(API_KEY);
-        return anthropicToolResponse(buildStubWeeklyReply(samplePacket()));
+        return anthropicToolResponse(buildStubWeeklyForm(samplePacket()));
       }) as unknown as typeof globalThis.fetch;
 
       const app = createApp({

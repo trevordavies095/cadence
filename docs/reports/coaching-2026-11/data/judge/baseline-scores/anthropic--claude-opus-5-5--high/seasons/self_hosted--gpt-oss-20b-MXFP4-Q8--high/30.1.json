@@ -1,0 +1,61 @@
+{
+  "input": "seasons/30",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft answers her question clearly: no extra 16-miler, protect the taper. Its race-week volume is sensible: about 11 easy miles plus the race, down from 34. Nothing in it breaks a must-never rule. Three things hold it back. First, it never tells her that heavy, flat legs and fear of losing fitness are normal in a taper. That reassurance is what she needs most this week. Second, it puts the race on Sunday, but the card never gives a race date. If the race isn't next weekend, the plan is wrong. Third, the plan doesn't fit her schedule. It has her running on Friday, her usual day off, and resting Thursday and Saturday, which are normally run days. Race day says \"keep target pace\" with no pace given; sub-3:45 is about 8:35/mi. There's also a typo (\"Looses legs\"). The plan is safe and runnable but generic, and it doesn't fit her or her worries well.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:48:53.807Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 1979,
+  "outputTokens": 1075,
+  "thinkingTokens": 650,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 938,
+  "costUsd": 0.029416,
+  "timing": {
+    "ttftMs": 2902,
+    "totalMs": 11766,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2902,
+        "totalMs": 11766,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 1979,
+        "outputTokens": 1075
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "reason": "The draft answers her question clearly: no extra 16-miler, protect the taper. Its race-week volume is sensible: about 11 easy miles plus the race, down from 34. Nothing in it breaks a must-never rule. Three things hold it back. First, it never tells her that heavy, flat legs and fear of losing fitness are normal in a taper. That reassurance is what she needs most this week. Second, it puts the race on Sunday, but the card never gives a race date. If the race isn't next weekend, the plan is wrong. Third, the plan doesn't fit her schedule. It has her running on Friday, her usual day off, and resting Thursday and Saturday, which are normally run days. Race day says \"keep target pace\" with no pace given; sub-3:45 is about 8:35/mi. There's also a typo (\"Looses legs\"). The plan is safe and runnable but generic, and it doesn't fit her or her worries well.",
+    "unsafe": "no",
+    "unsafe_reason": ""
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 53, 40, 42, 46 mi\nThis week: 34 mi over 5 runs.\nBody: \"Legs heavy and flat. Nothing hurts, they just feel dead.\"\nFeeling: \"Nervous. I feel like I'm losing fitness.\"\nAsks: \"Is it crazy to do one more 16-miler on Wednesday so I feel ready?\"\n\n── THE DRAFT ──\nTells Marisol: Keep the week light and focus on recovery so you arrive ready to hit your sub-3:45 target.\nAnswers: No, adding another 16-mile on Wednesday would break the taper. Keep the mileage low, use a short easy with strides, and rest on Thursday and Saturday.\nNext week:\nMon: rest\nTue: easy, 4 mi, keep heart rate under 150, flat route. Looses legs.\nWed: easy, 3 mi, 4 strides, keep heart rate under 150, fresh legs.\nThu: rest\nFri: easy, 4 mi, short recovery run, keep effort low.\nSat: rest\nSun: race, marathon, keep target pace, stay hydrated, focus on form.\n\nScore this draft: call submit_coaching_score once."
+}

@@ -1,0 +1,230 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w06.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:39:19.006Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 8 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "repaired",
+  "repairs": "plan 2026-08-31 not filed: no line; plan line for 2026-09-07 dropped: outside the plan week",
+  "stopReason": "tool_use",
+  "inputTokens": 15908,
+  "outputTokens": 1770,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 4742,
+  "estimatedInputTokens": 9075,
+  "timing": {
+    "ttftMs": 403,
+    "totalMs": 50328,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 403,
+        "totalMs": 29768,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "repaired",
+        "repairs": "plan 2026-08-31 not filed: no line; plan line for 2026-09-07 dropped: outside the plan week",
+        "inputTokens": 15908,
+        "outputTokens": 1770
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 1292,
+        "totalMs": 20560,
+        "request": {
+          "kind": "fix_lines",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ],
+          "fixDates": [
+            "2026-08-31"
+          ],
+          "fixed": []
+        },
+        "outcome": "repaired",
+        "repairs": "plan 2026-08-31 still not filed: no line",
+        "inputTokens": 16497,
+        "outputTokens": 1160
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-08-31",
+    "isoWeek": "2026-W36",
+    "recentWeeklyM": 47495.764800000004
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 6,
+    "failures": [
+      {
+        "date": "2026-08-31",
+        "reason": "no line"
+      }
+    ],
+    "retried": true,
+    "retryAskedFor": [
+      "2026-08-31"
+    ],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [
+      {
+        "date": "2026-09-07",
+        "reason": "outside the plan week"
+      }
+    ],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "You missed an easy run and a short long run. Focus on recovery and add a small easy run next week if you feel good; otherwise keep planned volume.",
+    "flags": [
+      {
+        "title": "Sleep deficit",
+        "detail": "5.5 hrs, may affect recovery."
+      },
+      {
+        "title": "Heat stress",
+        "detail": "long run in 27°C, watch HR drift."
+      },
+      {
+        "title": "Missed run",
+        "detail": "5 mi lost, plan a brief recovery next week."
+      },
+      {
+        "title": "Heart rate drift",
+        "detail": "high during long run, monitor."
+      },
+      {
+        "title": "Recovery focus",
+        "detail": "prioritize rest on Friday and easy runs."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I missed Thursday and cut the long run short. Should I make up the miles next week?",
+        "answer": "Add a short 2‑3 mile easy run next week if you feel good, but otherwise keep the prescribed mileage; don’t over‑compensate."
+      }
+    ],
+    "analysis": "The week ended with a 27‑mile total because the Thursday easy run was missed, but the long run was completed as prescribed and at a strong pace. The heat of the long run pushed heart rate into higher zones, but the HR drift remained within acceptable limits for a build phase. Sleep was only 5.5 hours, which is below the desired 7 hours and can affect recovery. Given the modest mileage loss and the overall strong effort, it is prudent to add a brief recovery run early next week rather than a large volume jump. This keeps the weekly mileage close to the target, allows the body to adjust to heat stress, and preserves the build pattern of 80‑plus percent easy effort with one quality session. The plan reflects that by inserting a short easy run on Thursday, keeping the long run unchanged, and maintaining a simple quality session on Wednesday.",
+    "prescribedWeek": {
+      "week": "2026-W36",
+      "days": [
+        {
+          "date": "2026-08-31",
+          "dayType": "other",
+          "run": null,
+          "notes": "Coach Cade gave no plan for this day",
+          "line": null,
+          "parsed": false
+        },
+        {
+          "date": "2026-09-01",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "gives the body a full day to recover.",
+          "line": "Mon 2026-09-01: rest, gives the body a full day to recover.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-02",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate under 150, flat route. Keeps weekly mileage near target.",
+          "line": "Tue 2026-09-02: easy, 5 mi, keep heart rate under 150, flat route. Keeps weekly mileage near target.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-03",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "3 × 1.5 mi at threshold pace, then easy. Builds speed without overloading.",
+          "line": "Wed 2026-09-03: quality, 6 mi, 3 × 1.5 mi at threshold pace, then easy. Builds speed without overloading.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-04",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "short recovery run, keeps legs moving.",
+          "line": "Thu 2026-09-04: easy, 5 mi, short recovery run, keeps legs moving.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-05",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "recovery after two quality sessions.",
+          "line": "Fri 2026-09-05: rest, recovery after two quality sessions.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-06",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "low intensity, prepares legs for long.",
+          "line": "Sat 2026-09-06: easy, 4 mi, low intensity, prepares legs for long.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

@@ -22,6 +22,8 @@ export type {
   LastOutboundPacketView,
 } from "./lastPacketStore.js";
 export { loadRecentWeekSummaries } from "./recentHistory.js";
+export { loadReviewedWeekPlan } from "./reviewedPlan.js";
+export type { ReviewedWeekPlan } from "./reviewedPlan.js";
 export {
   assertPacketHasNoPiiOrGps,
   isGpsKey,
@@ -37,6 +39,7 @@ export type {
   ModelPacket,
   ModelPacketAttachment,
   ModelPacketCoaching,
+  ModelPacketDayOutcome,
   ModelPacketPlanWeek,
   ModelPacketRecentWeek,
   ModelPacketRole,

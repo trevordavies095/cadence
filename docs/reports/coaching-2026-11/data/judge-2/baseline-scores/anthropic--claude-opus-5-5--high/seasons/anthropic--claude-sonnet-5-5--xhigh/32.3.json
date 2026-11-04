@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "A 12-mile week where her legs only \"came back by Thursday\" reads like recovery after a race. The draft treats it that way. It turns down the jump to 40 miles, holds off speedwork until the week of Nov 9, and builds a gentle week of about 19 miles: all easy running with a heart-rate cap, rest on Monday and Friday, light strength and mobility on Wednesday instead of a session, and only a few relaxed strides on Saturday. That passes the safety checks on volume, long run and easing back after a marathon. The 6-mile Sunday run is modest, and the plan is clear enough to run day by day.\n\nIt answers both of her questions directly and honestly and reassures her that there's still time for the 10K. It doesn't invent a date for the 10K.\n\nTwo things keep it from a 5. The week-by-week table in the answers came out as broken plain-text lines, so the timeline to the 10K is hard to follow. The taper line (\"wherever the Thanksgiving 10K falls\") is also vague.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T13:00:36.335Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2307,
+  "outputTokens": 1096,
+  "thinkingTokens": 644,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1178,
+  "costUsd": 0.031148000000000002,
+  "timing": {
+    "ttftMs": 2876,
+    "totalMs": 11659,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2876,
+        "totalMs": 11659,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2307,
+        "outputTokens": 1096
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "A 12-mile week where her legs only \"came back by Thursday\" reads like recovery after a race. The draft treats it that way. It turns down the jump to 40 miles, holds off speedwork until the week of Nov 9, and builds a gentle week of about 19 miles: all easy running with a heart-rate cap, rest on Monday and Friday, light strength and mobility on Wednesday instead of a session, and only a few relaxed strides on Saturday. That passes the safety checks on volume, long run and easing back after a marathon. The 6-mile Sunday run is modest, and the plan is clear enough to run day by day.\n\nIt answers both of her questions directly and honestly and reassures her that there's still time for the 10K. It doesn't invent a date for the 10K.\n\nTwo things keep it from a 5. The week-by-week table in the answers came out as broken plain-text lines, so the timeline to the 10K is hard to follow. The taper line (\"wherever the Thanksgiving 10K falls\") is also vague."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Stay easy again this week at about 19 miles instead of jumping to 40, and hold speedwork until the week of Nov 9. …\nAnswers: (1) Not next week, and not 40 miles yet. … (2) You still have time to be ready for the 10K. … (3) | Week | Miles | What changes |. | --- | --- | --- |. (4) The week of the race itself would taper from there, wherever the Thanksgiving 10K falls. …\nNext week:\nMon: rest. One more full day off so the week starts fresh and the legs stay ahead of the…\nTue: easy, 4 mi, average heart rate under 140 and pace 10:00 or slower on a flat route…\nWed: other, 25 min, light strength and mobility such as squats, calf raises, glute…\nThu: easy, 5 mi, average heart rate under 140 on a flat or gently rolling route. Adds a…\nFri: rest. Keeps the legs fresh for Saturday's strides and the Sunday run.\nSat: easy, 4 mi, average heart rate under 140, then 4 relaxed strides of about 15…\nSun: easy, 6 mi, average heart rate under 140, pace by feel and no pushing the last…\n\nScore this draft: call submit_coaching_score once."
+}

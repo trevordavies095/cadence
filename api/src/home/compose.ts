@@ -4,8 +4,13 @@ import { todayYmdForSession } from "../prescribed/patch.js";
 import { expectedPlanDates } from "../llm/schema.js";
 import type { PrescribedDay } from "../llm/types.js";
 import { resolveLoopStatus, type LoopStatus } from "../loop/status.js";
+import {
+  loadActualDistanceByDate,
+  planDayOutcomes,
+  ymdInZone,
+  type PlanDayState,
+} from "../prescribed/dayOutcomes.js";
 import { getPrescribedWeekBySessionId } from "../prescribed/store.js";
-import { listAllWorkoutsInWindow } from "../recap/listWindow.js";
 import type { RuntimeSources } from "../settings/sources.js";
 import { resolveUnitPreference } from "../settings/unitPreferenceStore.js";
 import type { TempoPort, TempoUnitPreference } from "../tempo/port.js";
@@ -31,14 +36,12 @@ export type HomeBanner = {
     | null;
 };
 
-export type HomeDayState =
-  | "done"
-  | "today"
-  | "upcoming"
-  | "rest"
-  | "missed"
-  /** A past day with a planned run while Tempo could not be read. */
-  | "unknown";
+/**
+ * A day's outcome against the plan, from the one helper the Sunday packet
+ * also uses ({@link PlanDayState}): done, today, upcoming, rest, missed,
+ * unknown (Tempo could not be read) or not_filed (a day Cadence could not read).
+ */
+export type HomeDayState = PlanDayState;
 
 export type HomeWeekDay = {
   date: string;
@@ -51,6 +54,18 @@ export type HomeWeekDay = {
   actualDistanceM: number | null;
   state: HomeDayState;
   isToday: boolean;
+  /**
+   * False when Cadence could not read the day's structure from Coach Cade's
+   * line, or the plan gave no line for the date. True for every other day,
+   * including old stored plans without the field and weeks with no plan.
+   */
+  parsed: boolean;
+  /**
+   * On a day Cadence could not read, Coach Cade's line as written; null when
+   * the plan gave no line for the date. Always null on a day Cadence read (the
+   * Today card has the read day's line in `today`).
+   */
+  line: string | null;
 };
 
 export type HomeRead = {
@@ -75,16 +90,6 @@ const PLAN_READY_PHASES = new Set<LoopStatus["phase"]>([
   "week_ending",
   "needs_plan",
 ]);
-
-/** Local calendar date of an instant in a timezone, as YYYY-MM-DD. */
-function ymdInZone(instant: string, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(instant));
-}
 
 async function deriveBanner(status: LoopStatus): Promise<HomeBanner | null> {
   const phase = status.phase;
@@ -200,50 +205,29 @@ export async function composeHome(options: {
   const dates = expectedPlanDates(mondayYmd);
 
   // Actual distance per local date from Tempo. A Tempo failure degrades to plan only.
-  const actualByDate = new Map<string, number>();
-  let tempoUnavailable = false;
-  try {
-    const workouts = await listAllWorkoutsInWindow(tempoPort, {
-      start: session.start,
-      end: session.end,
-    });
-    for (const w of workouts) {
-      const ymd = ymdInZone(w.startedAt, timezone);
-      actualByDate.set(ymd, (actualByDate.get(ymd) ?? 0) + w.distanceM);
-    }
-  } catch {
-    tempoUnavailable = true;
-  }
+  const actualByDate = await loadActualDistanceByDate(
+    tempoPort,
+    { start: session.start, end: session.end },
+    timezone,
+  );
+  const tempoUnavailable = actualByDate === null;
 
-  const week: HomeWeekDay[] = dates.map((date) => {
-    const planned = planByDate.get(date) ?? null;
-    const plannedDistanceM = planned?.run?.distanceM ?? null;
-    const durationS = planned?.run?.durationS;
-    const plannedDurationS =
-      typeof durationS === "number" && durationS > 0 ? durationS : null;
-    const plannedRun = plannedDistanceM != null;
-    const actual = tempoUnavailable ? null : (actualByDate.get(date) ?? 0);
-    const isToday = date === todayYmd;
-
-    let state: HomeDayState;
-    if (actual != null && actual > 0) state = "done";
-    else if (isToday) state = "today";
-    else if (date < todayYmd) {
-      if (!plannedRun) state = "rest";
-      else state = actual == null ? "unknown" : "missed";
-    }
-    else state = plannedRun || !planned ? "upcoming" : "rest";
-
-    return {
-      date,
-      dayType: planned?.dayType ?? null,
-      plannedDistanceM,
-      plannedDurationS,
-      actualDistanceM: actual,
-      state,
-      isToday,
-    };
-  });
+  const week: HomeWeekDay[] = planDayOutcomes({
+    dates,
+    days: record?.plan.days,
+    actualDistanceByDate: actualByDate,
+    todayYmd,
+  }).map((day) => ({
+    date: day.date,
+    dayType: day.planned?.dayType ?? null,
+    plannedDistanceM: day.plannedDistanceM,
+    plannedDurationS: day.plannedDurationS,
+    actualDistanceM: day.actualDistanceM,
+    state: day.state,
+    isToday: day.isToday,
+    parsed: day.parsed,
+    line: day.parsed ? null : (day.planned?.line ?? null),
+  }));
 
   return {
     ...empty,

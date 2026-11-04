@@ -1,17 +1,21 @@
 /**
  * The replay report's goal checks (coaching-bias ticket 24). Each one points at
- * a replayed weekly read that a person should look at first; the replay script
+ * a replayed coach reply that a person should look at first; the replay script
  * exits non-zero when any of them fails. Pure.
  */
 import type { TrainingGoal } from "../src/goal/types.js";
 
 export type ReplayCheckInput = {
-  /** What the report calls this read, such as "02 (10k-week-3.json)". */
+  /** What the report calls this reply, such as "02 (10k-week-3.json)". */
   label: string;
-  /** The goal in the packet that was replayed. */
+  /** The goal in the packet that was replayed, or the one given beside an About you input. */
   goal: TrainingGoal | null;
-  /** The weekly user prompt rebuilt from that packet. */
-  prompt: string;
+  /**
+   * The user prompt rebuilt from that input (its first line is enough), or null
+   * for an operation whose prompt carries no goal line (the About you drafts):
+   * the goal-line check is skipped then.
+   */
+  prompt: string | null;
   /** Every athlete-facing word of the new reply. */
   readText: string;
 };
@@ -48,7 +52,7 @@ export function longRunVerdictIn(text: string): string | null {
 export function replayCheckFailures(input: ReplayCheckInput): ReplayCheckFailure[] {
   const { label, goal, prompt, readText } = input;
   const failures: ReplayCheckFailure[] = [];
-  if (!goal || !prompt.startsWith(GOAL_LINE_PREFIX)) {
+  if (prompt !== null && (!goal || !prompt.startsWith(GOAL_LINE_PREFIX))) {
     failures.push({
       label,
       check: "no goal line",

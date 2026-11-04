@@ -264,6 +264,12 @@ export function buildModelPacket(input: BuildModelPacketInput): ModelPacket {
   if (input.prescribedWeek !== undefined) {
     packet.prescribedWeek = input.prescribedWeek;
   }
+  if (input.prescribedWeekOutcomes !== undefined) {
+    packet.prescribedWeekOutcomes =
+      input.prescribedWeekOutcomes === null
+        ? null
+        : input.prescribedWeekOutcomes.map((o) => ({ ...o }));
+  }
 
   assertPacketHasNoPiiOrGps(packet, {
     identityHints: hints,

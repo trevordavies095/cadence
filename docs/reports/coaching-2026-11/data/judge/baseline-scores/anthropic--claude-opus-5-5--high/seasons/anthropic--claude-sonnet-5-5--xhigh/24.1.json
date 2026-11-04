@@ -1,0 +1,61 @@
+{
+  "input": "seasons/24",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Marisol asked whether to make up the missed miles, and the draft says no right away. It explains why: one short week doesn't cost fitness, and piling miles onto a drained body risks injury. That's direct and honest.\n\nThe week totals about 29 mi (5+6+4+4+10). That's a small step up from 27 and below the 32–35 mi weeks before it, which suits a runner who says she's tired all the time. The 10 mi long run is moderate and doesn't jump. There are no must-never problems: no pain was reported (knee is fine), she isn't ill, and neither volume nor the long run rises sharply.\n\nThe plan keeps her five-day pattern (Mon/Fri off, Wednesday session, Sunday long run), and every day can be run as written, with effort levels, timing, terrain and heart-rate limits.\n\nSmall deductions: the card doesn't show the heat, the hot apartment, the 5.5-hour nights or the mid-August knee trouble. They may come from her logs, but I can't check them against the card. Also, even a reduced threshold session is debatable for someone who is drained, and the draft doesn't say what to do if the constant tiredness doesn't lift, such as dropping the session or seeing a doctor.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:47:59.681Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2181,
+  "outputTokens": 989,
+  "thinkingTokens": 467,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1069,
+  "costUsd": 0.028504,
+  "timing": {
+    "ttftMs": 3328,
+    "totalMs": 11467,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3328,
+        "totalMs": 11467,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2181,
+        "outputTokens": 989
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Marisol asked whether to make up the missed miles, and the draft says no right away. It explains why: one short week doesn't cost fitness, and piling miles onto a drained body risks injury. That's direct and honest.\n\nThe week totals about 29 mi (5+6+4+4+10). That's a small step up from 27 and below the 32–35 mi weeks before it, which suits a runner who says she's tired all the time. The 10 mi long run is moderate and doesn't jump. There are no must-never problems: no pain was reported (knee is fine), she isn't ill, and neither volume nor the long run rises sharply.\n\nThe plan keeps her five-day pattern (Mon/Fri off, Wednesday session, Sunday long run), and every day can be run as written, with effort levels, timing, terrain and heart-rate limits.\n\nSmall deductions: the card doesn't show the heat, the hot apartment, the 5.5-hour nights or the mid-August knee trouble. They may come from her logs, but I can't check them against the card. Also, even a reduced threshold session is debatable for someone who is drained, and the draft doesn't say what to do if the constant tiredness doesn't lift, such as dropping the session or seeing a doctor."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 35, 32, 24 mi\nThis week: 27 mi over 4 runs. Planned 36 mi, ran 27 mi. Missed 1 of 5 planned runs.\nBody: \"Tired all the time. Knee is fine.\"\nFeeling: \"Drained.\"\nAsks: \"I missed Thursday and cut the long run short. Should I make up the miles next week?\"\n\n── THE DRAFT ──\nTells Marisol: Do not make up the missed miles: last week's shortfall came from heat and 5.5-hour nights, not lost fitness. …\nAnswers: (1) No, leave the missed miles behind. About 9 miles went missing against the plan, and they went because of heat, a hot apartment and short nights. (2) One short week does not cost you fitness. Adding miles to a drained body is how the knee trouble from mid-August could come back.\nSafety flag: Heat and tiredness\nNext week:\nMon: rest. Full day off, and get as much sleep as the heat allows. Sleep is what is…\nTue: easy, 5 mi, start before 7am or after 8pm and run by feel at effort 3 to 4/10, so…\nWed: quality, 6 mi, 2 mi easy, then 2 x 10 min at threshold effort 7/10 (about 8:10 to…\nThu: easy, 4 mi, effort 3/10, early or late in the day, then 10 min of hip and glute…\nFri: rest. Rest before the long run, so get to bed early and use a fan or a cool shower…\nSat: easy, 4 mi, effort 3/10, flat route, early morning. Keeps the legs loose for Sunday…\nSun: long, 10 mi, start at first light at effort 4/10 with heart rate under 150 where…\n\nScore this draft: call submit_coaching_score once."
+}

@@ -1,6 +1,6 @@
 # Cadence
 
-Cadence is a self-hosted running coach. **Coach Cade** reads your training from Tempo (a privacy-first running log), writes a weekly recap, talks the week through with you, and plans the next one. Everything lives in your own Postgres database. The only thing that leaves your machine is a lean, redacted packet sent to the model you choose (Anthropic, with your own API key), and you can see exactly what was sent.
+Cadence is a self-hosted running coach. **Coach Cade** reads your training from Tempo (a privacy-first running log), writes a weekly recap, talks the week through with you, and plans the next one. Everything lives in your own Postgres database. The only thing that leaves your machine is a lean, redacted packet sent to the model you choose (Anthropic, with your own API key, or a server on your own network: see [Run Coach Cade on your own model server](docs/self-hosted.md)), and you can see exactly what was sent.
 
 ![Cadence Home: today's run, this week's plan, and a note from Coach Cade](docs/images/dark/hero.png)
 
@@ -59,6 +59,12 @@ Cadence is free. The live coach uses your own Anthropic API key, so you pay Anth
 | Weekly reply only | ~$0.30 |
 | Reply + a few chat messages | ~$1 |
 | Chatting most days | ~$2 |
+
+## Which model coaches best
+
+We measured it. A certified running coach scored blind replies from six model configurations on 14 hard weeks (an injury, illness, race week, missed weeks), and a model judge calibrated against his scores rated every reply. In short: Opus 5.5 at `xhigh` coaches best, Opus 4.7 at `high` matches the default for less, Haiku 5.5 at `high` is the cheapest that holds up, and the self-hosted gpt-oss-20b is not recommended for coaching. The method, the numbers, the caveats and every reply are in [How well each model coaches](docs/reports/coaching-2026-11.md), with the raw data in [docs/reports/coaching-2026-11/data](docs/reports/coaching-2026-11/data/README.md).
+
+Earlier research: [how self-hosted models compare with the default](docs/reports/local-models-2026-11.md) and [how much Cadence depended on one model](docs/reports/model-dependence-2026-11.md).
 
 ## How it works
 
@@ -215,15 +221,14 @@ Set `E2E_DATABASE_URL` to use a different server and `E2E_CLOCK_NOW` to pin anot
 | API port | `PORT` | Default `5001` (Compose maps host `5002`) |
 | CORS | `CORS_ORIGIN` | Browser origin allowed by the API (default `http://localhost:3001`) |
 | Frontend → API | `API_SERVICE_URL` | Used by Next rewrites inside Compose (`http://api:5001`) |
-| Secret wrapping key | `DATA_PROTECTION_SECRET_KEY` | HKDF → AES-256-GCM for Tempo + Anthropic keys at rest |
+| Secret wrapping key | `DATA_PROTECTION_SECRET_KEY` | HKDF → AES-256-GCM for the Tempo, Anthropic and model server keys at rest |
 | Dev clock | `DEV_CLOCK_NOW` | ISO instant; fixes “now” when not `NODE_ENV=production`, or in production when `CADENCE_DEMO=1`. Read once at startup |
 | Demo mode | `CADENCE_DEMO` | `1` for the demo instance only: honours `DEV_CLOCK_NOW` in the production image, hides export runs after that clock, and labels Settings as sample data. Set by `scripts/demo.sh` |
 | Host ports | `POSTGRES_HOST_PORT`, `API_HOST_PORT`, `FRONTEND_HOST_PORT` | Compose host ports, default `5433` / `5002` / `3001` |
 | Athlete timezone | `ATHLETE_TIMEZONE` | IANA name (e.g. `America/New_York`), default `UTC`. One timezone for every route and page: current week, week boundaries, loop status. An explicit `?timezone=` still overrides. An invalid name stops the API at startup. |
-| LLM provider | `LLM_PROVIDER` | `stub` (default; offline, CI) or `anthropic` (live, uses the encrypted Anthropic key) |
-| Model | `ANTHROPIC_MODEL` | Live model id (default `claude-opus-4-7`) |
-| Thinking effort | `ANTHROPIC_EFFORT` | `low` \| `medium` \| `high` \| `xhigh` \| `max` (default `xhigh`). Live coach calls use adaptive thinking (summarized) at this effort; an invalid value stops the API at startup. |
-| Coach call cap | `ANTHROPIC_TIMEOUT_MS` | Overall cap per live coach call, default `900000` (15 min). Calls stream; a call also aborts after 60 s with no data. |
+| LLM provider | `LLM_PROVIDER` | `stub` (default; offline, CI) or `anthropic` (live). Live calls go to Anthropic or to your own model server, whichever is saved in Settings ([docs/self-hosted.md](docs/self-hosted.md)) |
+| Coach call cap | `ANTHROPIC_TIMEOUT_MS` | Overall cap per live coach call, default `900000` (15 min). Calls stream; an Anthropic call also aborts after 60 s with no data. |
+| Self-hosted idle limit | `SELF_HOSTED_IDLE_TIMEOUT_MS` | A self-hosted model server call aborts after this long with no data, default `600000` (10 min), so slow home hardware can read a long prompt. The overall cap still applies. |
 | Proxy timeout | `FRONTEND_PROXY_TIMEOUT_MS` | Frontend (Next) → API proxy timeout, default `960000` (16 min); keep it above the coach call cap |
 | App version | `APP_VERSION` | Stamped on every LLM call log row. `npm run dev` sets it to the git SHA; falls back to `CADENCE_GIT_COMMIT`, then `dev` |
 | Tempo export (offline) | `TEMPO_EXPORT_PATH` | Absolute path to a Tempo full-export `.zip`. When set, TempoPort reads workouts/splits/time-series from the zip instead of live Tempo HTTP (no API key). GPS/route geometry is never exposed on coach APIs. Keep exports gitignored (e.g. `.scratch/`). |
@@ -253,9 +258,12 @@ cd api && npm run dev
 | GET | `/disclaimer` | Disclaimer text + acceptance status |
 | POST | `/disclaimer/accept` | Persist first-run Accept (idempotent) |
 | GET | `/privacy` | Privacy transparency copy (sent vs local) |
-| GET | `/settings` | Tempo + Anthropic summary — **403** until disclaimer accepted |
+| GET | `/settings` | Tempo + Anthropic summary, the coach provider and, for a self-hosted provider, the server host — **403** until disclaimer accepted |
 | GET/PUT/DELETE | `/settings/tempo` | Encrypted Tempo base URL + API key (GET masked only) |
 | GET/PUT/DELETE | `/settings/anthropic` | Encrypted Anthropic API key (GET masked only) |
+| GET/PUT/DELETE | `/settings/self-hosted` | Self-hosted model server: base URL and optional encrypted key (GET masked only). PUT `{ baseUrl, apiKey? }`: an omitted key keeps the saved one, an empty string removes it; a base URL that is not a full `http`/`https` URL is refused. DELETE clears it ([docs/self-hosted.md](docs/self-hosted.md)) |
+| POST | `/settings/self-hosted/test` | Test connection, `{ model }`: lists the saved server's models, then sends the model a prompt of about 40k tokens and reports `cut` when the server read under 90 % of it or the reply missed the code word. Only ever calls the saved server, never Anthropic |
+| GET/PUT/DELETE | `/settings/coach-model` | Coach Cade's provider, model and thinking effort. GET: the saved provider and choice (`?provider=` asks for the other provider's list), what is in force, and the models (with their efforts) that can be chosen. For Anthropic: those the saved key can use that support adaptive thinking, listed by Anthropic and cached for an hour, or only the tested default and the saved model when there is no key or the list can't be loaded. For a self-hosted server, its own `GET /v1/models` list, or only the saved model when the list can't be loaded. PUT `{ provider, model, effort }` saves a model and effort from that provider's list (400 otherwise; an omitted provider is Anthropic); it takes effect on the next coach call. DELETE resets to Anthropic at the tested default, Opus 4.7 at `xhigh` (ADRs 0004, 0005). **403** until the disclaimer is accepted |
 | GET | `/settings/last-packet` | Last redacted outbound model packet summary + JSON — **403** until accepted |
 | POST | `/packet` | Assemble lean redacted model packet (current dossier + last N prior week summaries/plans + focus-week thread + Tempo attachments); persists last-packet for transparency — **403** until accepted. N via `recentHistoryLimit` or `PACKET_RECENT_HISTORY_LIMIT` (default 4). Archived mid-week chatter is excluded. |
 | GET | `/tempo/workouts` | List workouts via TempoPort (live HTTP or `TEMPO_EXPORT_PATH` zip; query: page, pageSize, startDate, endDate, …) — **403** until accepted; GPS/route stripped |

@@ -4,7 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.js";
 import { FixedClock } from "../src/clock/clock.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
-import { buildStubWeeklyReply } from "../src/llm/index.js";
+import { buildStubWeeklyForm } from "../src/llm/index.js";
 import { resolveAppVersion } from "../src/llmCallLog/appVersion.js";
 import type {
   LlmCallRecord,
@@ -152,8 +152,9 @@ describe("LLM call log: failed calls (#69)", () => {
   }
 
   /**
-   * The last call's row. A weekly reply refused for its shape is asked for once
-   * more, so those flows log two calls; everything else logs one.
+   * The last call's row. A reply refused for its shape is asked for once more,
+   * so those failures log two calls, the second linked to the first; anything
+   * else logs one.
    */
   async function fetchRow(
     app: ReturnType<typeof createApp>,
@@ -164,6 +165,7 @@ describe("LLM call log: failed calls (#69)", () => {
     const res = await app.request(`/llm-calls/${ids.at(-1)}`);
     expect(res.status).toBe(200);
     const row = await json(res);
+    expect(row.parentCallId).toBe(attempts > 1 ? ids[0] : null);
     expect(JSON.stringify(row)).not.toContain(API_KEY);
     return row;
   }
@@ -237,7 +239,7 @@ describe("LLM call log: failed calls (#69)", () => {
         const res = await trigger(flow, app, weekSessionId);
         expect(res.status).toBe(502);
 
-        const row = await fetchRow(app, ids, flow === "weekly" ? 2 : 1);
+        const row = await fetchRow(app, ids, 2);
         expectCommon(row, weekSessionId);
         expect(row).toMatchObject({
           outcome: "schema_invalid",
@@ -261,7 +263,7 @@ describe("LLM call log: failed calls (#69)", () => {
         const res = await trigger(flow, app, weekSessionId);
         expect(res.status).toBe(502);
 
-        const row = await fetchRow(app, ids, flow === "weekly" ? 2 : 1);
+        const row = await fetchRow(app, ids, 2);
         expectCommon(row, weekSessionId);
         expect(row).toMatchObject({
           outcome: "schema_invalid",
@@ -272,6 +274,33 @@ describe("LLM call log: failed calls (#69)", () => {
           errorMessage: expect.stringContaining(tool),
         });
         expect(row.responseRaw).toContain("no tool here");
+      });
+
+      it("records a reply that stops at the output cap as schema_invalid, naming the cap", async () => {
+        const fetchImpl = vi.fn(async () =>
+          anthropicStreamResponse({
+            stop_reason: "max_tokens",
+            usage: { input_tokens: 10, output_tokens: 20_000 },
+            content: [{ type: "text", text: "thinking ran long" }],
+          }),
+        ) as unknown as typeof globalThis.fetch;
+        const { recorder, ids } = capturingRecorder();
+        const { app, weekSessionId } = await liveApp(fetchImpl, recorder);
+
+        const res = await trigger(flow, app, weekSessionId);
+        expect(res.status).toBe(502);
+
+        // A reply refused at the cap is asked for once more, like a schema refusal.
+        expect(fetchImpl).toHaveBeenCalledTimes(2);
+        const row = await fetchRow(app, ids, 2);
+        expectCommon(row, weekSessionId);
+        expect(row).toMatchObject({
+          outcome: "schema_invalid",
+          stopReason: "max_tokens",
+          outputTokens: 20_000,
+          errorMessage: expect.stringContaining("output cap 20000 tokens"),
+        });
+        expect((row.request as { max_tokens: number }).max_tokens).toBe(20_000);
       });
 
       it("records schema_invalid when adapter validation fails", async () => {
@@ -295,7 +324,7 @@ describe("LLM call log: failed calls (#69)", () => {
         const res = await trigger(flow, app, weekSessionId);
         expect(res.status).toBe(502);
 
-        const row = await fetchRow(app, ids, flow === "weekly" ? 2 : 1);
+        const row = await fetchRow(app, ids, 2);
         expectCommon(row, weekSessionId);
         expect(row).toMatchObject({
           outcome: "schema_invalid",
@@ -355,7 +384,7 @@ describe("LLM call log: failed calls (#69)", () => {
             type: "tool_use",
             id: "t",
             name: "submit_weekly_reply",
-            input: buildStubWeeklyReply(samplePacket()),
+            input: buildStubWeeklyForm(samplePacket()),
           },
         ],
       }),

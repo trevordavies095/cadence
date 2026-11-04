@@ -1,0 +1,190 @@
+{
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "provider": "self_hosted",
+  "replies": 39,
+  "byOperation": {
+    "weekly_reply": 39
+  },
+  "schema": {
+    "firstTry": 37,
+    "afterRetry": 2,
+    "failed": 0
+  },
+  "softRepairs": {
+    "count": 4,
+    "replies": 2,
+    "byField": {
+      "plan": 4
+    }
+  },
+  "goalCheckFailures": {
+    "count": 0,
+    "byCheck": {}
+  },
+  "bannedVocabulary": {
+    "hits": 12,
+    "replies": 12,
+    "byTerm": {
+      "RPE": 2,
+      "prescribed": 6,
+      "week label": 2,
+      "recap": 2
+    }
+  },
+  "planSanity": {
+    "band": {
+      "low": 0.5,
+      "high": 1.6
+    },
+    "weeklyReplies": 39,
+    "flaggedReplies": 17,
+    "byCheck": {
+      "volume": 17
+    },
+    "skipped": {
+      "volume": 3
+    },
+    "volumeRatio": {
+      "median": 1.1056640617650784,
+      "worst": 13.41222879684418,
+      "n": 36
+    },
+    "flags": [
+      {
+        "reply": "13.1",
+        "check": "volume",
+        "detail": "5.4 km planned is 4.25x the recent 1.3 km"
+      },
+      {
+        "reply": "13.2",
+        "check": "volume",
+        "detail": "5.7 km planned is 4.49x the recent 1.3 km"
+      },
+      {
+        "reply": "30.2",
+        "check": "volume",
+        "detail": "24.1 km planned is 0.37x the recent 65.2 km"
+      },
+      {
+        "reply": "31.2",
+        "check": "volume",
+        "detail": "22.5 km planned is 0.34x the recent 65.7 km"
+      },
+      {
+        "reply": "31.3",
+        "check": "volume",
+        "detail": "29.0 km planned is 0.44x the recent 65.7 km"
+      },
+      {
+        "reply": "32.1",
+        "check": "volume",
+        "detail": "19.3 km planned is 0.36x the recent 53.6 km"
+      },
+      {
+        "reply": "32.3",
+        "check": "volume",
+        "detail": "19.3 km planned is 0.36x the recent 53.6 km"
+      },
+      {
+        "reply": "33.1",
+        "check": "volume",
+        "detail": "19.0 km planned is 11.21x the recent 1.7 km"
+      },
+      {
+        "reply": "33.2",
+        "check": "volume",
+        "detail": "10.5 km planned is 6.19x the recent 1.7 km"
+      },
+      {
+        "reply": "33.3",
+        "check": "volume",
+        "detail": "16.5 km planned is 9.73x the recent 1.7 km"
+      },
+      {
+        "reply": "35.1",
+        "check": "volume",
+        "detail": "14.0 km planned is 3.32x the recent 4.2 km"
+      },
+      {
+        "reply": "35.2",
+        "check": "volume",
+        "detail": "20.0 km planned is 4.74x the recent 4.2 km"
+      },
+      {
+        "reply": "35.3",
+        "check": "volume",
+        "detail": "30.0 km planned is 7.11x the recent 4.2 km"
+      },
+      {
+        "reply": "37.3",
+        "check": "volume",
+        "detail": "20.0 km planned is 4.69x the recent 4.3 km"
+      },
+      {
+        "reply": "40.1",
+        "check": "volume",
+        "detail": "12.0 km planned is 9.47x the recent 1.3 km"
+      },
+      {
+        "reply": "40.2",
+        "check": "volume",
+        "detail": "17.0 km planned is 13.41x the recent 1.3 km"
+      },
+      {
+        "reply": "40.3",
+        "check": "volume",
+        "detail": "14.0 km planned is 11.05x the recent 1.3 km"
+      }
+    ]
+  },
+  "lengthCaps": {
+    "hits": 0,
+    "byField": {}
+  },
+  "latency": {
+    "firstTokenMs": {
+      "median": 924,
+      "worst": 22032,
+      "n": 39
+    },
+    "totalMs": {
+      "median": 29822,
+      "worst": 75845,
+      "n": 39
+    },
+    "wallClockMs": 1299818
+  },
+  "tokens": {
+    "input": {
+      "median": 15759,
+      "n": 39
+    },
+    "output": {
+      "median": 1606,
+      "n": 39
+    },
+    "thinking": {
+      "median": null,
+      "n": 0
+    },
+    "thinkingChars": {
+      "median": 3783,
+      "n": 39
+    },
+    "cacheRead": {
+      "median": null,
+      "n": 0
+    },
+    "cacheCreation": {
+      "median": null,
+      "n": 0
+    }
+  },
+  "promptCut": {
+    "ratio": 0.9,
+    "checked": 39,
+    "cut": [],
+    "lowestRatio": 1.4956487341772151
+  },
+  "cost": null
+}

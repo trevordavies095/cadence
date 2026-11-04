@@ -1,0 +1,112 @@
+{
+  "configuration": "anthropic--claude-haiku-5-5--xhigh",
+  "provider": "anthropic",
+  "replies": 1,
+  "byOperation": {
+    "weekly_reply": 1
+  },
+  "schema": {
+    "firstTry": 0,
+    "afterRetry": 0,
+    "failed": 1
+  },
+  "softRepairs": {
+    "count": 0,
+    "replies": 0,
+    "byField": {}
+  },
+  "goalCheckFailures": {
+    "count": 0,
+    "byCheck": {}
+  },
+  "bannedVocabulary": {
+    "hits": 0,
+    "replies": 0,
+    "byTerm": {}
+  },
+  "planSanity": {
+    "band": {
+      "low": 0.5,
+      "high": 1.6
+    },
+    "weeklyReplies": 0,
+    "flaggedReplies": 0,
+    "byCheck": {},
+    "skipped": {},
+    "volumeRatio": {
+      "median": null,
+      "worst": null,
+      "n": 0
+    },
+    "flags": []
+  },
+  "lengthCaps": {
+    "hits": 0,
+    "byField": {}
+  },
+  "latency": {
+    "firstTokenMs": {
+      "median": 1670,
+      "worst": 1670,
+      "n": 1
+    },
+    "totalMs": {
+      "median": 189781,
+      "worst": 189781,
+      "n": 1
+    },
+    "wallClockMs": 189781
+  },
+  "tokens": {
+    "input": {
+      "median": 22281,
+      "n": 1
+    },
+    "output": {
+      "median": 20000,
+      "n": 1
+    },
+    "thinking": {
+      "median": 20000,
+      "n": 1
+    },
+    "thinkingChars": {
+      "median": 20680,
+      "n": 1
+    },
+    "cacheRead": {
+      "median": 0,
+      "n": 1
+    },
+    "cacheCreation": {
+      "median": 0,
+      "n": 1
+    }
+  },
+  "promptCut": {
+    "ratio": 0.9,
+    "checked": 1,
+    "cut": [],
+    "lowestRatio": 2.4552066115702478
+  },
+  "cost": {
+    "priceTakenOn": "2026-11-03",
+    "prices": {
+      "claude-haiku-5-5": {
+        "label": "Haiku 5.5",
+        "inputPerMTok": 0.1,
+        "outputPerMTok": 0.5
+      }
+    },
+    "cacheReadMultiplier": 0.1,
+    "cacheWriteMultiplier": 1.25,
+    "unpricedModels": [],
+    "pricedReplies": 1,
+    "totalUsd": 0.0244562,
+    "medianUsd": 0.0244562,
+    "worstUsd": 0.0244562,
+    "perReplyUsd": {
+      "24.1": 0.0244562
+    }
+  }
+}

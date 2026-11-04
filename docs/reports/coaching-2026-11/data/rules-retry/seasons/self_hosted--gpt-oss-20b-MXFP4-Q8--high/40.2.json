@@ -1,0 +1,205 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w8.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T12:04:21.802Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 3 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 8264,
+  "outputTokens": 1989,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 5445,
+  "estimatedInputTokens": 5470,
+  "timing": {
+    "ttftMs": 445,
+    "totalMs": 52538,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 445,
+        "totalMs": 31222,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 8264,
+        "outputTokens": 1989
+      },
+      {
+        "attempt": 2,
+        "ttftMs": 1147,
+        "totalMs": 21316,
+        "request": {
+          "kind": "fix_rules",
+          "turns": [
+            "user: text",
+            "assistant: thinking, tool_use",
+            "user: tool_result (error)"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 8843,
+        "outputTokens": 1289
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-19",
+    "isoWeek": "2026-W43",
+    "recentWeeklyM": 1267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [
+      "volume jump"
+    ],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "This week, come back gradually with a single quality interval and keep plenty of rest to stay fresh for the race.",
+    "flags": [
+      {
+        "title": "Rest days real rest",
+        "detail": "keep Tuesdays, Thursdays, Fridays and Sundays as true rest."
+      },
+      {
+        "title": "Quality session intensity",
+        "detail": "keep 5k‑pace intervals (1x0.8 km) at HR 145‑155 bpm."
+      },
+      {
+        "title": "Weekly volume",
+        "detail": "target ~6 km total (3 km easy, 1 km quality, 2 km easy)."
+      },
+      {
+        "title": "Heart‑rate focus",
+        "detail": "easy runs <140 bpm, quality runs 145‑155 bpm."
+      },
+      {
+        "title": "Missed runs catch‑up",
+        "detail": "last week missed all runs, this week aim to hit schedule."
+      }
+    ],
+    "answers": [],
+    "analysis": "The week after a full missed week should bring back mileage slowly. I cut the easy run to 3 km, the quality work to a single 0.8 km interval, and the Saturday run to 2 km. This keeps total mileage low but still trains race‑pace effort and preserves legs for the 5 k. Rest days remain real rest to let recovery win.",
+    "prescribedWeek": {
+      "week": "2026-W43",
+      "days": [
+        {
+          "date": "2026-10-19",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 3000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate under 140, flat route. Loosen legs after short week.",
+          "line": "Mon 2026-10-19: easy, 3 km, keep heart rate under 140, flat route. Loosen legs after short week.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-20",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Tue 2026-10-20: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-21",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 1000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "1x0.8 km at race pace with 0.2 km jog, heart rate 145‑155, sharpen speed.",
+          "line": "Wed 2026-10-21: quality, 1 km, 1x0.8 km at race pace with 0.2 km jog, heart rate 145‑155, sharpen speed.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-22",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Thu 2026-10-22: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-23",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-10-23: rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 2000,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep heart rate 130‑140, relaxed pace, preserve legs for race.",
+          "line": "Sat 2026-10-24: easy, 2 km, keep heart rate 130‑140, relaxed pace, preserve legs for race.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Sun 2026-10-25: rest.",
+          "parsed": true
+        }
+      ]
+    }
+  }
+}

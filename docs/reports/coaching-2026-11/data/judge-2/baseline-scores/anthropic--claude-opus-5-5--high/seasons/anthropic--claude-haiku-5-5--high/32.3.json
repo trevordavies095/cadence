@@ -1,0 +1,61 @@
+{
+  "input": "seasons/32",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft treats this as the second week after the Oct 18 marathon. It turns down the jump to 40 miles and moves Marisol from 12 to about 14 easy miles: four short runs with heart-rate and pace caps, a rest day between each run, and a 5 mi Sunday. That fits the coach's 'ease back to consistency' guidance and fails none of the must-never checks. There's no quality work, no volume or long-run spike, and no rushed return. It answers her questions directly: no to 40 miles yet, an honest note that a Thanksgiving 10K is possible but tight, and a request for her race plans so it can plan around them. Every day can be run as written. It loses a point for two things. It never says outright when speedwork could start, and since she says she feels ready, it should briefly explain why the build stays so slow. It also drops her usual Wednesday session without saying why.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:56:00.101Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2314,
+  "outputTokens": 1239,
+  "thinkingTokens": 833,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1172,
+  "costUsd": 0.034036000000000004,
+  "timing": {
+    "ttftMs": 2738,
+    "totalMs": 13045,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2738,
+        "totalMs": 13045,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2314,
+        "outputTokens": 1239
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft treats this as the second week after the Oct 18 marathon. It turns down the jump to 40 miles and moves Marisol from 12 to about 14 easy miles: four short runs with heart-rate and pace caps, a rest day between each run, and a 5 mi Sunday. That fits the coach's 'ease back to consistency' guidance and fails none of the must-never checks. There's no quality work, no volume or long-run spike, and no rushed return. It answers her questions directly: no to 40 miles yet, an honest note that a Thanksgiving 10K is possible but tight, and a request for her race plans so it can plan around them. Every day can be run as written. It loses a point for two things. It never says outright when speedwork could start, and since she says she feels ready, it should briefly explain why the build stays so slow. It also drops her usual Wednesday session without saying why."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 42, 46, 34, 41 mi\nThis week: 12 mi over 3 runs.\nBody: \"Legs came back by Thursday. Blister healed.\"\nFeeling: \"Itching to train again.\"\nAsks: \"I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?\"\n\n── THE DRAFT ──\nTells Marisol: Last week followed the plan exactly, and your legs were back by Thursday after the Sun Oct 18 race. …\nAnswers: (1) Not yet. Forty miles next week is too big a jump after a marathon, so the week goes to about 14 mi of easy running instead. (2) A 10K on Thanksgiving, Thu Nov 26, is possible but tight. … (3) Tell me which race you are aiming at next, its date, and whether you have entered the Thanksgiving 10K. …\nNext week:\nMon: rest. No running, so the legs can settle one week after the race.\nTue: easy, 3 mi, heart rate under 135 bpm, pace around 10:30/mi or slower. First run…\nWed: rest. A full day off between runs lets the legs settle.\nThu: easy, 3 mi, heart rate under 135 bpm, pace around 10:30/mi or slower, flat if…\nFri: rest. Keeps the rest days you had last week.\nSat: easy, 3 mi, heart rate under 135 bpm, pace around 10:30/mi or slower. Adds a little…\nSun: easy, 5 mi, heart rate under 135 bpm, pace around 10:30/mi or slower. The longest…\n\nScore this draft: call submit_coaching_score once."
+}

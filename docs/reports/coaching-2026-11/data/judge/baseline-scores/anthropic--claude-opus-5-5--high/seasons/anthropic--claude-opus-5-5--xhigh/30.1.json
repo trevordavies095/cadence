@@ -1,0 +1,61 @@
+{
+  "input": "seasons/30",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a good race-week reply. It answers Marisol's question directly and honestly: skip the 16-miler, because it would still be in her legs on race day. It also speaks to her nerves about losing fitness and her heavy legs, explaining the dead feeling as normal taper recovery. That fits, since she says nothing hurts.\n\nThe plan keeps her five-day pattern: Monday and Friday off, a short session Wednesday, the race Sunday. Volume is light (16 mi before the race), with strides to keep her sharp. The Wednesday session is 2 mi at 8:35/mi, which is goal pace for 3:45. The race plan is realistic: a slightly slower first 3 mi, then 8:30–8:35/mi to 20. Each day can be run as written, and none of the must-never checks are triggered.\n\nI took off a point because some specifics aren't on the card and I can't confirm them: the \"two 20-milers and a 17\", last week's \"12-miler\", and \"exactly to plan\". If they come from her full training log, this is close to a 5.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:49:04.238Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2168,
+  "outputTokens": 888,
+  "thinkingTokens": 425,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1034,
+  "costUsd": 0.026432,
+  "timing": {
+    "ttftMs": 2995,
+    "totalMs": 10430,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2995,
+        "totalMs": 10430,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2168,
+        "outputTokens": 888
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a good race-week reply. It answers Marisol's question directly and honestly: skip the 16-miler, because it would still be in her legs on race day. It also speaks to her nerves about losing fitness and her heavy legs, explaining the dead feeling as normal taper recovery. That fits, since she says nothing hurts.\n\nThe plan keeps her five-day pattern: Monday and Friday off, a short session Wednesday, the race Sunday. Volume is light (16 mi before the race), with strides to keep her sharp. The Wednesday session is 2 mi at 8:35/mi, which is goal pace for 3:45. The race plan is realistic: a slightly slower first 3 mi, then 8:30–8:35/mi to 20. Each day can be run as written, and none of the must-never checks are triggered.\n\nI took off a point because some specifics aren't on the card and I can't confirm them: the \"two 20-milers and a 17\", last week's \"12-miler\", and \"exactly to plan\". If they come from her full training log, this is close to a 5."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 53, 40, 42, 46 mi\nThis week: 34 mi over 5 runs.\nBody: \"Legs heavy and flat. Nothing hurts, they just feel dead.\"\nFeeling: \"Nervous. I feel like I'm losing fitness.\"\nAsks: \"Is it crazy to do one more 16-miler on Wednesday so I feel ready?\"\n\n── THE DRAFT ──\nTells Marisol: Your fitness is built, and you ran last week exactly to plan. …\nAnswers: (1) Yes, skip it. A 16-miler on Wed Oct 14 would still be in your legs on Sunday. (2) You're already ready. You've run two 20-milers and a 17. (3) The dead-leg feeling is the taper doing its job while your body recovers from the big weeks. …\nNext week:\nMon: rest. Your usual rest day lets the 12-miler settle; a short walk is fine.\nTue: easy, 5 mi, heart rate under 145, then 4 x 20 s strides, quick and relaxed, with a…\nWed: quality, 5 mi: 1.5 mi easy, 2 mi at 8:35/mi, 1.5 mi easy. One last practice of race…\nThu: easy, 4 mi, heart rate under 145, flat route. Light running keeps you loose while…\nFri: rest. Two days before the race, this is the rest day that matters most; walk if you…\nSat: easy, 2 mi, very relaxed, then 3 x 20 s strides. A short shakeout settles nerves…\nSun: race, 26.2 mi, first 3 mi at 8:40–8:45/mi, then 8:30–8:35/mi to 20 mi, then hold…\n\nScore this draft: call submit_coaching_score once."
+}

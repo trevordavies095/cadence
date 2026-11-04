@@ -7,6 +7,18 @@ import { api, ApiError, sleep } from "./api.mjs";
 import { runStep } from "./steps.mjs";
 
 const REPLY_TIMEOUT_MS = 20 * 60_000;
+const LIVE = process.env.LLM_PROVIDER === "anthropic";
+
+/** Live mode only: how hard the model thinks per step. Weeks 9 and 10 are the ones on screen. */
+function effortFor(week) {
+  return week >= 9 ? "xhigh" : "medium";
+}
+
+/** Live mode only: save the week's effort as Coach Cade's model setting (needs the disclaimer accepted). */
+async function saveEffort(week) {
+  if (!LIVE) return;
+  await api("PUT", "/settings/coach-model", { model: "claude-opus-4-7", effort: effortFor(week) });
+}
 
 /**
  * POST that the live model answers. A 502 means the model's output failed validation.
@@ -74,9 +86,10 @@ export async function playOnboarding(script) {
   const { onboarding } = script;
   return runStep({ week: 0, label: "onboarding", at: onboarding.at }, async () => {
     await api("POST", "/disclaimer/accept");
-    if (process.env.LLM_PROVIDER === "anthropic") {
+    if (LIVE) {
       await api("PUT", "/settings/anthropic", { apiKey: process.env.ANTHROPIC_API_KEY });
     }
+    await saveEffort(0);
     const session = await currentWeekSession();
     const { json } = await postToModel(
       "/onboarding/answers",
@@ -95,6 +108,7 @@ export async function playWeek(script, entry) {
   const { week, isoWeek, checkIn } = entry;
   const label = `week ${week}`;
   return runStep({ week, label, at: checkIn.at }, async () => {
+    await saveEffort(week);
     const session = await currentWeekSession();
     if (session.isoWeek !== isoWeek) {
       throw new Error(`${label}: expected ${isoWeek} at ${checkIn.at}, the API says ${session.isoWeek}`);
@@ -123,6 +137,7 @@ async function findRun({ date, name }) {
 
 async function chat(script, message, { acceptAfter }) {
   return runStep({ week: 11, label: `chat ${message.at}`, at: message.at }, async () => {
+    await saveEffort(11);
     const session = await currentWeekSession();
     if (session.isoWeek !== script.week11.isoWeek) {
       throw new Error(`week 11: expected ${script.week11.isoWeek}, the API says ${session.isoWeek}`);

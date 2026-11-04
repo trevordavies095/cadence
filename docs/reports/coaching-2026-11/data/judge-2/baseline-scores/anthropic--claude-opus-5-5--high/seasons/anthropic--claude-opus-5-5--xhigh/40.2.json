@@ -1,0 +1,61 @@
+{
+  "input": "seasons/40",
+  "configuration": "anthropic--claude-opus-5-5--xhigh",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Nessa is a beginner coming back after two weeks off, and nothing in her week is a warning sign. She's only a little stiff from driving. The draft brings her back at the level she was at, using 2-minute run stretches with 1-minute walks. It only lengthens them to 3 minutes on Saturday. That's about 14, 16 and 18 minutes of running in the week, so it isn't rushing her back and the progression makes sense.\n\nIt answers both of her questions directly. She doesn't have to start over. On the race, it says finishing is realistic and sets that against the facts: her longest unbroken run is 2 minutes and the race will take about 40 minutes. It also expects her run stretches to reach only 8 to 10 minutes by early November. That reads as an honest answer to her real goal of running the whole race without walking, though the draft could say more plainly that she probably won't run it all yet.\n\nThe plan is clear enough to run as written. It fits her Monday, Wednesday and Saturday mornings and her dog walks, and the Tuesday and Thursday catch-up days give her a fallback if she misses a run. One weakness: \"back where you were by Wednesday\" is a bit glib, and some coaches would ease her in more gently with one shorter session first. Overall it's a good reply.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:31:55.670Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2341,
+  "outputTokens": 1091,
+  "thinkingTokens": 555,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1191,
+  "costUsd": 0.031184000000000003,
+  "timing": {
+    "ttftMs": 4602,
+    "totalMs": 13722,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 4602,
+        "totalMs": 13722,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2341,
+        "outputTokens": 1091
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Nessa is a beginner coming back after two weeks off, and nothing in her week is a warning sign. She's only a little stiff from driving. The draft brings her back at the level she was at, using 2-minute run stretches with 1-minute walks. It only lengthens them to 3 minutes on Saturday. That's about 14, 16 and 18 minutes of running in the week, so it isn't rushing her back and the progression makes sense.\n\nIt answers both of her questions directly. She doesn't have to start over. On the race, it says finishing is realistic and sets that against the facts: her longest unbroken run is 2 minutes and the race will take about 40 minutes. It also expects her run stretches to reach only 8 to 10 minutes by early November. That reads as an honest answer to her real goal of running the whole race without walking, though the draft could say more plainly that she probably won't run it all yet.\n\nThe plan is clear enough to run as written. It fits her Monday, Wednesday and Saturday mornings and her dog walks, and the Tuesday and Thursday catch-up days give her a fallback if she misses a run. One weakness: \"back where you were by Wednesday\" is a bit glib, and some coaches would ease her in more gently with one shorter session first. Overall it's a good reply."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 7, 0, 5.1, 0 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"Fine, a bit stiff from all the driving.\"\nFeeling: \"Want to get going again.\"\nAsks: \"I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?\"\n\n── THE DRAFT ──\nTells Nessa: You do not need to start again. Ease back in on Monday and you can be back where you were by Wednesday. …\nAnswers: (1) No, you do not have to start again. … (2) If Monday feels fine, you are back on track. … (3) Finishing the 5K is realistic. … (4) So far your longest run without a walk is 2 minutes, and the race will take you around 40 to… (5) Each week the running stretches will get longer, reaching about 8 to 10 minutes by early November. …\nNext week:\nMon: easy, 26 min, 5 min brisk walk, then 7 x 2 min run and 1 min walk, slow enough to…\nTue: rest. Dog walk as usual, and if Monday fell through, do Monday's session today…\nWed: easy, 29 min, 5 min brisk walk, then 8 x 2 min run and 1 min walk at chatting pace…\nThu: rest. Dog walk as usual, and if Wednesday fell through, do it today.\nFri: rest. Dog walk as usual, keeping your legs fresh for Saturday.\nSat: easy, 29 min, 5 min brisk walk, then 6 x 3 min run and 1 min walk, a touch slower…\nSun: rest. A relaxed walk is fine, and notice how your legs feel after your first 3…\n\nScore this draft: call submit_coaching_score once."
+}

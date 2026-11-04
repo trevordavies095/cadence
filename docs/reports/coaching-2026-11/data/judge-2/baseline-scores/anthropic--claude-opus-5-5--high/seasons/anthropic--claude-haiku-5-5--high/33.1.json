@@ -1,0 +1,61 @@
+{
+  "input": "seasons/33",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This draft is safe and fits a new runner. It answers Nessa's question with a direct \"no\" and gives a sound reason: more running time per session gets her to the 5K, not more sessions. It keeps her Mon/Wed/Sat routine with rest days in between. The load goes up gently, from 6.8 km to about 7.4 km (around 9%). The Saturday run is only 28 minutes, about 3.0 km, and the running stretches grow by about a minute each, which suits a returning beginner. Her calf tightness clears within a day, so it reads as normal soreness from a new activity, not a sign of injury. The draft handles it fine by spacing the runs out, but it could have said what to watch for, such as tightness that lasts or turns sharp. Calling Wednesday \"quality\" is a mislabel. The session is just a walk-run with longer running stretches, so it is fine, but the label could push a beginner to run it hard. The plan is clear enough to follow, though the lines are cut off. It doesn't link the weekly build to the 15 November goal, for example by roughly how many weeks until she can run 5K without walking.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:06:30.752Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2254,
+  "outputTokens": 770,
+  "thinkingTokens": 283,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1156,
+  "costUsd": 0.024416,
+  "timing": {
+    "ttftMs": 2808,
+    "totalMs": 8542,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2808,
+        "totalMs": 8542,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2254,
+        "outputTokens": 770
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This draft is safe and fits a new runner. It answers Nessa's question with a direct \"no\" and gives a sound reason: more running time per session gets her to the 5K, not more sessions. It keeps her Mon/Wed/Sat routine with rest days in between. The load goes up gently, from 6.8 km to about 7.4 km (around 9%). The Saturday run is only 28 minutes, about 3.0 km, and the running stretches grow by about a minute each, which suits a returning beginner. Her calf tightness clears within a day, so it reads as normal soreness from a new activity, not a sign of injury. The draft handles it fine by spacing the runs out, but it could have said what to watch for, such as tightness that lasts or turns sharp. Calling Wednesday \"quality\" is a mislabel. The session is just a walk-run with longer running stretches, so it is fine, but the label could push a beginner to run it hard. The plan is clear enough to follow, though the lines are cut off. It doesn't link the weekly build to the 15 November goal, for example by roughly how many weeks until she can run 5K without walking."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: none recorded.\nThis week: 6.8 km over 3 runs.\nBody: \"Calves tight the day after each run, gone by the next morning.\"\nFeeling: \"Proud I started.\"\nAsks: \"I want to be ready for the 5K in November. Should I run every day next week to get there faster?\"\n\n── THE DRAFT ──\nTells Nessa: Stick to three runs a week and grow the time gradually. …\nAnswers: (1) No. Keep to three runs a week with a rest day between each. (2) What gets you to the 5K is more running time in each session over the coming weeks, not more sessions. … (3) Walking the dog on rest days is fine. It is not running, so it adds no load you need to plan around.\nNext week:\nMon: easy, 20 min, about 2.1 km. Walk 2 min, then run 3 min and walk 1 min four times…\nTue: rest, no running. Walking the dog is fine. Your calves recover between runs.\nWed: quality, 22 min, about 2.3 km. Walk 2 min, then run 4 min and walk 1 min three…\nThu: rest, no running. Keep the day easy and let the legs settle after Wednesday.\nFri: rest, no running. A full day off before the longer run on Saturday.\nSat: long, 28 min, about 3.0 km. Walk 3 min, run 5 min, walk 1 min, run 5 min, walk 1…\nSun: rest, no running. Walking is fine. Full rest after the week's three runs.\n\nScore this draft: call submit_coaching_score once."
+}

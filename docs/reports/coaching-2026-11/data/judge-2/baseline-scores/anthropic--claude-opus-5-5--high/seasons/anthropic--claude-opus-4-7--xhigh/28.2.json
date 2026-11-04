@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft answers the question straight away and honestly. With 20 days to go, a 22-miler is out and the taper starts now. It explains why with what she already has in the bank: the 20, a recent 17, and five steady weeks. Those numbers aren't on the card, but they look like they come from her logs, not made up. Next week drops from 42 to about 37 mi (6+8+5+4+14), a sensible first taper step. The long run comes down to 14 with the last 3 at marathon pace, which is fine three weeks out. It keeps her schedule: Mon and Fri off, the session on Wednesday, the long run on Sunday, five runs. The 8:35/mi marathon pace matches a 3:45 finish. Every day is clear enough to run as written. It loses a point because her anxiety about the new date only gets a brief 'trust the taper', not real reassurance or a plan for the race weeks.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:25:08.341Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2338,
+  "outputTokens": 928,
+  "thinkingTokens": 513,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1188,
+  "costUsd": 0.027912,
+  "timing": {
+    "ttftMs": 2501,
+    "totalMs": 10220,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2501,
+        "totalMs": 10220,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2338,
+        "outputTokens": 928
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft answers the question straight away and honestly. With 20 days to go, a 22-miler is out and the taper starts now. It explains why with what she already has in the bank: the 20, a recent 17, and five steady weeks. Those numbers aren't on the card, but they look like they come from her logs, not made up. Next week drops from 42 to about 37 mi (6+8+5+4+14), a sensible first taper step. The long run comes down to 14 with the last 3 at marathon pace, which is fine three weeks out. It keeps her schedule: Mon and Fri off, the session on Wednesday, the long run on Sunday, five runs. The 8:35/mi marathon pace matches a 3:45 finish. Every day is clear enough to run as written. It loses a point because her anxiety about the new date only gets a brief 'trust the taper', not real reassurance or a plan for the race weeks."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: The taper starts now, so no 22-miler; you have enough long work in the bank, and the next two weeks are about sharpening for Oct…\nAnswers: (1) No, and I would not want you to try. You are 20 days from the start line, which is squarely in taper territory. (2) Here is what you actually have in the bank: a 20-miler three weeks ago, a 17 last week at 9:59/mi with only +4.7 bpm of drift, and five straight weeks… (3) Trust the taper. …\nNext week:\nMon: rest. Full day off to start the taper clean after a solid 42-mile week.\nTue: easy, 6 mi, heart rate under 145, flat route. Loosen the legs; nothing more.\nWed: quality, 8 mi with 2 mi warm-up then 4 mi at marathon pace 8:35/mi then 2 mi…\nThu: easy, 5 mi, heart rate under 145. Recovery from Wednesday, keep it conversational.\nFri: rest. Protect Sunday.\nSat: easy, 4 mi, with 4 x 20 sec strides after. Keeps the legs sharp without any cost.\nSun: long, 14 mi, first 11 easy around 9:55/mi then last 3 at marathon pace 8:35/mi…\n\nScore this draft: call submit_coaching_score once."
+}

@@ -14,7 +14,7 @@ import {
   validateMidWeekChatReply,
   validateWeeklyReply,
 } from "../src/llm/index.js";
-import { prescribedRunJsonSchema } from "../src/llm/anthropic.js";
+import { midWeekChatReplyToolSchema } from "../src/llm/anthropic.js";
 import { migrate } from "../src/migrate.js";
 import { savePrescribedWeek } from "../src/prescribed/store.js";
 import { gradePrescribedVsActual } from "../src/recap/buildGrading.js";
@@ -26,111 +26,79 @@ import {
   resetAppTables,
   TEST_DATA_PROTECTION_KEY,
 } from "./helpers.js";
+import { planLinesWith, weeklyForm } from "./weeklyForms.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP = path.join(__dirname, "fixtures", "tempo-export-mini.zip");
 
 const NEXT_MONDAY = "2026-10-26";
 
-/** A weekly reply whose Tuesday carries `run`, every other day rest. */
-function replyWithTuesday(run: unknown, dayType = "easy") {
-  return {
-    headline: "A steady week.",
-    analysis: "## Why this plan\nKeep it easy.",
-    prescribedWeek: {
-      week: "2026-W44",
-      days: expectedPlanDates(NEXT_MONDAY).map((date, i) =>
-        i === 1 ? { date, dayType, run } : { date, dayType: "rest", run: null },
-      ),
-    },
-  };
+/** A weekly form whose Tuesday line reads `tuesday` after the day token. */
+function replyWithTuesday(tuesday: string) {
+  return weeklyForm(NEXT_MONDAY, {
+    plan: planLinesWith(NEXT_MONDAY, 1, tuesday).join("\n"),
+  });
+}
+
+/** Tuesday's stored run, read from its line. */
+function tuesdayRun(tuesday: string) {
+  const checked = validateWeeklyReply(replyWithTuesday(tuesday), NEXT_MONDAY);
+  expect(checked.ok).toBe(true);
+  return checked.ok ? checked.value.prescribedWeek.days[1]! : null;
 }
 
 describe("a planned run can be prescribed by duration", () => {
-  it("accepts a run with a duration and no distance", () => {
-    const checked = validateWeeklyReply(
-      replyWithTuesday({ type: "easy", distanceM: 0, durationS: 2400 }),
-      NEXT_MONDAY,
-    );
-    expect(checked.ok).toBe(true);
-    if (!checked.ok) return;
-    expect(checked.value.prescribedWeek.days[1]!.run).toEqual({
+  it("stores a time-only line as a duration with distance 0", () => {
+    expect(tuesdayRun("easy, 40 min, relaxed.")?.run).toEqual({
       type: "easy",
       distanceM: 0,
       durationS: 2400,
+      structure: null,
+      paceOrHr: null,
+      shoes: null,
     });
   });
 
-  it("accepts a duration with distanceM left out, storing distance as 0", () => {
-    const checked = validateWeeklyReply(
-      replyWithTuesday({ type: "easy", durationS: 2400 }),
-      NEXT_MONDAY,
-    );
-    expect(checked.ok && checked.value.prescribedWeek.days[1]!.run).toEqual({
-      type: "easy",
-      distanceM: 0,
-      durationS: 2400,
-    });
+  it("reads hours as well as minutes", () => {
+    expect(tuesdayRun("long, 1h10, steady.")?.run).toMatchObject({ distanceM: 0, durationS: 4200 });
   });
 
-  it("keeps both when a run has a distance and a duration", () => {
-    const checked = validateWeeklyReply(
-      replyWithTuesday({ type: "easy", distanceM: 8000, durationS: 2700 }),
-      NEXT_MONDAY,
-    );
-    expect(checked.ok && checked.value.prescribedWeek.days[1]!.run).toMatchObject({
-      distanceM: 8000,
+  it("keeps both when a line gives a distance and a duration", () => {
+    expect(tuesdayRun("easy, 5 mi (45 min), flat.")?.run).toMatchObject({
+      distanceM: 8047,
       durationS: 2700,
     });
   });
 
-  it("refuses a run with neither a distance nor a duration", () => {
-    const checked = validateWeeklyReply(replyWithTuesday({ type: "easy" }), NEXT_MONDAY);
-    expect(checked.ok).toBe(false);
-    expect(!checked.ok && checked.error).toMatch(/distanceM must be a number >= 0/);
+  it("does not file a run line with neither a distance nor a duration, and keeps the reply", () => {
+    const day = tuesdayRun("easy, keep it relaxed.");
+    expect(day).toMatchObject({ parsed: false, run: null, dayType: "other" });
   });
 
-  it("refuses a duration that is not a positive number", () => {
-    for (const durationS of [-60, 0, "40 min", Number.NaN]) {
-      const checked = validateWeeklyReply(
-        replyWithTuesday({ type: "easy", distanceM: 0, durationS }),
-        NEXT_MONDAY,
-      );
-      expect(checked.ok, String(durationS)).toBe(false);
-      expect(!checked.ok && checked.error).toMatch(/durationS must be a number > 0 or null/);
-    }
+  it("does not file a bare number: the unit is never guessed", () => {
+    const day = tuesdayRun("easy 5, relaxed.");
+    expect(day).toMatchObject({ parsed: false, run: null });
   });
 
-  it("treats a timed run on a rest day as a run, not rest", () => {
-    const checked = validateWeeklyReply(
-      replyWithTuesday({ type: "easy", distanceM: 0, durationS: 1800 }, "rest"),
-      NEXT_MONDAY,
-    );
-    expect(!checked.ok && checked.error).toMatch(/is rest but has a non-rest run/);
+  it("files a rest line with a time as rest, with no run", () => {
+    expect(tuesdayRun("rest, or 20 min walk.")).toMatchObject({ dayType: "rest", run: null, parsed: true });
   });
 
   it("accepts a timed day in a mid-week change", () => {
     const checked = validateMidWeekChatReply(
-      {
-        body: "Thursday is now 40 minutes easy.",
-        prescribedDayPatches: [
-          { date: "2026-10-29", dayType: "easy", run: { type: "easy", durationS: 2400 } },
-        ],
-      },
+      { body: "Thursday is now 40 minutes easy.", changes: "Thu 2026-10-29: easy, 40 min." },
       NEXT_MONDAY,
     );
-    expect(checked.ok && checked.value.prescribedDayPatches).toEqual([
-      { date: "2026-10-29", dayType: "easy", run: { type: "easy", distanceM: 0, durationS: 2400 } },
+    expect(checked.ok && checked.value.prescribedDayPatches).toMatchObject([
+      { date: "2026-10-29", dayType: "easy", run: { type: "easy", distanceM: 0, durationS: 2400 }, parsed: true },
     ]);
   });
 
-  it("offers Coach Cade a duration in seconds on the tool schema", () => {
-    const schema = prescribedRunJsonSchema() as {
-      properties: Record<string, { type: unknown; description?: string }>;
+  it("offers Coach Cade a time in minutes on the mid-week changes box", () => {
+    const schema = midWeekChatReplyToolSchema(NEXT_MONDAY, "imperial") as {
+      properties: Record<string, { description?: string }>;
     };
-    expect(schema.properties.durationS!.type).toEqual(["number", "null"]);
-    expect(schema.properties.durationS!.description).toMatch(/seconds/);
-    expect(schema.properties.distanceM!.description).toMatch(/0 when/);
+    expect(schema.properties.changes!.description).toMatch(/time in minutes/);
   });
 });
 

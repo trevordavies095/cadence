@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Clock } from "../clock/clock.js";
 import type { PrescribedWeek, SafetyCallout } from "../llm/types.js";
 import { requireDisclaimer } from "../middleware/requireDisclaimer.js";
+import type { PlanWarning } from "../prescribed/planCheck.js";
 import { getPrescribedWeekBySessionId } from "../prescribed/store.js";
 import { getWeekRecapBySessionId } from "../recap/recapStore.js";
 import {
@@ -9,7 +10,7 @@ import {
   listThreadMessages,
   type ThreadMessage,
 } from "../thread/store.js";
-import { weeklyReadLink } from "../thread/weeklyRead.js";
+import { planBehindWeeklyRead, weeklyReadLink } from "../thread/weeklyRead.js";
 import { getWeekSessionById, type WeekSession } from "../week/store.js";
 
 export type PrescribedWeekArtifact = {
@@ -18,6 +19,8 @@ export type PrescribedWeekArtifact = {
   plan: PrescribedWeek;
   /** Structured safety callouts for visible thread rendering (#32). */
   safetyCallouts: SafetyCallout[];
+  /** The plan check's warnings (issue #58); empty when none tripped or the plan predates the check. */
+  planWarnings: PlanWarning[];
   createdAt: string;
   updatedAt: string;
 };
@@ -34,14 +37,22 @@ export type WeeklyRecapArtifact = {
 
 export type ThreadArtifact = PrescribedWeekArtifact | WeeklyRecapArtifact;
 
-/** A thread message as the page gets it: weekly_read messages say where their link goes. */
-export type ThreadMessageView = ThreadMessage & { readLink?: "plan" | "week" };
+/**
+ * A thread message as the page gets it: weekly_read messages say where their
+ * link goes and carry the plan check's warnings on the plan they point at, so
+ * the Sunday message's card shows the same notices as the plan.
+ */
+export type ThreadMessageView = ThreadMessage & {
+  readLink?: "plan" | "week";
+  planWarnings?: PlanWarning[];
+};
 
 async function withReadLinks(
   messages: ThreadMessage[],
   now: Date,
 ): Promise<ThreadMessageView[]> {
   const sessions = new Map<string, WeekSession | null>();
+  const warnings = new Map<string, PlanWarning[]>();
   const out: ThreadMessageView[] = [];
   for (const m of messages) {
     if (m.kind !== "weekly_read" || !m.weekSessionId) {
@@ -49,10 +60,23 @@ async function withReadLinks(
       continue;
     }
     if (!sessions.has(m.weekSessionId)) {
-      sessions.set(m.weekSessionId, await getWeekSessionById(m.weekSessionId));
+      const reviewed = await getWeekSessionById(m.weekSessionId);
+      sessions.set(m.weekSessionId, reviewed);
+      if (reviewed) {
+        const plan = await planBehindWeeklyRead(reviewed);
+        warnings.set(m.weekSessionId, plan?.planWarnings ?? []);
+      }
     }
     const reviewed = sessions.get(m.weekSessionId);
-    out.push(reviewed ? { ...m, readLink: weeklyReadLink(reviewed, now) } : m);
+    out.push(
+      reviewed
+        ? {
+            ...m,
+            readLink: weeklyReadLink(reviewed, now),
+            planWarnings: warnings.get(m.weekSessionId) ?? [],
+          }
+        : m,
+    );
   }
   return out;
 }
@@ -96,6 +120,7 @@ export function createThreadRoutes(options: { clock: Clock }): Hono {
           weekSessionId: prescribed.weekSessionId,
           plan: prescribed.plan,
           safetyCallouts: prescribed.safetyCallouts ?? [],
+          planWarnings: prescribed.planWarnings ?? [],
           createdAt: prescribed.createdAt,
           updatedAt: prescribed.updatedAt,
         });

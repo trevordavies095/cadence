@@ -1,0 +1,61 @@
+{
+  "input": "seasons/26",
+  "configuration": "anthropic--claude-opus-4-7--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a safe, well-judged week. It answers Marisol's question directly and honestly: no, she can't keep running like that after jumping from 37 to 53 miles. It explains why and points to the gains she's already made so she doesn't feel the need to force more. Next week adds up to about 39 miles, which brings her back in line with her plan and recent weeks. The long run drops from 20 to 16 miles at an easy, heart-rate-capped effort. Running days match her schedule (Monday and Friday off, session Wednesday, long run Sunday). The marathon-pace work is 5 miles at 8:30–8:40, which matches her 3:45 goal, and every day can be run as written. It loses a point for two reasons. First, the calf tightness only gets \"Watch the calves\", with no instruction to cut or skip the Wednesday session if they still feel tight or start to hurt. Second, the draft mentions a knee flare, heart-rate data and a 20-miler that aren't on the card, so I can't confirm them. If they came from her training log, they're fine. Starting marathon-pace work right after a big overshoot is a little ambitious, but the total volume pullback makes up for it.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T14:39:08.866Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2400,
+  "outputTokens": 1069,
+  "thinkingTokens": 563,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1229,
+  "costUsd": 0.03098,
+  "timing": {
+    "ttftMs": 3062,
+    "totalMs": 11693,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3062,
+        "totalMs": 11693,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2400,
+        "outputTokens": 1069
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a safe, well-judged week. It answers Marisol's question directly and honestly: no, she can't keep running like that after jumping from 37 to 53 miles. It explains why and points to the gains she's already made so she doesn't feel the need to force more. Next week adds up to about 39 miles, which brings her back in line with her plan and recent weeks. The long run drops from 20 to 16 miles at an easy, heart-rate-capped effort. Running days match her schedule (Monday and Friday off, session Wednesday, long run Sunday). The marathon-pace work is 5 miles at 8:30–8:40, which matches her 3:45 goal, and every day can be run as written. It loses a point for two reasons. First, the calf tightness only gets \"Watch the calves\", with no instruction to cut or skip the Wednesday session if they still feel tight or start to hurt. Second, the draft mentions a knee flare, heart-rate data and a 20-miler that aren't on the card, so I can't confirm them. If they came from her training log, they're fine. Starting marathon-pace work right after a big overshoot is a little ambitious, but the total volume pullback makes up for it."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 24, 27, 37 mi\nThis week: 53 mi over 6 runs. Planned 38 mi, ran 53 mi.\nBody: \"Calves tight on Sunday night, otherwise great.\"\nFeeling: \"Like I've turned a corner.\"\nAsks: \"I ran way more than the plan and felt fine. Can I keep this up?\"\n\n── THE DRAFT ──\nTells Marisol: You crushed the plan but overshot it by a lot, so next week pulls volume back, keeps the long run moderate, and starts marathon-pace work…\nAnswers: (1) Short answer: no, not on top of a jump that size. Going from 37 to 53 miles in one week, with a 20-miler that ran in zone 3 for most of it, is exactly the setup that produced the knee flare three weeks ago. (2) The plan is already working: your easy pace at 9:50 and HR 139 is a big improvement on 10:28 at 151 three weeks ago, and the long run has climbed from 10 to 20 mi. We do not need to force more on top.\nSafety flag: Watch the calves\nNext week:\nMon: rest. Full day off to absorb the 53 mi week and the 20 mi long run.\nTue: easy, 6 mi, heart rate under 145, flat route. Loosens the legs without adding stress.\nWed: quality, 8 mi with 5 mi at 8:30 to 8:40/mi in the middle, 1.5 mi easy either side…\nThu: easy, 5 mi, heart rate under 145. Recovery jog the day after the marathon-pace work.\nFri: rest. Keep it a real day off before the weekend running.\nSat: easy, 4 mi, heart rate under 145. Shake out ahead of the long run.\nSun: long, 16 mi easy, heart rate under 150 the whole way. A controlled long run after…\n\nScore this draft: call submit_coaching_score once."
+}

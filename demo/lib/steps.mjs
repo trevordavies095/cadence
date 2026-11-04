@@ -9,11 +9,6 @@ import { dumpSnapshot, realNow, setClock } from "./api.mjs";
 
 let state = null;
 
-/** Live mode only: how hard the model thinks per step. Weeks 9 and 10 are the ones on screen. */
-export function effortFor(week) {
-  return week >= 9 ? "xhigh" : "medium";
-}
-
 /** checkpointDir holds steps.json and week-NN.sql. `keepWeeksBefore` drops steps being replayed. */
 export function initSteps(checkpointDir, keepWeeksBefore) {
   fs.mkdirSync(checkpointDir, { recursive: true });
@@ -29,7 +24,7 @@ export const recordedSteps = () => state.steps;
 
 /** Run `fn` with the clock pinned to `at`. Returns the clock's ISO instant. */
 export async function runStep({ week, label, at }, fn) {
-  const clock = setClock(at, effortFor(week));
+  const clock = setClock(at);
   const realStart = realNow();
   await fn();
   const realEnd = realNow();

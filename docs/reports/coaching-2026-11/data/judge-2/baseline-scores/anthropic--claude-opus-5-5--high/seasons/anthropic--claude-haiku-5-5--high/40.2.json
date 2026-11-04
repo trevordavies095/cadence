@@ -1,0 +1,61 @@
+{
+  "input": "seasons/40",
+  "configuration": "anthropic--claude-haiku-5-5--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Both of Nessa's questions get direct, honest answers. She doesn't have to start from the beginning. The 15 November 5K is still possible, but running the whole way is a stretch. A checkpoint on 31 October tells her whether to keep that goal, which is a good way to frame it.\n\nThe restart is safe and suits her life. It keeps her usual Monday, Wednesday and Saturday mornings, leaves full rest days between sessions and says her dog walks are fine. The walk-run blocks (8 x 2 min run / 1 min walk, then 6 x 3 min run / 1 min walk) roughly match the volume of her earlier weeks. That isn't a sharp jump, and it doesn't rush a returning beginner who reports only some stiffness from driving.\n\nWhat keeps it below a 5:\n- Calling Saturday \"quality\" is the wrong message for a new runner. The Saturday line is also cut off, so it's unclear whether it asks for faster running.\n- The 150 heart-rate cap assumes she has a monitor, and that number isn't based on anything she told us.\n- The 31 October test (15 minutes running without a walk) is a big step up from 3-minute run blocks in about two weeks.\n- The draft gives no explanation of why her weeks keep going on and off, or how to make the runs stick.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:17:07.983Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2305,
+  "outputTokens": 1101,
+  "thinkingTokens": 551,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1168,
+  "costUsd": 0.03124,
+  "timing": {
+    "ttftMs": 3379,
+    "totalMs": 12167,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3379,
+        "totalMs": 12167,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2305,
+        "outputTokens": 1101
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Both of Nessa's questions get direct, honest answers. She doesn't have to start from the beginning. The 15 November 5K is still possible, but running the whole way is a stretch. A checkpoint on 31 October tells her whether to keep that goal, which is a good way to frame it.\n\nThe restart is safe and suits her life. It keeps her usual Monday, Wednesday and Saturday mornings, leaves full rest days between sessions and says her dog walks are fine. The walk-run blocks (8 x 2 min run / 1 min walk, then 6 x 3 min run / 1 min walk) roughly match the volume of her earlier weeks. That isn't a sharp jump, and it doesn't rush a returning beginner who reports only some stiffness from driving.\n\nWhat keeps it below a 5:\n- Calling Saturday \"quality\" is the wrong message for a new runner. The Saturday line is also cut off, so it's unclear whether it asks for faster running.\n- The 150 heart-rate cap assumes she has a monitor, and that number isn't based on anything she told us.\n- The 31 October test (15 minutes running without a walk) is a big step up from 3-minute run blocks in about two weeks.\n- The draft gives no explanation of why her weeks keep going on and off, or how to make the runs stick."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── NESSA'S WEEK ──\nNessa is 41 and new to running, aiming to run the whole Corrowmore Harvest 5K on 15 November without walking. Nessa walk-runs three mornings a week (Monday, Wednesday and Saturday) and walks the dog most days.\nRecent weeks: 7, 0, 5.1, 0 km\nThis week: 0 km over 0 runs. Missed 3 of 3 planned runs.\nBody: \"Fine, a bit stiff from all the driving.\"\nFeeling: \"Want to get going again.\"\nAsks: \"I haven't run for two weeks. Do I have to start again from the beginning? And is the 5K in four weeks still realistic?\"\n\n── THE DRAFT ──\nTells Nessa: The week of Oct 12 was a full miss: all three planned runs were skipped, so your last run was Sat Oct 3. …\nAnswers: (1) No, you do not need to start from the beginning. … (2) The 5K on Sun Nov 15 is still possible, but running the whole way is a stretch from here. … (3) Check on Sat Oct 31. If you can run 15 minutes without a walk, with heart rate under 150 and no pain, keep the whole-way goal.\nNext week:\nMon: easy, 24 min, 8 x 2 min run and 1 min walk, heart rate under 150, flat route…\nTue: rest. Your normal dog walks are fine; the legs need the gap after the restart.\nWed: easy, 24 min, 8 x 2 min run and 1 min walk, heart rate under 150, flat route…\nThu: rest. Keeps a full rest day between Wednesday and Saturday.\nFri: rest. Full rest before Saturday so you start that session fresh.\nSat: quality, about 30 min: 5 min brisk walk, then 6 x (3 min run and 1 min walk) with…\nSun: rest. Recovery after the only firmer session of the week.\n\nScore this draft: call submit_coaching_score once."
+}

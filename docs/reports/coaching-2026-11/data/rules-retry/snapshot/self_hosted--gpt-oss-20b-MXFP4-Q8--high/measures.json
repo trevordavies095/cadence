@@ -1,0 +1,95 @@
+{
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "provider": "self_hosted",
+  "replies": 3,
+  "byOperation": {
+    "weekly_reply": 3
+  },
+  "schema": {
+    "firstTry": 3,
+    "afterRetry": 0,
+    "failed": 0
+  },
+  "softRepairs": {
+    "count": 0,
+    "replies": 0,
+    "byField": {}
+  },
+  "goalCheckFailures": {
+    "count": 3,
+    "byCheck": {
+      "no goal line": 3
+    }
+  },
+  "bannedVocabulary": {
+    "hits": 0,
+    "replies": 0,
+    "byTerm": {}
+  },
+  "planSanity": {
+    "band": {
+      "low": 0.5,
+      "high": 1.6
+    },
+    "weeklyReplies": 3,
+    "flaggedReplies": 0,
+    "byCheck": {},
+    "skipped": {},
+    "volumeRatio": {
+      "median": 0.8162782905857572,
+      "worst": 0.8425876810700605,
+      "n": 3
+    },
+    "flags": []
+  },
+  "lengthCaps": {
+    "hits": 0,
+    "byField": {}
+  },
+  "latency": {
+    "firstTokenMs": {
+      "median": 971,
+      "worst": 23513,
+      "n": 3
+    },
+    "totalMs": {
+      "median": 64938,
+      "worst": 70299,
+      "n": 3
+    },
+    "wallClockMs": 184923
+  },
+  "tokens": {
+    "input": {
+      "median": 16828,
+      "n": 3
+    },
+    "output": {
+      "median": 1616,
+      "n": 3
+    },
+    "thinking": {
+      "median": null,
+      "n": 0
+    },
+    "thinkingChars": {
+      "median": 3359,
+      "n": 3
+    },
+    "cacheRead": {
+      "median": null,
+      "n": 0
+    },
+    "cacheCreation": {
+      "median": null,
+      "n": 0
+    }
+  },
+  "promptCut": {
+    "ratio": 0.9,
+    "checked": 3,
+    "cut": [],
+    "lowestRatio": 1.6446442533229084
+  },
+  "cost": null
+}

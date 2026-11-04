@@ -1,0 +1,61 @@
+{
+  "input": "seasons/13",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 4,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This draft fits a runner coming back from a stress reaction, and it isn't unsafe. It keeps the physio's limit of three walk-run days, spaced Mon/Wed/Sat with rest or easy walking in between. The step up is small: 16, 16 and 18 minutes of 1:30 run / 1:30 walk. It keeps the physio calf and hip routine going, and it flags a shin check-in rule, which fits the physio's \"stop if the shin aches.\" Each day is clear enough to run as written. The progression is sensible for reaching 30 minutes of continuous running by mid-October, so nothing here rushes Ines. I took a point off because the read seems to invent details: \"pain 0/10 on all three runs,\" \"quiet the next morning,\" and heart rate in zones 1–2 aren't on the card, which only says \"Shin quiet.\" It also doesn't clearly speak to Ines feeling nervous, though the reply may be cut off before that. I couldn't see the full text of the shin rule, so I've assumed it means stop if the shin aches.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:17:16.901Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2239,
+  "outputTokens": 835,
+  "thinkingTokens": 368,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1142,
+  "costUsd": 0.025656000000000005,
+  "timing": {
+    "ttftMs": 2999,
+    "totalMs": 8916,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2999,
+        "totalMs": 8916,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2239,
+        "outputTokens": 835
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "4",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This draft fits a runner coming back from a stress reaction, and it isn't unsafe. It keeps the physio's limit of three walk-run days, spaced Mon/Wed/Sat with rest or easy walking in between. The step up is small: 16, 16 and 18 minutes of 1:30 run / 1:30 walk. It keeps the physio calf and hip routine going, and it flags a shin check-in rule, which fits the physio's \"stop if the shin aches.\" Each day is clear enough to run as written. The progression is sensible for reaching 30 minutes of continuous running by mid-October, so nothing here rushes Ines. I took a point off because the read seems to invent details: \"pain 0/10 on all three runs,\" \"quiet the next morning,\" and heart rate in zones 1–2 aren't on the card, which only says \"Shin quiet.\" It also doesn't clearly speak to Ines feeling nervous, though the reply may be cut off before that. I couldn't see the full text of the shin rule, so I've assumed it means stop if the shin aches."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── INES'S WEEK ──\nInes ran about 40 km a week before a stress reaction in the left shin and ten weeks off, and a physio has cleared Ines for walk-run three days a week, stopping if the shin aches. The goal is to run 30 minutes without walking by mid-October.\nRecent weeks: none recorded.\nThis week: 5.1 km over 3 runs.\nBody: \"Shin quiet.\"\nFeeling: \"Nervous but happy to be back.\"\n\n── THE DRAFT ──\nTells Ines: A clean, pain-free first week back, so the plan takes a small step up: same three run days, slightly longer run intervals, and one session…\nThe green light here is the shin: pain 0/10 on all three runs, quiet the next morning, and heart rate sitting calmly in zones 1 and 2. That is exactly the signal that permits a small next step rather than a repeat.\nSafety flag: Shin check-in rule\nNext week:\nMon: easy, walk-run, 16 min, 2 min walk to start then 5 rounds of 1 min 30 easy running…\nTue: other, physio calf and hip routine, 15 – 20 min. Keeps the supporting work going on…\nWed: easy, walk-run, 16 min, same as Monday: 5 rounds of 1 min 30 running and 1 min 30…\nThu: rest. Full day off to protect the shin between runs.\nFri: other, physio calf and hip routine, 15 – 20 min. Second strength touch of the week…\nSat: easy, walk-run, 18 min, 6 rounds of 1 min 30 running and 1 min 30 walking. The…\nSun: rest, or a 20 – 30 min easy walk if you feel like moving. No running, let the shin…\n\nScore this draft: call submit_coaching_score once."
+}

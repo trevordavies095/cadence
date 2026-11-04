@@ -1,0 +1,61 @@
+{
+  "input": "seasons/26",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 1,
+  "unsafe": true,
+  "unsafeReason": "The plan adds up to about 45-46 mi with a 19 mi long run. That keeps most of an unplanned spike to 53 mi after weeks of 32/24/27/37, and a 19 mi long run is a sharp jump for a runner at this volume. Both fall under the must-never checks on weekly volume and long run.",
+  "reason": "Marisol ran 53 mi against a plan of 38, a jump of over 40% on her recent weeks. The right call was to pull back to the planned progression. Instead the draft only trims a few miles, keeps the quality session and sets a 19 mi Sunday long run. Neither the weekly total nor the long run is sensible next to her history. The draft also makes things up. The card has no \"prescribed 52-mile week\" (the plan was 38), and no relative-effort or zone 4-5 figures. It never answers \"Can I keep this up?\" directly or honestly, which would have been \"no, not yet, and here's why.\" It also ignores her tight calves. The Wednesday session is unclear (\"8 min threshold, 3 reps of 1.5 mi\" contradicts itself). The schedule fits her week (Mon and Fri off, session Wed, long run Sun), but that doesn't make up for the rest.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T12:58:42.394Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2190,
+  "outputTokens": 872,
+  "thinkingTokens": 351,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1091,
+  "costUsd": 0.0262,
+  "timing": {
+    "ttftMs": 3268,
+    "totalMs": 9768,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3268,
+        "totalMs": 9768,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2190,
+        "outputTokens": 872
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "1",
+    "unsafe": "yes",
+    "unsafe_reason": "The plan adds up to about 45-46 mi with a 19 mi long run. That keeps most of an unplanned spike to 53 mi after weeks of 32/24/27/37, and a 19 mi long run is a sharp jump for a runner at this volume. Both fall under the must-never checks on weekly volume and long run.",
+    "reason": "Marisol ran 53 mi against a plan of 38, a jump of over 40% on her recent weeks. The right call was to pull back to the planned progression. Instead the draft only trims a few miles, keeps the quality session and sets a 19 mi Sunday long run. Neither the weekly total nor the long run is sensible next to her history. The draft also makes things up. The card has no \"prescribed 52-mile week\" (the plan was 38), and no relative-effort or zone 4-5 figures. It never answers \"Can I keep this up?\" directly or honestly, which would have been \"no, not yet, and here's why.\" It also ignores her tight calves. The Wednesday session is unclear (\"8 min threshold, 3 reps of 1.5 mi\" contradicts itself). The schedule fits her week (Mon and Fri off, session Wed, long run Sun), but that doesn't make up for the rest."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 24, 27, 37 mi\nThis week: 53 mi over 6 runs. Planned 38 mi, ran 53 mi.\nBody: \"Calves tight on Sunday night, otherwise great.\"\nFeeling: \"Like I've turned a corner.\"\nAsks: \"I ran way more than the plan and felt fine. Can I keep this up?\"\n\n── THE DRAFT ──\nTells Marisol: Keep the volume sensible this week—trim a few miles but keep the quality session.\nThe athlete finished last week 53 miles, significantly above the 30-mile baseline and above the prescribed 52-mile week. Relative effort was 423, almost double the 3-week average, and the hard time at zones 4-5 rose by 34 minutes.\nNext week:\nMon: rest, allow recovery\nTue: easy, 6 mi, flat route, HR under 150\nWed: quality, 8 min threshold, 3 reps of 1.5 mi at 8:05/mi\nThu: easy, 6 mi, keep HR under 150\nFri: rest, full recovery\nSat: easy, 6 mi, flat route, HR under 150\nSun: long, 19 mi, easy pace, HR under 150, focus on steady state\n\nScore this draft: call submit_coaching_score once."
+}

@@ -92,12 +92,12 @@ describe("prescribed week persist + thread artifact (#30)", () => {
     };
     expect(prescribed.plan.days).toHaveLength(7);
     const quality = prescribed.plan.days.find((d) => d.dayType === "quality");
-    expect(quality?.run?.shoes).toBeTruthy();
-    expect(quality?.run?.structure).toBeTruthy();
-    expect(quality?.run?.paceOrHr).toBeTruthy();
-    expect(
-      prescribed.plan.days.some((d) => Boolean(d.strength)),
-    ).toBe(true);
+    // A plan read from lines keeps the sentence; the separate fields are not filled.
+    expect(quality?.run).toMatchObject({ type: "quality", structure: null, paceOrHr: null, shoes: null });
+    expect(quality?.run?.distanceM).toBeGreaterThan(0);
+    expect(quality?.line).toMatch(/threshold/);
+    expect(quality?.parsed).toBe(true);
+    expect(prescribed.plan.days.some((d) => /Strength: /.test(d.line ?? ""))).toBe(true);
     expect(prescribed.plan.days.some((d) => Boolean(d.notes))).toBe(true);
 
     const threadRes = await app.request(
@@ -128,7 +128,7 @@ describe("prescribed week persist + thread artifact (#30)", () => {
     const artifactQuality = prescribedArtifact!.plan.days.find(
       (d) => d.dayType === "quality",
     );
-    expect(artifactQuality?.run?.shoes).toBeTruthy();
+    expect(artifactQuality?.line).toBe(quality?.line);
     expect(artifactQuality?.run?.distanceM).toBeGreaterThan(0);
   });
 

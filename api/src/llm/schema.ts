@@ -9,12 +9,15 @@ import {
   MAX_SAFETY_CALLOUTS,
   SAFETY_ESCALATION_LINE,
 } from "./safety.js";
+import { parsePlanLines, splitLines, type PlanLineFailure } from "../prescribed/planLines.js";
+import type { TempoUnitPreference } from "../tempo/port.js";
 import type {
   DayType,
   DossierAuditDraft,
   DossierCorrectionDraft,
   DossierV1Draft,
   MidWeekChatReply,
+  PlanDayFix,
   PrescribedDay,
   PrescribedRun,
   PrescribedWeek,
@@ -22,6 +25,7 @@ import type {
   ReadFlag,
   RunType,
   SafetyCallout,
+  SafetyCalloutSeverity,
   WeeklyReply,
 } from "./types.js";
 
@@ -67,10 +71,100 @@ const RUN_TYPES = new Set<RunType>([
 const ISO_WEEK_RE = /^\d{4}-W\d{2}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** `repairs` notes soft fields the validator fixed instead of refusing. */
-export type SchemaOk<T> = { ok: true; value: T; repairs?: string[] };
+/**
+ * `repairs` notes soft fields the validator fixed instead of refusing.
+ * `planRetry`, when present, says the reply was accepted with plan lines
+ * Cadence could not read, and how to take a retry's fixes for them: the
+ * adapter's retry (askAtMostTwice) is driven by it, whatever the operation.
+ */
+export type SchemaOk<T> = {
+  ok: true;
+  value: T;
+  repairs?: string[];
+  planRetry?: PlanRetry<T>;
+};
 export type SchemaErr = { ok: false; error: string };
 export type SchemaResult<T> = SchemaOk<T> | SchemaErr;
+
+/**
+ * A reply accepted with plan lines that did not parse. The adapter sends one
+ * more request quoting `failures` and reads the retry's tool input with
+ * `takeFixes`: only the failed dates are taken from it, and everything else
+ * stays as the first reply had it.
+ */
+export type PlanRetry<T> = {
+  /** The box the lines came from, as the retry names it: "plan" (weekly) or "changes" (mid-week). */
+  box: string;
+  /** Every failed line, in date order, as the retry quotes them. */
+  failures: PlanLineFailure[];
+  /** The failed dates the retry may replace (dates inside the plan week). */
+  dates: string[];
+  /**
+   * The first reply with the failed dates taken from the retry's tool input
+   * where they now parse; a date that fails again stays as it was. `fixed`
+   * names the dates replaced; `repairs` names each date fixed and each still
+   * unparsed. Refused when the retry has no box to read.
+   */
+  takeFixes(retryInput: unknown): PlanFixResult<T>;
+};
+
+export type PlanFixResult<T> = (SchemaOk<T> & { fixed: string[] }) | SchemaErr;
+
+/**
+ * The PlanRetry for a box parsed with parsePlanLines: `boxOf` reads the box
+ * from the retry's tool input, which is parsed against the same week and
+ * unit; `withDays` builds the first reply with the replaced days. Undefined
+ * when no date inside `dates` failed. Mid-week's changes box can use this too.
+ */
+export function planLineRetry<T>(options: {
+  /** The box's name in the tool and in the repair notes: "plan" or "changes". */
+  box: string;
+  failures: PlanLineFailure[];
+  /** The dates the reply's box covers; a failure outside them is quoted, never taken. */
+  dates: readonly string[];
+  weekStartMonday: string;
+  unit: TempoUnitPreference;
+  boxOf: (retryInput: unknown) => SchemaResult<string>;
+  withDays: (replaced: ReadonlyMap<string, PrescribedDay>) => T;
+}): PlanRetry<T> | undefined {
+  const covered = new Set(options.dates);
+  const failedDates = options.failures.map((f) => f.date).filter((d) => covered.has(d));
+  if (failedDates.length === 0) return undefined;
+  const box = options.box;
+  return {
+    box,
+    failures: options.failures,
+    dates: failedDates,
+    takeFixes(retryInput) {
+      const text = options.boxOf(retryInput);
+      if (!text.ok) return text;
+      const parsed = parsePlanLines({
+        text: text.value,
+        weekStartMonday: options.weekStartMonday,
+        unit: options.unit,
+      });
+      const stillFailing = new Map(parsed.failures.map((f) => [f.date, f.reason]));
+      const replaced = new Map<string, PrescribedDay>();
+      const repairs: string[] = [];
+      for (const date of failedDates) {
+        const day = parsed.days.find((d) => d.date === date);
+        const reason = stillFailing.get(date);
+        if (day && reason === undefined) {
+          replaced.set(date, day);
+          repairs.push(`${box} ${date} filed by the retry`);
+        } else {
+          repairs.push(`${box} ${date} still not filed: ${reason ?? "no line"}`);
+        }
+      }
+      return {
+        ok: true,
+        value: options.withDays(replaced),
+        repairs,
+        fixed: [...replaced.keys()],
+      };
+    },
+  };
+}
 
 function withRepairs<T>(value: T, repairs: string[] | undefined): SchemaOk<T> {
   return repairs ? { ok: true, value, repairs } : { ok: true, value };
@@ -168,6 +262,8 @@ function parseDay(
   index: number,
   expectedDate: string,
   repairs: string[],
+  /** Keep the plan-line fields (`line`, `parsed`): stored plans only, never day patches. */
+  keepLine = false,
 ): SchemaResult<PrescribedDay> {
   const path = `prescribedWeek.days[${index}]`;
   if (!isPlainObject(value)) {
@@ -223,7 +319,13 @@ function parseDay(
   const day: PrescribedDay = { date, dayType };
   if (runResult.value !== undefined) day.run = runResult.value;
   if (strength.value !== undefined) day.strength = strength.value;
-  if (notes.value !== undefined) day.notes = fitDayNotes(notes.value, `${path}.notes`, repairs);
+  // A stored day read from a plan line keeps its notes as derived: the line holds the text.
+  const fromLine = keepLine && typeof value.line === "string";
+  if (notes.value !== undefined) {
+    day.notes = fromLine ? notes.value : fitDayNotes(notes.value, `${path}.notes`, repairs);
+  }
+  if (keepLine && (value.line === null || fromLine)) day.line = value.line as string | null;
+  if (keepLine && typeof value.parsed === "boolean") day.parsed = value.parsed;
   return { ok: true, value: day };
 }
 
@@ -287,7 +389,7 @@ export function validatePrescribedWeek(
   const repairs: string[] = [];
   for (let i = 0; i < 7; i++) {
     const expected = addDaysYmd(weekStartMonday, i);
-    const parsed = parseDay(daysRaw[i], i, expected, repairs);
+    const parsed = parseDay(daysRaw[i], i, expected, repairs, true);
     if (!parsed.ok) return parsed;
     days.push(parsed.value);
   }
@@ -303,6 +405,8 @@ export function validatePrescribedWeek(
  */
 export function validateSafetyCallouts(
   raw: unknown,
+  /** A weekly notice written as one sentence is all title; its stored body is empty. */
+  options?: { allowEmptyBody?: boolean },
 ): SchemaResult<SafetyCallout[] | undefined> {
   if (raw === undefined) return { ok: true, value: undefined };
   if (!Array.isArray(raw)) {
@@ -333,7 +437,10 @@ export function validateSafetyCallouts(
       title = cut;
     }
     const bodyRaw = item.body;
-    if (typeof bodyRaw !== "string" || bodyRaw.trim().length === 0) {
+    if (
+      typeof bodyRaw !== "string" ||
+      (bodyRaw.trim().length === 0 && !options?.allowEmptyBody)
+    ) {
       return { ok: false, error: `${path}.body must be a non-empty string` };
     }
     let body = bodyRaw.trim();
@@ -365,61 +472,215 @@ export function validateSafetyCallouts(
   return withRepairs(callouts, repairs.length > 0 ? repairs : undefined);
 }
 
+/** The ISO week id (YYYY-Www) of a calendar date YYYY-MM-DD: the week holding its Thursday. */
+export function isoWeekOfDate(ymd: string): string {
+  const [y, m, d] = ymd.split("-").map(Number) as [number, number, number];
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const weekday = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - weekday);
+  const yearStart = Date.UTC(date.getUTCFullYear(), 0, 1);
+  const week = Math.ceil(((date.getTime() - yearStart) / 86_400_000 + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+/** What Cadence knows beside Coach Cade's form when it reads it. */
+export type WeeklyReplyContext = {
+  /** The athlete's distance unit; labels the plan, never resolves a bare number. Default imperial. */
+  unit?: TempoUnitPreference;
+  /** The athlete's check-in questions, as they wrote them, in order. */
+  questions?: readonly string[];
+};
+
+/** How many characters of a dropped plan line the call log quotes. */
+const IGNORED_LINE_QUOTE = 60;
+
 /**
- * Fail-closed validation for a full weekly LLM reply.
+ * Coach Cade's weekly form (every box text or lines, "The forms" in
+ * .scratch/plan-as-text/spec.md) turned into the reply Cadence stores.
+ *
+ * - The plan box is parsed line by line. A day that does not parse is stored
+ *   unparsed (`parsed: false`, its line in notes) and the reply stays valid;
+ *   each such date is noted as a repair, so the call log row reads `repaired`
+ *   and names it. A plan box that is missing, empty, or has no line for any
+ *   date of the plan week is refused.
+ * - The plan's week id is the plan week's, set here; Coach Cade is not asked for it.
+ * - Flags, answers and notices become today's stored shapes, so the read page
+ *   and the stored read sections do not change.
  */
+/**
+ * The first field holding tool-call markup, if any. Opus 4.7 sometimes leaks
+ * its own call syntax into a text box (`<parameter name="0">Workload spike...`,
+ * 6 of 20 first attempts in the 2026-11-02 gate). Such a box must never reach
+ * the athlete: a box leaked whole into another is moved back (moveLeakedBoxes),
+ * anything else is refused and the retry names the field.
+ */
+const TOOL_MARKUP_RE = /<\/?(?:parameter|invoke|function_calls|antml:[a-z_]+)\b/i;
+
+function fieldWithToolMarkup(raw: Record<string, unknown>): string | null {
+  for (const [key, value] of Object.entries(raw)) {
+    const texts = typeof value === "string" ? [value] : Array.isArray(value) ? value.filter((v) => typeof v === "string") : [];
+    if (texts.some((t) => TOOL_MARKUP_RE.test(t))) return key;
+  }
+  return null;
+}
+
+/** The weekly tool's text boxes, for moving a box leaked into another back to its own field. */
+const WEEKLY_BOXES = ["headline", "flags", "answers", "analysis", "plan", "settingsProposalBullets", "safetyCallouts"] as const;
+/** The mid-week tool's text boxes. */
+const MID_WEEK_BOXES = ["body", "changes"] as const;
+
+const LEAKED_BOX_RE = /<parameter name="([^"]+)">/g;
+
+/**
+ * Boxes written inside another box, moved back to their own fields. A model
+ * sometimes closes one box and opens the next in its own call syntax inside
+ * the string (`...</answers>\n<parameter name="analysis">...`), leaving those
+ * fields out of the call; in the 2026-11-03 baseline every refused attempt of
+ * this kind (Opus 4.7 once, Haiku 5.5 three times) leaked exactly the fields
+ * it had left out, and the retry did the same in another box. Each leaked box
+ * is moved when it names one of the tool's boxes, holds text, and that field
+ * is empty; anything else (an unknown name, an empty leaked box, a field
+ * already written, markup left over)
+ * returns null and the reply is refused as before. Returns the repaired copy
+ * and a note per box moved.
+ */
+export function moveLeakedBoxes(
+  raw: Record<string, unknown>,
+  boxes: readonly string[],
+): { raw: Record<string, unknown>; repairs: string[] } | null {
+  const out: Record<string, unknown> = { ...raw };
+  const repairs: string[] = [];
+  const closing = (name: string) => new RegExp(`(?:\\s*</(?:${name}|parameter|invoke|function_calls|antml:[a-z_]+)>)+\\s*$`);
+  for (const [field, value] of Object.entries(raw)) {
+    if (typeof value !== "string" || !TOOL_MARKUP_RE.test(value)) continue;
+    const first = value.search(LEAKED_BOX_RE);
+    if (first < 0) return null;
+    out[field] = value.slice(0, first).replace(closing(field), "").trim();
+    const leaked = [...value.matchAll(LEAKED_BOX_RE)];
+    for (let i = 0; i < leaked.length; i++) {
+      const name = leaked[i]![1]!;
+      const start = leaked[i]!.index! + leaked[i]![0].length;
+      const end = i + 1 < leaked.length ? leaked[i + 1]!.index! : value.length;
+      const text = value.slice(start, end).replace(closing(name), "").trim();
+      const present = out[name];
+      // An empty leaked box may be a reply cut off mid-call: refused, not guessed at.
+      if (!text || !boxes.includes(name) || (typeof present === "string" ? present.trim() !== "" : present != null)) return null;
+      out[name] = text;
+      repairs.push(`${name} moved out of ${field}`);
+    }
+  }
+  return fieldWithToolMarkup(out) ? null : { raw: out, repairs };
+}
+
+function toolMarkupError(field: string): SchemaErr {
+  return {
+    ok: false,
+    error: `${field} contains tool-call markup (<parameter ...>); write every box as plain text, one item per line`,
+  };
+}
+
 export function validateWeeklyReply(
+  raw: unknown,
+  weekStartMonday: string,
+  context: WeeklyReplyContext = {},
+): SchemaResult<WeeklyReply> {
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: "weekly reply must be an object" };
+  }
+  const markupField = fieldWithToolMarkup(raw);
+  const moved = markupField ? moveLeakedBoxes(raw, WEEKLY_BOXES) : { raw, repairs: [] };
+  if (!moved) return toolMarkupError(markupField!);
+  const repairs: string[] = [...moved.repairs];
+  const box = moved.raw;
+  if (!DATE_RE.test(weekStartMonday)) {
+    return { ok: false, error: "weekStartMonday must be YYYY-MM-DD" };
+  }
+
+  const headline = parseHeadline(box.headline, repairs);
+  if (!headline.ok) return headline;
+  const analysis = parseAnalysis(box.analysis);
+  if (!analysis.ok) return analysis;
+
+  const unit = context.unit ?? "imperial";
+  const plan = parsePlanBox(box.plan, weekStartMonday, unit, repairs);
+  if (!plan.ok) return plan;
+
+  const bullets = bulletsFromLines(box.settingsProposalBullets, repairs);
+  if (!bullets.ok) return bullets;
+
+  const calloutObjects = calloutsFromLines(box.safetyCallouts, repairs);
+  if (!calloutObjects.ok) return calloutObjects;
+  const callouts = validateSafetyCallouts(calloutObjects.value, { allowEmptyBody: true });
+  if (!callouts.ok) return callouts;
+
+  const flags = flagsFromLines(box.flags, repairs);
+  if (!flags.ok) return flags;
+  const answers = answersFromText(box.answers, context.questions ?? [], repairs);
+  if (!answers.ok) return answers;
+
+  const reply: WeeklyReply = {
+    headline: headline.value,
+    flags: flags.value,
+    answers: answers.value,
+    analysis: analysis.value,
+    prescribedWeek: plan.value.week,
+  };
+  if (bullets.value !== undefined) {
+    reply.settingsProposalBullets = bullets.value;
+  }
+  if (callouts.value !== undefined && callouts.value.length > 0) {
+    reply.safetyCallouts = callouts.value;
+  }
+  repairs.push(...(callouts.repairs ?? []));
+  const result = withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+  // Days that did not parse: the adapter asks once for those dates alone, and
+  // takes only them from the retry; the read and every other day stay as sent.
+  const planRetry = planLineRetry<WeeklyReply>({
+    box: "plan",
+    failures: plan.value.failures,
+    dates: expectedPlanDates(weekStartMonday),
+    weekStartMonday,
+    unit,
+    boxOf: (retry) =>
+      isPlainObject(retry) && typeof retry.plan === "string" && retry.plan.trim().length > 0
+        ? { ok: true, value: retry.plan }
+        : { ok: false, error: "plan is required: seven lines, one per day" },
+    withDays: (replaced) => ({
+      ...reply,
+      prescribedWeek: {
+        ...reply.prescribedWeek,
+        days: reply.prescribedWeek.days.map((d) => replaced.get(d.date) ?? d),
+      },
+    }),
+  });
+  if (planRetry) result.planRetry = planRetry;
+  return result;
+}
+
+/**
+ * The final check on a weekly reply in the stored shape, as any port hands it
+ * to the route: the read's parts, a plan of seven days for the plan week, and
+ * the notices. It never reshapes; a reply that fails it is refused.
+ */
+export function checkWeeklyReply(
   raw: unknown,
   weekStartMonday: string,
 ): SchemaResult<WeeklyReply> {
   if (!isPlainObject(raw)) {
     return { ok: false, error: "weekly reply must be an object" };
   }
-
-  const headlineRaw = raw.headline;
-  if (typeof headlineRaw !== "string" || headlineRaw.trim().length === 0) {
-    return { ok: false, error: "headline is required and must be non-empty" };
-  }
   const repairs: string[] = [];
-  let headline = headlineRaw.trim();
-  if (headline.length > MAX_HEADLINE_LENGTH) {
-    const cut = cutAtWord(headline, MAX_HEADLINE_LENGTH);
-    repairs.push(`headline cut from ${headline.length} to ${cut.length} chars`);
-    headline = cut;
-  }
+  const headline = parseHeadline(raw.headline, repairs);
+  if (!headline.ok) return headline;
+  const analysis = parseAnalysis(raw.analysis);
+  if (!analysis.ok) return analysis;
 
-  const analysis = raw.analysis;
-  if (typeof analysis !== "string" || analysis.trim().length === 0) {
-    return { ok: false, error: "analysis is required and must be non-empty" };
-  }
-  if (analysis.length > MAX_ANALYSIS_LENGTH) {
-    return {
-      ok: false,
-      error: `analysis must be at most ${MAX_ANALYSIS_LENGTH} characters`,
-    };
-  }
-
-  // The model sometimes sends the whole plan as a string of JSON. When that string
-  // parses to an object, take it and note the repair; when it does not, refuse.
-  let prescribedRaw = raw.prescribedWeek;
-  if (typeof prescribedRaw === "string") {
-    try {
-      const parsed: unknown = JSON.parse(prescribedRaw);
-      if (isPlainObject(parsed)) {
-        prescribedRaw = parsed;
-        repairs.push("prescribedWeek arrived as a string of JSON and was parsed");
-      }
-    } catch {
-      // Malformed: fall through and fail closed below.
-    }
-  }
-  const prescribed = validatePrescribedWeek(prescribedRaw, weekStartMonday);
+  const prescribed = validatePrescribedWeek(raw.prescribedWeek, weekStartMonday);
   if (!prescribed.ok) return prescribed;
 
   const bullets = parseSettingsProposalBullets(raw.settingsProposalBullets);
   if (!bullets.ok) return bullets;
-
-  const callouts = validateSafetyCallouts(raw.safetyCallouts);
+  const callouts = validateSafetyCallouts(raw.safetyCallouts, { allowEmptyBody: true });
   if (!callouts.ok) return callouts;
 
   const flags = parseReadFlags(raw.flags, repairs);
@@ -428,10 +689,10 @@ export function validateWeeklyReply(
   if (!answers.ok) return answers;
 
   const reply: WeeklyReply = {
-    headline,
+    headline: headline.value,
     flags: flags.value,
     answers: answers.value,
-    analysis: analysis.trim(),
+    analysis: analysis.value,
     prescribedWeek: prescribed.value,
   };
   if (bullets.value !== undefined) {
@@ -442,6 +703,226 @@ export function validateWeeklyReply(
   }
   repairs.push(...(prescribed.repairs ?? []), ...(callouts.repairs ?? []));
   return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+}
+
+function parseHeadline(raw: unknown, repairs: string[]): SchemaResult<string> {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: false, error: "headline is required and must be non-empty" };
+  }
+  let headline = raw.trim();
+  if (headline.length > MAX_HEADLINE_LENGTH) {
+    const cut = cutAtWord(headline, MAX_HEADLINE_LENGTH);
+    repairs.push(`headline cut from ${headline.length} to ${cut.length} chars`);
+    headline = cut;
+  }
+  return { ok: true, value: headline };
+}
+
+function parseAnalysis(raw: unknown): SchemaResult<string> {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: false, error: "analysis is required and must be non-empty" };
+  }
+  if (raw.length > MAX_ANALYSIS_LENGTH) {
+    return {
+      ok: false,
+      error: `analysis must be at most ${MAX_ANALYSIS_LENGTH} characters`,
+    };
+  }
+  return { ok: true, value: raw.trim() };
+}
+
+/**
+ * The plan box parsed into the stored week. Each date that failed, each
+ * dropped out-of-week line and each line with no day is noted in `repairs`.
+ */
+function parsePlanBox(
+  raw: unknown,
+  weekStartMonday: string,
+  unit: TempoUnitPreference,
+  repairs: string[],
+): SchemaResult<{ week: PrescribedWeek; failures: PlanLineFailure[] }> {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: false, error: "plan is required: seven lines, one per day" };
+  }
+  const parsed = parsePlanLines({ text: raw, weekStartMonday, unit });
+  const dates = new Set(expectedPlanDates(weekStartMonday));
+  const withLine = parsed.days.filter((d) => d.line != null);
+  if (withLine.length === 0) {
+    return {
+      ok: false,
+      error: `plan has no line for any day from ${weekStartMonday} to ${addDaysYmd(weekStartMonday, 6)}`,
+    };
+  }
+  for (const f of parsed.failures) {
+    repairs.push(
+      dates.has(f.date)
+        ? `plan ${f.date} not filed: ${f.reason}`
+        : `plan line for ${f.date} dropped: ${f.reason}`,
+    );
+  }
+  for (const line of parsed.ignoredLines) {
+    const quoted =
+      line.length > IGNORED_LINE_QUOTE ? `${line.slice(0, IGNORED_LINE_QUOTE)}…` : line;
+    repairs.push(`plan line with no day ignored: ${JSON.stringify(quoted)}`);
+  }
+  return {
+    ok: true,
+    value: {
+      week: { week: isoWeekOfDate(weekStartMonday), days: parsed.days },
+      failures: parsed.failures,
+    },
+  };
+}
+
+/**
+ * A box of lines as Coach Cade sends it: one string, one item per line. Absent
+ * or null is absent. A list of strings (the form before every box was text) is
+ * joined with `joiner` and noted in `repairs`, so a model that still sends a
+ * list is not refused; anything else is refused.
+ */
+function boxText(
+  raw: unknown,
+  field: string,
+  repairs: string[],
+  joiner = "\n",
+): SchemaResult<string | null> {
+  if (raw === undefined || raw === null) return { ok: true, value: null };
+  if (typeof raw === "string") return { ok: true, value: raw };
+  if (Array.isArray(raw) && raw.every((item) => typeof item === "string")) {
+    repairs.push(`${field} sent as a list of ${raw.length}, read as lines`);
+    return { ok: true, value: raw.join(joiner) };
+  }
+  return { ok: false, error: `${field} must be a string, one per line` };
+}
+
+/**
+ * A box's lines, split as the plan box is (real and escaped newlines; see
+ * {@link splitLines}), trimmed, blank lines dropped.
+ */
+function linesOf(raw: unknown, field: string, repairs: string[]): SchemaResult<string[]> {
+  const text = boxText(raw, field, repairs);
+  if (!text.ok) return text;
+  if (text.value === null) return { ok: true, value: [] };
+  return {
+    ok: true,
+    value: splitLines(text.value)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0),
+  };
+}
+
+/**
+ * "Title: detail" lines, split on the first colon. A line with no colon (or
+ * nothing on one side of it) is all title, kept to the detail's length. Past
+ * {@link MAX_READ_FLAGS} lines the rest are dropped and noted.
+ */
+function flagsFromLines(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[]> {
+  const lines = linesOf(raw, "flags", repairs);
+  if (!lines.ok) return lines;
+  let kept = lines.value;
+  if (kept.length > MAX_READ_FLAGS) {
+    repairs.push(
+      `flags had ${kept.length} lines: the first ${MAX_READ_FLAGS} kept, ${kept.length - MAX_READ_FLAGS} dropped`,
+    );
+    kept = kept.slice(0, MAX_READ_FLAGS);
+  }
+  return {
+    ok: true,
+    value: kept.map((line, i) => {
+      const colon = line.indexOf(":");
+      const title = colon > 0 ? line.slice(0, colon).trim() : "";
+      const detail = colon > 0 ? line.slice(colon + 1).trim() : "";
+      if (!title || !detail) {
+        return { title: fitText(line, MAX_FLAG_DETAIL_LENGTH, `flags[${i}]`, repairs), detail: "" };
+      }
+      return {
+        title: fitText(title, MAX_FLAG_TITLE_LENGTH, `flags[${i}].title`, repairs),
+        detail: fitText(detail, MAX_FLAG_DETAIL_LENGTH, `flags[${i}].detail`, repairs),
+      };
+    }),
+  };
+}
+
+/**
+ * The answer box: one markdown string, stored as one answer. Its question is
+ * the athlete's check-in question when they asked exactly one, and empty
+ * otherwise, since Cadence cannot tell which part answers which question.
+ * Empty, absent or null: no answer. A list (the earlier form) is joined into
+ * paragraphs and noted.
+ */
+function answersFromText(
+  raw: unknown,
+  questions: readonly string[],
+  repairs: string[],
+): SchemaResult<ReadAnswer[]> {
+  const text = boxText(raw, "answers", repairs, "\n\n");
+  if (!text.ok) return text;
+  const answer = text.value?.trim() ?? "";
+  if (!answer) return { ok: true, value: [] };
+  return {
+    ok: true,
+    value: [{ question: questions.length === 1 ? questions[0]!.trim() : "", answer }],
+  };
+}
+
+const BULLET_MARKER_RE = /^[-*]\s+/;
+
+/**
+ * About you suggestion lines into the stored bullets: a leading "- " or "* "
+ * is stripped, then the stored check applies (count and length). Absent,
+ * null or no lines: absent.
+ */
+function bulletsFromLines(raw: unknown, repairs: string[]): SchemaResult<string[] | undefined> {
+  if (raw === undefined || raw === null) return { ok: true, value: undefined };
+  const lines = linesOf(raw, "settingsProposalBullets", repairs);
+  if (!lines.ok) return lines;
+  const bullets = lines.value
+    .map((line) => line.replace(BULLET_MARKER_RE, "").trim())
+    .filter((line) => line.length > 0);
+  if (bullets.length > MAX_SETTINGS_PROPOSAL_BULLETS) {
+    return {
+      ok: false,
+      error: `settingsProposalBullets must have at most ${MAX_SETTINGS_PROPOSAL_BULLETS} lines`,
+    };
+  }
+  return parseSettingsProposalBullets(bullets);
+}
+
+const CALLOUT_SEVERITY_RE = /^\s*(urgent|caution|info)\s*:\s*/i;
+const FIRST_SENTENCE_RE = /^([\s\S]+?[.!?])(?:\s+([\s\S]*))?$/;
+
+/**
+ * Notice lines into today's callout shape: a leading "Urgent:", "Caution:"
+ * or "Info:" sets the severity (else caution); the first sentence is the
+ * title and the rest the body. A first sentence too long for a title is cut
+ * for the title and kept whole in the body, so nothing is lost.
+ */
+function calloutsFromLines(
+  raw: unknown,
+  repairs: string[],
+): SchemaResult<SafetyCallout[] | undefined> {
+  if (raw === undefined || raw === null) return { ok: true, value: undefined };
+  const lines = linesOf(raw, "safetyCallouts", repairs);
+  if (!lines.ok) return lines;
+  if (lines.value.length > MAX_SAFETY_CALLOUTS) {
+    return { ok: false, error: `safetyCallouts must have at most ${MAX_SAFETY_CALLOUTS} lines` };
+  }
+  return {
+    ok: true,
+    value: lines.value.flatMap((line): SafetyCallout[] => {
+      const severityMatch = CALLOUT_SEVERITY_RE.exec(line);
+      const severity = (severityMatch?.[1]?.toLowerCase() ?? "caution") as SafetyCalloutSeverity;
+      const text = severityMatch ? line.slice(severityMatch[0].length).trim() : line;
+      if (!text) return [];
+      const sentence = FIRST_SENTENCE_RE.exec(text);
+      const first = sentence ? sentence[1]!.trim() : text;
+      const rest = sentence ? (sentence[2] ?? "").trim() : "";
+      if (first.length > MAX_SAFETY_CALLOUT_TITLE) {
+        return [{ title: cutAtWord(first, MAX_SAFETY_CALLOUT_TITLE), body: text, severity }];
+      }
+      return [{ title: first, body: rest, severity }];
+    }),
+  };
 }
 
 /** A text field cut at a word past `max`, with the cut noted in `repairs`. */
@@ -456,7 +937,7 @@ function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
-/** What Coach Cade is watching. Count and shape fail closed; long text is cut and noted. */
+/** Stored flags: a non-empty title; the detail may be empty (a line with no colon). */
 function parseReadFlags(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[]> {
   if (raw === undefined || raw === null) return { ok: true, value: [] };
   if (!Array.isArray(raw)) return { ok: false, error: "flags must be an array" };
@@ -467,19 +948,19 @@ function parseReadFlags(raw: unknown, repairs: string[]): SchemaResult<ReadFlag[
   for (let i = 0; i < raw.length; i++) {
     const item = raw[i];
     const title = isPlainObject(item) ? nonEmptyString(item.title) : null;
-    const detail = isPlainObject(item) ? nonEmptyString(item.detail) : null;
-    if (!title || !detail) {
-      return { ok: false, error: `flags[${i}] needs a non-empty title and detail` };
+    const detail = isPlainObject(item) && typeof item.detail === "string" ? item.detail.trim() : null;
+    if (!title || detail === null) {
+      return { ok: false, error: `flags[${i}] needs a non-empty title and a detail` };
     }
     flags.push({
-      title: fitText(title, MAX_FLAG_TITLE_LENGTH, `flags[${i}].title`, repairs),
+      title: fitText(title, MAX_FLAG_DETAIL_LENGTH, `flags[${i}].title`, repairs),
       detail: fitText(detail, MAX_FLAG_DETAIL_LENGTH, `flags[${i}].detail`, repairs),
     });
   }
   return { ok: true, value: flags };
 }
 
-/** Answers to the athlete's questions. Count and shape fail closed; length is free. */
+/** Stored answers: a non-empty answer; the question may be empty. */
 function parseReadAnswers(raw: unknown): SchemaResult<ReadAnswer[]> {
   if (raw === undefined || raw === null) return { ok: true, value: [] };
   if (!Array.isArray(raw)) return { ok: false, error: "answers must be an array" };
@@ -489,10 +970,11 @@ function parseReadAnswers(raw: unknown): SchemaResult<ReadAnswer[]> {
   const answers: ReadAnswer[] = [];
   for (let i = 0; i < raw.length; i++) {
     const item = raw[i];
-    const question = isPlainObject(item) ? nonEmptyString(item.question) : null;
+    const question =
+      isPlainObject(item) && typeof item.question === "string" ? item.question.trim() : null;
     const answer = isPlainObject(item) ? nonEmptyString(item.answer) : null;
-    if (!question || !answer) {
-      return { ok: false, error: `answers[${i}] needs a non-empty question and answer` };
+    if (question === null || !answer) {
+      return { ok: false, error: `answers[${i}] needs a question and a non-empty answer` };
     }
     answers.push({ question, answer });
   }
@@ -542,8 +1024,10 @@ export function expectedPlanDates(weekStartMonday: string): string[] {
 }
 
 /**
- * Fail-closed validation for optional mid-week prescribed day patches (#38).
- * Each patch must be a full PrescribedDay for a date in the plan week.
+ * The stored check on mid-week changed days (#38): each a full PrescribedDay
+ * for a distinct date in the plan week, keeping its plan-line fields (`line`,
+ * `parsed`). It reads the reply as Cadence stores it, never Coach Cade's form;
+ * the form's `changes` lines are read by {@link validateMidWeekChatReply}.
  */
 export function validatePrescribedDayPatches(
   raw: unknown,
@@ -594,7 +1078,7 @@ export function validatePrescribedDayPatches(
     }
     seen.add(dateRaw);
     const dayRepairs: string[] = [];
-    const parsed = parseDay(raw[i], dayIndex, dateRaw, dayRepairs);
+    const parsed = parseDay(raw[i], dayIndex, dateRaw, dayRepairs, true);
     if (!parsed.ok) {
       return {
         ok: false,
@@ -614,32 +1098,110 @@ export function validatePrescribedDayPatches(
   return withRepairs(patches, repairs.length > 0 ? repairs : undefined);
 }
 
+/** What Cadence knows beside Coach Cade's mid-week form when it reads it. */
+export type MidWeekReplyContext = {
+  /** The athlete's distance unit; labels the plan, never resolves a bare number. Default imperial. */
+  unit?: TempoUnitPreference;
+};
+
 /**
- * Fail-closed validation for mid-week chat replies (body + optional
- * settings-proposal bullets + callouts + optional prescribed day patches).
+ * A mid-week form read into the stored reply. `planFailures` lists each date
+ * of the plan week whose `changes` line did not parse, with the reason, so a
+ * retry can quote them; the day is stored unparsed meanwhile. Absent when
+ * every line parsed.
+ */
+export type MidWeekReplyOk = SchemaOk<MidWeekChatReply> & {
+  planFailures?: PlanLineFailure[];
+};
+
+/**
+ * Coach Cade's mid-week form (every box text, lines or a boolean, "The forms"
+ * in .scratch/plan-as-text/spec.md) turned into the reply Cadence stores.
  *
- * When patches are present, `weekStartMonday` is required (plan week Monday).
+ * - The `changes` box is read line by line against the plan week. Only dates
+ *   with a line change: a line that parses is the new day; one that does not
+ *   is stored unparsed (`parsed: false`, its line in notes), noted as a repair
+ *   and listed in `planFailures`, and the reply stays valid. A date with no
+ *   line is not a change. A line for a date outside the week, and a line with
+ *   no day, are dropped and noted as repairs. Empty or absent: no change.
+ * - Whether a changed day is in the past is the route's call (it knows the
+ *   athlete's today), as is honouring `allowPastDayPatches`.
+ * - Notices and settings bullets are read as on the weekly form: lines, null
+ *   reads as absent, blank entries dropped.
+ *
+ * `weekStartMonday` is needed only when the `changes` box has text.
  */
 export function validateMidWeekChatReply(
+  raw: unknown,
+  weekStartMonday?: string,
+  context: MidWeekReplyContext = {},
+): MidWeekReplyOk | SchemaErr {
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: "mid-week chat reply must be an object" };
+  }
+  const markupField = fieldWithToolMarkup(raw);
+  const moved = markupField ? moveLeakedBoxes(raw, MID_WEEK_BOXES) : { raw, repairs: [] };
+  if (!moved) return toolMarkupError(markupField!);
+  const repairs: string[] = [...moved.repairs];
+  const box = moved.raw;
+  const body = parseMidWeekBody(box.body);
+  if (!body.ok) return body;
+
+  const bullets = bulletsFromLines(box.settingsProposalBullets, repairs);
+  if (!bullets.ok) return bullets;
+
+  const calloutObjects = calloutsFromLines(box.safetyCallouts, repairs);
+  if (!calloutObjects.ok) return calloutObjects;
+  const callouts = validateSafetyCallouts(calloutObjects.value, { allowEmptyBody: true });
+  if (!callouts.ok) return callouts;
+
+  if (
+    box.allowPastDayPatches !== undefined &&
+    box.allowPastDayPatches !== null &&
+    typeof box.allowPastDayPatches !== "boolean"
+  ) {
+    return { ok: false, error: "allowPastDayPatches must be a boolean" };
+  }
+
+  const changes = parseChangesBox(box.changes, weekStartMonday, context.unit ?? "imperial", repairs);
+  if (!changes.ok) return changes;
+
+  const reply: MidWeekChatReply = { body: body.value };
+  if (bullets.value !== undefined) {
+    reply.settingsProposalBullets = bullets.value;
+  }
+  if (callouts.value !== undefined && callouts.value.length > 0) {
+    reply.safetyCallouts = callouts.value;
+  }
+  if (changes.value.days.length > 0) {
+    reply.prescribedDayPatches = changes.value.days;
+  }
+  if (box.allowPastDayPatches === true) {
+    reply.allowPastDayPatches = true;
+  }
+  repairs.push(...(callouts.repairs ?? []));
+  const ok: MidWeekReplyOk = withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+  if (changes.value.failures.length > 0) ok.planFailures = changes.value.failures;
+  return ok;
+}
+
+/**
+ * The final check on a mid-week reply in the stored shape, as any port hands
+ * it to the route: the body, settings bullets, notices and the changed days.
+ * It never reshapes; a reply that fails it is refused.
+ */
+export function checkMidWeekChatReply(
   raw: unknown,
   weekStartMonday?: string,
 ): SchemaResult<MidWeekChatReply> {
   if (!isPlainObject(raw)) {
     return { ok: false, error: "mid-week chat reply must be an object" };
   }
-  const body = raw.body;
-  if (typeof body !== "string" || body.trim().length === 0) {
-    return { ok: false, error: "body is required and must be non-empty" };
-  }
-  if (body.length > MAX_ANALYSIS_LENGTH) {
-    return {
-      ok: false,
-      error: `body must be at most ${MAX_ANALYSIS_LENGTH} characters`,
-    };
-  }
+  const body = parseMidWeekBody(raw.body);
+  if (!body.ok) return body;
   const bullets = parseSettingsProposalBullets(raw.settingsProposalBullets);
   if (!bullets.ok) return bullets;
-  const callouts = validateSafetyCallouts(raw.safetyCallouts);
+  const callouts = validateSafetyCallouts(raw.safetyCallouts, { allowEmptyBody: true });
   if (!callouts.ok) return callouts;
 
   let patches: PrescribedDay[] | undefined;
@@ -651,10 +1213,7 @@ export function validateMidWeekChatReply(
         error: "prescribedDayPatches require weekStartMonday for validation",
       };
     }
-    const checked = validatePrescribedDayPatches(
-      raw.prescribedDayPatches,
-      weekStartMonday,
-    );
+    const checked = validatePrescribedDayPatches(raw.prescribedDayPatches, weekStartMonday);
     if (!checked.ok) return checked;
     patches = checked.value;
     patchRepairs = checked.repairs;
@@ -667,7 +1226,7 @@ export function validateMidWeekChatReply(
     return { ok: false, error: "allowPastDayPatches must be a boolean" };
   }
 
-  const reply: MidWeekChatReply = { body: body.trim() };
+  const reply: MidWeekChatReply = { body: body.value };
   if (bullets.value !== undefined) {
     reply.settingsProposalBullets = bullets.value;
   }
@@ -682,6 +1241,97 @@ export function validateMidWeekChatReply(
   }
   const repairs = [...(patchRepairs ?? []), ...(callouts.repairs ?? [])];
   return withRepairs(reply, repairs.length > 0 ? repairs : undefined);
+}
+
+function parseMidWeekBody(raw: unknown): SchemaResult<string> {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return { ok: false, error: "body is required and must be non-empty" };
+  }
+  if (raw.length > MAX_ANALYSIS_LENGTH) {
+    return {
+      ok: false,
+      error: `body must be at most ${MAX_ANALYSIS_LENGTH} characters`,
+    };
+  }
+  return { ok: true, value: raw.trim() };
+}
+
+/**
+ * The mid-week `changes` box read against the plan week: the days that have a
+ * line (parsed or not), and the dates of the week whose line did not parse.
+ * Dates with no line are not changes. Dropped and failed lines are noted in
+ * `repairs`.
+ */
+function parseChangesBox(
+  raw: unknown,
+  weekStartMonday: string | undefined,
+  unit: TempoUnitPreference,
+  repairs: string[],
+): SchemaResult<{ days: PrescribedDay[]; failures: PlanLineFailure[] }> {
+  const none = { ok: true as const, value: { days: [], failures: [] } };
+  if (raw === undefined || raw === null) return none;
+  if (typeof raw !== "string") {
+    return { ok: false, error: "changes must be a string of plan lines" };
+  }
+  if (raw.trim().length === 0) return none;
+  if (!weekStartMonday || !DATE_RE.test(weekStartMonday)) {
+    return { ok: false, error: "changes require weekStartMonday (YYYY-MM-DD) for validation" };
+  }
+  const parsed = parsePlanLines({ text: raw, weekStartMonday, unit });
+  const dates = new Set(expectedPlanDates(weekStartMonday));
+  const failures: PlanLineFailure[] = [];
+  for (const f of parsed.failures) {
+    if (f.reason === "no line") continue;
+    if (dates.has(f.date)) {
+      failures.push(f);
+      repairs.push(`changes ${f.date} not filed: ${f.reason}`);
+    } else {
+      repairs.push(`changes line for ${f.date} dropped: ${f.reason}`);
+    }
+  }
+  for (const line of parsed.ignoredLines) {
+    const quoted =
+      line.length > IGNORED_LINE_QUOTE ? `${line.slice(0, IGNORED_LINE_QUOTE)}…` : line;
+    repairs.push(`changes line with no day ignored: ${JSON.stringify(quoted)}`);
+  }
+  return {
+    ok: true,
+    value: { days: parsed.days.filter((d) => d.line != null), failures },
+  };
+}
+
+/**
+ * The retry for a mid-week reply whose `changes` lines did not all parse,
+ * driven by the validator's `planFailures`: the retry's `changes` box is read
+ * for those dates alone, and each one that now parses replaces that date's
+ * changed day; every other change, the body and the notices stay as sent.
+ * Undefined when every line parsed.
+ */
+export function midWeekPlanRetry(
+  ok: MidWeekReplyOk,
+  weekStartMonday: string,
+  unit: TempoUnitPreference = "imperial",
+): PlanRetry<MidWeekChatReply> | undefined {
+  const failures = ok.planFailures ?? [];
+  if (failures.length === 0) return undefined;
+  const reply = ok.value;
+  return planLineRetry<MidWeekChatReply>({
+    box: "changes",
+    failures,
+    dates: failures.map((f) => f.date),
+    weekStartMonday,
+    unit,
+    boxOf: (retry) =>
+      isPlainObject(retry) && typeof retry.changes === "string" && retry.changes.trim().length > 0
+        ? { ok: true, value: retry.changes }
+        : { ok: false, error: "changes are required: one line for each date asked about" },
+    withDays: (replaced) => ({
+      ...reply,
+      ...(reply.prescribedDayPatches
+        ? { prescribedDayPatches: reply.prescribedDayPatches.map((d) => replaced.get(d.date) ?? d) }
+        : {}),
+    }),
+  });
 }
 
 function validateDossierSoftGateDraft(
@@ -766,4 +1416,59 @@ export function validateDossierAuditDraft(
   raw: unknown,
 ): SchemaResult<DossierAuditDraft> {
   return validateDossierSoftGateDraft(raw, "dossier audit draft");
+}
+
+/** "Thu 2026-10-29": a plan date as the plan lines name it. */
+export function planDateLabel(date: string): string {
+  const weekday = new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en-US", {
+    weekday: "short",
+    timeZone: "UTC",
+  });
+  return `${weekday} ${date}`;
+}
+
+/**
+ * "Add the details" (plan-as-text ticket 09): Coach Cade's one line for one
+ * date, read with the plan grammar for that date only. Accepted only when the
+ * date's line parses; a line that names another date, still does not parse,
+ * or holds tool-call markup is refused, so the adapter asks once more with the
+ * reason and the route stores nothing when that fails too. Lines for other
+ * dates are never read into the plan.
+ */
+export function validatePlanDayFix(
+  raw: unknown,
+  input: { weekStartMonday: string; unit: TempoUnitPreference; date: string },
+): SchemaResult<PlanDayFix> {
+  if (!isPlainObject(raw)) {
+    return { ok: false, error: "plan day reply must be an object with a line" };
+  }
+  const markupField = fieldWithToolMarkup(raw);
+  if (markupField) return toolMarkupError(markupField);
+  const line = typeof raw.line === "string" ? raw.line.trim() : "";
+  const label = planDateLabel(input.date);
+  if (!line) {
+    return { ok: false, error: `line is empty; write one plan line for ${label}` };
+  }
+  const read = parsePlanLines({
+    text: line,
+    weekStartMonday: input.weekStartMonday,
+    unit: input.unit,
+  });
+  const day = read.days.find((d) => d.date === input.date);
+  if (day && day.parsed !== false) return { ok: true, value: { day } };
+
+  const failure = read.failures.find((f) => f.date === input.date);
+  if (!failure || failure.reason === "no line") {
+    const elsewhere = [
+      ...read.days.filter((d) => d.date !== input.date && !(d.parsed === false && d.line == null)).map((d) => d.date),
+      ...read.failures.filter((f) => f.reason === "outside the plan week").map((f) => f.date),
+    ];
+    return {
+      ok: false,
+      error: elsewhere.length > 0
+        ? `the line is for ${planDateLabel(elsewhere[0]!)}, not ${label}; write the line for ${label} only`
+        : `the line does not start with ${label}; write it as "${label}: day type, amount, then how to run it and why"`,
+    };
+  }
+  return { ok: false, error: `${label}: ${failure.reason}` };
 }

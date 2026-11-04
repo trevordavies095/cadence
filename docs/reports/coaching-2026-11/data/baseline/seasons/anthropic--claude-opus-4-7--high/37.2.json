@@ -1,0 +1,181 @@
+{
+  "operation": "weekly_reply",
+  "source": "5-beginner-w5.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:33:58.309Z",
+  "goal": {
+    "kind": "race",
+    "distance": "5k",
+    "raceName": "Corrowmore Harvest 5K",
+    "raceDate": "2026-11-15",
+    "target": "run the whole way"
+  },
+  "promptHead": "Athlete goal: 5K (Corrowmore Harvest 5K) on Sun Nov 15 2026, 6 weeks out, target run the whole way.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 14202,
+  "outputTokens": 1641,
+  "thinkingTokens": 655,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 773,
+  "estimatedInputTokens": 6029,
+  "timing": {
+    "ttftMs": 6110,
+    "totalMs": 30446,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 6110,
+        "totalMs": 30446,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 14202,
+        "outputTokens": 1641
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 4267.5
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "You missed all three runs last week, so we restart at the level you handled well two weeks ago and then stretch the run intervals a touch. Six weeks is enough to reach a continuous 5K if we string the next three weeks together.",
+    "flags": [
+      {
+        "title": "Missed week",
+        "detail": "all three planned runs skipped with no reason noted, so we restart at a familiar level rather than pushing ahead."
+      },
+      {
+        "title": "Race runway",
+        "detail": "6 weeks out and the longest continuous run so far is about 2 minutes, so the run intervals need to grow each week."
+      },
+      {
+        "title": "Return check",
+        "detail": "watch how the legs feel the morning after Monday, since it is your first run in 10 days."
+      }
+    ],
+    "answers": [],
+    "analysis": "The gap matters more than any single session, so the priority is simply getting the three runs done this week. Your note said you felt great, which suggests life got in the way rather than your body. If something else was going on, tell me in the next check-in and we will plan around it.\n\nI am holding Monday identical to what you ran on Sep 14 so the first run back feels familiar. Wednesday nudges the run blocks from 2 minutes to 3, and Saturday stretches to 4-minute run blocks over 30 minutes. That is how we get from walk-run to running the whole 5K: lengthen the running, shorten the walking, keep the total time growing slowly.\n\nDog walks still count and are helping your base, so keep those going on the rest days. Effort target on every run is conversational: you should be able to speak a short sentence while the running block is on. If a session feels harder than 7/10, cut the last interval and tell me.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "8 x (2 min run / 1 min walk), conversational effort. Eases you back in at a level you handled well two weeks ago.",
+          "line": "Mon 2026-09-28: easy, walk-run 24 min, 8 x (2 min run / 1 min walk), conversational effort. Eases you back in at a level you handled well two weeks ago.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full recovery day, a dog walk is fine.",
+          "line": "Tue 2026-09-29: rest. Full recovery day, a dog walk is fine.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1440,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "6 x (3 min run / 1 min walk), conversational effort. First small step up in run length.",
+          "line": "Wed 2026-09-30: easy, walk-run 24 min, 6 x (3 min run / 1 min walk), conversational effort. First small step up in run length.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Keep it light, dog walk only.",
+          "line": "Thu 2026-10-01: rest. Keep it light, dog walk only.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Legs fresh for Saturday.",
+          "line": "Fri 2026-10-02: rest. Legs fresh for Saturday.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 0,
+            "durationS": 1800,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "6 x (4 min run / 1 min walk), conversational effort. Longest session of the week to build endurance toward the race.",
+          "line": "Sat 2026-10-03: easy, walk-run 30 min, 6 x (4 min run / 1 min walk), conversational effort. Longest session of the week to build endurance toward the race.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Recover and tell me how the week felt in your check-in.",
+          "line": "Sun 2026-10-04: rest. Recover and tell me how the week felt in your check-in.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Note that the Sep 21 – 27 week was fully missed, reason not given."
+    ]
+  }
+}

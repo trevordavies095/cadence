@@ -1,5 +1,6 @@
 import { pool } from "../db.js";
 import type { PrescribedWeek, ReadSections, SafetyCallout } from "../llm/types.js";
+import type { PlanWarning } from "./planCheck.js";
 
 /** Persisted prescribed week for a week session (issue #30 / #32). */
 export type PrescribedWeekRecord = {
@@ -10,6 +11,12 @@ export type PrescribedWeekRecord = {
   safetyCallouts: SafetyCallout[] | null;
   /** Headline (and later flags and answers); null on plans made before they existed. */
   readSections: ReadSections | null;
+  /**
+   * The plan check's warnings (issue #58), one per rule tripped, stored beside
+   * the plan it judged; null on plans stored before the check existed. The
+   * plan itself is exactly what the validator produced.
+   */
+  planWarnings: PlanWarning[] | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -21,6 +28,7 @@ type Row = {
   settings_proposal_bullets: string[] | null;
   safety_callouts: SafetyCallout[] | string | null;
   read_sections: ReadSections | string | null;
+  plan_warnings: PlanWarning[] | string | null;
   created_at: Date;
   updated_at: Date;
 };
@@ -47,6 +55,8 @@ function toRecord(row: Row): PrescribedWeekRecord {
     safetyCallouts,
     readSections:
       row.read_sections == null ? null : parseJsonField(row.read_sections),
+    planWarnings:
+      row.plan_warnings == null ? null : parseJsonField(row.plan_warnings),
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
@@ -63,6 +73,8 @@ export async function savePrescribedWeek(input: {
   settingsProposalBullets?: string[] | null;
   safetyCallouts?: SafetyCallout[] | null;
   readSections?: ReadSections | null;
+  /** The plan check's warnings; an empty list is stored as such (checked, none tripped). */
+  planWarnings?: PlanWarning[] | null;
   at: Date;
 }): Promise<PrescribedWeekRecord> {
   const bullets = input.settingsProposalBullets ?? null;
@@ -74,15 +86,16 @@ export async function savePrescribedWeek(input: {
     `
     INSERT INTO prescribed_weeks (
       week_session_id, plan, analysis, settings_proposal_bullets, safety_callouts,
-      read_sections, created_at, updated_at
+      read_sections, plan_warnings, created_at, updated_at
     )
-    VALUES ($1, $2::jsonb, $3, $4, $5::jsonb, $7::jsonb, $6, $6)
+    VALUES ($1, $2::jsonb, $3, $4, $5::jsonb, $7::jsonb, $8::jsonb, $6, $6)
     ON CONFLICT (week_session_id) DO UPDATE SET
       plan = EXCLUDED.plan,
       analysis = EXCLUDED.analysis,
       settings_proposal_bullets = EXCLUDED.settings_proposal_bullets,
       safety_callouts = EXCLUDED.safety_callouts,
       read_sections = EXCLUDED.read_sections,
+      plan_warnings = EXCLUDED.plan_warnings,
       updated_at = EXCLUDED.updated_at
     RETURNING
       week_session_id::text,
@@ -91,6 +104,7 @@ export async function savePrescribedWeek(input: {
       settings_proposal_bullets,
       safety_callouts,
       read_sections,
+      plan_warnings,
       created_at,
       updated_at
     `,
@@ -102,9 +116,42 @@ export async function savePrescribedWeek(input: {
       callouts ? JSON.stringify(callouts) : null,
       input.at,
       input.readSections ? JSON.stringify(input.readSections) : null,
+      input.planWarnings ? JSON.stringify(input.planWarnings) : null,
     ],
   );
   return toRecord(result.rows[0]!);
+}
+
+/**
+ * Replace the stored plan's days and nothing else: the read, the notices, the
+ * plan check's warnings and the suggestions stay as they are. Null when the
+ * week has no stored plan.
+ */
+export async function updatePrescribedPlan(input: {
+  weekSessionId: string;
+  plan: PrescribedWeek;
+  at: Date;
+}): Promise<PrescribedWeekRecord | null> {
+  const result = await pool.query<Row>(
+    `
+    UPDATE prescribed_weeks
+    SET plan = $2::jsonb, updated_at = $3
+    WHERE week_session_id = $1
+    RETURNING
+      week_session_id::text,
+      plan,
+      analysis,
+      settings_proposal_bullets,
+      safety_callouts,
+      read_sections,
+      plan_warnings,
+      created_at,
+      updated_at
+    `,
+    [input.weekSessionId, JSON.stringify(input.plan), input.at],
+  );
+  const row = result.rows[0];
+  return row ? toRecord(row) : null;
 }
 
 export async function getPrescribedWeekBySessionId(
@@ -119,6 +166,7 @@ export async function getPrescribedWeekBySessionId(
       settings_proposal_bullets,
       safety_callouts,
       read_sections,
+      plan_warnings,
       created_at,
       updated_at
     FROM prescribed_weeks

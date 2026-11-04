@@ -1,0 +1,61 @@
+{
+  "input": "seasons/30",
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "The draft gives a clear, direct no to the extra 16-miler and keeps the week light: 15 easy miles plus a short marathon-pace touch before the race. That fits heavy legs and no pain, and nothing here breaks a must-never check. It falls short on what Marisol actually said. She's nervous and feels she's losing fitness, and the draft never tells her that heavy, flat legs are normal in a taper or that her fitness is already built. The heart-rate drift point reads as generic filler. The draft also assumes the race is this Sunday, which the card only implies, and the race-day line is just 'target under 3:45', with no pacing guidance (about 8:35/mi) and nothing on fuelling or the start. The plan is safe and runnable, but it doesn't answer her worry the way it should.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:37:44.163Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2146,
+  "outputTokens": 828,
+  "thinkingTokens": 445,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1068,
+  "costUsd": 0.025144,
+  "timing": {
+    "ttftMs": 3045,
+    "totalMs": 9949,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3045,
+        "totalMs": 9949,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2146,
+        "outputTokens": 828
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "The draft gives a clear, direct no to the extra 16-miler and keeps the week light: 15 easy miles plus a short marathon-pace touch before the race. That fits heavy legs and no pain, and nothing here breaks a must-never check. It falls short on what Marisol actually said. She's nervous and feels she's losing fitness, and the draft never tells her that heavy, flat legs are normal in a taper or that her fitness is already built. The heart-rate drift point reads as generic filler. The draft also assumes the race is this Sunday, which the card only implies, and the race-day line is just 'target under 3:45', with no pacing guidance (about 8:35/mi) and nothing on fuelling or the start. The plan is safe and runnable, but it doesn't answer her worry the way it should."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 53, 40, 42, 46 mi\nThis week: 34 mi over 5 runs.\nBody: \"Legs heavy and flat. Nothing hurts, they just feel dead.\"\nFeeling: \"Nervous. I feel like I'm losing fitness.\"\nAsks: \"Is it crazy to do one more 16-miler on Wednesday so I feel ready?\"\n\n── THE DRAFT ──\nTells Marisol: Adding a 16-mile run now would likely undermine your taper and recovery.\nAnswers: It’s better to keep the taper light. A 16-mile run would add too much volume and likely increase fatigue and heart-rate drift, which can undo the recovery the body needs right before the race.\nNext week:\nMon: rest\nTue: easy, 5 mi, keep heart rate under 150, flat route.\nWed: quality, 3 mi, 1 mile at marathon pace, then cool-down.\nThu: easy, 4 mi, keep low volume.\nFri: rest\nSat: easy, 3 mi, gentle jog.\nSun: race, marathon, target under 3:45.\n\nScore this draft: call submit_coaching_score once."
+}

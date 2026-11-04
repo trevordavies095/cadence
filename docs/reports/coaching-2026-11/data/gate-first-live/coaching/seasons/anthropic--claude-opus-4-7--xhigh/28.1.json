@@ -1,0 +1,209 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w10.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-04T14:33:01.184Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, 2 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 24389,
+  "outputTokens": 2726,
+  "thinkingTokens": 1402,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 1610,
+  "estimatedInputTokens": 9655,
+  "timing": {
+    "ttftMs": 3829,
+    "totalMs": 45719,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3829,
+        "totalMs": 45719,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 24389,
+        "outputTokens": 2726
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-28",
+    "isoWeek": "2026-W40",
+    "recentWeeklyM": 69209.83872
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "You nailed every session of the plan, and with the race pulled to Oct 18 the big miles are already in the bank; next up is a last marathon-pace tune-up, then we start pulling back.",
+    "flags": [
+      {
+        "title": "New race date",
+        "detail": "Oct 18 lands in 3 weeks, so this is the last substantial week before we taper."
+      },
+      {
+        "title": "No more 22",
+        "detail": "your longest stays the 20 from Sep 13, which is plenty for sub-3:45."
+      },
+      {
+        "title": "Long-run drift",
+        "detail": "+4.7 bpm on 17 mi is excellent and says fitness is landing."
+      },
+      {
+        "title": "Threshold legs",
+        "detail": "the 3 reps at 7:58 held with 1% fade, so marathon pace should feel honest."
+      },
+      {
+        "title": "Pre-race nerves",
+        "detail": "anxiety is normal with a date change, so keep sleep and routines boring."
+      }
+    ],
+    "answers": [
+      {
+        "question": "The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?",
+        "answer": "No, there is not time for a 22, and you do not need one. You already ran 20 miles on Sep 13 and 17 miles last Sunday with a tiny heart-rate drift, which is the fitness signal we wanted. Another step up now would cost more than it gives: recovery eats into the taper, and the last long run before race day should leave your legs fresh, not wrung out. The playbook from here is one more medium-long with marathon pace in it this Sunday, then two progressively lighter weeks. Trust the 20 you banked."
+      }
+    ],
+    "analysis": "You executed last week cleanly: five runs, 42 miles, every session matched the plan, and the long run drifted less than 5 bpm. That is the profile of someone ready to race, not someone short of work.\n\nThe job now flips from building to sharpening. This week keeps the structure you know, with one marathon-pace session midweek and a shorter long run that finishes at target pace. The point is to rehearse 8:35/mi feeling under control, not to chase more miles.\n\nYour target of 3:45 works out to 8:35/mi, so use that number on Wednesday and the last 4 miles Sunday. If heart rate climbs above 165 while you are on pace, ease back rather than push; the race will reward patience far more than one hero workout. Next week I will take the long run down to around 11 or 12, and race week will be very light.\n\nOn the anxiety: the fitness has not changed because the calendar did. Keep sleep, food and routines boring over the next 20 days and let the training speak on the day.",
+    "prescribedWeek": {
+      "week": "2026-W40",
+      "days": [
+        {
+          "date": "2026-09-28",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full day off to absorb the 17-miler.",
+          "line": "Mon 2026-09-28: rest. Full day off to absorb the 17-miler.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-29",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 145, flat route. Shakes out the long-run legs.",
+          "line": "Tue 2026-09-29: easy, 6 mi, heart rate under 145, flat route. Shakes out the long-run legs.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-30",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 16093,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "2 mi warm up then 5 mi at 8:35/mi marathon pace then 3 mi easy. Last real rehearsal of race effort before we taper.",
+          "line": "Wed 2026-09-30: quality, 10 mi, 2 mi warm up then 5 mi at 8:35/mi marathon pace then 3 mi easy. Last real rehearsal of race effort before we taper.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate under 145. Recovery from the marathon-pace work.",
+          "line": "Thu 2026-10-01: easy, 5 mi, heart rate under 145. Recovery from the marathon-pace work.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-02",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Second full day off keeps you fresh for the weekend.",
+          "line": "Fri 2026-10-02: rest. Second full day off keeps you fresh for the weekend.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-03",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "with 4 x 20 sec strides at the end. Primes the legs for Sunday without tiring them.",
+          "line": "Sat 2026-10-03: easy, 4 mi, with 4 x 20 sec strides at the end. Primes the legs for Sunday without tiring them.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-04",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 24140,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "first 11 easy around 9:55/mi then last 4 at 8:35/mi marathon pace. Finish-fast rehearsal and the last long effort before taper.",
+          "line": "Sun 2026-10-04: long, 15 mi, first 11 easy around 9:55/mi then last 4 at 8:35/mi marathon pace. Finish-fast rehearsal and the last long effort before taper.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Update race date in your profile from Nov 1 to Sun Oct 18 2026.",
+      "Note marathon goal pace as 8:35/mi for a sub-3:45 finish, to anchor pace callouts."
+    ]
+  }
+}

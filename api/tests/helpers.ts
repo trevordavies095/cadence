@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import type { LlmCallRecord, LlmCallRecorder } from "../src/llmCallLog/types.js";
 import { waitForReplyRunsIdle } from "../src/replyRun/inflight.js";
 import { acceptDisclaimer } from "../src/disclaimer/store.js";
 import { assertTestDatabaseName } from "./guardTestDatabase.js";
@@ -21,12 +23,14 @@ export async function resetAppTables(): Promise<void> {
     DELETE FROM disclaimer_acceptance;
     DELETE FROM tempo_connection;
     DELETE FROM anthropic_connection;
+    DELETE FROM self_hosted_connection;
     DELETE FROM prescribed_weeks;
     DELETE FROM week_recaps;
     DELETE FROM week_subjective_answers;
     DELETE FROM thread_messages;
     DELETE FROM weekly_reply_runs;
     DELETE FROM athlete_preferences;
+    DELETE FROM coach_model_settings;
     DELETE FROM week_sessions;
     DELETE FROM dossier_versions;
     DELETE FROM dossier_proposals;
@@ -243,6 +247,37 @@ export function anthropicToolMessage(
   };
 }
 
+/**
+ * Replays a raw SSE stream recorded from a real model server (the smoke
+ * script's --record) as a 200 `text/event-stream` Response, byte for byte.
+ * `chunkBytes` splits the body into chunks of that size, so frames arrive cut
+ * mid-line as they do over a network; without it the body is one chunk.
+ */
+export function recordedStreamResponse(
+  file: string,
+  /** `rewrite` changes the recorded text before it is sent (a recording made against an older form). */
+  options: { chunkBytes?: number; rewrite?: (sse: string) => string } = {},
+): Response {
+  const raw = readFileSync(file);
+  const bytes = options.rewrite ? Buffer.from(options.rewrite(raw.toString("utf8")), "utf8") : raw;
+  const size = options.chunkBytes;
+  const body =
+    size && size > 0
+      ? new ReadableStream<Uint8Array>({
+          start(controller) {
+            for (let i = 0; i < bytes.length; i += size) {
+              controller.enqueue(new Uint8Array(bytes.subarray(i, i + size)));
+            }
+            controller.close();
+          },
+        })
+      : new Uint8Array(bytes);
+  return new Response(body, {
+    status: 200,
+    headers: { "content-type": "text/event-stream" },
+  });
+}
+
 /** Let any background weekly reply finish, then return the week's latest run. */
 export async function settleReplyRun(
   app: { request: (path: string) => Response | Promise<Response> },
@@ -252,4 +287,86 @@ export async function settleReplyRun(
   const res = await app.request(`/weeks/${weekSessionId}/reply-run`);
   const body = (await res.json()) as { run: Record<string, unknown> | null };
   return body.run;
+}
+
+/**
+ * A fake coach server for the live adapter: answers each request with a call
+ * of `toolName`, its input from `answers` in order and the last one repeated.
+ * Keeps every request body and every call log row, so a test can count the
+ * attempts, compare what each sent and check how their rows are linked.
+ */
+export function fakeCoachServer(toolName: string, answers: unknown[]) {
+  const bodies: string[] = [];
+  const rows: LlmCallRecord[] = [];
+  const fetchImpl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    bodies.push(String(init?.body));
+    const answer = answers[Math.min(bodies.length, answers.length) - 1];
+    return anthropicStreamResponse(anthropicToolMessage(toolName, answer));
+  }) as typeof globalThis.fetch;
+  const recorder: LlmCallRecorder = {
+    async record(row) {
+      rows.push(row);
+    },
+    async get() {
+      return null;
+    },
+    async list() {
+      return [];
+    },
+    async *exportAll() {},
+  };
+  return { fetchImpl, recorder, bodies, rows };
+}
+
+type SentTurn = { role: string; content: unknown };
+
+/**
+ * A retry's request against the first: everything but the turns identical
+ * (model, effort, thinking, system, tools, cap), the first turns kept, and the
+ * turns the retry added returned for the test to assert.
+ */
+export function retryTurns(firstBody: string, secondBody: string): SentTurn[] {
+  const first = JSON.parse(firstBody) as Record<string, unknown> & { messages: SentTurn[] };
+  const second = JSON.parse(secondBody) as Record<string, unknown> & { messages: SentTurn[] };
+  const { messages: firstTurns, ...firstRest } = first;
+  const { messages: secondTurns, ...secondRest } = second;
+  if (JSON.stringify(secondRest) !== JSON.stringify(firstRest)) {
+    throw new Error("the retry changed more than the turns");
+  }
+  if (JSON.stringify(secondTurns.slice(0, firstTurns.length)) !== JSON.stringify(firstTurns)) {
+    throw new Error("the retry dropped or changed the first request's turns");
+  }
+  return secondTurns.slice(firstTurns.length);
+}
+
+/**
+ * The turns a refused tool call's retry adds: the assistant turn as the fake
+ * server sent it (thinking with its signature, then the tool call), then an
+ * error tool result for that call whose content opens with `message`.
+ */
+export function expectedErrorRetryTurns(toolName: string, input: unknown, message: string) {
+  return [
+    {
+      role: "assistant",
+      content: [
+        {
+          type: "thinking",
+          thinking: "Weighing load, recent runs and the athlete's note.",
+          signature: "sig_test_fixture",
+        },
+        { type: "tool_use", id: "toolu_test", name: toolName, input },
+      ],
+    },
+    {
+      role: "user",
+      content: [
+        {
+          type: "tool_result",
+          tool_use_id: "toolu_test",
+          is_error: true,
+          content: `${message}.\n\nCall the tool again with your full answer, with this fixed.`,
+        },
+      ],
+    },
+  ];
 }

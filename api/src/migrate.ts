@@ -24,6 +24,14 @@ export async function migrate(): Promise<void> {
       updated_at timestamptz NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS self_hosted_connection (
+      id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+      base_url text NOT NULL,
+      api_key_ciphertext bytea,
+      api_key_last4 text,
+      updated_at timestamptz NOT NULL DEFAULT NOW()
+    );
+
     CREATE TABLE IF NOT EXISTS thread_messages (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       role text NOT NULL CHECK (role IN ('athlete', 'coach', 'system')),
@@ -184,6 +192,16 @@ export async function migrate(): Promise<void> {
     ALTER TABLE llm_call_log
       ADD COLUMN IF NOT EXISTS thinking_tokens integer;
 
+    -- Calls to the athlete's own model server: provider 'self_hosted', with the
+    -- base URL's hostname. Anthropic and stub rows leave server_host null.
+    ALTER TABLE llm_call_log
+      DROP CONSTRAINT IF EXISTS llm_call_log_provider_check;
+    ALTER TABLE llm_call_log
+      ADD CONSTRAINT llm_call_log_provider_check
+      CHECK (provider IN ('anthropic', 'self_hosted', 'stub'));
+    ALTER TABLE llm_call_log
+      ADD COLUMN IF NOT EXISTS server_host text;
+
     -- Which LLM call produced this coach message (plain uuid, no FK).
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS llm_call_id uuid;
@@ -223,6 +241,24 @@ export async function migrate(): Promise<void> {
       read_at timestamptz NOT NULL DEFAULT NOW()
     );
 
+    -- Coach Cade's model and effort as the athlete chose them; no row = the tested default (ADR 0004).
+    CREATE TABLE IF NOT EXISTS coach_model_settings (
+      id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+      model text NOT NULL,
+      effort text NOT NULL CHECK (effort IN ('low', 'medium', 'high', 'xhigh', 'max')),
+      updated_at timestamptz NOT NULL DEFAULT NOW()
+    );
+
+    -- Who serves Coach Cade: Anthropic or the athlete's own model server. Rows
+    -- saved before the provider existed are Anthropic.
+    ALTER TABLE coach_model_settings
+      ADD COLUMN IF NOT EXISTS provider text NOT NULL DEFAULT 'anthropic';
+    ALTER TABLE coach_model_settings
+      DROP CONSTRAINT IF EXISTS coach_model_settings_provider_check;
+    ALTER TABLE coach_model_settings
+      ADD CONSTRAINT coach_model_settings_provider_check
+      CHECK (provider IN ('anthropic', 'self_hosted'));
+
     -- The note a coach message produced, so the card shows under that reply.
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS dossier_proposal_id bigint;
@@ -247,6 +283,17 @@ export async function migrate(): Promise<void> {
     -- later change never rewrites an old message's card.
     ALTER TABLE thread_messages
       ADD COLUMN IF NOT EXISTS plan_changes jsonb;
+
+    -- The plan check's warnings (issue #58), stored beside the plan it judged;
+    -- the plan column stays exactly what the validator produced. Null on plans
+    -- stored before the check existed.
+    ALTER TABLE prescribed_weeks
+      ADD COLUMN IF NOT EXISTS plan_warnings jsonb;
+
+    -- The plan rules the accepted weekly reply tripped, on its own row: empty
+    -- when the plan was checked and tripped none, null when it was not checked.
+    ALTER TABLE llm_call_log
+      ADD COLUMN IF NOT EXISTS plan_rules text[];
 
     -- What the athlete is training for, as data. Append-only like About you's
     -- versions: the latest row is current and rows are never updated.

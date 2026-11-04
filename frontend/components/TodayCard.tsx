@@ -1,26 +1,18 @@
 import type { PrescribedDay, UnitPreference } from "@/lib/api";
+import {
+  DAY_TYPE_LABEL,
+  isNotARun,
+  isNotFiled,
+  meaningful,
+  NO_PLAN_GIVEN,
+  notFiledSentence,
+  planSentence,
+  sessionQuote,
+  weekdayLabel,
+} from "@/lib/planDay";
 import { plannedRunLabel } from "@/lib/units";
-import { isNotARun, meaningful, weekdayLabel } from "./PlanDayRow";
+import { NotFiledMark } from "./PlanDayRow";
 import { ButtonLink, Card, LabelValueList, Muted } from "./ui";
-
-const DAY_TYPE_LABEL: Record<string, string> = {
-  easy: "Easy run",
-  quality: "Quality session",
-  long: "Long run",
-  race: "Race",
-  rest: "Rest day",
-  other: "Other",
-};
-
-/** What the athlete says to the coach when today's plan has to change. */
-export function sessionQuote(day: PrescribedDay, unit: UnitPreference): string {
-  const parts = [
-    weekdayLabel(day.date),
-    isNotARun(day) ? "Not a run" : (DAY_TYPE_LABEL[day.dayType] ?? day.dayType),
-    day.run ? plannedRunLabel(day.run, unit) : null,
-  ].filter(Boolean);
-  return `About today's session (${parts.join(", ")}): `;
-}
 
 /** Today's session, or what happens next when there is none. */
 export function TodayCard({
@@ -51,8 +43,12 @@ export function TodayCard({
   const structure = meaningful(run?.structure);
   const strength = meaningful(today.strength);
   const note = meaningful(today.notes);
+  // Checked first: a day Cadence could not read has nothing planned, only Coach Cade's sentence.
+  const notFiled = isNotFiled(today);
+  const unreadSentence = notFiledSentence(today);
   // Strength, cross-training or a walk: the notes say what the day is.
   const notRun = isNotARun(today);
+  const sentence = planSentence(today);
 
   return (
     <Card className="flex flex-col gap-3" aria-label="Today">
@@ -61,25 +57,40 @@ export function TodayCard({
           Today · {weekdayLabel(today.date)}
         </p>
         <h2 className="m-0 text-2xl font-semibold">
-          {run
-            ? `${DAY_TYPE_LABEL[today.dayType] ?? today.dayType} · ${plannedRunLabel(run, unit)}`
-            : notRun
-              ? "Not a run"
-              : (DAY_TYPE_LABEL[today.dayType] ?? "Rest day")}
+          {notFiled
+            ? (unreadSentence ?? "No plan for today")
+            : run
+              ? `${DAY_TYPE_LABEL[today.dayType] ?? today.dayType} · ${plannedRunLabel(run, unit)}`
+              : notRun
+                ? "Not a run"
+                : (DAY_TYPE_LABEL[today.dayType] ?? "Rest day")}
         </h2>
       </div>
 
-      {notRun && note ? <p className="m-0">{note}</p> : null}
+      {notFiled ? (
+        unreadSentence ? (
+          <NotFiledMark />
+        ) : (
+          <Muted>{NO_PLAN_GIVEN}.</Muted>
+        )
+      ) : sentence ? (
+        // A day read from Coach Cade's line: the sentence says how to run it.
+        <p className="m-0">{sentence}</p>
+      ) : (
+        <>
+          {notRun && note ? <p className="m-0">{note}</p> : null}
 
-      {structure ? <p className="m-0">{structure}</p> : null}
-      <LabelValueList
-        items={[
-          ["Effort", target],
-          ["Shoes", shoes],
-          ["Strength", strength],
-        ]}
-      />
-      {note && !notRun ? <p className="m-0 text-muted">{note}</p> : null}
+          {structure ? <p className="m-0">{structure}</p> : null}
+          <LabelValueList
+            items={[
+              ["Effort", target],
+              ["Shoes", shoes],
+              ["Strength", strength],
+            ]}
+          />
+          {note && !notRun ? <p className="m-0 text-muted">{note}</p> : null}
+        </>
+      )}
 
       <div>
         <ButtonLink

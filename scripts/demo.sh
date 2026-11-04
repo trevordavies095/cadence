@@ -87,12 +87,11 @@ reset_db() {
   log "Reset ${DB_NAME}"
 }
 
-# (Re)create the API container with "now" pinned to $1 (ISO instant), and the live model's
-# thinking effort to $2 when given. The clock is read once at startup, so every change of
-# fictional time is a restart.
+# (Re)create the API container with "now" pinned to $1 (ISO instant). The clock is read
+# once at startup, so every change of fictional time is a restart.
 start_api() {
-  ANTHROPIC_EFFORT="${2:-}" DEV_CLOCK_NOW="$1" "${COMPOSE[@]}" up -d --no-deps --force-recreate api >/dev/null
-  wait_for "http://localhost:${API_HOST_PORT}/ready" "API (clock ${1}${2:+, effort ${2}})"
+  DEV_CLOCK_NOW="$1" "${COMPOSE[@]}" up -d --no-deps --force-recreate api >/dev/null
+  wait_for "http://localhost:${API_HOST_PORT}/ready" "API (clock ${1})"
 }
 
 restore_snapshot() {
@@ -176,7 +175,7 @@ case "${1:-}" in
   up) shift; cmd_up "$@" ;;
   build) shift; cmd_build "$@" ;;
   # Internal: called by demo/build.mjs.
-  _clock) start_api "${2:?clock required}" "${3:-}" ;;
+  _clock) start_api "${2:?clock required}" ;;
   _dump) dump_snapshot "${2:?file required}" "${3:?clock required}" ;;
   # Run SQL from stdin against the demo database (prints rows, no headers).
   _sql) pg -d "$DB_NAME" -At ;;

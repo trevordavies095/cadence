@@ -1,0 +1,18 @@
+{
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "provider": "anthropic",
+  "baseUrlHost": null,
+  "model": "claude-sonnet-5-5",
+  "effort": "xhigh",
+  "repeats": 3,
+  "note": "Anthropic API",
+  "startedAt": "2026-11-03T15:45:34.406Z",
+  "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614",
+  "dryRun": false,
+  "rulesRetry": false,
+  "inputs": "demo snapshot",
+  "resumedAt": [
+    "2026-11-03T16:10:50.208Z",
+    "2026-11-04T11:55:44.268Z"
+  ]
+}

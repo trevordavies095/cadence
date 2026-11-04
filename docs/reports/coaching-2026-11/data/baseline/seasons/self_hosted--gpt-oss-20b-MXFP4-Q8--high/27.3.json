@@ -1,0 +1,201 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w09.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-03T12:42:52.997Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-11-01",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Nov 1 2026, 5 weeks out, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 16674,
+  "outputTokens": 1127,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 2469,
+  "estimatedInputTokens": 9382,
+  "timing": {
+    "ttftMs": 738,
+    "totalMs": 19439,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 738,
+        "totalMs": 19439,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 16674,
+        "outputTokens": 1127
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-09-21",
+    "isoWeek": "2026-W39",
+    "recentWeeklyM": 63194.91552
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Maintain volume with a single quality session and a slightly longer long run to keep building toward the marathon goal.",
+    "flags": [
+      {
+        "title": "Heart‑rate drift on long",
+        "detail": "keep below 150 BPM and monitor for increase."
+      },
+      {
+        "title": "Quality‑session effort",
+        "detail": "aim for 150–160 BPM, avoid over‑exertion."
+      },
+      {
+        "title": "Recovery‑run tempo",
+        "detail": "stay comfortably easy, HR <150."
+      },
+      {
+        "title": "Long‑run volume",
+        "detail": "16 mi keeps steady build without overload."
+      },
+      {
+        "title": "Rest‑day compliance",
+        "detail": "keep Monday and Friday off to allow recovery."
+      }
+    ],
+    "answers": [],
+    "analysis": "You did the prescribed week as planned, no runs missed or overruns. The build phase wants steady volume with one quality session and rest on Monday and Friday. This week keeps 40‑41 miles, one 9‑mile quality with 6 at marathon pace, an 16‑mile long run to creep up mileage, and easy runs to make up the balance. Each easy run stays below zone 2 heart‑rate and the quality session keeps heart rate near 150–160 BPM to train tempo without overloading. The rest days let your legs recover, and the schedule avoids back‑to‑back hard days. Watch heart‑rate drift on long runs, keep the quality session effort on target, and keep an easy feel on recovery runs.",
+    "prescribedWeek": {
+      "week": "2026-W39",
+      "days": [
+        {
+          "date": "2026-09-21",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Mon 2026-09-21: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-22",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate <150, flat route. Loosens legs after rest.",
+          "line": "Tue 2026-09-22: easy, 6 mi, heart rate <150, flat route. Loosens legs after rest.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-23",
+          "dayType": "quality",
+          "run": {
+            "type": "quality",
+            "distanceM": 14484,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "6 at marathon pace, 3 easy, heart rate 150–160 BPM. Builds tempo.",
+          "line": "Wed 2026-09-23: quality, 9 mi, 6 at marathon pace, 3 easy, heart rate 150–160 BPM. Builds tempo.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-24",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 9656,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "heart rate <150. Recovers from quality.",
+          "line": "Thu 2026-09-24: easy, 6 mi, heart rate <150. Recovers from quality.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-25",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": null,
+          "line": "Fri 2026-09-25: rest",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-26",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "relaxed, low effort.",
+          "line": "Sat 2026-09-26: easy, 4 mi, relaxed, low effort.",
+          "parsed": true
+        },
+        {
+          "date": "2026-09-27",
+          "dayType": "long",
+          "run": {
+            "type": "long",
+            "distanceM": 25750,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "easy, heart rate <150. Stretches endurance.",
+          "line": "Sun 2026-09-27: long, 16 mi easy, heart rate <150. Stretches endurance.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": []
+  }
+}

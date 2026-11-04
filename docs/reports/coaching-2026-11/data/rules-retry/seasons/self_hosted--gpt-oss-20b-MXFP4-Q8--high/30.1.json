@@ -1,0 +1,206 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w12.json",
+  "originalCallAt": null,
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "replayedAt": "2026-11-04T11:51:36.753Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, race week, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 17264,
+  "outputTokens": 1847,
+  "thinkingTokens": null,
+  "cacheReadTokens": null,
+  "cacheCreationTokens": null,
+  "thinkingChars": 4729,
+  "estimatedInputTokens": 9521,
+  "timing": {
+    "ttftMs": 21944,
+    "totalMs": 53009,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 21944,
+        "totalMs": 53009,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 17264,
+        "outputTokens": 1847
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-12",
+    "isoWeek": "2026-W42",
+    "recentWeeklyM": 65198.5488
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Keep the volume low and legs fresh for a strong race finish.",
+    "flags": [
+      {
+        "title": "Volume",
+        "detail": "keep total under 20 mi – avoid extra mileage"
+      },
+      {
+        "title": "Rest",
+        "detail": "Mon and Thu are full rest – essential for recovery"
+      },
+      {
+        "title": "Heart rate",
+        "detail": "stay below 150 bpm – watch for drift"
+      },
+      {
+        "title": "Race prep",
+        "detail": "focus on hydration, fueling and mental prep"
+      },
+      {
+        "title": "Recovery",
+        "detail": "monitor soreness and adjust if needed"
+      }
+    ],
+    "answers": [
+      {
+        "question": "Is it crazy to do one more 16-miler on Wednesday so I feel ready?",
+        "answer": "- No, a 16‑mile run would break the taper and add unnecessary fatigue. A short, easy run keeps your legs loose without compromising race readiness."
+      }
+    ],
+    "analysis": "The athlete’s latest week (Oct 5–11) was a light taper week with 34 mi and no hard effort. The goal is a 3:45 marathon on Oct 18, and we are in the final taper phase. The plan for Oct 12–18 must keep volume low, keep heart rate in easy zones, and avoid any new hard or long work. The athlete asked if a 16‑mi run on Wednesday would help; the answer is no – a longer run would upset the taper and add fatigue. The main job is to keep legs fresh, stay below 150 bpm, do a brief quality stimulus (a single mile at marathon pace), and provide a short easy run on Saturday to set the rhythm. I will flag volume, rest, HR drift, race‑prep, and recovery. No medical issues, so no safety callouts. The next week’s plan is straightforward with mostly rest and short easy runs.",
+    "prescribedWeek": {
+      "week": "2026-W42",
+      "days": [
+        {
+          "date": "2026-10-12",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "full recovery day.",
+          "line": "Mon 2026-10-12: rest – full recovery day.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-13",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep HR under 150, flat route – maintain base.",
+          "line": "Tue 2026-10-13: easy, 4 mi, keep HR under 150, flat route – maintain base.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-14",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep HR under 150, short flat run – keep legs loose.",
+          "line": "Wed 2026-10-14: easy, 3 mi, keep HR under 150, short flat run – keep legs loose.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-15",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "clear the body for the final push.",
+          "line": "Thu 2026-10-15: rest – clear the body for the final push.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-16",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 3219,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "keep HR under 140, quick walk – final cleanup.",
+          "line": "Fri 2026-10-16: easy, 2 mi, keep HR under 140, quick walk – final cleanup.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-17",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "1 mi at marathon pace, finish with strides – fine‑tune rhythm.",
+          "line": "Sat 2026-10-17: easy, 3 mi, 1 mi at marathon pace, finish with strides – fine‑tune rhythm.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-18",
+          "dayType": "race",
+          "run": {
+            "type": "race",
+            "distanceM": 0,
+            "durationS": 13500,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "focus on pacing, hydration, and timing.",
+          "line": "Sun 2026-10-18: race – run under 3:45, focus on pacing, hydration, and timing.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": []
+  }
+}

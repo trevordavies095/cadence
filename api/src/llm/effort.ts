@@ -8,21 +8,34 @@ export const ANTHROPIC_EFFORT_LEVELS = [
 
 export type AnthropicEffort = (typeof ANTHROPIC_EFFORT_LEVELS)[number];
 
-export const DEFAULT_ANTHROPIC_EFFORT: AnthropicEffort = "xhigh";
+/**
+ * Read a thinking effort level, ignoring case and surrounding space. Anything
+ * that is not one of the five levels returns null.
+ */
+export function parseAnthropicEffort(raw: string): AnthropicEffort | null {
+  const value = raw.trim().toLowerCase();
+  return (ANTHROPIC_EFFORT_LEVELS as readonly string[]).includes(value)
+    ? (value as AnthropicEffort)
+    : null;
+}
 
 /**
- * Resolve the thinking effort from `ANTHROPIC_EFFORT`. Unset/blank returns the
- * default; an invalid value throws so the API fails at startup.
+ * The highest effort at which a model finishes a weekly read inside the coach
+ * call's output cap (MAX_OUTPUT_TOKENS in anthropic.ts), from the coaching
+ * baseline of 2026-11-03: above it the model thinks until the cap and never
+ * writes the reply, so the athlete gets an error every Sunday. Opus 5.5 failed
+ * every season week at max; Haiku 5.5 failed at xhigh; Sonnet 5.5 reached the
+ * cap once at xhigh, so max is not offered. A model not listed has no ceiling.
  */
-export function resolveAnthropicEffort(
-  env: Record<string, string | undefined> = process.env,
-): AnthropicEffort {
-  const raw = env.ANTHROPIC_EFFORT?.trim().toLowerCase();
-  if (!raw) return DEFAULT_ANTHROPIC_EFFORT;
-  if ((ANTHROPIC_EFFORT_LEVELS as readonly string[]).includes(raw)) {
-    return raw as AnthropicEffort;
-  }
-  throw new Error(
-    `Invalid ANTHROPIC_EFFORT "${env.ANTHROPIC_EFFORT?.trim()}": expected one of ${ANTHROPIC_EFFORT_LEVELS.join(", ")}.`,
-  );
+export const EFFORT_CEILING: Readonly<Record<string, AnthropicEffort>> = {
+  "claude-opus-5-5": "xhigh",
+  "claude-sonnet-5-5": "xhigh",
+  "claude-haiku-5-5": "high",
+};
+
+/** The effort a model is sent with: the one asked for, lowered to the model's ceiling. */
+export function effortWithinCeiling(model: string, effort: AnthropicEffort): AnthropicEffort {
+  const ceiling = EFFORT_CEILING[model];
+  if (!ceiling) return effort;
+  return ANTHROPIC_EFFORT_LEVELS.indexOf(effort) > ANTHROPIC_EFFORT_LEVELS.indexOf(ceiling) ? ceiling : effort;
 }

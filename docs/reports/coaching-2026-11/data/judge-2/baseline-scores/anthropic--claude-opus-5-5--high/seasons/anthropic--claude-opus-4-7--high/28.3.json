@@ -1,0 +1,61 @@
+{
+  "input": "seasons/28",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 3,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "It answers Marisol's question directly, and the answer is sound: skip the 22, because one 20 is enough and there isn't time for another very long run. The plan is safe and clear enough to run. It totals 40 mi (6+9+5+4+16) after a 42-mi week, so volume holds steady. There's one marathon-pace session and a 16-mi long run with the last 4 at marathon pace, which is a sensible last solid week before a two-week taper. It keeps her five-day pattern with Monday and Friday off.\n\nWhat pulls the score down is that it misreads her message. She says the race is three weeks from today, and the draft says it's two weeks out, so she'd be told the wrong timeline in a week she's already anxious about the date. It also states things the card doesn't show: a 17 'in the last 4 weeks', both long runs 'finished strong and even-paced', and an easy pace at 139 bpm. These may be invented, which weakens a reassurance that's meant to calm her nerves. The plan happens to suit the real three-week timeline, but the framing and the made-up specifics need fixing before this is sent.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:19:31.463Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2300,
+  "outputTokens": 837,
+  "thinkingTokens": 354,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1162,
+  "costUsd": 0.02594,
+  "timing": {
+    "ttftMs": 2728,
+    "totalMs": 9134,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2728,
+        "totalMs": 9134,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2300,
+        "outputTokens": 837
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "It answers Marisol's question directly, and the answer is sound: skip the 22, because one 20 is enough and there isn't time for another very long run. The plan is safe and clear enough to run. It totals 40 mi (6+9+5+4+16) after a 42-mi week, so volume holds steady. There's one marathon-pace session and a 16-mi long run with the last 4 at marathon pace, which is a sensible last solid week before a two-week taper. It keeps her five-day pattern with Monday and Friday off.\n\nWhat pulls the score down is that it misreads her message. She says the race is three weeks from today, and the draft says it's two weeks out, so she'd be told the wrong timeline in a week she's already anxious about the date. It also states things the card doesn't show: a 17 'in the last 4 weeks', both long runs 'finished strong and even-paced', and an easy pace at 139 bpm. These may be invented, which weakens a reassurance that's meant to calm her nerves. The plan happens to suit the real three-week timeline, but the framing and the made-up specifics need fixing before this is sent."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 27, 37, 53, 40 mi\nThis week: 42 mi over 5 runs.\nFeeling: \"Anxious about the new date.\"\nAsks: \"The race got moved two weeks earlier, to October 18, because of the bridge works. That's three weeks from today. I've only done one 20. Do I still have time for my 22-miler?\"\n\n── THE DRAFT ──\nTells Marisol: With the race now 2 weeks out, skip the 22-miler and treat this as your last real work week before taper. …\nAnswers: (1) No, do not add a 22-miler now. … (2) Here is what matters more than mileage: you have a 20 and a 17 in the last 4 weeks, both finished strong and even-paced, and your easy pace at 139 bpm is steady. That is a body that is ready.\nNext week:\nMon: rest. Full day off to recover from Sunday's 17.\nTue: easy, 6 mi, heart rate under 145. Shake out the long run, nothing more.\nWed: quality, 9 mi with 2 mi warm-up, 5 mi at marathon pace around 8:35/mi, 2 mi…\nThu: easy, 5 mi, heart rate under 145. Recovery from the marathon-pace work.\nFri: rest. Full day off before the weekend.\nSat: easy, 4 mi, with 4 x 20 sec strides at the end. Keeps the legs sharp before Sunday.\nSun: long, 16 mi, first 12 easy around 9:55/mi, last 4 at marathon pace around 8:35/mi…\n\nScore this draft: call submit_coaching_score once."
+}

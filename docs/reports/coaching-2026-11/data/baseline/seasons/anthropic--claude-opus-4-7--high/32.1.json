@@ -1,0 +1,206 @@
+{
+  "operation": "weekly_reply",
+  "source": "4-marathon-w14.json",
+  "originalCallAt": null,
+  "model": "claude-opus-4-7",
+  "replayedAt": "2026-11-03T13:28:38.322Z",
+  "goal": {
+    "kind": "race",
+    "distance": "marathon",
+    "raceName": "Wexley Lakes Marathon",
+    "raceDate": "2026-10-18",
+    "target": "under 3:45"
+  },
+  "promptHead": "Athlete goal: marathon (Wexley Lakes Marathon) on Sun Oct 18 2026, target under 3:45.",
+  "asked": null,
+  "outcome": "ok",
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 22363,
+  "outputTokens": 2138,
+  "thinkingTokens": 667,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "thinkingChars": 926,
+  "estimatedInputTokens": 8787,
+  "timing": {
+    "ttftMs": 4745,
+    "totalMs": 40732,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 4745,
+        "totalMs": 40732,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 22363,
+        "outputTokens": 2138
+      }
+    ]
+  },
+  "planCheck": {
+    "weekStartMonday": "2026-10-26",
+    "isoWeek": "2026-W44",
+    "recentWeeklyM": 53603.22528
+  },
+  "refusedAttempts": [],
+  "plan": {
+    "box": "plan",
+    "daysTotal": 7,
+    "daysParsed": 7,
+    "failures": [],
+    "retried": false,
+    "retryAskedFor": [],
+    "fixedByRetry": [],
+    "bareNumbers": 0,
+    "droppedLines": [],
+    "ignoredLines": 0
+  },
+  "rules": {
+    "tripped": [],
+    "skipped": []
+  },
+  "old": null,
+  "new": {
+    "headline": "Recovery is going well, so take one more easy week before adding any speed. Before I plan beyond that, tell me what you want to point at next.",
+    "flags": [
+      {
+        "title": "Return to speed",
+        "detail": "tempting after a strong recovery, but the body is still rebuilding tendons and connective tissue from the race."
+      },
+      {
+        "title": "Mileage jump",
+        "detail": "going from 12 to 40 miles in one week is too big a step; we will walk it up over three weeks instead."
+      },
+      {
+        "title": "Next goal unclear",
+        "detail": "the Thanksgiving 10K is possible, but I want your call before I shape the block."
+      },
+      {
+        "title": "Shoe mileage",
+        "detail": "the Ghost 16 is at 149 miles; still fine, just keep an eye on it over the coming weeks."
+      }
+    ],
+    "answers": [
+      {
+        "question": "I feel ready. Can I go back to 40 miles next week and start speedwork for the 10K?",
+        "answer": "Short answer: not yet. Hold at easy running for one more week, then we start layering structure back in.\n\nHere is how I think about the two weeks after a marathon. Your legs feel springy because the cardio system comes back fast, but tendons, feet and the small stabilisers take three to four weeks to fully reset. Pushing speed in that window is where most post-marathon niggles start.\n\nOn mileage, jumping 12 to 40 is a 28-mile step. I would rather build 12, then around 22, then around 30, then 36 to 40 across four weeks. You will still be ready to race a 10K well, and you will stay healthy.\n\nOn the Thanksgiving 10K, it is doable: five weeks is enough to add strides, one tempo and one short interval session, and sharpen. If you want to target it, say the word and I will build a short 10K block starting the week of Nov 2. If you would rather rest the competitive brain and just rebuild base, that is a good choice too. Tell me which, and whether you want to think about another marathon in the spring."
+      }
+    ],
+    "analysis": "## How the week went\nYou followed the recovery plan cleanly: three easy runs on the days I planned them, totals right on, and heart rate drifted down to 133 average on the first run and back up to 139 on Sunday as pace returned to 9:51. That is a textbook recovery pattern, and the 0/10 pain all week backs it up.\n\n## Why next week stays easy\nYou are 14 days out from a 3:50 marathon where you spent 63 percent of the race in zone 4 and the last 10K was a grind on wrecked quads. That damage is not fully gone just because the soreness is. One more easy week protects you from the classic \"felt great, got hurt\" trap in week three.\n\n## What next week does\nIt nudges volume from 12 to around 23 miles with a slightly longer Sunday, still all easy, no structure. If everything feels normal through the weekend, the week after that I will add short strides and bring you back toward 30 miles. Tell me your next goal and I will shape the block from there.",
+    "prescribedWeek": {
+      "week": "2026-W44",
+      "days": [
+        {
+          "date": "2026-10-26",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Full day off keeps the recovery curve going.",
+          "line": "Mon 2026-10-26: rest. Full day off keeps the recovery curve going.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-27",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "conversational, heart rate under 140. Opens the week with an honest easy effort.",
+          "line": "Tue 2026-10-27: easy, 4 mi, conversational, heart rate under 140. Opens the week with an honest easy effort.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-28",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 8047,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "flat route, same easy feel. Light volume bump while legs stay fresh.",
+          "line": "Wed 2026-10-28: easy, 5 mi, flat route, same easy feel. Light volume bump while legs stay fresh.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-29",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 4828,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "very relaxed, or swap for a 30 min walk if legs feel flat. Short shakeout, nothing more.",
+          "line": "Thu 2026-10-29: easy, 3 mi, very relaxed, or swap for a 30 min walk if legs feel flat. Short shakeout, nothing more.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-30",
+          "dayType": "rest",
+          "run": null,
+          "strength": null,
+          "notes": "Protects Sunday and respects your usual Friday off.",
+          "line": "Fri 2026-10-30: rest. Protects Sunday and respects your usual Friday off.",
+          "parsed": true
+        },
+        {
+          "date": "2026-10-31",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 6437,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "relaxed. Primes the legs for a slightly longer Sunday.",
+          "line": "Sat 2026-10-31: easy, 4 mi, relaxed. Primes the legs for a slightly longer Sunday.",
+          "parsed": true
+        },
+        {
+          "date": "2026-11-01",
+          "dayType": "easy",
+          "run": {
+            "type": "easy",
+            "distanceM": 11265,
+            "durationS": null,
+            "structure": null,
+            "paceOrHr": null,
+            "shoes": null
+          },
+          "strength": null,
+          "notes": "9:50 to 10:20/mi, no pushing the last mile. First step back toward a weekend long run, still fully aerobic.",
+          "line": "Sun 2026-11-01: easy, 7 mi, 9:50 to 10:20/mi, no pushing the last mile. First step back toward a weekend long run, still fully aerobic.",
+          "parsed": true
+        }
+      ]
+    },
+    "settingsProposalBullets": [
+      "Note the marathon result: Wexley Lakes 2026, 3:50 on watch, 12 min PR, target was sub 3:45.",
+      "Add a possible next goal: Thanksgiving 10K in late November, pending the athlete's decision.",
+      "Track Brooks Ghost 16 mileage toward a 400 to 500 mile replacement window."
+    ]
+  }
+}

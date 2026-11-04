@@ -1,0 +1,14 @@
+{
+  "configuration": "self_hosted--gpt-oss-20b-MXFP4-Q8--high",
+  "provider": "self_hosted",
+  "baseUrlHost": "<macbook>",
+  "model": "gpt-oss-20b-MXFP4-Q8",
+  "effort": "high",
+  "repeats": 3,
+  "note": "MacBook Pro M4 Pro 24 GB, oMLX, 64k+ context",
+  "startedAt": "2026-11-04T11:38:29.854Z",
+  "harnessCommit": "4b0b84b37ffbeb941347c2453eb59353ac7cd614",
+  "dryRun": false,
+  "rulesRetry": true,
+  "inputs": "api/tests/fixtures/seasons/season-packets"
+}

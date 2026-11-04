@@ -59,6 +59,7 @@ function SentSummary({ sent }: { sent: LastOutboundPacket }) {
       `${summary.attachmentCount} attached ${summary.attachmentCount === 1 ? "run" : "runs"}`,
     );
   }
+  if (summary.hasPlan) included.push("the plan for that week");
   if ((summary.recentHistoryCount ?? 0) > 0) {
     included.push(
       `a short look back at ${summary.recentHistoryCount} earlier ${summary.recentHistoryCount === 1 ? "week" : "weeks"}`,
@@ -152,6 +153,18 @@ export default function PrivacyPage() {
             <PageTitle>{state.data.title}</PageTitle>
             <Muted>{state.data.intro}</Muted>
           </PageHead>
+
+          {state.data.host ? (
+            <section aria-label="Where coaching context goes">
+              <p className="m-0">
+                Coaching context is sent to the model server at{" "}
+                <span className="font-mono">{state.data.host}</span>.{" "}
+                {state.data.onNetwork
+                  ? "This stays on your network."
+                  : "This host is outside your network. Check it is the server you meant."}
+              </p>
+            </section>
+          ) : null}
 
           <section className="flex flex-col gap-2">
             <SectionTitle>{state.data.sent.heading}</SectionTitle>

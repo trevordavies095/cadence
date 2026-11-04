@@ -1,0 +1,61 @@
+{
+  "input": "seasons/30",
+  "configuration": "anthropic--claude-sonnet-5-5--xhigh",
+  "repeat": 1,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 5,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "This is a race-week reply, and it answers Marisol's question directly and honestly: skip the 16-miler. It says why: the fitness is already built (it lists her 20, 17, 20 and 15 mile long runs) and her heavy legs are normal taper fatigue. That speaks to her nerves without brushing them off. Instead of the 16-miler, it gives her a short sharpener on Wednesday: 2 miles at 8:35 per mile, which is her goal marathon pace for 3:45. The plan keeps her usual days: rest on Monday and Friday, the session on Wednesday, the race on Sunday. Easy days are short, with pace and heart-rate limits. Saturday is a 20-minute shakeout in race kit with strides. The race plan starts conservatively at 8:45 to 8:50 per mile before settling at 8:35, which suits a runner chasing a 17-minute improvement. Nothing hurts, so nothing called for a referral. Volume and long runs go down as they should in a taper, and no must-never rule is broken. The plan is clear enough to run and fits this athlete and this week.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T01:49:13.442Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2183,
+  "outputTokens": 825,
+  "thinkingTokens": 337,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1029,
+  "costUsd": 0.025232,
+  "timing": {
+    "ttftMs": 2636,
+    "totalMs": 9202,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 2636,
+        "totalMs": 9202,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2183,
+        "outputTokens": 825
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "5",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "This is a race-week reply, and it answers Marisol's question directly and honestly: skip the 16-miler. It says why: the fitness is already built (it lists her 20, 17, 20 and 15 mile long runs) and her heavy legs are normal taper fatigue. That speaks to her nerves without brushing them off. Instead of the 16-miler, it gives her a short sharpener on Wednesday: 2 miles at 8:35 per mile, which is her goal marathon pace for 3:45. The plan keeps her usual days: rest on Monday and Friday, the session on Wednesday, the race on Sunday. Easy days are short, with pace and heart-rate limits. Saturday is a 20-minute shakeout in race kit with strides. The race plan starts conservatively at 8:45 to 8:50 per mile before settling at 8:35, which suits a runner chasing a 17-minute improvement. Nothing hurts, so nothing called for a referral. Volume and long runs go down as they should in a taper, and no must-never rule is broken. The plan is clear enough to run and fits this athlete and this week."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 53, 40, 42, 46 mi\nThis week: 34 mi over 5 runs.\nBody: \"Legs heavy and flat. Nothing hurts, they just feel dead.\"\nFeeling: \"Nervous. I feel like I'm losing fitness.\"\nAsks: \"Is it crazy to do one more 16-miler on Wednesday so I feel ready?\"\n\n── THE DRAFT ──\nTells Marisol: Skip the Wednesday 16-miler: the fitness is built, and the heavy legs are fatigue clearing. …\nAnswers: (1) Skip it. … (2) Your build is already done: 20 miles on Sep 13 and Oct 4, 17 on Sep 27 and 15 on Sep 20. … (3) For the readiness you are after, Wed Oct 14 includes 2 miles at marathon pace inside a 5-mile run. …\nNext week:\nMon: rest. Heavy legs get a full day off after last week's 34 miles.\nTue: easy, 5 mi, around 9:50 per mile with heart rate under 145, flat route, then 4…\nWed: quality, 5 mi, 1.5 mi easy, then 2 mi at 8:35 per mile, then 1.5 mi easy; if the…\nThu: easy, 3 mi, slower than 9:50 per mile with heart rate under 140, flat route…\nFri: rest. No running; eat well, drink water, lay out your kit and get to bed early so…\nSat: easy, 2 mi, 20 minutes easy in your race shoes and kit with 3 relaxed strides…\nSun: race, 26.2 mi, Wexley Lakes Marathon: miles 1 to 3 at 8:45 to 8:50, settle at 8:35…\n\nScore this draft: call submit_coaching_score once."
+}

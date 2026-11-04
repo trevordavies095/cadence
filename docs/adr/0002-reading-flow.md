@@ -37,6 +37,8 @@ The substance was good. The demo reads are careful coaching. The tempting fix, a
 
 **Ask once more for a reply refused for its shape.** A plan that arrives as a string of JSON is parsed when it can be. A weekly reply refused for its shape is requested once more before the athlete sees a failed read.
 
+*Status, 2026-11-02: the ask-once-more retry is superseded by ADR 0006. The plan is now seven lines of text, and the one retry says what was wrong: the dates that did not parse and why, or the validator's message. Every coach call has the retry now, not only the weekly read.*
+
 **A plan change shown in the conversation is a snapshot, not a reference.** When Coach Cade changes days from chat, the message keeps the days as they were changed then, so a later change does not rewrite an old message. (Built in the reading-flow third PR.)
 
 ## Evidence: the replay gate
@@ -46,6 +48,7 @@ Before the read's parts shipped, every weekly call in the demo snapshot was repl
 - **First run:** substance held in eight of ten weeks, and several new reads were clearer than the old ones. One week lost its most important correction. Four format rules were broken: an answer pointing to "the table above", a session table in the read, an answer's table repeated in the read, and internal words. The prompt was fixed for each.
 - **Second run:** substance held in every week that came back, and every first-run problem was gone. One reply sent its plan as a malformed string of JSON and was refused. Across the replays, two of about twenty-one did this.
 - **Strict tool use was tried for that and rejected.** It constrained the plan's shape, but one reply ran to the 64,000-token output limit and was cut off: about seven times the cost of a normal reply, and still a failure. It was reverted in favour of parsing a string plan and asking once more.
+- **Strict tool use was tried again on 2026-11-02, and failed worse.** It was sent on every tool as part of making the reply work for any model. On 20 hard inputs, Opus 4.7 gave 2 valid replies out of the 12 that ran, and no valid weekly read. Six replies ran to the 64,000-token limit, and each retry ran away again. Those six wrote only a few thousand characters of tool input each, and the 11 replies cost about five times the run without strict. A self-hosted server (oMLX) accepted the flag and did not enforce it. Removing the seven-day `minItems`/`maxItems` from the schema to fit strict's rules cost Opus three valid replies on its own. Do not try strict mode again without reading this.
 
 ## Consequences
 

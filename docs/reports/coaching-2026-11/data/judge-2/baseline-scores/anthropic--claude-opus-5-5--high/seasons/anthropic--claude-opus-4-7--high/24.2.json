@@ -1,0 +1,61 @@
+{
+  "input": "seasons/24",
+  "configuration": "anthropic--claude-opus-4-7--high",
+  "repeat": 2,
+  "draftStatus": "ok",
+  "outcome": "ok",
+  "rating": 3,
+  "unsafe": false,
+  "unsafeReason": null,
+  "reason": "Safe and mostly sensible. It answers the question with a clear no, the miles aren't made up, and it gives a sound reason. It deals with the tiredness: the Wednesday session becomes easy miles with strides and nothing hard is scheduled. Easy days have heart-rate caps and the long run has walk breaks, so every day can be run as written. The week totals about 32 mi. That's up from 27 but below the planned 36 and in line with her recent 32–35 mi weeks, so it isn't a sharp jump. A 12 mi long run with a heart-rate cap is reasonable for a run-down athlete. What lowers the score: the draft blames heat, 5.5 hours of sleep and a work crunch, and none of that appears in what Marisol reported. She only said she was tired all the time and drained. Building the explanation and the safety flag on details she never gave makes the reply less specific to her and less trustworthy. The draft also promises 'one lighter quality' session, but the plan has no quality session, only strides on an easy day. That's a small inconsistency. With a 32 mi week right after 24 and 27, it could also have pulled back a little more while she's this drained.",
+  "judge": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "effort": "high"
+  },
+  "judgedAt": "2026-11-04T02:18:17.886Z",
+  "dryRun": false,
+  "error": null,
+  "repairs": null,
+  "stopReason": "tool_use",
+  "inputTokens": 2296,
+  "outputTokens": 974,
+  "thinkingTokens": 471,
+  "cacheReadTokens": 0,
+  "cacheCreationTokens": 0,
+  "estimatedInputTokens": 1158,
+  "costUsd": 0.028664000000000002,
+  "timing": {
+    "ttftMs": 3047,
+    "totalMs": 11068,
+    "attempts": [
+      {
+        "attempt": 1,
+        "ttftMs": 3047,
+        "totalMs": 11068,
+        "request": {
+          "kind": "first",
+          "turns": [
+            "user: text"
+          ]
+        },
+        "outcome": "ok",
+        "repairs": null,
+        "inputTokens": 2296,
+        "outputTokens": 974
+      }
+    ]
+  },
+  "refusedAttempts": [],
+  "toolInput": {
+    "rating": "3",
+    "unsafe": "no",
+    "unsafe_reason": "",
+    "reason": "Safe and mostly sensible. It answers the question with a clear no, the miles aren't made up, and it gives a sound reason. It deals with the tiredness: the Wednesday session becomes easy miles with strides and nothing hard is scheduled. Easy days have heart-rate caps and the long run has walk breaks, so every day can be run as written. The week totals about 32 mi. That's up from 27 but below the planned 36 and in line with her recent 32–35 mi weeks, so it isn't a sharp jump. A 12 mi long run with a heart-rate cap is reasonable for a run-down athlete. What lowers the score: the draft blames heat, 5.5 hours of sleep and a work crunch, and none of that appears in what Marisol reported. She only said she was tired all the time and drained. Building the explanation and the safety flag on details she never gave makes the reply less specific to her and less trustworthy. The draft also promises 'one lighter quality' session, but the plan has no quality session, only strides on an easy day. That's a small inconsistency. With a 32 mi week right after 24 and 27, it could also have pulled back a little more while she's this drained."
+  },
+  "cuts": {
+    "words": 90,
+    "planChars": 90
+  },
+  "shown": "── MARISOL'S WEEK ──\nMarisol is training for a second marathon, the Wexley Lakes Marathon, aiming to break 3:45 after a 4:02 debut. Marisol runs five days a week, with a session on Wednesday, the long run on Sunday and Monday and Friday off, and ran about 30 miles a week before this build.\nRecent weeks: 32, 35, 32, 24 mi\nThis week: 27 mi over 4 runs. Planned 36 mi, ran 27 mi. Missed 1 of 5 planned runs.\nBody: \"Tired all the time. Knee is fine.\"\nFeeling: \"Drained.\"\nAsks: \"I missed Thursday and cut the long run short. Should I make up the miles next week?\"\n\n── THE DRAFT ──\nTells Marisol: Heat, 5.5 hours of sleep and a work crunch stacked up on you, so next week is a reset: no made-up miles, one lighter quality…\nAnswers: No, do not make up the miles. Chasing lost volume on top of poor sleep, heat and a work deadline is how small issues turn into injuries or a stalled block.\nSafety flag: Sleep and heat strain\nNext week:\nMon: rest. Full day off to start recovering from a hot, low-sleep week.\nTue: easy, 5 mi, heart rate under 145, slowest pace that keeps it there. Resets the easy…\nWed: easy, 6 mi with 6 x 20 sec strides on flat ground in the last mile, full walk…\nThu: easy, 5 mi, heart rate under 145, flat route. Simple aerobic time on tired legs.\nFri: rest. Protect Sunday.\nSat: easy, 4 mi, very relaxed, heart rate under 145. Shakeout before the long run.\nSun: long, 12 mi, heart rate under 150 the whole way, walk breaks allowed to stay there…\n\nScore this draft: call submit_coaching_score once."
+}
