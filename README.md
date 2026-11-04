@@ -60,6 +60,12 @@ Cadence is free. The live coach uses your own Anthropic API key, so you pay Anth
 | Reply + a few chat messages | ~$1 |
 | Chatting most days | ~$2 |
 
+## Which model coaches best
+
+We measured it. A certified running coach scored blind replies from six model configurations on 14 hard weeks (an injury, illness, race week, missed weeks), and a model judge calibrated against his scores rated every reply. In short: Opus 5.5 at `xhigh` coaches best, Opus 4.7 at `high` matches the default for less, Haiku 5.5 at `high` is the cheapest that holds up, and the self-hosted gpt-oss-20b is not recommended for coaching. The method, the numbers, the caveats and every reply are in [How well each model coaches](docs/reports/coaching-2026-11.md), with the raw data in [docs/reports/coaching-2026-11/data](docs/reports/coaching-2026-11/data/README.md).
+
+Earlier research: [how self-hosted models compare with the default](docs/reports/local-models-2026-11.md) and [how much Cadence depended on one model](docs/reports/model-dependence-2026-11.md).
+
 ## How it works
 
 Each week follows the same loop. Coach Cade builds the recap from your Tempo data, you add a short check-in, and the coach replies with an analysis and next week's plan. During the week you can chat and attach a run. Anything worth remembering is proposed as a change to "About you", and nothing is saved until you accept it.
