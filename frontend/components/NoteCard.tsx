@@ -46,11 +46,14 @@ export function NoteCard({
   note: initial,
   weekSessionId,
   onChange,
+  onAccepted,
 }: {
   note: ThreadNote;
   weekSessionId?: string | null;
   /** Called after the card changed something, so the page can look again. */
   onChange?: () => void;
+  /** Called once Looks right has saved the note, before `onChange`. */
+  onAccepted?: (note: ThreadNote) => void;
 }) {
   const [note, setNote] = useState(initial);
   const [fixing, setFixing] = useState(false);
@@ -78,7 +81,9 @@ export function NoteCard({
     setError(null);
     try {
       const { proposal } = await acceptDossierProposal(note.id);
-      setNote(toNote(proposal));
+      const accepted = toNote(proposal);
+      setNote(accepted);
+      onAccepted?.(accepted);
       onChange?.();
     } catch (err) {
       setError(describeError(err, "Couldn’t save that. Try again."));

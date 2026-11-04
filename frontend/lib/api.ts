@@ -1086,6 +1086,22 @@ export async function fetchHome(): Promise<HomeRead> {
   return readJson(await fetch("/api/home"));
 }
 
+/** Where the athlete is in the week's loop; only the parts a page reads. */
+export type LoopStatusRead = {
+  phase:
+    | "setup_incomplete"
+    | "needs_onboarding"
+    | "onboarding_review"
+    | "needs_check_in"
+    | "needs_plan"
+    | "mid_week"
+    | "week_ending";
+};
+
+export async function fetchLoopStatus(): Promise<LoopStatusRead> {
+  return readJson(await fetch("/api/loop-status"));
+}
+
 /** Fetch one JSON section of a week's report (summary, zones, run-by-run, trends, notable). */
 export async function fetchRecapSection<T>(
   weekSessionId: string,

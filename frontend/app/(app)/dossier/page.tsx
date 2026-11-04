@@ -20,6 +20,7 @@ import {
   fetchDossier,
   fetchDossierChanges,
   fetchDossierProposals,
+  fetchLoopStatus,
   postDossierCorrection,
   putDossier,
   undoDossierProposal,
@@ -63,6 +64,12 @@ function sectionsOf(body: string): Section[] {
   return sections;
 }
 
+/**
+ * What comes after the first answers. Null while the loop could not be read: the line then
+ * names the check-in without saying when it opens.
+ */
+type Handoff = { checkInOpen: boolean | null };
+
 function dayLabel(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
@@ -80,6 +87,7 @@ export default function AboutYouPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [undoing, setUndoing] = useState<number | null>(null);
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
 
   const load = useCallback(async () => {
     const [data, pending, history] = await Promise.all([
@@ -111,6 +119,16 @@ export default function AboutYouPage() {
       cancelled = true;
     };
   }, [load]);
+
+  /** The first answers are saved: say once what happens next, and where to go. */
+  async function showHandoff() {
+    try {
+      const status = await fetchLoopStatus();
+      setHandoff({ checkInOpen: status.phase === "needs_check_in" });
+    } catch {
+      setHandoff({ checkInOpen: null });
+    }
+  }
 
   async function tellCoach(e: FormEvent) {
     e.preventDefault();
@@ -169,6 +187,8 @@ export default function AboutYouPage() {
 
   const sections = current ? sectionsOf(current.body) : [];
   const knowsYou = current !== null || waiting.length > 0;
+  // While the first answers wait, the card's Fix something is the one way to correct them.
+  const firstAnswersWaiting = waiting.some((p) => p.kind === "onboarding");
 
   return (
     <Page>
@@ -185,12 +205,46 @@ export default function AboutYouPage() {
         <section className="flex flex-col gap-3" aria-label="Waiting for you">
           <SectionTitle>Waiting for you</SectionTitle>
           {waiting.map((p) => (
-            <NoteCard key={p.id} note={toNote(p)} onChange={() => void load()} />
+            <NoteCard
+              key={p.id}
+              note={toNote(p)}
+              onAccepted={(n) => {
+                if (n.kind === "onboarding") void showHandoff();
+              }}
+              onChange={() => void load()}
+            />
           ))}
         </section>
       ) : null}
 
-      {knowsYou ? (
+      {handoff ? (
+        <section
+          className="flex flex-col gap-3 border-y border-border py-6"
+          aria-label="You’re set"
+        >
+          <p className="m-0 font-semibold">You’re set.</p>
+          <p className="m-0">
+            {handoff.checkInOpen === true
+              ? "Your first weekly check-in is open now."
+              : handoff.checkInOpen === false
+                ? "Your weekly check-in opens on Saturday, and Coach Cade plans your first week from it."
+                : "Coach Cade plans your first week after your weekly check-in."}
+          </p>
+          <div>
+            {handoff.checkInOpen === true ? (
+              <ButtonLink href="/check-in" variant="primary">
+                Start check-in
+              </ButtonLink>
+            ) : (
+              <ButtonLink href="/" variant="primary">
+                Go to Home
+              </ButtonLink>
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {firstAnswersWaiting ? null : knowsYou ? (
         <section className="flex flex-col gap-3" aria-label="Tell Coach Cade">
           <SectionTitle>Tell Coach Cade something to remember or fix</SectionTitle>
           <form onSubmit={(e) => void tellCoach(e)} className="flex flex-col gap-3">
@@ -203,10 +257,10 @@ export default function AboutYouPage() {
               />
             </Field>
             <div>
-              {/* A waiting note's "Looks right" holds volt; this submit steps back. */}
+              {/* A waiting note's "Looks right", or the handoff's link, holds volt; this steps back. */}
               <Button
                 type="submit"
-                variant={waiting.length > 0 ? "secondary" : "primary"}
+                variant={waiting.length > 0 || handoff ? "secondary" : "primary"}
                 disabled={telling || !tell.trim()}
               >
                 {telling ? "Passing it on…" : "Tell Coach Cade"}

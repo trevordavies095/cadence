@@ -101,6 +101,8 @@ test.describe("first run", () => {
     await expect(card.getByRole("button", { name: "Fix something" })).toBeVisible();
     await expect(page.getByText("Proposed notes")).toHaveCount(0);
     await expect(page.getByLabel("The full text Coach Cade reads")).toHaveCount(0);
+    // One way to correct it: the card's Fix something, not a second form beside it.
+    await expect(page.getByRole("region", { name: "Tell Coach Cade" })).toHaveCount(0);
 
     // 4b. One volt per page: while the note waits, it is the one thing to do on Coach Cade too.
     await page.goto("/chat");
@@ -122,7 +124,14 @@ test.describe("first run", () => {
     // The draft is no longer waiting: it is now what the coach knows, and it is listed.
     await expect(page.getByRole("region", { name: "Waiting for you" })).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Changes" })).toContainText("Your first answers");
+    // And the page says what comes next: on the pinned Sunday, the check-in is open now.
+    const handoff = page.getByRole("region", { name: "You’re set" });
+    await expect(handoff).toContainText("Your first weekly check-in is open now.");
+    await expect(handoff.getByRole("link", { name: "Start check-in" })).toHaveAttribute("href", "/check-in");
+    await expect(page.getByRole("region", { name: "Tell Coach Cade" })).toBeVisible();
     await page.reload();
+    // The handoff is said once, straight after Looks right.
+    await expect(page.getByRole("region", { name: "You’re set" })).toHaveCount(0);
     await expect(page.getByRole("region", { name: "What Coach Cade knows" })).toBeVisible();
     await expect(page.getByText("Lakeshore Half").first()).toBeVisible();
 
