@@ -349,7 +349,8 @@ export default function AboutYouPage() {
               here skip Coach Cade and are saved as you write them.
             </p>
             <Textarea
-              className="font-mono text-sm leading-relaxed"
+              // 16px on a phone: smaller text makes iOS zoom in when the field is tapped.
+              className="font-mono text-base leading-relaxed sm:text-sm"
               rows={14}
               value={draft}
               onChange={(e) => {
