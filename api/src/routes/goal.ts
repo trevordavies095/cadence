@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import type { Clock } from "../clock/clock.js";
 import {
-  applyAthleteCorrection,
+  draftAthleteCorrection,
   loadCorrectionBase,
-  type AthleteCorrectionResult,
+  writeAthleteCorrection,
+  type AthleteCorrectionDraft,
 } from "../dossier/athleteCorrection.js";
 import {
   goalChangeMessage,
@@ -35,9 +36,10 @@ function withSentence(version: GoalVersion): GoalVersion & { sentence: string | 
  *
  * Once there is an About you to rewrite, replacing the goal also tells Coach Cade
  * "My goal is now …" through Fix something, in the same request: the sentence is written
- * here. The goal row is inserted first in a transaction that commits only once the
- * correction succeeds, so a failed insert never reaches About you and a failed correction
- * never leaves a goal behind: the goal and About you never disagree.
+ * here. The model drafts the rewrite first, with no transaction open. Then the goal row,
+ * the sentence, the applied note and the coach's note message are written in one
+ * transaction, so a goal change is stored whole or not at all: the goal and About you
+ * never disagree, and a failed change leaves nothing in the thread.
  */
 export function createGoalRoutes(options: GoalRouteOptions): Hono {
   const { clock, llmPort } = options;
@@ -76,31 +78,43 @@ export function createGoalRoutes(options: GoalRouteOptions): Hono {
       if (problem) return c.json({ error: problem }, 400);
     }
 
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-      const saved = await appendGoal(clock.now(), parsed.goal, "settings", client);
-      let correction: AthleteCorrectionResult | null = null;
-      if (base) {
-        correction = await applyAthleteCorrection({
-          text: goalChangeMessage(parsed.goal),
+    let rewrite: { text: string; drafted: AthleteCorrectionDraft } | null = null;
+    if (base) {
+      const text = goalChangeMessage(parsed.goal);
+      try {
+        const drafted = await draftAthleteCorrection({
+          text,
           base,
           weekSessionId: null,
           isoWeek: null,
           llmPort,
-          clock,
         });
+        rewrite = { text, drafted };
+      } catch (err) {
+        if (err instanceof LlmNotConfiguredError) {
+          return c.json(await coachNotConfiguredBody(), 400);
+        }
+        if (err instanceof LlmSchemaError) {
+          return c.json({ error: err.code, message: err.message }, 502);
+        }
+        throw err;
       }
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const saved = await appendGoal(clock.now(), parsed.goal, "settings", client);
+      const correction = rewrite
+        ? await writeAthleteCorrection(
+            { ...rewrite, weekSessionId: null, clock },
+            client,
+          )
+        : null;
       await client.query("COMMIT");
       return c.json({ ...withSentence(saved), correction }, 201);
     } catch (err) {
       await client.query("ROLLBACK");
-      if (err instanceof LlmNotConfiguredError) {
-        return c.json(await coachNotConfiguredBody(), 400);
-      }
-      if (err instanceof LlmSchemaError) {
-        return c.json({ error: err.code, message: err.message }, 502);
-      }
       throw err;
     } finally {
       client.release();
