@@ -1,17 +1,29 @@
 "use client";
 
-import { IconPlus, IconX } from "@tabler/icons-react";
-import { Suspense, useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { useSearchParams } from "next/navigation";
-import { ConversationMessage } from "@/components/ConversationMessage";
+import { IconArrowDown, IconArrowUp, IconInfoCircle, IconPlus, IconX } from "@tabler/icons-react";
+import Link from "next/link";
 import {
-  Button,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  ATHLETE_BUBBLE,
+  COACH_BUBBLE,
+  ConversationMessages,
+} from "@/components/ConversationMessage";
+import {
   ButtonLink,
-  CoachSurface,
   ErrorNote,
   Muted,
-  Textarea,
   WaitingState,
+  cx,
 } from "@/components/ui";
 import {
   ensureCurrentWeek,
@@ -27,7 +39,9 @@ import {
 } from "@/lib/api";
 import { dayLabel, runTypeLabel } from "@/lib/checkIn";
 import { ApiError, describeError, mayStillBeRunning, type UiError } from "@/lib/errors";
+import { useKeyboardViewport } from "@/lib/keyboardViewport";
 import { distanceLabel, localYmd } from "@/lib/units";
+import { isoWeekRangeLabel } from "@/lib/weekLabel";
 
 /** "Tue Oct 20 · Easy run · 6.2 mi" */
 function runLabel(w: TempoWorkoutSummary, unit: UnitPreference, timeZone: string): string {
@@ -56,39 +70,71 @@ const POLL_LIMIT = 12;
 const countRole = (messages: ThreadMessage[], role: ThreadMessage["role"]) =>
   messages.filter((m) => m.role === role).length;
 
+/**
+ * The round buttons either side of the message box: a comfortable thumb target. Their
+ * colours are the shared Button's (volt for the page's one primary action), on a circle.
+ */
+const ROUND =
+  "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-opacity disabled:cursor-not-allowed";
+const ROUND_VARIANT = {
+  primary:
+    "bg-volt text-on-volt hover:opacity-90 disabled:bg-border disabled:text-muted disabled:hover:opacity-100",
+  secondary: "border border-border bg-raised text-ink hover:border-muted disabled:opacity-50",
+};
+/** How close to the newest message still counts as reading it. */
+const NEAR_BOTTOM_PX = 48;
+/** A tap on a button can take focus from the message box on its way; this long after, it still counts as typing. */
+const TYPING_GRACE_MS = 300;
+
+const DOT = "h-2 w-2 rounded-full bg-muted motion-safe:animate-pulse";
+
 /** Your message and the coach's answer on its way, shown until the real ones arrive. */
-function PendingExchange({ sending, stored }: { sending: Sending; stored: boolean }) {
+function PendingExchange({
+  sending,
+  stored,
+  afterAthlete,
+}: {
+  sending: Sending;
+  stored: boolean;
+  /** The newest stored message is the athlete's, so a pending one sits close under it. */
+  afterAthlete: boolean;
+}) {
   return (
     <>
       {stored ? null : (
-        <article data-role="athlete" className="flex flex-col gap-1">
-          <header className="flex items-baseline gap-3">
-            <span className="font-semibold">You</span>
-            <span className="text-sm text-muted">Just now</span>
-          </header>
-          <p className="m-0 whitespace-pre-wrap">{sending.body}</p>
+        <article
+          data-role="athlete"
+          className={cx("flex flex-col items-end first:mt-0", afterAthlete ? "mt-1" : "mt-3")}
+        >
+          <span className="sr-only">You, just now</span>
+          <div data-bubble className={ATHLETE_BUBBLE}>
+            <p className="m-0 whitespace-pre-wrap">{sending.body}</p>
+          </div>
         </article>
       )}
-      <CoachSurface
-        as="article"
+      {/* Three dots, as someone typing. The words are there for a screen reader, and are
+          shown once the connection has given up and the dots alone would mislead. */}
+      <article
         data-role="coach"
-        className="flex flex-col gap-1"
+        className="mt-3 flex flex-col items-start"
         role="status"
         aria-live="polite"
       >
-        <header className="flex items-baseline gap-3">
-          <span className="font-semibold text-accent">Coach Cade</span>
-        </header>
-        <p className="m-0 text-muted">
-          {sending.phase === "recovering"
-            ? "Coach Cade may still be replying; this will update shortly."
-            : "Coach Cade is replying…"}
-        </p>
-        <div className="flex flex-col gap-2" aria-hidden>
-          <div className="h-3 w-4/5 animate-pulse rounded-tempo bg-raised" />
-          <div className="h-3 w-3/5 animate-pulse rounded-tempo bg-raised" />
+        <div data-bubble className={cx(COACH_BUBBLE, "flex flex-col gap-2")}>
+          {sending.phase === "recovering" ? (
+            <p className="m-0 text-muted">
+              Coach Cade may still be replying; this will update shortly.
+            </p>
+          ) : (
+            <span className="sr-only">Coach Cade is replying…</span>
+          )}
+          <span className="flex h-6 items-center gap-1.5" aria-hidden>
+            <span className={DOT} />
+            <span className={cx(DOT, "[animation-delay:200ms]")} />
+            <span className={cx(DOT, "[animation-delay:400ms]")} />
+          </span>
         </div>
-      </CoachSurface>
+      </article>
     </>
   );
 }
@@ -112,7 +158,20 @@ function ChatInner() {
   const [error, setError] = useState<UiError | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState<Sending | null>(null);
+  // A message arrived while the athlete was reading further up.
+  const [unseen, setUnseen] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
+  // Whether the conversation is showing its newest message. While it is, it stays on it
+  // as the room changes: the keyboard opening, the message box growing, the tab bar going.
+  const atBottom = useRef(true);
+  const lastScrollTop = useRef(0);
+  const content = useRef<HTMLDivElement>(null);
+  // Whether the athlete is typing, or was a moment ago.
+  const typing = useRef(false);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useKeyboardViewport();
 
   const load = useCallback(async () => {
     const current = await ensureCurrentWeek();
@@ -168,11 +227,60 @@ function ChatInner() {
     };
   }, [load]);
 
-  // Chat opens on the newest message, and follows it as messages arrive.
+  // Chat opens on the newest message, and follows it as messages arrive. Someone reading
+  // further up keeps their place, and is told there is something new below.
   useEffect(() => {
     const el = scroller.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    if (atBottom.current) el.scrollTop = el.scrollHeight;
+    else setUnseen(true);
   }, [messages.length, loaded, sending?.phase]);
+
+  function showNewest() {
+    const el = scroller.current;
+    if (!el) return;
+    atBottom.current = true;
+    el.scrollTop = el.scrollHeight;
+    setUnseen(false);
+  }
+
+  // The room and the messages both change size without anyone scrolling: the keyboard, a
+  // card that loads late. Either way a conversation that was on its newest message stays on it.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      if (atBottom.current) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(el);
+    if (content.current) observer.observe(content.current);
+    return () => observer.disconnect();
+  }, [loaded]);
+
+  // The message box is one line, and grows with what is typed until its max height.
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+  }, [draft, loaded, readOnly]);
+
+  useEffect(() => () => {
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+  }, []);
+
+  /** After a tap on Send or a run: if the athlete was typing, they still are, and the keyboard stays up. */
+  function keepTyping() {
+    if (typing.current) box.current?.focus();
+  }
+
+  function onBoxKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    // Enter sends where there is a real keyboard. On a phone the return key adds a line.
+    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    e.preventDefault();
+    e.currentTarget.form?.requestSubmit();
+  }
 
   // The coach has answered once it has said more than it had when the message went.
   const refresh = useCallback(async () => {
@@ -240,6 +348,9 @@ function ChatInner() {
     });
     setDraft("");
     setAttached(null);
+    setPicking(false);
+    atBottom.current = true;
+    keepTyping();
     try {
       await postMidWeekChat(week.id, body, runId);
       // The thread carries side effects of the reply, such as notes and plan changes.
@@ -282,10 +393,34 @@ function ChatInner() {
 
   return (
     // The page fills what the shell's header and tab bar leave, and only the messages scroll.
-    <main className="mx-auto flex h-[calc(100dvh-var(--shell-top)-var(--shell-bottom))] w-full max-w-3xl flex-col gap-3 px-4 pt-4 sm:px-6 sm:pt-6">
-      <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h1 className="m-0 text-2xl font-semibold leading-tight sm:text-3xl">Coach Cade</h1>
-        <ButtonLink href="/dossier" variant="quiet">
+    // On a phone the visible height follows the on-screen keyboard (useKeyboardViewport).
+    <main className="mx-auto flex h-[calc(var(--visible-height,100dvh)-var(--shell-top)-var(--shell-bottom))] w-full max-w-3xl flex-col sm:gap-3 sm:px-6 sm:pt-6">
+      {/* On a phone: a slim bar like a conversation's, the name in the middle and About you
+          behind the info button. From `sm` up: the page title, with About you as a link. */}
+      <header
+        className={cx(
+          "grid shrink-0 grid-cols-[2.75rem_1fr_2.75rem] items-center border-b border-border bg-raised px-1 pt-[env(safe-area-inset-top)]",
+          "sm:flex sm:flex-wrap sm:items-baseline sm:justify-between sm:gap-x-3 sm:gap-y-1 sm:border-b-0 sm:bg-transparent sm:px-0 sm:pt-0",
+        )}
+      >
+        <span className="sm:hidden" aria-hidden />
+        <div className="flex h-12 flex-col items-center justify-center sm:h-auto sm:items-start">
+          <h1 className="m-0 text-base font-semibold leading-tight sm:text-3xl">Coach Cade</h1>
+          {readOnly && week ? (
+            <p className="m-0 text-[0.8125rem] leading-tight text-muted sm:hidden">
+              {isoWeekRangeLabel(week.isoWeek)}
+            </p>
+          ) : null}
+        </div>
+        <Link
+          href="/dossier"
+          aria-label="What Coach Cade knows about you"
+          title="What Coach Cade knows about you"
+          className="inline-flex h-11 w-11 items-center justify-center text-muted hover:text-ink sm:hidden"
+        >
+          <IconInfoCircle size={22} stroke={1.75} aria-hidden />
+        </Link>
+        <ButtonLink href="/dossier" variant="quiet" className="max-sm:hidden">
           What Coach Cade knows about you
         </ButtonLink>
       </header>
@@ -294,33 +429,45 @@ function ChatInner() {
         ref={scroller}
         role="log"
         aria-label="Conversation"
-        className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const top = el.scrollTop;
+          // Only scrolling up leaves the newest message. Messages growing under a
+          // conversation that hasn't moved does not.
+          if (el.scrollHeight - el.clientHeight - top < NEAR_BOTTOM_PX) {
+            atBottom.current = true;
+            setUnseen(false);
+          } else if (top < lastScrollTop.current) atBottom.current = false;
+          lastScrollTop.current = top;
+        }}
+        // `relative`, so the screen-reader-only labels inside scroll with their messages.
+        className="relative min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-0 sm:py-0 sm:pr-1"
       >
-        {messages.length === 0 && !sending ? (
-          <Muted>
-            {readOnly ? "You and Coach Cade didn’t talk this week." : "Nothing yet. Say hello, or tell Coach Cade how the week is going."}
-          </Muted>
-        ) : (
-          messages.map((m) => (
-            <ConversationMessage
-              key={m.id}
-              message={m}
+        <div ref={content} className="flex flex-col">
+          {messages.length === 0 && !sending ? (
+            <Muted>
+              {readOnly ? "You and Coach Cade didn’t talk this week." : "Nothing yet. Say hello, or tell Coach Cade how the week is going."}
+            </Muted>
+          ) : (
+            <ConversationMessages
+              messages={messages}
               unit={unit}
               timeZone={week?.timezone}
               onNoteChange={() => void refresh()?.catch(() => undefined)}
             />
-          ))
-        )}
-        {sending ? (
-          <PendingExchange
-            sending={sending}
-            stored={countRole(messages, "athlete") > sending.athleteBefore}
-          />
-        ) : null}
+          )}
+          {sending ? (
+            <PendingExchange
+              sending={sending}
+              stored={countRole(messages, "athlete") > sending.athleteBefore}
+              afterAthlete={messages.at(-1)?.role === "athlete"}
+            />
+          ) : null}
+        </div>
       </div>
 
       {readOnly ? (
-        <div className="flex flex-wrap items-center gap-3 border-t border-border py-4">
+        <div className="flex flex-wrap items-center gap-3 border-t border-border px-3 py-4 sm:px-0">
           <Muted>This is a past week, so it’s here to read.</Muted>
           <ButtonLink href="/chat" variant="primary">
             Go to this week
@@ -328,10 +475,26 @@ function ChatInner() {
         </div>
       ) : (
         <form
+          data-composer
           onSubmit={(e) => void onSend(e)}
-          className="flex shrink-0 flex-col gap-2 border-t border-border bg-canvas pb-4 pt-3"
+          // A press on a button here never takes focus from the message box, so on a
+          // phone the keyboard stays up and the tab bar stays away.
+          onMouseDown={(e) => {
+            if ((e.target as HTMLElement).closest("button")) e.preventDefault();
+          }}
+          className="relative flex shrink-0 flex-col gap-2 border-t border-border bg-canvas px-3 py-2 sm:px-0 sm:pb-4 sm:pt-3"
           aria-label="Write to Coach Cade"
         >
+          {unseen ? (
+            <button
+              type="button"
+              onClick={showNewest}
+              className="absolute bottom-full left-1/2 mb-2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-raised px-3 py-1.5 text-sm font-semibold text-ink shadow-lg hover:border-muted"
+            >
+              New message
+              <IconArrowDown size={16} aria-hidden />
+            </button>
+          ) : null}
           {notice ? <Muted>{notice}</Muted> : null}
           <ErrorNote error={error} />
           {attached ? (
@@ -349,40 +512,59 @@ function ChatInner() {
               </span>
             </div>
           ) : null}
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Write to Coach Cade"
-            aria-label="Message to Coach Cade"
-            rows={3}
-            // Two lines on a phone, so the conversation keeps the room.
-            className="max-sm:h-[4.75rem]"
-            required
-          />
-          <div className="relative flex items-center gap-3">
-            <Button
-              type="submit"
-              variant={noteWaiting ? "secondary" : "primary"}
-              disabled={sending !== null}
-            >
-              {sending ? "Sending…" : "Send"}
-            </Button>
+          {/* Add a run, the message, Send: one row, with the buttons on the last line as the box grows. */}
+          <div className="relative flex items-end gap-2">
             {recentRuns.length > 0 && !attached ? (
-              <Button
+              <button
+                type="button"
+                aria-label="Add a run"
+                title="Add a run"
                 aria-expanded={picking}
                 aria-haspopup="dialog"
                 onClick={() => setPicking((v) => !v)}
+                className={cx(ROUND, ROUND_VARIANT.secondary)}
               >
-                <IconPlus size={18} aria-hidden />
-                Add a run
-              </Button>
+                <IconPlus size={20} aria-hidden />
+              </button>
             ) : null}
+            <textarea
+              ref={box}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={onBoxKeyDown}
+              onFocus={() => {
+                if (typingTimer.current) clearTimeout(typingTimer.current);
+                typing.current = true;
+              }}
+              onBlur={() => {
+                typingTimer.current = setTimeout(() => {
+                  typing.current = false;
+                }, TYPING_GRACE_MS);
+              }}
+              placeholder="Write to Coach Cade"
+              aria-label="Message to Coach Cade"
+              rows={1}
+              // 16px text, so a phone doesn't zoom in when the box is tapped. Five lines at most.
+              // Focus darkens the border; the page's outline ring would sit round it all the while you type.
+              className="max-h-[8.875rem] min-w-0 flex-1 resize-none rounded-[1.375rem] border border-border bg-raised px-4 py-2.5 text-base leading-6 text-ink placeholder:text-muted focus-visible:border-ink focus-visible:outline-none!"
+              required
+            />
+            <button
+              type="submit"
+              aria-label={sending ? "Sending…" : "Send"}
+              title="Send"
+              disabled={sending !== null}
+              className={cx(ROUND, ROUND_VARIANT[noteWaiting ? "secondary" : "primary"])}
+            >
+              <IconArrowUp size={22} stroke={2.25} aria-hidden />
+            </button>
             {picking ? (
               <div
                 role="dialog"
                 aria-label="Add a run"
                 onKeyDown={(e) => e.key === "Escape" && setPicking(false)}
-                className="absolute bottom-full left-0 z-10 mb-2 flex max-h-72 w-full max-w-md flex-col overflow-y-auto rounded-tempo border border-border bg-raised p-1 shadow-lg"
+                // Never taller than the room above the box, keyboard or not.
+                className="absolute bottom-full left-0 z-10 mb-2 flex max-h-[min(18rem,calc(var(--visible-height,100dvh)*0.45))] w-full max-w-md flex-col overflow-y-auto rounded-tempo border border-border bg-raised p-1 shadow-lg"
               >
                 {recentRuns.map((w) => (
                   <button
@@ -391,6 +573,7 @@ function ChatInner() {
                     onClick={() => {
                       setAttached(w);
                       setPicking(false);
+                      keepTyping();
                     }}
                     className="rounded-tempo px-3 py-2 text-left hover:bg-canvas"
                   >

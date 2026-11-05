@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ConversationMessage } from "@/components/ConversationMessage";
+import { ConversationMessages } from "@/components/ConversationMessage";
 import { ErrorNote, Muted, SectionTitle } from "@/components/ui";
 import { fetchThread, type ThreadMessage, type UnitPreference } from "@/lib/api";
 import { describeError, type UiError } from "@/lib/errors";
@@ -39,9 +39,11 @@ export function ReadOnlyConversation({
       <ErrorNote error={error} />
       {messages === null && !error ? <Muted>Loading…</Muted> : null}
       {messages?.length === 0 ? <Muted>You and Coach Cade didn’t talk this week.</Muted> : null}
-      {messages?.map((m) => (
-        <ConversationMessage key={m.id} message={m} unit={unit} />
-      ))}
+      {messages && messages.length > 0 ? (
+        <div className="relative flex flex-col">
+          <ConversationMessages messages={messages} unit={unit} />
+        </div>
+      ) : null}
     </section>
   );
 }
