@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { FixedClock } from "../src/clock/clock.js";
 import { createApp } from "../src/app.js";
+import { pool } from "../src/db.js";
 import { SecretProtector } from "../src/crypto/secretProtector.js";
 import {
   anthropicCoachTarget,
@@ -229,6 +230,44 @@ describe("athlete dossier correction → applied note (#18, #102)", () => {
     });
     expect(ok.status).toBe(201);
     expect(calls).toBe(1);
+  });
+
+  it("a correction whose note message cannot be written installs nothing, and the athlete's message stays", async () => {
+    await acceptAndReady();
+    const app = createApp({
+      dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+      llmPort: createStubLlmPort(),
+    });
+    const put = await app.request("/dossier", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ body: BASE_DOSSIER }),
+    });
+    const versionId = ((await json(put)) as { id: number }).id;
+
+    // The coach's note message is the correction's last write.
+    await pool.query(
+      "ALTER TABLE thread_messages ADD CONSTRAINT test_refuse_coach CHECK (role <> 'coach') NOT VALID",
+    );
+    try {
+      const res = await app.request("/dossier/corrections", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ body: CORRECTION }),
+      });
+      expect(res.status).toBe(500);
+    } finally {
+      await pool.query("ALTER TABLE thread_messages DROP CONSTRAINT test_refuse_coach");
+    }
+
+    const current = await json(await app.request("/dossier"));
+    expect((current.current as { id: number }).id).toBe(versionId);
+    const proposals = await pool.query("SELECT id FROM dossier_proposals");
+    expect(proposals.rows).toEqual([]);
+    const messages = await pool.query<{ role: string; body: string }>(
+      "SELECT role, body FROM thread_messages ORDER BY created_at, id",
+    );
+    expect(messages.rows).toEqual([{ role: "athlete", body: CORRECTION }]);
   });
 
   describe("through the live adapter, a draft refused for its shape is asked for once more", () => {
