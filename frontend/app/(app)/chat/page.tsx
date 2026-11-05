@@ -1,6 +1,6 @@
 "use client";
 
-import { IconArrowUp, IconInfoCircle, IconPlus, IconX } from "@tabler/icons-react";
+import { IconArrowDown, IconArrowUp, IconInfoCircle, IconPlus, IconX } from "@tabler/icons-react";
 import Link from "next/link";
 import {
   Suspense,
@@ -13,10 +13,13 @@ import {
   type KeyboardEvent,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { ConversationMessage } from "@/components/ConversationMessage";
+import {
+  ATHLETE_BUBBLE,
+  COACH_BUBBLE,
+  ConversationMessages,
+} from "@/components/ConversationMessage";
 import {
   ButtonLink,
-  CoachSurface,
   ErrorNote,
   Muted,
   WaitingState,
@@ -83,39 +86,55 @@ const NEAR_BOTTOM_PX = 48;
 /** A tap on a button can take focus from the message box on its way; this long after, it still counts as typing. */
 const TYPING_GRACE_MS = 300;
 
+const DOT = "h-2 w-2 rounded-full bg-muted motion-safe:animate-pulse";
+
 /** Your message and the coach's answer on its way, shown until the real ones arrive. */
-function PendingExchange({ sending, stored }: { sending: Sending; stored: boolean }) {
+function PendingExchange({
+  sending,
+  stored,
+  afterAthlete,
+}: {
+  sending: Sending;
+  stored: boolean;
+  /** The newest stored message is the athlete's, so a pending one sits close under it. */
+  afterAthlete: boolean;
+}) {
   return (
     <>
       {stored ? null : (
-        <article data-role="athlete" className="flex flex-col gap-1">
-          <header className="flex items-baseline gap-3">
-            <span className="font-semibold">You</span>
-            <span className="text-sm text-muted">Just now</span>
-          </header>
-          <p className="m-0 whitespace-pre-wrap">{sending.body}</p>
+        <article
+          data-role="athlete"
+          className={cx("flex flex-col items-end first:mt-0", afterAthlete ? "mt-1" : "mt-3")}
+        >
+          <span className="sr-only">You, just now</span>
+          <div data-bubble className={ATHLETE_BUBBLE}>
+            <p className="m-0 whitespace-pre-wrap">{sending.body}</p>
+          </div>
         </article>
       )}
-      <CoachSurface
-        as="article"
+      {/* Three dots, as someone typing. The words are there for a screen reader, and are
+          shown once the connection has given up and the dots alone would mislead. */}
+      <article
         data-role="coach"
-        className="flex flex-col gap-1"
+        className="mt-3 flex flex-col items-start"
         role="status"
         aria-live="polite"
       >
-        <header className="flex items-baseline gap-3">
-          <span className="font-semibold text-accent">Coach Cade</span>
-        </header>
-        <p className="m-0 text-muted">
-          {sending.phase === "recovering"
-            ? "Coach Cade may still be replying; this will update shortly."
-            : "Coach Cade is replying…"}
-        </p>
-        <div className="flex flex-col gap-2" aria-hidden>
-          <div className="h-3 w-4/5 animate-pulse rounded-tempo bg-raised" />
-          <div className="h-3 w-3/5 animate-pulse rounded-tempo bg-raised" />
+        <div data-bubble className={cx(COACH_BUBBLE, "flex flex-col gap-2")}>
+          {sending.phase === "recovering" ? (
+            <p className="m-0 text-muted">
+              Coach Cade may still be replying; this will update shortly.
+            </p>
+          ) : (
+            <span className="sr-only">Coach Cade is replying…</span>
+          )}
+          <span className="flex h-6 items-center gap-1.5" aria-hidden>
+            <span className={DOT} />
+            <span className={cx(DOT, "[animation-delay:200ms]")} />
+            <span className={cx(DOT, "[animation-delay:400ms]")} />
+          </span>
         </div>
-      </CoachSurface>
+      </article>
     </>
   );
 }
@@ -139,6 +158,8 @@ function ChatInner() {
   const [error, setError] = useState<UiError | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState<Sending | null>(null);
+  // A message arrived while the athlete was reading further up.
+  const [unseen, setUnseen] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
   // Whether the conversation is showing its newest message. While it is, it stays on it
@@ -206,11 +227,22 @@ function ChatInner() {
     };
   }, [load]);
 
-  // Chat opens on the newest message, and follows it as messages arrive.
+  // Chat opens on the newest message, and follows it as messages arrive. Someone reading
+  // further up keeps their place, and is told there is something new below.
   useEffect(() => {
     const el = scroller.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    if (atBottom.current) el.scrollTop = el.scrollHeight;
+    else setUnseen(true);
   }, [messages.length, loaded, sending?.phase]);
+
+  function showNewest() {
+    const el = scroller.current;
+    if (!el) return;
+    atBottom.current = true;
+    el.scrollTop = el.scrollHeight;
+    setUnseen(false);
+  }
 
   // The room and the messages both change size without anyone scrolling: the keyboard, a
   // card that loads late. Either way a conversation that was on its newest message stays on it.
@@ -375,7 +407,9 @@ function ChatInner() {
         <div className="flex h-12 flex-col items-center justify-center sm:h-auto sm:items-start">
           <h1 className="m-0 text-base font-semibold leading-tight sm:text-3xl">Coach Cade</h1>
           {readOnly && week ? (
-            <p className="m-0 text-xs text-muted sm:hidden">{isoWeekRangeLabel(week.isoWeek)}</p>
+            <p className="m-0 text-[0.8125rem] leading-tight text-muted sm:hidden">
+              {isoWeekRangeLabel(week.isoWeek)}
+            </p>
           ) : null}
         </div>
         <Link
@@ -400,32 +434,33 @@ function ChatInner() {
           const top = el.scrollTop;
           // Only scrolling up leaves the newest message. Messages growing under a
           // conversation that hasn't moved does not.
-          if (el.scrollHeight - el.clientHeight - top < NEAR_BOTTOM_PX) atBottom.current = true;
-          else if (top < lastScrollTop.current) atBottom.current = false;
+          if (el.scrollHeight - el.clientHeight - top < NEAR_BOTTOM_PX) {
+            atBottom.current = true;
+            setUnseen(false);
+          } else if (top < lastScrollTop.current) atBottom.current = false;
           lastScrollTop.current = top;
         }}
-        className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-0 sm:py-0 sm:pr-1"
+        // `relative`, so the screen-reader-only labels inside scroll with their messages.
+        className="relative min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-0 sm:py-0 sm:pr-1"
       >
-        <div ref={content} className="flex flex-col gap-4">
+        <div ref={content} className="flex flex-col">
           {messages.length === 0 && !sending ? (
             <Muted>
               {readOnly ? "You and Coach Cade didn’t talk this week." : "Nothing yet. Say hello, or tell Coach Cade how the week is going."}
             </Muted>
           ) : (
-            messages.map((m) => (
-              <ConversationMessage
-                key={m.id}
-                message={m}
-                unit={unit}
-                timeZone={week?.timezone}
-                onNoteChange={() => void refresh()?.catch(() => undefined)}
-              />
-            ))
+            <ConversationMessages
+              messages={messages}
+              unit={unit}
+              timeZone={week?.timezone}
+              onNoteChange={() => void refresh()?.catch(() => undefined)}
+            />
           )}
           {sending ? (
             <PendingExchange
               sending={sending}
               stored={countRole(messages, "athlete") > sending.athleteBefore}
+              afterAthlete={messages.at(-1)?.role === "athlete"}
             />
           ) : null}
         </div>
@@ -447,9 +482,19 @@ function ChatInner() {
           onMouseDown={(e) => {
             if ((e.target as HTMLElement).closest("button")) e.preventDefault();
           }}
-          className="flex shrink-0 flex-col gap-2 border-t border-border bg-canvas px-3 py-2 sm:px-0 sm:pb-4 sm:pt-3"
+          className="relative flex shrink-0 flex-col gap-2 border-t border-border bg-canvas px-3 py-2 sm:px-0 sm:pb-4 sm:pt-3"
           aria-label="Write to Coach Cade"
         >
+          {unseen ? (
+            <button
+              type="button"
+              onClick={showNewest}
+              className="absolute bottom-full left-1/2 mb-2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-raised px-3 py-1.5 text-sm font-semibold text-ink shadow-lg hover:border-muted"
+            >
+              New message
+              <IconArrowDown size={16} aria-hidden />
+            </button>
+          ) : null}
           {notice ? <Muted>{notice}</Muted> : null}
           <ErrorNote error={error} />
           {attached ? (

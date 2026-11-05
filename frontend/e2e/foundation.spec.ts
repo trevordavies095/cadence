@@ -133,9 +133,9 @@ test.describe("vocabulary", () => {
     await expect(page.getByText("Quick check-in for this week").last()).toBeVisible();
     const text = await page.locator("main").innerText();
     expect(bannedTermsIn(text)).toEqual([]);
-    // Messages are labelled You and Coach Cade, not the raw role names.
-    await expect(page.getByText("You", { exact: true }).first()).toBeVisible();
-    await expect(page.getByText("Coach Cade", { exact: true }).first()).toBeVisible();
+    // Messages name who sent them as You and Coach Cade, not the raw role names.
+    await expect(page.locator('article[data-role="athlete"]').first()).toContainText("You, ");
+    await expect(page.locator('article[data-role="coach"]').first()).toContainText("Coach Cade, ");
   });
 
   test("weeks read as date ranges, never as an ISO week label", async ({

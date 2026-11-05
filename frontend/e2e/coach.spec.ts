@@ -67,14 +67,125 @@ test.describe("Coach", () => {
     await expect(page.getByRole("heading", { name: "Coach Cade", level: 1 })).toBeVisible();
   });
 
-  test("times read as words, and messages are labelled You and Coach Cade", async ({ page }) => {
+  test("it reads like texting: your messages on the right, Coach Cade's on the left, no names", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1100, height: 700 });
     await page.goto("/chat");
     const log = page.getByRole("log", { name: "Conversation" });
-    await expect(log.getByText("You", { exact: true }).first()).toBeVisible();
-    await expect(log.getByText("Coach Cade", { exact: true }).first()).toBeVisible();
-    const stamp = (await log.locator("time").last().innerText()).trim();
-    // "6:40 pm", "Yesterday 6:40 pm", "Tue 6:40 pm" or "Oct 12, 6:40 pm"; never a raw date and seconds.
-    expect(stamp).toMatch(/^(Yesterday |[A-Z][a-z]{2} |[A-Z][a-z]{2} \d{1,2}, )?\d{1,2}:\d{2} (am|pm)$/);
+    const mine = log.locator('article[data-role="athlete"]').last();
+    const reply = log.locator('article[data-role="coach"]').last();
+    await expect(reply).toBeVisible();
+
+    const column = (await log.boundingBox())!;
+    const myBubble = (await mine.locator("[data-bubble]").boundingBox())!;
+    const replyBubble = (await reply.locator("[data-bubble]").boundingBox())!;
+    const middle = column.x + column.width / 2;
+    // A short message hugs its own side and leaves the other half empty.
+    expect(myBubble.x).toBeGreaterThan(middle);
+    expect(myBubble.width).toBeLessThanOrEqual(column.width * 0.8 + 1);
+    expect(replyBubble.x).toBeLessThan(column.x + 8);
+
+    // No name is shown on a message; the side says who is speaking. A screen reader still hears it.
+    await expect(log.getByText("You", { exact: true })).toHaveCount(0);
+    await expect(log.getByText("Coach Cade", { exact: true })).toHaveCount(0);
+    await expect(mine).toContainText("You, ");
+    await expect(reply).toContainText("Coach Cade, ");
+  });
+
+  test("the time shows where the conversation paused, in words, not on every message", async ({ page }) => {
+    const week = await page.request.post(`${API_URL}/weeks/current`).then((r) => r.json());
+    const message = (id: string, role: string, body: string, createdAt: string) => ({
+      id,
+      role,
+      kind: "chat",
+      body,
+      createdAt,
+      weekSessionId: week.id,
+      safetyCallouts: [],
+    });
+    await page.route(/\/api\/thread\?/, (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          artifacts: [],
+          messages: [
+            message("a", "athlete", "First thing in the morning.", "2026-10-20T12:00:00.000Z"),
+            message("b", "coach", "Morning.", "2026-10-20T12:01:00.000Z"),
+            message("c", "athlete", "Back after lunch.", "2026-10-20T17:30:00.000Z"),
+            message("d", "athlete", "One more thing.", "2026-10-20T17:31:00.000Z"),
+          ],
+        }),
+      }),
+    );
+    await page.goto("/chat");
+    const log = page.getByRole("log", { name: "Conversation" });
+    await expect(log.getByRole("article")).toHaveCount(4);
+
+    // The first message and the first after the gap say when; the two that follow closely do not.
+    const shown = log.locator("time[data-shown]");
+    await expect(shown).toHaveCount(2);
+    // In the week's time zone (New York), whatever clock the reader's browser keeps.
+    await expect(shown).toHaveText(["Tue Oct 20, 8:00 am", "Tue Oct 20, 1:30 pm"]);
+    // Every message keeps its time for a screen reader.
+    await expect(log.locator("time")).toHaveCount(4);
+
+    // Two messages from the same side sit closer together than a change of side.
+    const tops = await log.getByRole("article").evaluateAll((els) =>
+      els.map((el) => {
+        const bubble = el.querySelector("[data-bubble]")!.getBoundingClientRect();
+        return { top: bubble.top, bottom: bubble.bottom };
+      }),
+    );
+    const changeOfSide = tops[1].top - tops[0].bottom;
+    const sameSide = tops[3].top - tops[2].bottom;
+    expect(sameSide).toBeLessThan(changeOfSide);
+  });
+
+  test("Enter sends and Shift+Enter adds a line, where there is a real keyboard", async ({ page }) => {
+    await page.goto("/chat");
+    const box = page.getByLabel("Message to Coach Cade");
+    await box.fill("Line one");
+    await box.press("Shift+Enter");
+    await box.pressSequentially("line two, sent with Enter.");
+    await expect(box).toHaveValue("Line one\nline two, sent with Enter.");
+    await box.press("Enter");
+
+    const log = page.getByRole("log", { name: "Conversation" });
+    await expect(log.getByText("line two, sent with Enter.")).toBeVisible();
+    await expect(box).toHaveValue("");
+  });
+
+  test("a reply that arrives while you read further up keeps your place and says so", async ({
+    page,
+    request,
+  }) => {
+    await page.setViewportSize({ width: 1100, height: 700 });
+    await page.goto("/chat");
+    const log = page.getByRole("log", { name: "Conversation" });
+    await expect(log.getByRole("article").last()).toBeInViewport();
+    const pill = page.getByRole("button", { name: "New message" });
+    await expect(pill).toHaveCount(0);
+
+    await log.evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    const week = await currentWeek(request);
+    const sent = await request.post(`${API_URL}/weeks/${week.id}/chat`, {
+      data: { body: "Sent while reading back." },
+    });
+    expect(sent.ok()).toBeTruthy();
+    await page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    await expect(pill).toBeVisible();
+    expect(await log.evaluate((el) => el.scrollTop)).toBe(0);
+
+    await pill.click();
+    await expect(log.getByRole("article").last()).toBeInViewport();
+    await expect(pill).toHaveCount(0);
   });
 
   test("Add a run lists recent runs; the chosen one is a chip that can be removed", async ({ page }) => {
