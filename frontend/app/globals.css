@@ -74,6 +74,29 @@
   }
 }
 
+/* Coach Cade on a phone is a conversation, so the conversation gets the screen (#68).
+   The page has its own slim header in place of the top bar, so nothing is reserved above
+   it. While the message box has focus the tab bar steps aside, leaving only the
+   home-indicator inset, and not even that once the on-screen keyboard covers it
+   (data-keyboard comes from useKeyboardViewport). */
+@media (width < 40rem) {
+  [data-shell-page="chat"] {
+    --shell-top: 0px;
+  }
+
+  [data-shell-page="chat"]:has([data-composer] textarea:focus) {
+    --shell-bottom: env(safe-area-inset-bottom);
+  }
+
+  :root[data-keyboard="open"] [data-shell-page="chat"]:has([data-composer] textarea:focus) {
+    --shell-bottom: 0px;
+  }
+
+  [data-shell-page="chat"]:has([data-composer] textarea:focus) nav[aria-label="Main"] {
+    display: none;
+  }
+}
+
 @theme inline {
   --color-canvas: var(--canvas);
   --color-raised: var(--raised);

@@ -53,12 +53,31 @@ const linkActive = "border-accent text-ink";
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const settingsActive = pathname === "/settings";
+  // On a phone the Coach Cade page brings its own slim header, so the top bar steps
+  // aside there and only the tab bar is left of the shell (see globals.css).
+  const chat = pathname === "/chat";
 
   return (
-    <div className="flex min-h-dvh flex-col pb-(--shell-bottom)">
-      <header className="sticky top-0 z-10 border-b border-border bg-raised pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto flex h-14 max-w-3xl items-center gap-6 px-4 sm:h-16 sm:px-6">
-          <Link href="/" className="text-lg font-semibold text-ink no-underline">
+    <div
+      className="flex min-h-dvh flex-col pb-(--shell-bottom)"
+      data-shell-page={chat ? "chat" : undefined}
+    >
+      <header
+        className={cx(
+          "sticky top-0 z-10 border-b border-border bg-raised pt-[env(safe-area-inset-top)]",
+          chat && "max-sm:border-b-0 max-sm:pt-0",
+        )}
+      >
+        <div
+          className={cx(
+            "mx-auto flex h-14 max-w-3xl items-center gap-6 px-4 sm:h-16 sm:px-6",
+            chat && "max-sm:h-0",
+          )}
+        >
+          <Link
+            href="/"
+            className={cx("text-lg font-semibold text-ink no-underline", chat && "max-sm:hidden")}
+          >
             Cadence
           </Link>
           <nav
@@ -92,6 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             className={cx(
               "ml-auto inline-flex h-11 w-11 items-center justify-center border-b-2",
               settingsActive ? linkActive : linkIdle,
+              chat && "max-sm:hidden",
             )}
           >
             <IconSettings size={22} stroke={1.75} aria-hidden />
