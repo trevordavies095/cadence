@@ -150,7 +150,11 @@ const THIS_DAYS = [
 /** Serve the two plans, keeping the real unit preference and local date from the API. */
 async function servePlans(
   page: import("@playwright/test").Page,
-  overrides?: { unitPreference?: string; todayYmd?: string },
+  overrides?: {
+    unitPreference?: string;
+    todayYmd?: string;
+    checkInStatus?: "needed" | "finished" | "skipped";
+  },
 ) {
   await page.route(/\/api\/weeks\/[^/]+\/prescribed\/next/, async (route) => {
     const real = await (await route.fetch()).json();
@@ -255,13 +259,7 @@ test.describe("the plan page", () => {
   test("asking for a redo needs a confirmation that says what happens", async ({
     page,
   }) => {
-    await servePlans(page);
-    await page.route(/\/api\/weeks\/[^/]+\/recap/, (route) =>
-      route.fulfill({
-        contentType: "application/json",
-        body: JSON.stringify({ status: "report", checkInStatus: "finished" }),
-      }),
-    );
+    await servePlans(page, { checkInStatus: "finished" });
     const requests: string[] = [];
     page.on("request", (r) => {
       if (r.url().includes("/api/week/reply")) requests.push(r.url());

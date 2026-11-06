@@ -646,6 +646,7 @@ export async function fetchNextWeekPrescribed(
   weekSessionId: string,
 ): Promise<{
   weekSession: WeekSession;
+  checkInStatus: CheckInStatus;
   prescribed: PrescribedWeekRecord | null;
   unitPreference: UnitPreference;
   todayYmd: string;

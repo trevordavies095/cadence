@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FixedClock } from "../src/clock/clock.js";
 import { createApp } from "../src/app.js";
 import { createStubLlmPort, type PrescribedWeek } from "../src/llm/index.js";
@@ -27,6 +27,29 @@ describe("prescribed week persist + thread artifact (#30)", () => {
     await resetAppTables();
     delete process.env.TEMPO_EXPORT_PATH;
   });
+
+  it.each(["needed", "skipped", "finished"] as const)(
+    "returns the current check-in status (%s) without building a recap",
+    async (status) => {
+      await acceptAndReady();
+      const tempoPort = createExportTempoPort({ exportPath: FIXTURE_ZIP });
+      const workouts = vi.spyOn(tempoPort, "listWorkouts");
+      const app = createApp({
+        dataProtectionKey: TEST_DATA_PROTECTION_KEY,
+        clock: new FixedClock(new Date("2026-10-21T15:00:00.000Z")),
+        tempoPort,
+        llmPort: createStubLlmPort(),
+      });
+      const week = await json(await app.request("/weeks/current", { method: "POST" }));
+      if (status !== "needed") {
+        await unlockPlanCheckIn(app, week.id as string, status === "finished" ? "finish" : "skip");
+      }
+      const res = await app.request(`/weeks/${week.id}/prescribed/next`);
+      expect(res.status).toBe(200);
+      expect(await json(res)).toMatchObject({ checkInStatus: status, prescribed: null });
+      expect(workouts).not.toHaveBeenCalled();
+    },
+  );
 
   it("stub plan → persisted → thread artifact present", async () => {
     await acceptAndReady();
