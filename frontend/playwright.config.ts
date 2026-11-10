@@ -14,6 +14,15 @@ const databaseUrl =
 
 export const API_URL = `http://localhost:${API_PORT}`;
 
+// Sign in with Tempo runs on its own pair, with sign-in on, a fake Tempo and its own database.
+const AUTH_API_PORT = 5103;
+const AUTH_WEB_PORT = 3102;
+const FAKE_TEMPO_PORT = 5199;
+const authDatabaseUrl =
+  process.env.E2E_AUTH_DATABASE_URL ??
+  "postgresql://postgres:postgres@localhost:5433/ai_coach_auth_e2e";
+const FAKE_TEMPO_URL = `http://localhost:${FAKE_TEMPO_PORT}`;
+
 export default defineConfig({
   testDir: "./e2e",
   testMatch: /.*\.spec\.ts/,
@@ -46,7 +55,7 @@ export default defineConfig({
     },
     {
       name: "chromium",
-      testIgnore: /(welcome|first-run|phone)\.spec\.ts/,
+      testIgnore: /(welcome|first-run|phone|sign-in)\.spec\.ts/,
       dependencies: ["first-run"],
       use: { ...devices["Desktop Chrome"] },
     },
@@ -57,6 +66,12 @@ export default defineConfig({
       testMatch: /phone\.spec\.ts/,
       dependencies: ["first-run"],
       use: { ...devices["iPhone SE"], browserName: "chromium" },
+    },
+    // Its own instance with sign-in on: depends on nothing else.
+    {
+      name: "sign-in",
+      testMatch: /sign-in\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${AUTH_WEB_PORT}` },
     },
   ],
   webServer: [
@@ -93,6 +108,45 @@ export default defineConfig({
       env: {
         API_SERVICE_URL: API_URL,
         NEXT_DIST_DIR: ".next-e2e",
+      },
+    },
+    {
+      command: "node e2e/fake-tempo.mjs",
+      cwd: __dirname,
+      url: `${FAKE_TEMPO_URL}/health`,
+      reuseExistingServer: false,
+      timeout: 30_000,
+      env: { FAKE_TEMPO_PORT: String(FAKE_TEMPO_PORT) },
+    },
+    {
+      command: "node ../frontend/e2e/reset-db.mjs && npx tsx src/index.ts",
+      cwd: path.join(repoRoot, "api"),
+      url: `http://localhost:${AUTH_API_PORT}/health`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        PORT: String(AUTH_API_PORT),
+        DATABASE_URL: authDatabaseUrl,
+        E2E_DATABASE_URL: authDatabaseUrl,
+        DATA_PROTECTION_SECRET_KEY: "e2e-only-not-a-secret",
+        CORS_ORIGIN: `http://localhost:${AUTH_WEB_PORT}`,
+        LLM_PROVIDER: "stub",
+        TEMPO_EXPORT_PATH: path.join(repoRoot, "api/tests/fixtures/tempo-export-mini.zip"),
+        DEV_CLOCK_NOW: process.env.E2E_CLOCK_NOW ?? "2026-10-25T16:00:00.000Z",
+        ATHLETE_TIMEZONE: "America/New_York",
+        CADENCE_AUTH_TEMPO_URL: FAKE_TEMPO_URL,
+      },
+    },
+    {
+      command: `rm -rf .next-e2e-auth && npx next dev -p ${AUTH_WEB_PORT}`,
+      cwd: __dirname,
+      url: `http://localhost:${AUTH_WEB_PORT}/health`,
+      reuseExistingServer: false,
+      timeout: 180_000,
+      env: {
+        API_SERVICE_URL: `http://localhost:${AUTH_API_PORT}`,
+        NEXT_DIST_DIR: ".next-e2e-auth",
+        CADENCE_AUTH_TEMPO_URL: FAKE_TEMPO_URL,
       },
     },
   ],

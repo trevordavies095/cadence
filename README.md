@@ -8,7 +8,7 @@ Cadence is a self-hosted running coach. **Coach Cade** reads your training from 
 - A living "About you" profile that Coach Cade updates only with your approval
 - Mid-week chat, with a Tempo workout attached if you like
 - Works offline with a stub model and a Tempo export zip, so you can try it without spending anything
-- No login: run it on your home network or behind a VPN
+- No login by default; set one variable to sign in with your Tempo account when you put it on the internet
 
 ## Try the demo
 
@@ -49,6 +49,8 @@ Open http://localhost:3001, accept the disclaimer, and follow the first-run onbo
 Ports are offset from Tempo's defaults (3000 / 5001 / 5432) so both can run side by side. Stop with `docker compose down`.
 
 To run it on a home server, use `docker-compose.homelab.yml` with `.env.homelab.example` (copy it to `.env.homelab`): `docker compose -f docker-compose.homelab.yml --env-file .env.homelab up -d --build`. It keeps Postgres and the API on the internal network and exposes only the web page.
+
+To reach it from outside your home, turn on **Sign in with Tempo**: set `CADENCE_AUTH_TEMPO_URL` to your Tempo API address in `.env.homelab` and serve Cadence over HTTPS behind a reverse proxy. Every page then asks for the athlete's Tempo username and password, which Tempo checks; Cadence stores neither. The session lasts 30 days and renews while it is in use, ten wrong passwords in 15 minutes close sign-in for 15 minutes, and the API refuses to start on the example `DATA_PROTECTION_SECRET_KEY`. The cookie is HTTPS-only, so plain `http://` on another machine cannot sign in (`http://localhost` can). Why it works this way: [ADR 0008](docs/adr/0008-sign-in-with-tempo.md).
 
 ## What it costs
 
@@ -221,7 +223,8 @@ Set `E2E_DATABASE_URL` to use a different server and `E2E_CLOCK_NOW` to pin anot
 | API port | `PORT` | Default `5001` (Compose maps host `5002`) |
 | CORS | `CORS_ORIGIN` | Browser origin allowed by the API (default `http://localhost:3001`) |
 | Frontend → API | `API_SERVICE_URL` | Used by Next rewrites inside Compose (`http://api:5001`) |
-| Secret wrapping key | `DATA_PROTECTION_SECRET_KEY` | HKDF → AES-256-GCM for the Tempo, Anthropic and model server keys at rest |
+| Secret wrapping key | `DATA_PROTECTION_SECRET_KEY` | HKDF → AES-256-GCM for the Tempo, Anthropic and model server keys at rest, and the key the sign-in cookie is signed with |
+| Sign in with Tempo | `CADENCE_AUTH_TEMPO_URL` | Tempo API address (for example `http://tempo-api:5001`). Set on both the API and the web service, it turns on sign-in with the athlete's Tempo username and password, and fixes the Tempo connection in Settings to this address. Unset (default), Cadence has no login. Needs HTTPS and a real `DATA_PROTECTION_SECRET_KEY` ([ADR 0008](docs/adr/0008-sign-in-with-tempo.md)) |
 | Dev clock | `DEV_CLOCK_NOW` | ISO instant; fixes “now” when not `NODE_ENV=production`, or in production when `CADENCE_DEMO=1`. Read once at startup |
 | Demo mode | `CADENCE_DEMO` | `1` for the demo instance only: honours `DEV_CLOCK_NOW` in the production image, hides export runs after that clock, and labels Settings as sample data. Set by `scripts/demo.sh` |
 | Host ports | `POSTGRES_HOST_PORT`, `API_HOST_PORT`, `FRONTEND_HOST_PORT` | Compose host ports, default `5433` / `5002` / `3001` |

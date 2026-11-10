@@ -49,6 +49,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | Tempo | "your running log", "your watch" (for data that came from the watch) | The athlete's running log and the source of run data. Tempo may be named where the athlete connected it (Settings). |
 | Anthropic, LLM, stub | (never shown outside Settings) | The model provider. |
 | settings (page) | **Settings**, behind the gear icon | Connections, appearance, privacy. Never "Setup". |
+| auth, session, Sign in with Tempo | **Sign in**, **Sign out**, "Use your Tempo username and password." | Off unless `CADENCE_AUTH_TEMPO_URL` is set. The athlete's Tempo password, checked by Tempo, opens a 30-day Cadence session; Cadence keeps neither the password nor Tempo's token. Never "log in", "account" or "auth" on screen (ADR 0008). |
 
 ## Never on screen
 

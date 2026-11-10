@@ -1,6 +1,7 @@
 "use client";
 
 import { describeError, type UiError } from "@/lib/errors";
+import { signOut } from "@/lib/session";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   Button,
@@ -32,6 +33,7 @@ import {
   saveGoal,
   type AnthropicConnection,
   type SettingsSources,
+  type SettingsSummary,
   type StoredGoal,
   type TempoConnection,
   type ThreadNote,
@@ -170,6 +172,7 @@ export default function SettingsPage() {
   const [tempo, setTempo] = useState<TempoConnection | null>(null);
   const [anthropic, setAnthropic] = useState<AnthropicConnection | null>(null);
   const [sources, setSources] = useState<SettingsSources | null>(null);
+  const [auth, setAuth] = useState<SettingsSummary["auth"]>({ enabled: false, tempoUrl: null });
   const [goal, setGoal] = useState<StoredGoal | null>(null);
   const [goalError, setGoalError] = useState<UiError | null>(null);
   const [onboarded, setOnboarded] = useState(false);
@@ -209,7 +212,13 @@ export default function SettingsPage() {
           demo: settings.demo,
         });
         setAppearance(readStoredAppearance());
-        if (settings.tempo.baseUrl) setTempoBaseUrl(settings.tempo.baseUrl);
+        // Signing in with Tempo fixes the address: the runs come from the Tempo you sign in with.
+        if (settings.auth?.enabled && settings.auth.tempoUrl) {
+          setAuth(settings.auth);
+          setTempoBaseUrl(settings.auth.tempoUrl);
+        } else if (settings.tempo.baseUrl) {
+          setTempoBaseUrl(settings.tempo.baseUrl);
+        }
         setGate("open");
       } catch (err) {
         if (!cancelled) {
@@ -338,11 +347,15 @@ export default function SettingsPage() {
                 : "Not configured — base URL and API key required."}
             </Muted>
             <form onSubmit={(e) => void onSaveTempo(e)} className="flex flex-col gap-3">
-              <Field label="Base URL">
+              <Field
+                label="Base URL"
+                hint={auth.enabled ? "The Tempo you sign in with. Whoever set up Cadence chose it." : undefined}
+              >
                 <Input
                   value={tempoBaseUrl}
                   onChange={(e) => setTempoBaseUrl(e.target.value)}
                   placeholder="http://localhost:5001"
+                  readOnly={auth.enabled}
                   required
                 />
               </Field>
@@ -485,6 +498,16 @@ export default function SettingsPage() {
           About you
         </ButtonLink>
       </Muted>
+
+      {auth.enabled ? (
+        <section className="flex flex-col gap-3" aria-label="Sign out">
+          <SectionTitle>Sign out</SectionTitle>
+          <Muted>Sign in again with your Tempo username and password.</Muted>
+          <div>
+            <Button onClick={() => void signOut()}>Sign out</Button>
+          </div>
+        </section>
+      ) : null}
     </Page>
   );
 }

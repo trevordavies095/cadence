@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { resolveAuthConfig, type AuthConfig } from "./auth/config.js";
+import { createAuth, type AuthOptions } from "./auth/routes.js";
 import { resolveAthleteTimezone } from "./clock/athleteTimezone.js";
 import { createDefaultClock, type Clock } from "./clock/clock.js";
 import {
@@ -77,6 +79,11 @@ export type CreateAppOptions = {
    * wired: injected ports count as saved connections.
    */
   sources?: RuntimeSources;
+  /**
+   * Sign in with Tempo (ADR 0008). Defaults from CADENCE_AUTH_TEMPO_URL; null turns it off.
+   * Tests pass the config and fakes here.
+   */
+  auth?: (Omit<AuthOptions, "dataProtectionKey"> & { config: AuthConfig }) | null;
 };
 
 export function createApp(options?: CreateAppOptions): Hono {
@@ -133,6 +140,16 @@ export function createApp(options?: CreateAppOptions): Hono {
     llmCallRecorder,
   });
 
+  const authConfig =
+    options?.auth !== undefined ? (options.auth?.config ?? null) : resolveAuthConfig();
+  const auth = authConfig
+    ? createAuth({
+        ...(options?.auth ?? {}),
+        config: authConfig,
+        dataProtectionKey: options?.dataProtectionKey,
+      })
+    : null;
+
   const app = new Hono();
 
   app.use(
@@ -141,6 +158,12 @@ export function createApp(options?: CreateAppOptions): Hono {
       origin: corsOrigin,
     }),
   );
+
+  // The gate sits in front of every route; only health checks and sign-in are open.
+  if (auth) {
+    app.use("*", auth.middleware);
+    app.route("/", auth.routes);
+  }
 
   app.route("/", healthRoutes);
   app.route("/", disclaimerRoutes);
@@ -152,6 +175,7 @@ export function createApp(options?: CreateAppOptions): Hono {
       sources,
       anthropicFetch: options?.llmFetch,
       selfHostedTestTimeoutMs: options?.selfHostedTestTimeoutMs,
+      authTempoUrl: authConfig?.tempoUrl ?? null,
     }),
   );
   app.route("/", createTempoRoutes({ tempoPort }));

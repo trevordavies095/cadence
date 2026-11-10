@@ -1,4 +1,5 @@
 import { ApiError } from "./errors";
+import { goToSignIn, isSignedOut } from "./session";
 
 export type TempoConnection = {
   configured: boolean;
@@ -24,6 +25,8 @@ export type SettingsSummary = {
   tempo: TempoConnection & { source: SettingsSources["tempo"] };
   anthropic: AnthropicConnection & { source: SettingsSources["model"] };
   demo: boolean;
+  /** Sign in with Tempo: on when the instance has CADENCE_AUTH_TEMPO_URL set. */
+  auth: { enabled: boolean; tempoUrl: string | null };
 };
 
 /** Compact coaching workout summary stored on a thread message (no GPS). */
@@ -447,6 +450,7 @@ function parseCheckInRequired(text: string): CheckInRequiredPayload | null {
 async function readJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const text = await res.text();
+    if (isSignedOut(res.status, text)) return goToSignIn();
     const checkIn = parseCheckInRequired(text);
     if (checkIn) throw new CheckInRequiredError(checkIn);
     throw new ApiError(res.status, text);
