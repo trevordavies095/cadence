@@ -54,6 +54,8 @@ services:
       SELF_HOSTED_IDLE_TIMEOUT_MS: "${SELF_HOSTED_IDLE_TIMEOUT_MS:-}"
       DATABASE_CONNECT_TIMEOUT_MS: "${DATABASE_CONNECT_TIMEOUT_MS:-}"
       DATABASE_IDLE_TIMEOUT_MS: "${DATABASE_IDLE_TIMEOUT_MS:-}"
+      # Sign in with Tempo (ADR 0008). Unset = no login. Also set on web below.
+      CADENCE_AUTH_TEMPO_URL: "${CADENCE_AUTH_TEMPO_URL:-}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,6 +77,9 @@ services:
         # The /api proxy is fixed when the image is built; the service above is called "api".
         API_SERVICE_URL: "http://api:5001"
     image: "${CADENCE_REGISTRY:-ghcr.io/trevordavies095}/cadence-web:${CADENCE_TAG:-latest}"
+    environment:
+      # Sends a signed-out page load to /login. Must match the API's.
+      CADENCE_AUTH_TEMPO_URL: "${CADENCE_AUTH_TEMPO_URL:-}"
     ports:
       # WEB_BIND=127.0.0.1 keeps it off the network when a reverse proxy runs on the same host.
       - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-3001}:3000"
