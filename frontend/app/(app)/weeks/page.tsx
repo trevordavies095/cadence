@@ -80,43 +80,46 @@ export default function HistoryPage() {
       {weeks.length === 0 ? (
         <Muted>No weeks yet.</Muted>
       ) : (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-line-strong text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted">
-              <th scope="col" className="py-2 pr-4 font-semibold">Week</th>
-              <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
-                {unit === "metric" ? "Km" : "Miles"}
-              </th>
-              <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
-                Runs
-              </th>
-              <th scope="col" className="py-2 font-semibold">From Coach Cade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {weeks.map((w) => (
-              <tr key={w.id} className="border-b border-border align-top">
-                <th scope="row" className="py-3 pr-4 font-semibold whitespace-nowrap">
-                  <Link href={`/review?week=${w.id}`} className="text-ink underline-offset-4 hover:underline">
-                    {w.localRange}
-                  </Link>
-                  {w.id === currentId ? (
-                    <span className="ml-2 rounded-md border border-border px-2 py-0.5 text-sm font-semibold">
-                      This week
-                    </span>
-                  ) : null}
+        // On a narrow phone the table scrolls on its own; the page never does.
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-line-strong text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted">
+                <th scope="col" className="py-2 pr-4 font-semibold">Week</th>
+                <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
+                  {unit === "metric" ? "Km" : "Miles"}
                 </th>
-                <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">
-                  {w.actualDistanceM == null
-                    ? "–"
-                    : distanceLabel(w.actualDistanceM, unit).replace(/ (mi|km)$/, "")}
-                </td>
-                <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">{w.runCount ?? "–"}</td>
-                <td className="py-3 text-muted">{w.coachHeadline ?? ""}</td>
+                <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
+                  Runs
+                </th>
+                <th scope="col" className="py-2 font-semibold">From Coach Cade</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {weeks.map((w) => (
+                <tr key={w.id} className="border-b border-border align-top">
+                  <th scope="row" className="py-3 pr-4 font-semibold whitespace-nowrap">
+                    <Link href={`/review?week=${w.id}`} className="text-ink underline-offset-4 hover:underline">
+                      {w.localRange}
+                    </Link>
+                    {w.id === currentId ? (
+                      <span className="ml-2 rounded-md border border-border px-2 py-0.5 text-sm font-semibold">
+                        This week
+                      </span>
+                    ) : null}
+                  </th>
+                  <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">
+                    {w.actualDistanceM == null
+                      ? "–"
+                      : distanceLabel(w.actualDistanceM, unit).replace(/ (mi|km)$/, "")}
+                  </td>
+                  <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">{w.runCount ?? "–"}</td>
+                  <td className="py-3 text-muted">{w.coachHeadline ?? ""}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Page>
   );

@@ -67,6 +67,32 @@ describe("the per-day outcome helper", () => {
     expect(outcomes.every((d) => !d.isToday)).toBe(true);
   });
 
+  it("an other day plans no running, even with minutes: never missed, nothing in the totals", () => {
+    // "Other, 20 min, light hip strength, no running." files as a run of 0 m
+    // and 20 min; Tempo only logs runs, so it can never show that it was done.
+    const other = {
+      dayType: "other" as const,
+      run: { type: "other" as const, distanceM: 0, durationS: 1200 },
+      notes: "light hip strength, no running.",
+      line: "Other, 20 min, light hip strength, no running.",
+      parsed: true,
+    };
+    const outcomes = planDayOutcomes({
+      dates: ["2026-11-16", "2026-11-17", "2026-11-18", "2026-11-19"],
+      days: [
+        { date: "2026-11-16", ...other },
+        { date: "2026-11-17", ...other },
+        { date: "2026-11-18", ...other },
+        { date: "2026-11-19", ...other },
+      ],
+      actualDistanceByDate: new Map([["2026-11-17", 3000]]),
+      todayYmd: "2026-11-18",
+    });
+    expect(outcomes.map((d) => d.state)).toEqual(["rest", "done", "today", "rest"]);
+    expect(outcomes.every((d) => d.plannedDistanceM === null && d.plannedDurationS === null)).toBe(true);
+    expect(outcomes[0]!.planned).toMatchObject({ dayType: "other" });
+  });
+
   it("with the running log unreadable, a planned run is unknown and no distance is claimed", () => {
     const outcomes = planDayOutcomes({
       dates: DATES,

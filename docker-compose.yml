@@ -44,6 +44,8 @@ services:
       SELF_HOSTED_IDLE_TIMEOUT_MS: "${SELF_HOSTED_IDLE_TIMEOUT_MS:-}"
       # Optional: mount a Tempo export and set TEMPO_EXPORT_PATH to the in-container path
       TEMPO_EXPORT_PATH: "${TEMPO_EXPORT_PATH:-}"
+      # Sign in with Tempo (ADR 0008). Unset = no login. Also set on frontend below.
+      CADENCE_AUTH_TEMPO_URL: "${CADENCE_AUTH_TEMPO_URL:-}"
     ports:
       - "${API_HOST_PORT:-5002}:5001"
     depends_on:
@@ -64,6 +66,7 @@ services:
     container_name: cadence-frontend
     environment:
       API_SERVICE_URL: "http://api:5001"
+      CADENCE_AUTH_TEMPO_URL: "${CADENCE_AUTH_TEMPO_URL:-}"
     ports:
       - "${FRONTEND_HOST_PORT:-3001}:3000"
     depends_on:

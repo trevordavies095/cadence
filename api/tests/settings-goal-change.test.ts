@@ -21,7 +21,10 @@ const ABOUT_YOU = `# Athlete dossier
 Race: Lakeshore Marathon on Sun Nov 15 2026, target sub 3:30.
 `;
 
-function countingPort(failWith?: Error): {
+function countingPort(
+  failWith?: Error,
+  duringCall?: () => Promise<void>,
+): {
   port: LlmPort;
   calls: () => number;
   texts: string[];
@@ -37,11 +40,23 @@ function countingPort(failWith?: Error): {
     async generateDossierCorrection(input, ctx) {
       calls += 1;
       texts.push(input.athleteMessage);
+      await duringCall?.();
       if (failWith) throw failWith;
       return stub.generateDossierCorrection(input, ctx);
     },
   };
   return { port, calls: () => calls, texts };
+}
+
+/** Connections to this database sitting in an open transaction. */
+async function openTransactions(): Promise<number> {
+  const result = await pool.query<{ n: number }>(
+    `
+    SELECT count(*)::int AS n FROM pg_stat_activity
+    WHERE datname = current_database() AND state LIKE 'idle in transaction%'
+    `,
+  );
+  return result.rows[0]!.n;
 }
 
 function makeApp(llmPort: LlmPort) {
@@ -77,6 +92,17 @@ async function counts() {
     "SELECT kind, status FROM dossier_proposals ORDER BY id",
   );
   return { goals: goals.rows, proposals: proposals.rows };
+}
+
+/** What a goal change leaves outside the goal row: About you versions and thread messages. */
+async function trace() {
+  const versions = await pool.query<{ n: number }>(
+    "SELECT count(*)::int AS n FROM dossier_versions",
+  );
+  const messages = await pool.query<{ role: string; body: string }>(
+    "SELECT role, body FROM thread_messages ORDER BY created_at, id",
+  );
+  return { versions: versions.rows[0]!.n, messages: messages.rows };
 }
 
 describe("changing the goal from Settings", () => {
@@ -166,20 +192,56 @@ describe("changing the goal from Settings", () => {
     expect(await counts()).toEqual({ goals: [], proposals: [] });
   });
 
-  it("stores no goal when the correction fails, so goal and About you never disagree", async () => {
-    const { port } = countingPort(new LlmSchemaError("bad draft"));
+  it("holds no transaction open while the model drafts the correction", async () => {
+    const seen: number[] = [];
+    const { port } = countingPort(undefined, async () => {
+      seen.push(await openTransactions());
+    });
     const app = makeApp(port);
     await installAboutYou(app);
 
     const res = await putGoal(app, { kind: "fitness" });
-    expect(res.status).toBe(502);
-    expect(await counts()).toEqual({ goals: [], proposals: [] });
+    expect(res.status).toBe(201);
+    expect(seen).toEqual([0]);
   });
 
-  it("makes no correction when the goal cannot be stored", async () => {
+  it("stores no goal when the model's draft fails, and says nothing in the thread", async () => {
+    const { port } = countingPort(new LlmSchemaError("bad draft"));
+    const app = makeApp(port);
+    await installAboutYou(app);
+    const before = await trace();
+
+    const res = await putGoal(app, { kind: "fitness" });
+    expect(res.status).toBe(502);
+    expect(await counts()).toEqual({ goals: [], proposals: [] });
+    expect(await trace()).toEqual(before);
+  });
+
+  it("stores no goal and no correction when a correction row cannot be written", async () => {
     const { port, calls } = countingPort();
     const app = makeApp(port);
     await installAboutYou(app);
+    const before = await trace();
+    // The coach's note message is the correction's last write.
+    await pool.query(
+      "ALTER TABLE thread_messages ADD CONSTRAINT test_refuse_coach CHECK (role <> 'coach') NOT VALID",
+    );
+    try {
+      const res = await putGoal(app, { kind: "fitness" });
+      expect(res.status).toBe(500);
+    } finally {
+      await pool.query("ALTER TABLE thread_messages DROP CONSTRAINT test_refuse_coach");
+    }
+    expect(calls()).toBe(1);
+    expect(await counts()).toEqual({ goals: [], proposals: [] });
+    expect(await trace()).toEqual(before);
+  });
+
+  it("makes no correction when the goal cannot be stored", async () => {
+    const { port } = countingPort();
+    const app = makeApp(port);
+    await installAboutYou(app);
+    const before = await trace();
     await pool.query(
       "ALTER TABLE training_goals ADD CONSTRAINT test_refuse_insert CHECK (false) NOT VALID",
     );
@@ -189,8 +251,8 @@ describe("changing the goal from Settings", () => {
     } finally {
       await pool.query("ALTER TABLE training_goals DROP CONSTRAINT test_refuse_insert");
     }
-    expect(calls()).toBe(0);
     expect(await counts()).toEqual({ goals: [], proposals: [] });
+    expect(await trace()).toEqual(before);
   });
 
   it("with no About you yet, only the goal is stored", async () => {

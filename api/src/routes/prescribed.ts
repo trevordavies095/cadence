@@ -22,6 +22,7 @@ import { todayYmdForSession } from "../prescribed/patch.js";
 import { parsePlanLines } from "../prescribed/planLines.js";
 import { getLatestOkRunCallId } from "../replyRun/store.js";
 import { coachNotConfiguredBody } from "../settings/coachSetup.js";
+import { resolveCheckInStatus } from "../recap/checkInStatus.js";
 import { resolveUnitPreference } from "../settings/unitPreferenceStore.js";
 import type { TempoPort, TempoUnitPreference } from "../tempo/port.js";
 import { ensureWeekSession, findWeekSession, getWeekSessionById } from "../week/store.js";
@@ -104,6 +105,7 @@ export function createPrescribedRoutes(options: {
     const prescribed = await getPrescribedWeekBySessionId(weekSession.id);
     return c.json({
       weekSession,
+      checkInStatus: await resolveCheckInStatus(session.id),
       prescribed: prescribed ?? null,
       unitPreference: await resolveUnitPreference(tempoPort),
       todayYmd: todayYmdForSession(clock, session.timezone),

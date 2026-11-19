@@ -2,9 +2,10 @@ import type { HTMLAttributes } from "react";
 import { cx } from "./cx";
 
 /**
- * Where Coach Cade speaks: coach-bg with an accent rule on the left. Used for chat
- * replies, the Plan analysis and the review read, so the three cannot drift. It carries
- * the surface only; the words inside are the caller's.
+ * Where Coach Cade speaks on a page: coach-bg with an accent rule on the left. Used for
+ * the Plan analysis and the review read, so the two cannot drift. It carries the surface
+ * only; the words inside are the caller's. In the conversation Coach Cade speaks in a
+ * bubble on the same paper (ConversationMessage).
  */
 export function CoachSurface({
   as: Tag = "div",

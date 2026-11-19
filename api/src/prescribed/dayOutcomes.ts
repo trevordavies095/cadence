@@ -72,8 +72,11 @@ export function planDayOutcomes(input: {
     const planned = planByDate.get(date) ?? null;
     // Absent reads as parsed: plans stored before plans were text.
     const parsed = planned?.parsed !== false;
-    // An unread day has nothing planned, whatever it carries.
-    const plannedRunSpec = parsed ? planned?.run : null;
+    // An unread day has nothing planned, whatever it carries. Nor has an
+    // other day (strength, cross-training): the parser files "Other, 20 min"
+    // as a run of 0 m, but the running log can never show it was done.
+    const plannedRunSpec =
+      parsed && planned?.dayType !== "other" ? planned?.run : null;
     const plannedDistanceM = plannedRunSpec?.distanceM ?? null;
     const durationS = plannedRunSpec?.durationS;
     const plannedDurationS =

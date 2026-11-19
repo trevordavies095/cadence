@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
+import type { PoolClient } from "pg";
 import type { Clock } from "../clock/clock.js";
+import { pool } from "../db.js";
 import {
   formatDossierCorrectionThreadBody,
+  type DossierCorrectionDraft,
   type LlmPort,
 } from "../llm/index.js";
 import {
@@ -42,22 +45,25 @@ export type AthleteCorrectionResult = {
   dossierVersionId: number | null;
 };
 
+/** The model's rewrite of About you, and the call log id that produced it. */
+export type AthleteCorrectionDraft = {
+  callId: string;
+  draft: DossierCorrectionDraft;
+};
+
 /**
- * Fix something: post the athlete's sentence, have the model rewrite About you, apply the
- * rewrite as a correction note and post the coach's note message. Throws LlmSchemaError
- * when the model's draft is unusable; the athlete message is already posted then.
+ * Have the model rewrite About you for the athlete's sentence. Writes nothing, so no
+ * caller needs a transaction open while the model answers. Throws LlmSchemaError when
+ * the model's draft is unusable.
  */
-export async function applyAthleteCorrection(input: {
+export async function draftAthleteCorrection(input: {
   text: string;
   base: CorrectionBase;
   weekSessionId: string | null;
   isoWeek: string | null;
   llmPort: LlmPort;
-  clock: Clock;
-}): Promise<AthleteCorrectionResult> {
-  const { text, base, weekSessionId, isoWeek, llmPort, clock } = input;
-  const athleteMessage = await createAthleteMessage(clock.now(), text, weekSessionId);
-
+}): Promise<AthleteCorrectionDraft> {
+  const { text, base, weekSessionId, isoWeek, llmPort } = input;
   const callId = randomUUID();
   const draft = await llmPort.generateDossierCorrection(
     {
@@ -67,23 +73,52 @@ export async function applyAthleteCorrection(input: {
     },
     { callId, weekSessionId },
   );
+  return { callId, draft };
+}
 
-  const dossierProposal = await createProposalFromCorrection({
-    summaryBullets: draft.summaryBullets,
-    proposedBody: draft.proposedBody,
-    at: clock.now(),
-  });
+/**
+ * Write a drafted correction on the caller's `client`: the athlete's sentence (unless
+ * `athleteMessage` says it is already posted), the applied note, the rejection of the
+ * drafts it replaces and the coach's note message. They commit or fail with the caller's
+ * transaction.
+ */
+export async function writeAthleteCorrection(
+  input: {
+    text: string;
+    drafted: AthleteCorrectionDraft;
+    weekSessionId: string | null;
+    clock: Clock;
+    athleteMessage?: ThreadMessage;
+  },
+  client: Pick<PoolClient, "query">,
+): Promise<AthleteCorrectionResult> {
+  const { text, drafted, weekSessionId, clock } = input;
+  const athleteMessage =
+    input.athleteMessage ??
+    (await createAthleteMessage(clock.now(), text, weekSessionId, null, client));
+
+  const dossierProposal = await createProposalFromCorrection(
+    {
+      summaryBullets: drafted.draft.summaryBullets,
+      proposedBody: drafted.draft.proposedBody,
+      at: clock.now(),
+    },
+    client,
+  );
 
   // Anything still waiting for a yes was drafted from older text.
-  await rejectWaitingDossierProposals(clock.now());
+  await rejectWaitingDossierProposals(clock.now(), client);
 
   const coachMessage = await createCoachMessage(
     clock.now(),
-    formatDossierCorrectionThreadBody(draft),
+    formatDossierCorrectionThreadBody(drafted.draft),
     weekSessionId,
-    callId,
+    drafted.callId,
     null,
     dossierProposal.id,
+    "chat",
+    null,
+    client,
   );
 
   return {
@@ -92,4 +127,39 @@ export async function applyAthleteCorrection(input: {
     dossierProposal,
     dossierVersionId: dossierProposal.appliedVersionId,
   };
+}
+
+/**
+ * Fix something: post the athlete's sentence, have the model rewrite About you, then
+ * apply the rewrite as a correction note and post the coach's note message in one
+ * transaction. Throws LlmSchemaError when the model's draft is unusable. The athlete
+ * message is posted first and stays when the draft or its writes fail.
+ */
+export async function applyAthleteCorrection(input: {
+  text: string;
+  base: CorrectionBase;
+  weekSessionId: string | null;
+  isoWeek: string | null;
+  llmPort: LlmPort;
+  clock: Clock;
+}): Promise<AthleteCorrectionResult> {
+  const { text, weekSessionId, clock } = input;
+  const athleteMessage = await createAthleteMessage(clock.now(), text, weekSessionId);
+  const drafted = await draftAthleteCorrection(input);
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await writeAthleteCorrection(
+      { text, drafted, weekSessionId, clock, athleteMessage },
+      client,
+    );
+    await client.query("COMMIT");
+    return result;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 }

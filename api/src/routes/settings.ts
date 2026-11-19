@@ -51,6 +51,11 @@ export type SettingsRouteOptions = {
   anthropicFetch?: typeof globalThis.fetch;
   /** Cap on a self-hosted Test connection probe (tests). Defaults to the self-hosted idle limit. */
   selfHostedTestTimeoutMs?: number;
+  /**
+   * With Sign in with Tempo on, the Tempo the athlete signs in with. The saved connection
+   * always uses it, so the runs and the password come from the same Tempo.
+   */
+  authTempoUrl?: string | null;
 };
 
 
@@ -127,6 +132,7 @@ export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
       tempo: { ...tempo, source: sources.tempo },
       anthropic: { ...anthropic, source: sources.model },
       demo: sources.demo,
+      auth: { enabled: Boolean(options.authTempoUrl), tempoUrl: options.authTempoUrl ?? null },
       provider: coach.provider,
       host: coach.host,
     });
@@ -143,7 +149,8 @@ export function createSettingsRoutes(options: SettingsRouteOptions): Hono {
     } catch {
       return c.json({ error: "invalid_json" }, 400);
     }
-    const baseUrl = typeof body.baseUrl === "string" ? body.baseUrl.trim() : "";
+    const baseUrl =
+      options.authTempoUrl ?? (typeof body.baseUrl === "string" ? body.baseUrl.trim() : "");
     const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
     if (!baseUrl || !apiKey) {
       return c.json({ error: "baseUrl_and_apiKey_required" }, 400);

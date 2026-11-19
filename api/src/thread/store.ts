@@ -1,3 +1,4 @@
+import type { PoolClient } from "pg";
 import { pool } from "../db.js";
 import type { PrescribedDay, SafetyCallout } from "../llm/types.js";
 import type {
@@ -96,8 +97,11 @@ function toMessage(row: Row): ThreadMessage {
   };
 }
 
-async function getMessage(id: string): Promise<ThreadMessage> {
-  const result = await pool.query<Row>(`${SELECT_MESSAGE} WHERE m.id = $1`, [id]);
+async function getMessage(
+  id: string,
+  db: Pick<PoolClient, "query"> = pool,
+): Promise<ThreadMessage> {
+  const result = await db.query<Row>(`${SELECT_MESSAGE} WHERE m.id = $1`, [id]);
   return toMessage(result.rows[0]!);
 }
 
@@ -120,13 +124,16 @@ export async function listThreadMessages(
   return result.rows.map(toMessage);
 }
 
+/** Pass `client` to write it inside the caller's transaction. */
 export async function createAthleteMessage(
   at: Date,
   body: string,
   weekSessionId?: string | null,
   attachment?: ModelPacketAttachment | null,
+  client?: Pick<PoolClient, "query">,
 ): Promise<ThreadMessage> {
-  const result = await pool.query<Row>(
+  const db = client ?? pool;
+  const result = await db.query<Row>(
     `
     INSERT INTO thread_messages (role, body, week_session_id, attachment, created_at)
     VALUES ('athlete', $1, $2, $3::jsonb, $4)
@@ -139,7 +146,7 @@ export async function createAthleteMessage(
       at,
     ],
   );
-  return getMessage((result.rows[0] as unknown as { id: string }).id);
+  return getMessage((result.rows[0] as unknown as { id: string }).id, db);
 }
 
 /** Remove one message, e.g. an athlete message whose reply failed (#5). */
@@ -147,7 +154,10 @@ export async function deleteThreadMessage(id: string): Promise<void> {
   await pool.query(`DELETE FROM thread_messages WHERE id = $1`, [id]);
 }
 
-/** Coach-authored thread message (dossier proposal summary, weekly analysis, …). */
+/**
+ * Coach-authored thread message (dossier proposal summary, weekly analysis, …).
+ * Pass `client` to write it inside the caller's transaction.
+ */
 export async function createCoachMessage(
   at: Date,
   body: string,
@@ -157,8 +167,10 @@ export async function createCoachMessage(
   dossierProposalId?: number | null,
   kind: ThreadMessageKind = "chat",
   planChanges?: PrescribedDay[] | null,
+  client?: Pick<PoolClient, "query">,
 ): Promise<ThreadMessage> {
-  const result = await pool.query<{ id: string }>(
+  const db = client ?? pool;
+  const result = await db.query<{ id: string }>(
     `
     INSERT INTO thread_messages
       (role, body, week_session_id, attachment, llm_call_id, safety_callouts, dossier_proposal_id, created_at, kind, plan_changes)
@@ -178,5 +190,5 @@ export async function createCoachMessage(
       planChanges && planChanges.length > 0 ? JSON.stringify(planChanges) : null,
     ],
   );
-  return getMessage(result.rows[0]!.id);
+  return getMessage(result.rows[0]!.id, db);
 }

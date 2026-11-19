@@ -61,7 +61,15 @@ export class SecretProtector {
     return plaintext.toString("utf8");
   }
 
-  private deriveKey(purpose: SecretPurpose): Buffer {
+  /**
+   * A signing key for something that is not a stored secret (the sign-in cookie). Derived
+   * from the same master key under its own label, so it never equals an encryption key.
+   */
+  signingKey(label: "session-cookie"): Buffer {
+    return this.deriveKey(`sign:${label}`);
+  }
+
+  private deriveKey(purpose: SecretPurpose | `sign:${string}`): Buffer {
     return Buffer.from(
       hkdfSync(
         "sha256",

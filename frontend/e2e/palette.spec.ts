@@ -204,7 +204,7 @@ test.describe("Coach Cade's voice", () => {
   });
 
   for (const theme of THEMES) {
-    test(`${theme}: a reply sits on its own surface, the athlete's message does not`, async ({ page }) => {
+    test(`${theme}: a reply and the athlete's message are bubbles on different surfaces`, async ({ page }) => {
       await openIn(page, theme);
       await page.goto("/chat");
       const log = page.getByRole("log", { name: "Conversation" });
@@ -213,17 +213,33 @@ test.describe("Coach Cade's voice", () => {
       await expect(reply).toBeVisible();
       await expect(mine).toBeVisible();
 
+      // The bubble's side and surface carry the voice now, not an accent rule (ADR 0001).
       const surface = (el: Element) => {
         const s = getComputedStyle(el);
-        return { background: s.backgroundColor, ruleWidth: parseFloat(s.borderLeftWidth) };
+        return { background: s.backgroundColor, color: s.color, ruleWidth: parseFloat(s.borderLeftWidth) };
       };
-      const coach = await reply.evaluate(surface);
-      const athlete = await mine.evaluate(surface);
+      const coach = await reply.locator("[data-bubble]").evaluate(surface);
+      const athlete = await mine.locator("[data-bubble]").evaluate(surface);
+      const tokens = await readTokens(page);
+      const more = await page.evaluate(() => {
+        const style = getComputedStyle(document.documentElement);
+        return {
+          inverse: style.getPropertyValue("--inverse").trim(),
+          volt: style.getPropertyValue("--volt").trim(),
+        };
+      });
+      const rgb = (hex: string) => {
+        const n = parseInt(hex.replace("#", ""), 16);
+        return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`;
+      };
 
-      expect(coach.background, `${theme}: reply and athlete message share a background`).not.toBe(
-        athlete.background,
-      );
-      expect(coach.ruleWidth, `${theme}: reply has no left rule`).toBeGreaterThan(0);
+      expect(coach.background, `${theme}: Coach Cade's bubble is coach paper`).toBe(rgb(tokens["coach-bg"]));
+      expect(athlete.background, `${theme}: the athlete's bubble is ink`).toBe(rgb(tokens.ink));
+      expect(athlete.color, `${theme}: the athlete's words are the inverse of ink`).toBe(rgb(more.inverse));
+      expect(coach.ruleWidth, `${theme}: the reply still has an accent rule`).toBeLessThanOrEqual(1);
+      expect(contrast(more.inverse, tokens.ink), `${theme}: the athlete's words on ink`).toBeGreaterThanOrEqual(4.5);
+      // Volt stays on Send; neither bubble borrows it.
+      expect([coach.background, athlete.background]).not.toContain(rgb(more.volt));
     });
   }
 });

@@ -1,4 +1,5 @@
 import { ApiError } from "./errors";
+import { goToSignIn, isSignedOut } from "./session";
 
 export type TempoConnection = {
   configured: boolean;
@@ -24,6 +25,8 @@ export type SettingsSummary = {
   tempo: TempoConnection & { source: SettingsSources["tempo"] };
   anthropic: AnthropicConnection & { source: SettingsSources["model"] };
   demo: boolean;
+  /** Sign in with Tempo: on when the instance has CADENCE_AUTH_TEMPO_URL set. */
+  auth: { enabled: boolean; tempoUrl: string | null };
 };
 
 /** Compact coaching workout summary stored on a thread message (no GPS). */
@@ -447,6 +450,7 @@ function parseCheckInRequired(text: string): CheckInRequiredPayload | null {
 async function readJson<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const text = await res.text();
+    if (isSignedOut(res.status, text)) return goToSignIn();
     const checkIn = parseCheckInRequired(text);
     if (checkIn) throw new CheckInRequiredError(checkIn);
     throw new ApiError(res.status, text);
@@ -646,6 +650,7 @@ export async function fetchNextWeekPrescribed(
   weekSessionId: string,
 ): Promise<{
   weekSession: WeekSession;
+  checkInStatus: CheckInStatus;
   prescribed: PrescribedWeekRecord | null;
   unitPreference: UnitPreference;
   todayYmd: string;
@@ -1084,6 +1089,22 @@ export type HomeRead = {
 
 export async function fetchHome(): Promise<HomeRead> {
   return readJson(await fetch("/api/home"));
+}
+
+/** Where the athlete is in the week's loop; only the parts a page reads. */
+export type LoopStatusRead = {
+  phase:
+    | "setup_incomplete"
+    | "needs_onboarding"
+    | "onboarding_review"
+    | "needs_check_in"
+    | "needs_plan"
+    | "mid_week"
+    | "week_ending";
+};
+
+export async function fetchLoopStatus(): Promise<LoopStatusRead> {
+  return readJson(await fetch("/api/loop-status"));
 }
 
 /** Fetch one JSON section of a week's report (summary, zones, run-by-run, trends, notable). */

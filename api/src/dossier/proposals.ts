@@ -1,3 +1,4 @@
+import type { PoolClient } from "pg";
 import { pool } from "../db.js";
 import { recordAuditAccepted } from "./auditMeta.js";
 import type { DossierVersion } from "./store.js";
@@ -81,16 +82,56 @@ async function latestVersionId(client: {
   return row ? Number(row.id) : null;
 }
 
-export async function createDossierProposal(input: {
+type NewProposal = {
   summaryBullets: string[];
   proposedBody: string;
   kind?: DossierProposalKind;
   at: Date;
-}): Promise<DossierProposal> {
+};
+
+/** Write an applied note: the version it installs and the proposal that explains it. */
+async function insertAppliedProposal(
+  db: Pick<PoolClient, "query">,
+  input: NewProposal,
+  kind: DossierProposalKind,
+): Promise<DossierProposal> {
+  const previousId = await latestVersionId(db);
+  const version = await db.query<{ id: string | number }>(
+    "INSERT INTO dossier_versions (body, created_at) VALUES ($1, $2) RETURNING id",
+    [input.proposedBody, input.at],
+  );
+  const result = await db.query<Row>(
+    `
+    INSERT INTO dossier_proposals
+      (summary_bullets, proposed_body, kind, status, created_at, resolved_at,
+       applied_version_id, previous_version_id)
+    VALUES ($1, $2, $3, 'accepted', $6, $6, $4, $5)
+    RETURNING ${PROPOSAL_COLS}
+    `,
+    [
+      input.summaryBullets,
+      input.proposedBody,
+      kind,
+      Number(version.rows[0]!.id),
+      previousId,
+      input.at,
+    ],
+  );
+  return toProposal(result.rows[0]!);
+}
+
+/**
+ * Pass `client` to write inside the caller's transaction; an applied note's version and
+ * proposal then commit with the caller's other rows.
+ */
+export async function createDossierProposal(
+  input: NewProposal,
+  client?: Pick<PoolClient, "query">,
+): Promise<DossierProposal> {
   const kind = input.kind ?? "settings";
 
   if (!AUTO_APPLY_KINDS.includes(kind)) {
-    const result = await pool.query<Row>(
+    const result = await (client ?? pool).query<Row>(
       `
       INSERT INTO dossier_proposals (summary_bullets, proposed_body, kind, created_at)
       VALUES ($1, $2, $3, $4)
@@ -101,40 +142,21 @@ export async function createDossierProposal(input: {
     return toProposal(result.rows[0]!);
   }
 
+  if (client) return insertAppliedProposal(client, input, kind);
+
   // Applied on the spot: the new version and the proposal that explains it
   // are written together, so a note can never be half-applied.
-  const client = await pool.connect();
+  const own = await pool.connect();
   try {
-    await client.query("BEGIN");
-    const previousId = await latestVersionId(client);
-    const version = await client.query<{ id: string | number }>(
-      "INSERT INTO dossier_versions (body, created_at) VALUES ($1, $2) RETURNING id",
-      [input.proposedBody, input.at],
-    );
-    const result = await client.query<Row>(
-      `
-      INSERT INTO dossier_proposals
-        (summary_bullets, proposed_body, kind, status, created_at, resolved_at,
-         applied_version_id, previous_version_id)
-      VALUES ($1, $2, $3, 'accepted', $6, $6, $4, $5)
-      RETURNING ${PROPOSAL_COLS}
-      `,
-      [
-        input.summaryBullets,
-        input.proposedBody,
-        kind,
-        Number(version.rows[0]!.id),
-        previousId,
-        input.at,
-      ],
-    );
-    await client.query("COMMIT");
-    return toProposal(result.rows[0]!);
+    await own.query("BEGIN");
+    const proposal = await insertAppliedProposal(own, input, kind);
+    await own.query("COMMIT");
+    return proposal;
   } catch (err) {
-    await client.query("ROLLBACK");
+    await own.query("ROLLBACK");
     throw err;
   } finally {
-    client.release();
+    own.release();
   }
 }
 
@@ -412,8 +434,11 @@ export async function listResolvedDossierProposals(
  * still waiting for a yes (onboarding, tidy-up) so approving one later cannot
  * overwrite the correction with older text.
  */
-export async function rejectWaitingDossierProposals(at: Date): Promise<number> {
-  const result = await pool.query(
+export async function rejectWaitingDossierProposals(
+  at: Date,
+  client?: Pick<PoolClient, "query">,
+): Promise<number> {
+  const result = await (client ?? pool).query(
     `
     UPDATE dossier_proposals
     SET status = 'rejected', resolved_at = $1

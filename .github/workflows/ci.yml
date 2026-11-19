@@ -47,7 +47,8 @@ jobs:
 
   # Drives the real UI in Chromium against the stub model, the mini Tempo export
   # and a pinned Sunday clock. The harness boots its own API and frontend and
-  # drops and recreates the throwaway ai_coach_e2e database on every run.
+  # drops and recreates the throwaway ai_coach_e2e database on every run. Sign in with
+  # Tempo runs on a second pair, with a fake Tempo and its own ai_coach_auth_e2e database.
   e2e:
     name: Browser tests
     runs-on: ubuntu-latest

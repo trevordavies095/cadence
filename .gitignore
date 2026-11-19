@@ -12,6 +12,7 @@ node_modules
 dist/
 .next/
 .next-e2e/
+.next-e2e-auth/
 out/
 .vercel
 *.tsbuildinfo

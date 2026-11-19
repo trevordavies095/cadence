@@ -24,7 +24,6 @@ import {
   fetchPrescribedWeek,
   fetchReplyRun,
   markReplyRunSeen,
-  fetchWeekRecap,
   postPlanDayDetails,
   postWeeklyReply,
   type CheckInStatus,
@@ -58,39 +57,34 @@ export default function PlanPage() {
         const current = await ensureCurrentWeek();
         if (cancelled) return;
         setWeek(current);
-        try {
-          const { prescribed } = await fetchPrescribedWeek(current.id);
-          if (cancelled) return;
-          setThisPlan(prescribed);
-        } catch {
-          if (!cancelled) setThisPlan(null);
+        const [prescribedResult, nextResult, runResult] = await Promise.allSettled([
+          fetchPrescribedWeek(current.id),
+          fetchNextWeekPrescribed(current.id),
+          fetchReplyRun(current.id),
+        ]);
+        if (cancelled) return;
+        setThisPlan(
+          prescribedResult.status === "fulfilled"
+            ? prescribedResult.value.prescribed
+            : null,
+        );
+        if (nextResult.status === "fulfilled") {
+          const next = nextResult.value;
+          setNextPlan(next.prescribed);
+          setUnit(next.unitPreference);
+          setTodayYmd(next.todayYmd);
+          setCheckInStatus(next.checkInStatus);
+          // On Sunday the week that matters is the one coming up.
+          const weekday = new Date(`${next.todayYmd}T12:00:00Z`).getUTCDay();
+          setView(weekday === 0 ? "next" : "this");
+          // Opening the plan clears the "plan is ready" banner on Home.
+          if (next.prescribed) void markReplyRunSeen(current.id).catch(() => undefined);
+        } else {
+          setNextPlan(null);
+          setCheckInStatus("needed");
         }
-        try {
-          const next = await fetchNextWeekPrescribed(current.id);
-          if (!cancelled) {
-            setNextPlan(next.prescribed);
-            setUnit(next.unitPreference);
-            setTodayYmd(next.todayYmd);
-            // On Sunday the week that matters is the one coming up.
-            const weekday = new Date(`${next.todayYmd}T12:00:00Z`).getUTCDay();
-            setView(weekday === 0 ? "next" : "this");
-            // Opening the plan clears the "plan is ready" banner on Home.
-            if (next.prescribed) void markReplyRunSeen(current.id).catch(() => undefined);
-          }
-        } catch {
-          if (!cancelled) setNextPlan(null);
-        }
-        try {
-          const { run } = await fetchReplyRun(current.id);
-          if (!cancelled) setRunPending(run?.status === "pending");
-        } catch {
-          /* leave the redo button as it was */
-        }
-        try {
-          const recap = await fetchWeekRecap(current.id);
-          if (!cancelled) setCheckInStatus(recap.checkInStatus);
-        } catch {
-          if (!cancelled) setCheckInStatus("needed");
+        if (runResult.status === "fulfilled") {
+          setRunPending(runResult.value.run?.status === "pending");
         }
         setGate("open");
       } catch (err) {

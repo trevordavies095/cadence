@@ -28,6 +28,8 @@ The last two fail WCAG AA for small text.
 
 **Coach Cade speaks on its own surface:** the coach-bg paper with a 3px accent rule on the left. It is used on chat replies, the read on Plan, and the review page. It is not used on the About you profile, which is reference material.
 
+*Status, 2026-11-04: in the conversation, the bubble's side carries the voice (#68). Chat reads like texting: Coach Cade's replies are bubbles on the left, on the same coach-bg paper with a hairline border and no accent rule, and the athlete's are bubbles on the right in ink with inverse text. No message carries a name. The surface with the accent rule stays on Plan and the review page. Volt is still only the primary action: Send, or "Looks right" while a note waits.*
+
 **Success, caution and the heart rate chart get their own tokens.** ok and warn no longer borrow heart rate zone colors. hr-zone-5 no longer aliases danger, so a text-contrast fix to danger does not darken the chart.
 
 The values below were approved in a side-by-side mockup, with two later changes:

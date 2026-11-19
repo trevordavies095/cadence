@@ -1,4 +1,11 @@
 import { ApiError } from "./errors";
+import { goToSignIn, isSignedOut } from "./session";
+
+async function failure(res: Response): Promise<never> {
+  const text = await res.text();
+  if (isSignedOut(res.status, text)) return goToSignIn();
+  throw new ApiError(res.status, text);
+}
 
 export type DisclaimerState = {
   accepted: boolean;
@@ -11,17 +18,13 @@ export type DisclaimerState = {
 
 export async function fetchDisclaimer(): Promise<DisclaimerState> {
   const res = await fetch("/api/disclaimer");
-  if (!res.ok) {
-    throw new ApiError(res.status, await res.text());
-  }
+  if (!res.ok) return failure(res);
   return (await res.json()) as DisclaimerState;
 }
 
 export async function acceptDisclaimer(): Promise<DisclaimerState> {
   const res = await fetch("/api/disclaimer/accept", { method: "POST" });
-  if (!res.ok) {
-    throw new ApiError(res.status, await res.text());
-  }
+  if (!res.ok) return failure(res);
   return (await res.json()) as DisclaimerState;
 }
 

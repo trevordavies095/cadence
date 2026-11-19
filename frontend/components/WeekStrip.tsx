@@ -29,71 +29,76 @@ export function WeekStrip({
   week: HomeWeekDay[];
   unit: UnitPreference;
 }) {
+  // Phones can't hover, so the reason a day couldn't be read is written out, not left in a tooltip.
+  const unread = week.some((d) => d.state === "not_filed" && d.line);
   return (
-    <ol
-      aria-label="This week"
-      className="m-0 grid list-none grid-cols-2 gap-x-4 gap-y-3 p-0 sm:grid-cols-7"
-    >
-      {week.map((d) => {
-        const { name, date } = dayName(d.date);
-        // A rest day and a day Cadence could not read have nothing planned to show.
-        const nothingPlanned = d.state === "rest" || d.state === "not_filed";
-        const distance =
-          d.state === "done"
-            ? d.actualDistanceM
-            : nothingPlanned
-              ? null
-              : d.plannedDistanceM;
-        // A day planned by time alone shows its minutes until it is run.
-        const minutes =
-          d.state !== "done" && !nothingPlanned && !(distance != null && distance > 0)
-            ? (d.plannedDurationS ?? null)
-            : null;
-        // An other day with nothing planned to run: strength, cross-training or a walk.
-        const notARun =
-          d.parsed !== false &&
-          d.dayType === "other" &&
-          d.plannedDistanceM == null &&
-          d.plannedDurationS == null;
-        return (
-          <li
-            key={d.date}
-            aria-current={d.isToday ? "date" : undefined}
-            className={cx(
-              "flex flex-col gap-0.5 border-t-2 pt-2",
-              d.isToday ? "border-accent" : "border-border",
-            )}
-          >
-            <span className="font-semibold">{name}</span>
-            <span className="text-sm text-muted">{date}</span>
-            <span className="tabular-nums">
-              {distance != null && distance > 0
-                ? distanceLabel(distance, unit)
-                : minutes != null && minutes > 0
-                  ? durationLabel(minutes)
-                  : "–"}
-            </span>
-            <span
+    <div className="flex flex-col gap-3">
+      <ol
+        aria-label="This week"
+        className="m-0 grid list-none grid-cols-2 gap-x-4 gap-y-3 p-0 sm:grid-cols-7"
+      >
+        {week.map((d) => {
+          const { name, date } = dayName(d.date);
+          // A rest day and a day Cadence could not read have nothing planned to show.
+          const nothingPlanned = d.state === "rest" || d.state === "not_filed";
+          const distance =
+            d.state === "done"
+              ? d.actualDistanceM
+              : nothingPlanned
+                ? null
+                : d.plannedDistanceM;
+          // A day planned by time alone shows its minutes until it is run.
+          const minutes =
+            d.state !== "done" && !nothingPlanned && !(distance != null && distance > 0)
+              ? (d.plannedDurationS ?? null)
+              : null;
+          // An other day with nothing planned to run: strength, cross-training or a walk.
+          const notARun =
+            d.parsed !== false &&
+            d.dayType === "other" &&
+            d.plannedDistanceM == null &&
+            d.plannedDurationS == null;
+          return (
+            <li
+              key={d.date}
+              aria-current={d.isToday ? "date" : undefined}
               className={cx(
-                "text-sm font-semibold",
-                d.state === "done" && "text-ok",
-                d.state === "missed" && "text-danger",
-                (d.state === "upcoming" || nothingPlanned) && "text-muted",
+                "flex flex-col gap-0.5 border-t-2 pt-2",
+                d.isToday ? "border-accent" : "border-border",
               )}
-              title={d.state === "not_filed" && d.line ? NOT_FILED_EXPLANATION : undefined}
             >
-              {d.state === "not_filed"
-                ? d.line
-                  ? NOT_FILED_LABEL
-                  : "No plan"
-                : d.state === "rest" && notARun
-                  ? "Not a run"
-                  : STATE_LABEL[d.state]}
-              {d.state === "done" && d.isToday ? " · today" : ""}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+              <span className="font-semibold">{name}</span>
+              <span className="text-sm text-muted">{date}</span>
+              <span className="tabular-nums">
+                {distance != null && distance > 0
+                  ? distanceLabel(distance, unit)
+                  : minutes != null && minutes > 0
+                    ? durationLabel(minutes)
+                    : "–"}
+              </span>
+              <span
+                className={cx(
+                  "text-sm font-semibold",
+                  d.state === "done" && "text-ok",
+                  d.state === "missed" && "text-danger",
+                  (d.state === "upcoming" || nothingPlanned) && "text-muted",
+                )}
+                title={d.state === "not_filed" && d.line ? NOT_FILED_EXPLANATION : undefined}
+              >
+                {d.state === "not_filed"
+                  ? d.line
+                    ? NOT_FILED_LABEL
+                    : "No plan"
+                  : d.state === "rest" && notARun
+                    ? "Not a run"
+                    : STATE_LABEL[d.state]}
+                {d.state === "done" && d.isToday ? " · today" : ""}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      {unread ? <p className="m-0 text-sm text-muted">{NOT_FILED_EXPLANATION}</p> : null}
+    </div>
   );
 }
