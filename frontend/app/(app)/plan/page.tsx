@@ -232,7 +232,13 @@ export default function PlanPage() {
         {selected ? (
           <>
             {/* Next week's read is fresh; this week's was written last Sunday and the days come first. */}
-            <CoachRead record={selected} fresh={view === "next"} />
+            {/* Keyed on the week so switching resets what was opened, not keeping the last toggle. */}
+            <CoachRead
+              key={view}
+              record={selected}
+              fresh={view === "next"}
+              todayYmd={view === "this" ? todayYmd : null}
+            />
             <ol className="m-0 flex list-none flex-col gap-3 p-0">
               {selected.plan.days.map((day) => (
                 <PlanDayRow

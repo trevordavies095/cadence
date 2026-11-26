@@ -20,6 +20,7 @@ import {
   painReports,
   PLAN_RULES,
   rulesTripped,
+  warningDates,
 } from "../src/prescribed/planCheck.js";
 
 const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), "fixtures", "plan-check");
@@ -186,6 +187,41 @@ describe("the pain rule", () => {
     expect(painReports(zeroWithWord)).toHaveLength(1);
     const zero = packet({ recapMarkdown: recap({ checkIn: ["Pain: 0/10 (all fine)"] }) });
     expect(painReports(zero)).toEqual([]);
+  });
+});
+
+describe("the dates a warning names", () => {
+  const quality = "quality, 8 km. Warm up, 5 x 1 km at threshold, cool down.";
+  const sore = () => packet({ recapMarkdown: recap({ note: "Achilles tight for the first 2 km, eased off." }) });
+
+  it("a warning carries the plan dates its body names, and a volume jump carries none", () => {
+    expect(checkPlan(packet(), easyWeek(13, 0)).warnings[0]!.dates).toEqual(["2026-11-01"]);
+    expect(checkPlan(sore(), easyWeek(9, quality)).warnings[0]!.dates).toEqual(["2026-10-29"]);
+    // 60 km against a recent 30: only the week as a whole is named.
+    const jump = checkPlan(packet(), planOf([10, 10, 10, 10, 0, 10, 10])).warnings.find((w) => w.rule === "volume jump");
+    expect(jump).toBeDefined();
+    expect(jump!.dates).toBeUndefined();
+  });
+
+  it("a returning athlete's warning names the hard day and the long run, in date order", () => {
+    const p = packet({ goal: { kind: "return" } });
+    const returnQuality = "quality, 6 km. 6 x 400 m.";
+    expect(checkPlan(p, easyWeek(11, returnQuality)).warnings[0]!.dates).toEqual(["2026-10-29", "2026-11-01"]);
+  });
+
+  it("a warning stored before it carried dates gets them from the plan, by its rule", () => {
+    const plan = easyWeek(13, quality);
+    const stored = (rule: "quality with pain" | "long-run jump" | "volume jump" | "return from injury") => ({
+      rule,
+      title: "t",
+      body: "b",
+    });
+    expect(warningDates(stored("quality with pain"), plan)).toEqual(["2026-10-29"]);
+    expect(warningDates(stored("long-run jump"), plan)).toEqual(["2026-11-01"]);
+    expect(warningDates(stored("volume jump"), plan)).toBeUndefined();
+    // Its body may or may not name the long run, so it is left to stay all week.
+    expect(warningDates(stored("return from injury"), plan)).toBeUndefined();
+    expect(warningDates({ ...stored("long-run jump"), dates: ["2026-10-27"] }, plan)).toEqual(["2026-10-27"]);
   });
 });
 

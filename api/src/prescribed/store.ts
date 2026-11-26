@@ -1,6 +1,6 @@
 import { pool } from "../db.js";
 import type { PrescribedWeek, ReadSections, SafetyCallout } from "../llm/types.js";
-import type { PlanWarning } from "./planCheck.js";
+import { warningDates, type PlanWarning } from "./planCheck.js";
 
 /** Persisted prescribed week for a week session (issue #30 / #32). */
 export type PrescribedWeekRecord = {
@@ -47,16 +47,24 @@ function toRecord(row: Row): PrescribedWeekRecord {
     const parsed = parseJsonField(rawCallouts);
     safetyCallouts = Array.isArray(parsed) ? parsed : null;
   }
+  const plan: PrescribedWeek = parseJsonField(row.plan);
+  const storedWarnings: PlanWarning[] | null =
+    row.plan_warnings == null ? null : parseJsonField(row.plan_warnings);
   return {
     weekSessionId: row.week_session_id,
-    plan: parseJsonField(row.plan),
+    plan,
     analysis: row.analysis,
     settingsProposalBullets: row.settings_proposal_bullets,
     safetyCallouts,
     readSections:
       row.read_sections == null ? null : parseJsonField(row.read_sections),
-    planWarnings:
-      row.plan_warnings == null ? null : parseJsonField(row.plan_warnings),
+    // A warning stored before warnings carried their dates is given them here.
+    planWarnings: Array.isArray(storedWarnings)
+      ? storedWarnings.map((w) => {
+          const dates = warningDates(w, plan);
+          return dates && !w.dates ? { ...w, dates } : w;
+        })
+      : storedWarnings,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   };
