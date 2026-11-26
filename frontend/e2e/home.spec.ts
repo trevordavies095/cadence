@@ -177,6 +177,72 @@ test.describe("Home", () => {
     await expect(strip.getByText("5.1 mi")).toHaveCount(1); // 8200 m
   });
 
+  test("once today's run is in, the card says done, keeps the session one tap away and names the next run", async ({
+    page,
+  }) => {
+    await serveHome(page, {
+      ...homeBody({
+        todayIndex: 3,
+        days: [
+          { state: "rest", type: "rest" },
+          { state: "done", planned: 6437, actual: 6437, type: "easy" },
+          { state: "rest", type: "rest" },
+          { state: "done", planned: 9656, actual: 9817, type: "race" },
+          { state: "rest", type: "rest" },
+          { state: "rest", type: "rest" },
+          { state: "upcoming", planned: 16093, type: "long" },
+        ],
+        today: {
+          date: "2026-10-22",
+          dayType: "race",
+          run: { type: "race", distanceM: 9656 },
+          parsed: true,
+          line: "Thu 2026-10-22: race, 6 mi, Turkey Trot 5k. Warm up 2 mi easy. No cooldown run.",
+        },
+      }),
+      context: {
+        race: { name: "Winter Half", date: "2026-12-05", daysToRace: 44 },
+        checkInOpensOn: "2026-10-24",
+      },
+    });
+    await page.goto("/");
+
+    // The page opens with what frames the week, in place of a heading that repeats the tab.
+    await expect(page.locator('[data-part="week-context"]')).toHaveText(
+      "6 weeks to Winter Half · check-in opens Sat",
+    );
+    await expect(page.getByRole("heading", { name: "Home", level: 1 })).toBeAttached();
+
+    const card = page.locator('[aria-label="Today"]');
+    await expect(card.getByRole("heading", { level: 2 })).toHaveText("Race · Done");
+    await expect(card.locator('[data-part="planned-and-run"]')).toHaveText("6.0 mi planned, 6.1 mi run");
+    await expect(card.getByRole("link", { name: "Tell Coach Cade how it went" })).toHaveAttribute(
+      "href",
+      /^\/chat\?about=About%20today's%20session/,
+    );
+    await expect(card.getByRole("link", { name: "Something came up" })).toHaveCount(0);
+    await expect(card.locator('[data-part="next-run"]')).toHaveText("Next: Sun, Oct 25 · Long run · 10.0 mi");
+
+    // A warm-up saved on its own also reads as done, so the session never leaves the card.
+    await expect(card.getByText("Warm up 2 mi easy.")).toBeHidden();
+    await card.getByText("Today’s session", { exact: true }).click();
+    // One sentence to a line, starting after the type and amount the title already gives.
+    await expect(card.locator('[data-part="session"] p')).toHaveText([
+      "Turkey Trot 5k.",
+      "Warm up 2 mi easy.",
+      "No cooldown run.",
+    ]);
+  });
+
+  test("before the run the card is the session, with no next run and no context to invent", async ({ page }) => {
+    await serveHome(page, MONDAY);
+    await page.goto("/");
+    const card = page.locator('[aria-label="Today"]');
+    await expect(card.getByRole("link", { name: "Something came up" })).toBeVisible();
+    await expect(card.locator('[data-part="next-run"]')).toHaveCount(0);
+    await expect(page.locator('[data-part="week-context"]')).toHaveCount(0);
+  });
+
   test("distances follow a metric preference", async ({ page }) => {
     await serveHome(page, { ...MONDAY, units: "metric" });
     await page.goto("/");

@@ -1,5 +1,5 @@
-import type { PrescribedDay, UnitPreference } from "./api";
-import { plannedRunLabel } from "./units";
+import type { HomeRead, HomeWeekDay, PrescribedDay, UnitPreference } from "./api";
+import { distanceLabel, durationLabel, plannedRunLabel } from "./units";
 
 /**
  * How a planned day reads on screen, shared by the Plan page, the plan change
@@ -114,4 +114,92 @@ export function sessionQuote(day: PrescribedDay, unit: UnitPreference): string {
     day.run ? plannedRunLabel(day.run, unit) : null,
   ].filter(Boolean);
   return `About today's session (${parts.join(", ")}): `;
+}
+
+/** The day type a line opens with, as Coach Cade writes it: "Easy, 4 mi, …". */
+const LEAD_TYPE = /^(?:easy(?: run)?|long(?: run)?|race|quality|rest|other)\b[\s,:;–—-]*/i;
+/** The amount that follows it: "4 mi", "6.5 km", "20 min". */
+const LEAD_AMOUNT =
+  /^\d+(?:\.\d+)?\s*(?:mi|miles?|km|kilometres?|kilometers?|min|mins|minutes?|h|hr|hrs|hours?)\b[\s,:;–—-]*/i;
+
+/**
+ * Coach Cade's sentence for today, one sentence to a line, for the Today card.
+ * The card's title already gives the day type and the amount, so a line that
+ * opens with both ("Race, 6 mi, Turkey Trot 5k…") starts after them. Anything
+ * else is left as written: the words are Coach Cade's (ADR 0006), and this
+ * only lays them out.
+ */
+export function sessionLines(sentence: string): string[] {
+  let text = sentence.trim();
+  const type = LEAD_TYPE.exec(text);
+  if (type) {
+    let rest = text.slice(type[0].length);
+    let amounts = 0;
+    // A distance and a time may both open the line: "Easy, 8 km, 45 min, …".
+    for (let m = LEAD_AMOUNT.exec(rest); m && amounts < 2; m = LEAD_AMOUNT.exec(rest)) {
+      rest = rest.slice(m[0].length);
+      amounts += 1;
+    }
+    // "Easy, 5 mi." has nothing after the lead, so it stays as written.
+    if (amounts > 0 && /[a-z0-9]/i.test(rest)) {
+      text = rest.trim();
+      text = text.charAt(0).toUpperCase() + text.slice(1);
+    }
+  }
+  // A sentence ends at a full stop, question or exclamation mark followed by a capital.
+  return text
+    .split(/(?<=[.!?])\s+(?=[A-Z“"(])/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/** The next run still to come this week after today; null when there is none. */
+export function nextRunThisWeek(week: readonly HomeWeekDay[]): HomeWeekDay | null {
+  const todayAt = week.findIndex((d) => d.isToday);
+  if (todayAt < 0) return null;
+  return (
+    week
+      .slice(todayAt + 1)
+      .find(
+        (d) =>
+          d.state === "upcoming" &&
+          d.dayType !== null &&
+          ((d.plannedDistanceM ?? 0) > 0 || (d.plannedDurationS ?? 0) > 0),
+      ) ?? null
+  );
+}
+
+/** "Sun, Nov 29 · Easy run · 3.0 mi" for the Next line on Home. */
+export function nextRunLabel(day: HomeWeekDay, unit: UnitPreference): string {
+  const amount =
+    (day.plannedDistanceM ?? 0) > 0
+      ? distanceLabel(day.plannedDistanceM!, unit)
+      : durationLabel(day.plannedDurationS ?? 0);
+  const type = day.dayType ? (DAY_TYPE_LABEL[day.dayType] ?? day.dayType) : null;
+  return [weekdayLabel(day.date), type, amount].filter(Boolean).join(" · ");
+}
+
+/**
+ * The line Home opens with: how far off the race is, and when the weekly
+ * check-in opens. Null when there is neither to say.
+ */
+export function homeContextLine(context: HomeRead["context"]): string | null {
+  const parts: string[] = [];
+  const race = context?.race;
+  if (race) {
+    const name = race.name ?? "your race";
+    const days = race.daysToRace;
+    if (days === 0) parts.push(`Race day: ${name}`);
+    else if (days < 14) parts.push(`${days} ${days === 1 ? "day" : "days"} to ${name}`);
+    else parts.push(`${Math.floor(days / 7)} weeks to ${name}`);
+  }
+  if (context?.checkInOpensOn) {
+    const d = new Date(`${context.checkInOpensOn}T12:00:00`);
+    const day = Number.isNaN(d.getTime())
+      ? "Saturday"
+      : d.toLocaleDateString(undefined, { weekday: "short" });
+    // After the race's name the clause is not a sentence of its own.
+    parts.push(parts.length > 0 ? `check-in opens ${day}` : `Your check-in opens ${day}`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
 }

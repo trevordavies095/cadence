@@ -1087,6 +1087,11 @@ export type HomeRead = {
   };
   units: UnitPreference;
   tempoUnavailable: boolean;
+  /** What frames the week: the race ahead and when the check-in opens. */
+  context?: {
+    race: { name: string | null; date: string; daysToRace: number } | null;
+    checkInOpensOn: string | null;
+  };
 };
 
 export async function fetchHome(): Promise<HomeRead> {

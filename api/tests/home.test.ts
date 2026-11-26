@@ -8,6 +8,7 @@ import {
   LlmTransportError,
   type LlmPort,
 } from "../src/llm/index.js";
+import { appendGoal } from "../src/goal/store.js";
 import { bannerBannedTermsIn } from "../src/llm/vocabulary.js";
 import { migrate } from "../src/migrate.js";
 import { savePrescribedWeek } from "../src/prescribed/store.js";
@@ -270,6 +271,34 @@ describe("GET /home (#100)", () => {
       });
       expect(created.status).toBe(201);
       expect((await home(app)).banner).toBeNull();
+    });
+  });
+
+  describe("what frames the week (#79)", () => {
+    it("before Saturday it says when the check-in opens; from Saturday it does not", async () => {
+      const monday = await ready(MON);
+      await withPlan(monday.id);
+      expect((await home(monday.app)).context).toMatchObject({ checkInOpensOn: "2026-10-24" });
+
+      await resetAppTables();
+      const saturday = await ready(SAT);
+      await withPlan(saturday.id);
+      expect((await home(saturday.app)).context).toMatchObject({ checkInOpensOn: null });
+    });
+
+    it("carries the race ahead from the current goal, and nothing with no goal", async () => {
+      const { app, id } = await ready(MON);
+      await withPlan(id);
+      expect((await home(app)).context).toMatchObject({ race: null });
+
+      await appendGoal(
+        new Date(MON),
+        { kind: "race", distance: "half", raceName: "Winter Half", raceDate: "2026-12-05" },
+        "settings",
+      );
+      expect((await home(app)).context).toMatchObject({
+        race: { name: "Winter Half", date: "2026-12-05", daysToRace: 47 },
+      });
     });
   });
 
