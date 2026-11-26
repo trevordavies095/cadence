@@ -128,8 +128,23 @@ test.describe("History", () => {
       report.getByRole("list", { name: "Your week at a glance" }).getByText(/^Hard minutes \(zones 4 and 5\): /),
     ).toBeVisible();
 
+    // Coach Cade's read leads, the report follows it, and the links under the title say so.
+    const order = await page
+      .locator("main section[aria-label]")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("aria-label")));
+    const sections = order.filter((name) =>
+      ["Coach Cade’s read", "Your week", "Next week", "What Coach Cade noted", "The conversation"].includes(name ?? ""),
+    );
+    expect(sections.at(-1)).toBe("The conversation");
+    if (sections.includes("Coach Cade’s read")) {
+      expect(sections.indexOf("Coach Cade’s read")).toBeLessThan(sections.indexOf("Your week"));
+    }
+
     // Read-only: nothing to send, retry or redo, and a way back.
-    await expect(page.getByRole("region", { name: "The conversation" })).toBeVisible();
+    const conversation = page.getByRole("region", { name: "The conversation" });
+    await expect(conversation).toBeVisible();
+    // The conversation is closed until asked for, so the page is not mostly conversation.
+    await expect(conversation.getByRole("article")).toHaveCount(0);
     await expect(page.getByRole("textbox")).toHaveCount(0);
     await expect(page.locator("main").getByRole("button", { name: /Retry|Ask Coach Cade/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Start your check-in" })).toHaveCount(0);

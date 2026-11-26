@@ -174,20 +174,44 @@ function ReviewInner() {
   const checkInDone =
     checkIn === "finished" || checkIn === "skipped" || run !== null;
 
+  const showReport = Boolean(week && (checkInDone || readOnly));
+  // The page's sections in order, for the links under the title; only those on the page.
+  const jumps: Array<[string, string]> = [
+    ...(plan ? [["read", "Coach Cade’s read"] as [string, string]] : []),
+    ...(showReport ? [["week", "How your week went"] as [string, string]] : []),
+    ...(plan
+      ? [
+          ["next-week", "Next week"] as [string, string],
+          ["noted", "What Coach Cade noted"] as [string, string],
+        ]
+      : []),
+    ...(readOnly ? [["conversation", "The conversation"] as [string, string]] : []),
+  ];
+
   return (
     <Page>
       <PageHead>
+        {/* A past week is reached from History, so the way back is where the page starts. */}
+        {readOnly ? (
+          <div>
+            <ButtonLink href="/weeks" variant="quiet">
+              Back to History
+            </ButtonLink>
+          </div>
+        ) : null}
         <PageTitle>Your week</PageTitle>
         {week ? <Muted>{isoWeekRangeLabel(week.isoWeek)}</Muted> : null}
+        {jumps.length > 2 ? (
+          <nav aria-label="On this page" className="flex flex-wrap gap-x-4 gap-y-1">
+            {jumps.map(([id, label]) => (
+              <a key={id} href={`#${id}`} className="text-muted underline underline-offset-4 hover:text-ink">
+                {label}
+              </a>
+            ))}
+          </nav>
+        ) : null}
         <ErrorNote error={error} />
       </PageHead>
-
-      {week && (checkInDone || readOnly) ? (
-        <section className="flex flex-col gap-3" aria-label="Your week">
-          <SectionTitle>How your week went</SectionTitle>
-          <YourWeek weekSessionId={week.id} timezone={week.timezone} />
-        </section>
-      ) : null}
 
       {!readOnly && !checkInDone && !run ? (
         <Banner
@@ -239,14 +263,24 @@ function ReviewInner() {
         </Banner>
       ) : null}
 
+      {/* The read is why the page is opened, so it leads; the report is its evidence (ADR 0009). */}
+      {plan ? (
+        <section id="read" className="flex scroll-mt-20 flex-col gap-3" aria-label="Coach Cade’s read">
+          <SectionTitle>Coach Cade’s read</SectionTitle>
+          <CoachRead record={plan} emptyText="Coach Cade had nothing to add." fresh />
+        </section>
+      ) : null}
+
+      {week && showReport ? (
+        <section id="week" className="flex scroll-mt-20 flex-col gap-3" aria-label="Your week">
+          <SectionTitle>How your week went</SectionTitle>
+          <YourWeek weekSessionId={week.id} timezone={week.timezone} />
+        </section>
+      ) : null}
+
       {plan ? (
         <>
-          <section className="flex flex-col gap-3" aria-label="Coach Cade’s read">
-            <SectionTitle>Coach Cade’s read</SectionTitle>
-            <CoachRead record={plan} emptyText="Coach Cade had nothing to add." fresh />
-          </section>
-
-          <section className="flex flex-col gap-3" aria-label="Next week">
+          <section id="next-week" className="flex scroll-mt-20 flex-col gap-3" aria-label="Next week">
             <SectionHeader title="Next week" aside={isoWeekRangeLabel(plan.plan.week)} />
             <ol className="m-0 flex list-none flex-col gap-3 p-0">
               {plan.plan.days.map((day) => (
@@ -262,7 +296,7 @@ function ReviewInner() {
             ) : null}
           </section>
 
-          <section className="flex flex-col gap-2" aria-label="What Coach Cade noted">
+          <section id="noted" className="flex scroll-mt-20 flex-col gap-2" aria-label="What Coach Cade noted">
             <SectionTitle>What Coach Cade noted</SectionTitle>
             {note ? (
               <NoteCard note={note} weekSessionId={week?.id} />
@@ -275,13 +309,6 @@ function ReviewInner() {
 
       {readOnly && week ? <ReadOnlyConversation weekSessionId={week.id} unit={unit} /> : null}
 
-      {readOnly ? (
-        <div>
-          <ButtonLink href="/weeks" variant="quiet">
-            Back to History
-          </ButtonLink>
-        </div>
-      ) : null}
     </Page>
   );
 }

@@ -211,7 +211,7 @@ function answerLines(answers: SubjectiveAnswers | null): Array<[string, string]>
   return rows;
 }
 
-/** The week's report: numbers, zones, runs, trends, and the athlete's own check-in. */
+/** The week's report: the athlete's own check-in, then the numbers, zones, runs and trends. */
 export function YourWeek({
   weekSessionId,
   timezone,
@@ -283,6 +283,23 @@ export function YourWeek({
         <Notice title="You skipped this week’s check-in">
           Coach Cade worked from your runs alone, without how the week felt to you.
         </Notice>
+      ) : null}
+
+      {/* The athlete's own account comes before the numbers that back it (ADR 0009). */}
+      {checkIn.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <h3 className="m-0 text-lg font-semibold">Your check-in</h3>
+          <Card>
+            <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
+              {checkIn.map(([label, value]) => (
+                <div key={label} className="contents">
+                  <dt className="font-semibold text-muted">{label}</dt>
+                  <dd className="m-0">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
+        </div>
       ) : null}
 
       {summary?.goalLines && summary.goalLines.length > 0 ? (
@@ -447,21 +464,6 @@ export function YourWeek({
         </div>
       ) : null}
 
-      {checkIn.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <h3 className="m-0 border-t-2 border-line-strong pt-3 text-lg font-semibold">Your check-in</h3>
-          <Card>
-            <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2">
-              {checkIn.map(([label, value]) => (
-                <div key={label} className="contents">
-                  <dt className="font-semibold text-muted">{label}</dt>
-                  <dd className="m-0">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </Card>
-        </div>
-      ) : null}
     </div>
   );
 }
