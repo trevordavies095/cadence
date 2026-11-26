@@ -152,6 +152,8 @@ export type PlanWarning = {
   title: string;
   body: string;
   figures?: Record<string, number>;
+  /** The plan dates the notice names (YYYY-MM-DD); absent when it names none. */
+  dates?: string[];
 };
 
 export type PrescribedWeekRecord = {

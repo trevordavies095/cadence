@@ -78,6 +78,13 @@ export type PlanWarning = {
   body: string;
   /** The figures behind the warning, in metres, for the log and the analysis. */
   figures?: Record<string, number>;
+  /**
+   * The plan dates the body names (YYYY-MM-DD), in order; absent when it
+   * names none. This week's Plan stops showing the notice once the last of
+   * them has passed (ADR 0009). Absent too on warnings stored before
+   * 2026-11-26: read those through {@link warningDates}.
+   */
+  dates?: string[];
 };
 
 export type PlanRuleSkip = { rule: PlanRule; reason: PlanRuleSkipReason };
@@ -309,6 +316,7 @@ const longRunJump: Rule = (packet, plan, unit, out) => {
       `The ${wholeDistance(planned.distanceM, unit)} on ${formatDayShort(planned.date)} is well above your longest recent run of ${wholeDistance(longestM, unit)}. ` +
       "Build to it over a few weeks, or ask me to adjust.",
     figures: { plannedLongM: Math.round(planned.distanceM), longestRecentM: Math.round(longestM) },
+    dates: [planned.date],
   });
 };
 
@@ -324,6 +332,7 @@ const qualityWithPain: Rule = (packet, plan, _unit, out) => {
       `${painSeen(reports[0]!)}. This plan still has hard running on ${dayList(hard.map((d) => d.date))}. ` +
       "Keep it easy until it settles, or ask me to adjust.",
     figures: { painReports: reports.length, hardDays: hard.length },
+    dates: hard.map((d) => d.date),
   });
 };
 
@@ -345,6 +354,8 @@ const returnFromInjury: Rule = (packet, plan, unit, out) => {
       `the ${wholeDistance(planned!.distanceM, unit)} on ${formatDayShort(planned!.date)} is above your longest recent run of ${wholeDistance(longestM!, unit)}`,
     );
   }
+  const dates = hard.map((d) => d.date);
+  if (longRunAbove && !dates.includes(planned!.date)) dates.push(planned!.date);
   const figures: Record<string, number> = { hardDays: hard.length };
   if (planned) figures.plannedLongM = Math.round(planned.distanceM);
   if (longestM != null) figures.longestRecentM = Math.round(longestM);
@@ -353,8 +364,26 @@ const returnFromInjury: Rule = (packet, plan, unit, out) => {
     title: "This plan may rush your return",
     body: `You are coming back from injury, and ${clauses.join(", and ")}. Keep it easy a while longer, or ask me to adjust.`,
     figures,
+    dates: dates.sort(),
   });
 };
+
+/**
+ * The dates a warning names. A warning stored before warnings carried their
+ * dates gets them from the stored plan, by the days its rule names: the hard
+ * days, or the long run. Undefined when it names no day (a volume jump), or
+ * for a return-from-injury warning stored without them, whose body may or may
+ * not name the long run.
+ */
+export function warningDates(warning: PlanWarning, plan: PrescribedWeek): string[] | undefined {
+  if (warning.dates) return warning.dates;
+  if (warning.rule === "quality with pain") return hardDays(plan).map((d) => d.date);
+  if (warning.rule === "long-run jump") {
+    const planned = plannedLongRun(plan);
+    return planned ? [planned.date] : undefined;
+  }
+  return undefined;
+}
 
 const RULES: ReadonlyArray<Rule> = [volumeJump, longRunJump, qualityWithPain, returnFromInjury];
 

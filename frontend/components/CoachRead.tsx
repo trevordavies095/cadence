@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { CoachText } from "@/components/CoachText";
 import { CoachSurface, Muted, Notice, cx } from "@/components/ui";
 import type { PrescribedWeekRecord } from "@/lib/api";
@@ -17,13 +20,16 @@ function withStop(title: string): string {
  * away, then on Coach Cade's surface the headline, what Coach Cade is
  * watching, the answers to the athlete's questions, and the rest of the read
  * under "The full read". Once the week is under way the answers fold away with
- * it. Plans made before these parts show the read as it was, with nothing
- * folded.
+ * it, Watching keeps only its titles until the fold is opened, and a plan
+ * notice about days that have passed is left out, so the week's days are on
+ * the first screen (ADR 0009). Plans made before these parts show the read as
+ * it was, with nothing folded.
  */
 export function CoachRead({
   record,
   emptyText,
   fresh,
+  todayYmd,
 }: {
   record: Pick<PrescribedWeekRecord, "analysis" | "safetyCallouts" | "readSections" | "planWarnings">;
   /** Shown when there is no read; nothing is shown when left out. */
@@ -34,7 +40,15 @@ export function CoachRead({
    * fold away with the full read, so the days come first.
    */
   fresh: boolean;
+  /**
+   * Today, on this week's Plan only: a plan notice whose named days are all
+   * before it is not shown. Left out everywhere else, where every notice
+   * stays as a record. Safety notices are never left out.
+   */
+  todayYmd?: string | null;
 }) {
+  // The fold starts open where the read is fresh; Watching's details follow it.
+  const [open, setOpen] = useState(fresh);
   const sections = record.readSections;
   const headline = sections?.headline?.trim();
   const flags = sections?.flags ?? [];
@@ -63,7 +77,13 @@ export function CoachRead({
       ? "Your questions and the full read"
       : "Your questions"
     : "The full read";
-  const notices = (record.safetyCallouts ?? []).length + (record.planWarnings ?? []).length;
+  const planWarnings = (record.planWarnings ?? []).filter(
+    (w) => !todayYmd || !w.dates?.length || w.dates.some((d) => d >= todayYmd),
+  );
+  const notices = (record.safetyCallouts ?? []).length + planWarnings.length;
+  const hasFold = Boolean(sections && (analysis || foldAnswers));
+  // With nothing to open, the details have nowhere to fold to, so they stay.
+  const watchingDetails = fresh || open || !hasFold;
   return (
     <>
       {(record.safetyCallouts ?? []).map((c) => (
@@ -72,7 +92,7 @@ export function CoachRead({
         </Notice>
       ))}
       {/* Cadence's own check of the plan, worded by Coach Cade; the rule behind a notice is never shown. */}
-      {(record.planWarnings ?? []).map((w) => (
+      {planWarnings.map((w) => (
         <Notice key={`${w.title}:${w.body}`} title={w.title} severity="caution">
           {w.body}
         </Notice>
@@ -96,16 +116,20 @@ export function CoachRead({
               <ul className="m-0 flex list-disc flex-col gap-1 pl-5">
                 {flags.map((f, i) => (
                   <li key={`${f.title}-${i}`} className={MEASURE}>
-                    <strong className="font-semibold">{withStop(f.title)}</strong> {f.detail}
+                    <strong className="font-semibold">{withStop(f.title)}</strong>
+                    {watchingDetails ? ` ${f.detail}` : null}
                   </li>
                 ))}
               </ul>
             </section>
           ) : null}
           {foldAnswers ? null : questions}
-          {sections && (analysis || foldAnswers) ? (
-            // Keyed on the default so switching weeks resets it rather than keeping the last toggle.
-            <details key={String(fresh)} open={fresh} data-part="full-read">
+          {hasFold ? (
+            <details
+              open={open}
+              onToggle={(e) => setOpen(e.currentTarget.open)}
+              data-part="full-read"
+            >
               <summary className={`cursor-pointer ${EYEBROW}`}>{foldLabel}</summary>
               <div className="mt-3 flex flex-col gap-4">
                 {foldAnswers ? questions : null}

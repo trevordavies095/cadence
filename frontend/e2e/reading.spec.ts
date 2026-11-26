@@ -368,6 +368,44 @@ test.describe("The full read", () => {
     await expect(week.getByText(/so Thursday is shorter/)).toBeVisible();
   });
 
+  test("on this week's plan, Watching keeps its titles and its details open with the full read", async ({
+    page,
+  }) => {
+    await serveThisPlan(page, { readSections: SECTIONS });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "This week" }).click();
+    const week = page.getByRole("region", { name: "Week plan" });
+
+    const watching = week.getByRole("region", { name: "Watching" });
+    await expect(watching.getByRole("listitem")).toHaveText(["Sleep."]);
+    await week.getByText("The full read", { exact: true }).click();
+    await expect(watching.getByRole("listitem")).toHaveText(["Sleep. Down to 6.8 hours."]);
+  });
+
+  test("on this week's plan, a plan notice goes once the days it names have passed; a safety notice never does", async ({
+    page,
+  }) => {
+    // The pinned clock is Sun Oct 25.
+    const warning = (title: string, dates?: string[]) => ({ rule: "quality with pain", title, body: "Keep it easy.", dates });
+    await serveThisPlan(page, {
+      readSections: SECTIONS,
+      safetyCallouts: [CALLOUT],
+      planWarnings: [
+        warning("Named Thursday", ["2026-10-22"]),
+        warning("Named Thursday and today", ["2026-10-22", "2026-10-25"]),
+        warning("Named no day"),
+      ],
+    });
+    await page.goto("/plan");
+    await page.getByRole("button", { name: "This week" }).click();
+    const week = page.getByRole("region", { name: "Week plan" });
+
+    await expect(week.getByText("See a professional")).toBeVisible();
+    await expect(week.getByText("Named Thursday and today")).toBeVisible();
+    await expect(week.getByText("Named no day")).toBeVisible();
+    await expect(week.getByText("Named Thursday", { exact: true })).toHaveCount(0);
+  });
+
   test("on this week's plan, last Sunday's answers fold away with it, under a label that says so", async ({
     page,
   }) => {
