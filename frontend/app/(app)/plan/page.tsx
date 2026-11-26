@@ -82,7 +82,8 @@ export default function PlanPage() {
         if (nextResult.status === "fulfilled") {
           const next = nextResult.value;
           setNextPlan(next.prescribed);
-          setNextIsoWeek(next.weekSession.isoWeek);
+          // Only the dates beside "Next week" need it, so a reply without it still shows the plan.
+          setNextIsoWeek(next.weekSession?.isoWeek ?? null);
           setUnit(next.unitPreference);
           setTodayYmd(next.todayYmd);
           setCheckInStatus(next.checkInStatus);
