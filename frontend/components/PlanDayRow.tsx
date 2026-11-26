@@ -1,4 +1,4 @@
-import type { PrescribedDay, UnitPreference } from "@/lib/api";
+import type { HomeWeekDay, PrescribedDay, UnitPreference } from "@/lib/api";
 import {
   DAY_TYPE_LABEL,
   isNotARun,
@@ -11,7 +11,7 @@ import {
   planSentence,
   weekdayLabel,
 } from "@/lib/planDay";
-import { plannedRunLabel } from "@/lib/units";
+import { distanceLabel, plannedRunLabel } from "@/lib/units";
 import { AddDetails } from "./AddDetails";
 import { LabelValueList } from "./ui";
 
@@ -57,11 +57,18 @@ export function PlanDayRow({
   day,
   unit,
   isToday,
+  outcome,
   onAddDetails,
 }: {
   day: PrescribedDay;
   unit: UnitPreference;
   isToday: boolean;
+  /**
+   * How the day went against the running log, on this week's plan: a run that
+   * was done, with its distance, or a planned run that was missed. Absent for
+   * next week, the change card, and until Home's week has loaded.
+   */
+  outcome?: Pick<HomeWeekDay, "state" | "actualDistanceM">;
   /**
    * The Plan page's "Add the details" for an unread day: resolves true once
    * the day is filled in (the page re-renders the row from the new plan),
@@ -101,11 +108,26 @@ export function PlanDayRow({
           ) : null}
         </strong>
         {/* An unread day has no day type worth naming; the body says what it is. */}
-        {notFiled ? null : (
-          <span className="text-muted">
-            {DAY_TYPE_LABEL[day.dayType] ?? day.dayType}
-          </span>
-        )}
+        <span className="flex flex-wrap items-baseline justify-end gap-x-2 text-right">
+          {/* A day stored before plans were text says "Not a run" in its body. */}
+          {notFiled || (notRun && !sentence) ? null : (
+            <span className="text-muted">
+              {DAY_TYPE_LABEL[day.dayType] ?? day.dayType}
+            </span>
+          )}
+          {outcome?.state === "done" ? (
+            <span className="text-sm font-semibold text-ok" data-part="day-outcome">
+              Done
+              {outcome.actualDistanceM != null && outcome.actualDistanceM > 0
+                ? ` · ${distanceLabel(outcome.actualDistanceM, unit)}`
+                : ""}
+            </span>
+          ) : outcome?.state === "missed" ? (
+            <span className="text-sm font-semibold text-danger" data-part="day-outcome">
+              Missed
+            </span>
+          ) : null}
+        </span>
       </div>
       {notFiled ? (
         <>

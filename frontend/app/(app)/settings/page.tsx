@@ -322,14 +322,69 @@ export default function SettingsPage() {
     <Page>
       <PageHead>
         <PageTitle>Settings</PageTitle>
-        <Muted>{intro}</Muted>
       </PageHead>
+
+      <section className="flex flex-col gap-2" aria-label="About you">
+        <SectionTitle>About you</SectionTitle>
+        <Muted>What Coach Cade knows about you. Read it, add to it or fix it.</Muted>
+        <div>
+          <ButtonLink href="/dossier" variant="secondary">
+            About you
+          </ButtonLink>
+        </div>
+      </section>
 
       {/* No goal before the first answers: onboarding asks for it. A failed load shows, since
           there may be a goal stored. */}
       {goal || onboarded || goalError ? (
         <TrainingGoalSection initial={goal} loadError={goalError} />
       ) : null}
+
+      <section className="flex flex-col gap-3" aria-label="Appearance">
+        <SectionTitle>Appearance</SectionTitle>
+        <div role="radiogroup" aria-label="Appearance" className="flex flex-wrap gap-2">
+          {APPEARANCE_CHOICES.map((choice) => {
+            const selected = appearance === choice.value;
+            return (
+              <button
+                key={choice.value}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => chooseAppearance(choice.value)}
+                className={cx(
+                  "rounded-tempo border px-4 py-2.5 text-base font-semibold",
+                  selected ? "border-ink bg-raised text-ink" : "border-border text-muted hover:text-ink",
+                )}
+              >
+                {choice.label}
+              </button>
+            );
+          })}
+        </div>
+        <Muted>System follows your computer’s light or dark setting.</Muted>
+      </section>
+
+      <section className="flex flex-col gap-2" aria-label="Privacy">
+        <SectionTitle>Privacy</SectionTitle>
+        <Muted>
+          What Coach Cade reads, what is sent to Anthropic, and what was sent last.
+        </Muted>
+        <div className="flex flex-wrap gap-3">
+          <ButtonLink href="/privacy" variant="secondary">
+            Privacy
+          </ButtonLink>
+          <ButtonLink href="/disclaimer" variant="secondary">
+            Product disclaimer
+          </ButtonLink>
+        </div>
+      </section>
+
+      {/* Set once and rarely touched, so the connections come after what an athlete changes. */}
+      <section className="flex flex-col gap-2" aria-label="Connections">
+        <SectionTitle>Connections</SectionTitle>
+        <Muted>{intro}</Muted>
+      </section>
 
       <section className="flex flex-col gap-3" aria-label="Tempo connection">
         <SectionTitle>Tempo</SectionTitle>
@@ -450,54 +505,8 @@ export default function SettingsPage() {
 
       <CoachModelSection offline={modelOffline} demo={sources?.demo ?? false} />
 
-      <section className="flex flex-col gap-3" aria-label="Appearance">
-        <SectionTitle>Appearance</SectionTitle>
-        <div role="radiogroup" aria-label="Appearance" className="flex flex-wrap gap-2">
-          {APPEARANCE_CHOICES.map((choice) => {
-            const selected = appearance === choice.value;
-            return (
-              <button
-                key={choice.value}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => chooseAppearance(choice.value)}
-                className={cx(
-                  "rounded-tempo border px-4 py-2.5 text-base font-semibold",
-                  selected ? "border-ink bg-raised text-ink" : "border-border text-muted hover:text-ink",
-                )}
-              >
-                {choice.label}
-              </button>
-            );
-          })}
-        </div>
-        <Muted>System follows your computer’s light or dark setting.</Muted>
-      </section>
-
-      <section className="flex flex-col gap-2" aria-label="Privacy">
-        <SectionTitle>Privacy</SectionTitle>
-        <Muted>
-          What Coach Cade reads, what is sent to Anthropic, and what was sent last.
-        </Muted>
-        <div className="flex flex-wrap gap-3">
-          <ButtonLink href="/privacy" variant="secondary">
-            Privacy
-          </ButtonLink>
-          <ButtonLink href="/disclaimer" variant="secondary">
-            Product disclaimer
-          </ButtonLink>
-        </div>
-      </section>
-
       {status && <p className="m-0 text-ok">{status}</p>}
       <ErrorNote error={error} />
-
-      <Muted>
-        <ButtonLink href="/dossier" variant="quiet">
-          About you
-        </ButtonLink>
-      </Muted>
 
       {auth.enabled ? (
         <section className="flex flex-col gap-3" aria-label="Sign out">

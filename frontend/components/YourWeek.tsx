@@ -100,7 +100,7 @@ function Table({
     <div className="overflow-x-auto">
       <table
         aria-label={label}
-        className="w-full border-collapse text-left tabular-nums"
+        className="w-full border-collapse text-left text-sm tabular-nums sm:text-base"
       >
         <thead>
           <tr>
@@ -109,8 +109,9 @@ function Table({
                 key={h}
                 scope="col"
                 className={cx(
-                  "border-b border-line-strong px-3 py-2 text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted first:pl-0",
-                  i > 0 && "text-right whitespace-nowrap",
+                  "border-b border-line-strong px-1.5 py-2 align-bottom text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted first:pl-0 last:pr-0 sm:px-3",
+                  // On a phone a long heading wraps, so the column is as wide as its figures.
+                  i > 0 && "text-right sm:whitespace-nowrap",
                 )}
               >
                 {h}
@@ -125,7 +126,7 @@ function Table({
 }
 
 /** The row-label column: left-aligned, free to wrap. */
-const cell = "border-b border-border px-3 py-2 first:pl-0";
+const cell = "border-b border-border px-1.5 py-2 first:pl-0 last:pr-0 sm:px-3";
 /** Numeric cells: right-aligned, tabular, kept on one line. */
 const num = cx(cell, "text-right tabular-nums whitespace-nowrap");
 
