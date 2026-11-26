@@ -1,6 +1,8 @@
 import { boundsForIsoWeek } from "../clock/isoWeek.js";
 import type { Clock } from "../clock/clock.js";
 import { todayYmdForSession } from "../prescribed/patch.js";
+import { getCurrentGoal } from "../goal/store.js";
+import type { TrainingGoal } from "../goal/types.js";
 import { expectedPlanDates } from "../llm/schema.js";
 import type { PrescribedDay } from "../llm/types.js";
 import { resolveLoopStatus, type LoopStatus } from "../loop/status.js";
@@ -68,6 +70,34 @@ export type HomeWeekDay = {
   line: string | null;
 };
 
+/**
+ * What frames the week, for the line Home opens with: the race ahead, and
+ * when the weekly check-in opens. Each part is null when there is nothing to say.
+ */
+export type HomeContext = {
+  /** A race or a dated speed goal still ahead, counted in days from today (0 on the day). */
+  race: { name: string | null; date: string; daysToRace: number } | null;
+  /** The Saturday the check-in opens (YYYY-MM-DD); null once it is open, finished or skipped. */
+  checkInOpensOn: string | null;
+};
+
+/** Days from one YYYY-MM-DD to another. */
+function daysBetween(from: string, to: string): number {
+  const day = (ymd: string) => {
+    const [y, m, d] = ymd.split("-").map(Number) as [number, number, number];
+    return Date.UTC(y, m - 1, d) / 86_400_000;
+  };
+  return day(to) - day(from);
+}
+
+/** The race part of Home's context; the same goals that take the race rule in the report. */
+export function raceAhead(goal: TrainingGoal | null, todayYmd: string): HomeContext["race"] {
+  if (!goal || (goal.kind !== "race" && goal.kind !== "speed") || !goal.raceDate) return null;
+  const daysToRace = daysBetween(todayYmd, goal.raceDate);
+  if (daysToRace < 0) return null;
+  return { name: goal.raceName?.trim() || null, date: goal.raceDate, daysToRace };
+}
+
 export type HomeRead = {
   weekSessionId: string | null;
   isoWeek: string | null;
@@ -83,6 +113,7 @@ export type HomeRead = {
   units: TempoUnitPreference;
   /** True when Tempo could not be read; the week then shows the plan only. */
   tempoUnavailable: boolean;
+  context: HomeContext;
 };
 
 const PLAN_READY_PHASES = new Set<LoopStatus["phase"]>([
@@ -187,6 +218,7 @@ export async function composeHome(options: {
     totals: { actualDistanceM: 0, plannedDistanceM: 0, plannedDurationS: 0 },
     units,
     tempoUnavailable: false,
+    context: { race: null, checkInOpensOn: null },
   };
 
   const sessionId = status.week.weekSessionId;
@@ -229,8 +261,16 @@ export async function composeHome(options: {
     line: day.parsed ? null : (day.planned?.line ?? null),
   }));
 
+  const goal = await getCurrentGoal();
+  const checkInWaits = status.flags.checkIn === "needed" && !status.flags.weekEnding;
+
   return {
     ...empty,
+    context: {
+      race: raceAhead(goal?.goal ?? null, todayYmd),
+      // The check-in opens on the week's Saturday.
+      checkInOpensOn: checkInWaits ? (dates[5] ?? null) : null,
+    },
     today: planByDate.get(todayYmd) ?? null,
     week,
     totals: {

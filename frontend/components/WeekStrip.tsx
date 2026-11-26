@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import type { HomeWeekDay, UnitPreference } from "@/lib/api";
 import { NOT_FILED_EXPLANATION, NOT_FILED_LABEL } from "@/lib/planDay";
 import { distanceLabel, durationLabel } from "@/lib/units";
@@ -31,11 +34,20 @@ export function WeekStrip({
 }) {
   // Phones can't hover, so the reason a day couldn't be read is written out, not left in a tooltip.
   const unread = week.some((d) => d.state === "not_filed" && d.line);
+  // On a phone the week is one row that scrolls sideways; it opens on today.
+  const todayRef = useRef<HTMLLIElement>(null);
+  const todayYmd = week.find((d) => d.isToday)?.date;
+  useEffect(() => {
+    const el = todayRef.current;
+    const row = el?.parentElement;
+    if (!el || !row || row.scrollWidth <= row.clientWidth) return;
+    row.scrollLeft = el.offsetLeft - row.offsetLeft - (row.clientWidth - el.clientWidth) / 2;
+  }, [todayYmd]);
   return (
     <div className="flex flex-col gap-3">
       <ol
         aria-label="This week"
-        className="m-0 grid list-none grid-cols-2 gap-x-4 gap-y-3 p-0 sm:grid-cols-7"
+        className="m-0 flex list-none gap-x-4 overflow-x-auto p-0 pb-1 sm:grid sm:grid-cols-7 sm:overflow-visible sm:pb-0"
       >
         {week.map((d) => {
           const { name, date } = dayName(d.date);
@@ -61,9 +73,10 @@ export function WeekStrip({
           return (
             <li
               key={d.date}
+              ref={d.isToday ? todayRef : undefined}
               aria-current={d.isToday ? "date" : undefined}
               className={cx(
-                "flex flex-col gap-0.5 border-t-2 pt-2",
+                "flex w-[5.25rem] shrink-0 flex-col gap-0.5 border-t-2 pt-2 sm:w-auto",
                 d.isToday ? "border-accent" : "border-border",
               )}
             >

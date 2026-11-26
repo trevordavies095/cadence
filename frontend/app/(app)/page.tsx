@@ -15,6 +15,7 @@ import {
 } from "@/components/ui";
 import { fetchHome, type HomeRead, type UnitPreference } from "@/lib/api";
 import { describeError, type UiError } from "@/lib/errors";
+import { homeContextLine, nextRunThisWeek } from "@/lib/planDay";
 import { distanceLabel, durationLabel } from "@/lib/units";
 import { isoWeekRangeLabel } from "@/lib/weekLabel";
 
@@ -101,6 +102,7 @@ export default function Home() {
   const hasPlan = home.week.some((d) => d.dayType !== null);
   const { actualDistanceM, plannedDistanceM } = home.totals;
   const plannedDurationS = home.totals.plannedDurationS ?? 0;
+  const contextLine = homeContextLine(home.context);
 
   return (
     <Page>
@@ -113,13 +115,25 @@ export default function Home() {
           />
         ) : null}
 
-        <PageTitle>Home</PageTitle>
+        {/* The tab already says Home. The page opens with what frames the week (ADR 0009). */}
+        <h1 className="sr-only">Home</h1>
+        {contextLine ? (
+          <p className="m-0 text-muted" data-part="week-context">
+            {contextLine}
+          </p>
+        ) : null}
         <ErrorNote error={error} />
       </PageHead>
 
       {hasWeek ? (
         <>
-          <TodayCard today={home.today} hasPlan={hasPlan} unit={home.units} />
+          <TodayCard
+            today={home.today}
+            hasPlan={hasPlan}
+            unit={home.units}
+            outcome={home.week.find((d) => d.isToday) ?? null}
+            next={nextRunThisWeek(home.week)}
+          />
 
           <section className="flex flex-col gap-3" aria-label="Your week so far">
             <SectionHeader
