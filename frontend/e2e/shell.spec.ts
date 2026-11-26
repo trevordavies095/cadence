@@ -60,6 +60,14 @@ test.describe("Settings", () => {
     for (const name of ["Tempo", "Anthropic", "Appearance", "Privacy"]) {
       await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible();
     }
+    // What an athlete changes comes first; the connections, set once, come last.
+    const order = await page.getByRole("heading", { level: 2 }).allTextContents();
+    expect(order.indexOf("About you")).toBe(0);
+    expect(order.indexOf("Appearance")).toBeLessThan(order.indexOf("Connections"));
+    expect(order.indexOf("Connections")).toBeLessThan(order.indexOf("Tempo"));
+    await expect(
+      page.getByRole("region", { name: "About you" }).getByRole("link", { name: "About you" }),
+    ).toHaveAttribute("href", "/dossier");
     await expect(page.getByText("Last coaching context sent")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /Show JSON/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Privacy", exact: true })).toHaveAttribute(

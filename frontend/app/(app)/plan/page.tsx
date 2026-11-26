@@ -20,6 +20,7 @@ import { isoWeekRangeLabel } from "@/lib/weekLabel";
 import {
   CheckInRequiredError,
   ensureCurrentWeek,
+  fetchHome,
   fetchNextWeekPrescribed,
   fetchPrescribedWeek,
   fetchReplyRun,
@@ -27,6 +28,7 @@ import {
   postPlanDayDetails,
   postWeeklyReply,
   type CheckInStatus,
+  type HomeWeekDay,
   type PrescribedWeekRecord,
   type UnitPreference,
   type WeekSession,
@@ -39,6 +41,8 @@ export default function PlanPage() {
   const [week, setWeek] = useState<WeekSession | null>(null);
   const [thisPlan, setThisPlan] = useState<PrescribedWeekRecord | null>(null);
   const [nextPlan, setNextPlan] = useState<PrescribedWeekRecord | null>(null);
+  const [nextIsoWeek, setNextIsoWeek] = useState<string | null>(null);
+  const [outcomes, setOutcomes] = useState<Map<string, HomeWeekDay>>(new Map());
   const [unit, setUnit] = useState<UnitPreference>("imperial");
   const [todayYmd, setTodayYmd] = useState<string | null>(null);
   const [view, setView] = useState<"this" | "next">("this");
@@ -57,6 +61,13 @@ export default function PlanPage() {
         const current = await ensureCurrentWeek();
         if (cancelled) return;
         setWeek(current);
+        // How each day went, from the helper Home uses. It reads the running log,
+        // so the plan does not wait for it: the marks appear when it answers.
+        void fetchHome()
+          .then((home) => {
+            if (!cancelled) setOutcomes(new Map(home.week.map((d) => [d.date, d])));
+          })
+          .catch(() => undefined);
         const [prescribedResult, nextResult, runResult] = await Promise.allSettled([
           fetchPrescribedWeek(current.id),
           fetchNextWeekPrescribed(current.id),
@@ -71,6 +82,7 @@ export default function PlanPage() {
         if (nextResult.status === "fulfilled") {
           const next = nextResult.value;
           setNextPlan(next.prescribed);
+          setNextIsoWeek(next.weekSession.isoWeek);
           setUnit(next.unitPreference);
           setTodayYmd(next.todayYmd);
           setCheckInStatus(next.checkInStatus);
@@ -179,7 +191,9 @@ export default function PlanPage() {
   const weekLabel = selected
     ? isoWeekRangeLabel(selected.plan.week)
     : view === "next"
-      ? "next week"
+      ? nextIsoWeek
+        ? isoWeekRangeLabel(nextIsoWeek)
+        : null
       : week
         ? isoWeekRangeLabel(week.isoWeek)
         : "this week";
@@ -225,17 +239,17 @@ export default function PlanPage() {
                   day={day}
                   unit={unit}
                   isToday={day.date === todayYmd}
+                  outcome={view === "this" ? outcomes.get(day.date) : undefined}
                   onAddDetails={(date) => addDetails(selected, date)}
                 />
               ))}
             </ol>
           </>
-        ) : (
+        ) : view === "next" && !planUnlocked ? null : (
+          // Before the check-in, the line under this section already says when next week is planned.
           <Muted>
             {view === "next"
-              ? planUnlocked
-                ? "Next week’s plan isn’t ready yet."
-                : "Finish or skip this week’s check-in and Coach Cade will plan next week."
+              ? "Next week’s plan isn’t ready yet."
               : "No plan for this week yet."}
           </Muted>
         )}

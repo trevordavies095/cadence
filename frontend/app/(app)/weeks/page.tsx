@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  cx,
   ErrorNote,
   Muted,
   Page,
@@ -20,10 +21,16 @@ import {
 import { describeError, type UiError } from "@/lib/errors";
 import { distanceLabel } from "@/lib/units";
 
+const figure = "tabular-nums whitespace-nowrap sm:py-3 sm:pr-4 sm:text-right";
+/** The unit after a figure, from its data-unit, on a phone only. */
+const phoneUnit =
+  "after:ml-1 after:text-muted after:content-[attr(data-unit)] sm:after:content-none";
+
 export default function HistoryPage() {
   const [loaded, setLoaded] = useState(false);
   const [weeks, setWeeks] = useState<WeekSummary[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
+  const [currentStart, setCurrentStart] = useState<string | null>(null);
   const [unit, setUnit] = useState<UnitPreference>("imperial");
   const [runsUnknown, setRunsUnknown] = useState(false);
   const [error, setError] = useState<UiError | null>(null);
@@ -35,6 +42,7 @@ export default function HistoryPage() {
         const current = await ensureCurrentWeek();
         if (cancelled) return;
         setCurrentId(current.id);
+        setCurrentStart(current.start);
         const data = await fetchWeeks();
         if (cancelled) return;
         setWeeks(data.weeks);
@@ -67,6 +75,13 @@ export default function HistoryPage() {
     );
   }
 
+  // Next week's row exists as soon as its plan slot does. Until Coach Cade has
+  // planned it, it has nothing to show, so it stays off the list.
+  const shown = weeks.filter(
+    (w) => currentStart == null || w.start <= currentStart || w.coachHeadline,
+  );
+  const unitShort = unit === "metric" ? "km" : "mi";
+
   return (
     <Page>
       <PageHead>
@@ -77,49 +92,56 @@ export default function HistoryPage() {
         ) : null}
       </PageHead>
 
-      {weeks.length === 0 ? (
+      {shown.length === 0 ? (
         <Muted>No weeks yet.</Muted>
       ) : (
-        // On a narrow phone the table scrolls on its own; the page never does.
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="border-b border-line-strong text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted">
-                <th scope="col" className="py-2 pr-4 font-semibold">Week</th>
-                <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
-                  {unit === "metric" ? "Km" : "Miles"}
+        // A table from the sm breakpoint up. On a phone each row stacks: the week,
+        // its miles and runs on one line, then Coach Cade's line at full width.
+        <table className="w-full border-collapse text-left">
+          <thead className="hidden sm:table-header-group">
+            <tr className="border-b border-line-strong text-[0.8125rem] font-semibold uppercase tracking-[0.07em] text-muted">
+              <th scope="col" className="py-2 pr-4 font-semibold">Week</th>
+              <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
+                {unit === "metric" ? "Km" : "Miles"}
+              </th>
+              <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
+                Runs
+              </th>
+              <th scope="col" className="py-2 font-semibold">From Coach Cade</th>
+            </tr>
+          </thead>
+          <tbody className="block border-t border-line-strong sm:table-row-group sm:border-t-0">
+            {shown.map((w) => (
+              <tr
+                key={w.id}
+                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border py-3 align-top sm:table-row sm:py-0"
+              >
+                <th scope="row" className="w-full font-semibold whitespace-nowrap sm:w-auto sm:py-3 sm:pr-4">
+                  <Link href={`/review?week=${w.id}`} className="text-ink underline-offset-4 hover:underline">
+                    {w.localRange}
+                  </Link>
+                  {w.id === currentId ? (
+                    <span className="ml-2 rounded-md border border-border px-2 py-0.5 text-sm font-semibold">
+                      This week
+                    </span>
+                  ) : null}
                 </th>
-                <th scope="col" className="py-2 pr-4 text-right font-semibold whitespace-nowrap">
-                  Runs
-                </th>
-                <th scope="col" className="py-2 font-semibold">From Coach Cade</th>
+                {/* The column headings are hidden on a phone, so the figures carry their own units there. */}
+                <td data-unit={unitShort} className={cx(figure, phoneUnit)}>
+                  {w.actualDistanceM == null
+                    ? "–"
+                    : distanceLabel(w.actualDistanceM, unit).replace(/ (mi|km)$/, "")}
+                </td>
+                <td data-unit={w.runCount === 1 ? "run" : "runs"} className={cx(figure, phoneUnit)}>
+                  {w.runCount ?? "–"}
+                </td>
+                <td className={w.coachHeadline ? "w-full text-muted sm:w-auto sm:py-3" : "hidden sm:table-cell sm:py-3"}>
+                  {w.coachHeadline ?? ""}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {weeks.map((w) => (
-                <tr key={w.id} className="border-b border-border align-top">
-                  <th scope="row" className="py-3 pr-4 font-semibold whitespace-nowrap">
-                    <Link href={`/review?week=${w.id}`} className="text-ink underline-offset-4 hover:underline">
-                      {w.localRange}
-                    </Link>
-                    {w.id === currentId ? (
-                      <span className="ml-2 rounded-md border border-border px-2 py-0.5 text-sm font-semibold">
-                        This week
-                      </span>
-                    ) : null}
-                  </th>
-                  <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">
-                    {w.actualDistanceM == null
-                      ? "–"
-                      : distanceLabel(w.actualDistanceM, unit).replace(/ (mi|km)$/, "")}
-                  </td>
-                  <td className="py-3 pr-4 text-right tabular-nums whitespace-nowrap">{w.runCount ?? "–"}</td>
-                  <td className="py-3 text-muted">{w.coachHeadline ?? ""}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       )}
     </Page>
   );

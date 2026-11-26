@@ -13,7 +13,8 @@ export const DAY_TYPE_LABEL: Record<string, string> = {
   long: "Long run",
   race: "Race",
   rest: "Rest day",
-  other: "Other",
+  // Strength, cross-training or a walk: the same words Home's week uses.
+  other: "Not a run",
 };
 
 /** The mark on a day Coach Cade wrote that Cadence could not read yet. */

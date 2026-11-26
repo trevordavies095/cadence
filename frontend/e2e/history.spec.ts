@@ -25,6 +25,10 @@ test.describe("History", () => {
   test("lists the weeks newest first with date range, miles, runs and the current week marked", async ({
     page,
   }) => {
+    // Next week has a row as soon as its plan slot exists; Coach Cade has not planned it here.
+    await serveWeeks(page, (weeks) =>
+      weeks.map((w) => (w.localRange === "Oct 26 – Nov 1" ? { ...w, coachHeadline: null } : w)),
+    );
     await page.goto("/weeks");
     await expect(page.getByRole("heading", { name: "History", level: 1 })).toBeVisible();
 
@@ -37,7 +41,9 @@ test.describe("History", () => {
     ]);
 
     const rows = table.locator("tbody tr");
-    await expect(rows.first()).toContainText("Oct 26 – Nov 1");
+    // A week that has not started and has no plan yet has nothing to look back on.
+    await expect(rows.first()).toContainText("Oct 19 – 25");
+    await expect(rows.filter({ hasText: "Oct 26 – Nov 1" })).toHaveCount(0);
     const current = rows.filter({ hasText: "Oct 19 – 25" });
     await expect(current).toContainText("This week");
     // The fixture has two runs that week, and miles come in the athlete's units.
