@@ -110,6 +110,9 @@ test.describe("the Sunday message", () => {
     const conversation = page.getByRole("region", { name: "The conversation" });
     await expect(conversation).toContainText(FIRST_PARAGRAPH);
     await expect(conversation).not.toContainText("Sleep slipped");
+    // The conversation is closed until asked for.
+    await expect(conversation.getByRole("link", { name: "Open the plan" })).toHaveCount(0);
+    await conversation.getByText(/^\d+ messages? between you and Coach Cade$/).click();
     await expect(conversation.getByRole("link", { name: "Open the plan" })).toHaveAttribute(
       "href",
       `/review?week=${PAST}`,

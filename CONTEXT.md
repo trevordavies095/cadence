@@ -15,7 +15,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | week session | **week**, **this week**, **past week** | The Monday to Sunday unit in the athlete timezone. |
 | ISO week (2026-W43) | "Oct 19 – 25" | Never show the ISO label. |
 | archived week | **past week** | A week before the current one. Chat is read-only there. |
-| recap, weekly recap, recap gate | **Your week** (the report), **weekly check-in** (the interview) | The report is built from Tempo data plus the check-in answers. |
+| recap, weekly recap, recap gate | **Your week** (the report), **weekly check-in** (the interview) | The report is built from Tempo data plus the check-in answers. On the Your week page Coach Cade’s read leads, then the report with the check-in first, next week’s plan, what Coach Cade noted, and a past week’s conversation, closed until asked for (ADR 0009). |
 | subjective, subjective answers, needs_subjective | **weekly check-in**, "your check-in answers" | The athlete's own account of the week. |
 | data-only recap, skipped subjective | "You skipped this week's check-in" | A report built without check-in answers. |
 | weekly reply | "Coach Cade’s read" (the analysis), **next week's plan** (the plan) | The Sunday coach call: analysis of week N and a plan for N+1. Its read has parts the pages lay out on their own (the rows below), stored together as the plan's read sections. |
