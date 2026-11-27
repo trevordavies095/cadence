@@ -20,6 +20,8 @@ ADR 0002 already meant this week's Plan to have "the week's first days on the fi
 
 **Each page answers one question.** Home: what do I do now. Plan: what is this week. Coach Cade: the conversation. History and Your week: what happened. A page links to another page's content; it does not copy it.
 
+**On this week's Plan the days come before the read** (amends ADR 0002; added 2026-11-26 with #77's follow-up). The notices stay on top, safety notices first; then the seven days; then Coach Cade's surface with the headline, Watching and the full read. The read was written last Sunday, and what the athlete opens Plan for mid-week is the days. On next week's plan, where the read is fresh, it still leads.
+
 **Fold by freshness goes one step further on this week's Plan** (amends ADR 0002):
 
 - **Watching keeps only its titles** until "The full read" is opened; opening it shows each detail in place. With no full read and no answers to open, the details stay. On next week's plan and on Your week, where the read is fresh, everything is open as before.
@@ -37,5 +39,5 @@ ADR 0002 already meant this week's Plan to have "the week's first days on the fi
 - A plan warning has a `dates` field. A rule added to the plan check must say which plan dates its body names, or its notice stays all week.
 - Warnings stored before 2026-11-26 have no dates. They are given them when read, from the stored plan and by rule: the hard days for "quality with pain", the long run for "long-run jump". A stored "return from injury" warning is left without, since its body may or may not name the long run, so it stays all week.
 - A day changed from the conversation after Sunday does not rewrite a stored notice's dates. The notice was true of the plan it was written for, and its body still names those days.
-- With a safety notice and a three-line headline, Monday's row is still below the first screen on a phone (about 870 px at 390 px wide, from about 1,300). Getting it higher means moving the read below the days or shortening the headline, and neither is decided here.
+- With the read below the days, Monday's row on a phone starts right after the notices. Folding Watching to its titles no longer serves that purpose there; it is kept so the read stays short where it now sits.
 - The pages that follow (#78 Your week, #79 Home, #80 About you) are held to the first rule: before adding content to a page, find its home and link to it.

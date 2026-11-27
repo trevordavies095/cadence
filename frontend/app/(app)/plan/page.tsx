@@ -231,13 +231,17 @@ export default function PlanPage() {
 
         {selected ? (
           <>
-            {/* Next week's read is fresh; this week's was written last Sunday and the days come first. */}
-            {/* Keyed on the week so switching resets what was opened, not keeping the last toggle. */}
+            {/*
+              Next week's read is fresh, so it leads. This week's was written last Sunday: its
+              notices stay on top, the days come next, and the read follows them (ADR 0009).
+              Keyed on the week so switching resets what was opened, not keeping the last toggle.
+            */}
             <CoachRead
               key={view}
               record={selected}
               fresh={view === "next"}
               todayYmd={view === "this" ? todayYmd : null}
+              part={view === "this" ? "notices" : "all"}
             />
             <ol className="m-0 flex list-none flex-col gap-3 p-0">
               {selected.plan.days.map((day) => (
@@ -251,6 +255,9 @@ export default function PlanPage() {
                 />
               ))}
             </ol>
+            {view === "this" ? (
+              <CoachRead record={selected} fresh={false} todayYmd={todayYmd} part="read" />
+            ) : null}
           </>
         ) : view === "next" && !planUnlocked ? null : (
           // Before the check-in, the line under this section already says when next week is planned.
