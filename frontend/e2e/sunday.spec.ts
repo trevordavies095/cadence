@@ -243,7 +243,7 @@ test.describe("Your week: what Coach Cade noted", () => {
   test("Undo takes the note back, and About you shows the earlier text", async ({ page }) => {
     await page.goto("/dossier");
     // The reply's note is part of the profile before the undo.
-    await expect(page.getByText(/^Coach update/)).toHaveCount(1);
+    await expect(page.locator('[data-part="coach-update"]')).toHaveCount(1);
 
     await page.goto("/review");
     const noted = page.getByRole("region", { name: "What Coach Cade noted" });
@@ -251,7 +251,8 @@ test.describe("Your week: what Coach Cade noted", () => {
     await expect(noted.locator('[aria-label="You undid this"]')).toBeVisible();
 
     await page.goto("/dossier");
-    await expect(page.getByText(/^Coach update/)).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "About you", level: 1 })).toBeVisible();
+    await expect(page.locator('[data-part="coach-update"]')).toHaveCount(0);
   });
 
   test("Fix something there produces a new card", async ({ page }) => {

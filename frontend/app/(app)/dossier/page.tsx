@@ -64,6 +64,42 @@ function sectionsOf(body: string): Section[] {
   return sections;
 }
 
+const COACH_UPDATE = /^coach update\b\s*(?:\((.+)\))?\s*$/i;
+/** How many changes show before the rest fold away. */
+const RECENT_CHANGES = 5;
+
+type UpdateWeek = { label: string; bodies: string[] };
+
+/**
+ * The dated "Coach update" sections, apart from the sections about the
+ * athlete, and gathered by the week in their title. They pile up between
+ * tidy-ups, each with the same name, so they are shown as one folded group
+ * rather than as peers of Schedule and Injuries (ADR 0009). Display only: the
+ * text Coach Cade reads is not touched.
+ */
+function splitCoachUpdates(sections: Section[]): {
+  about: Section[];
+  weeks: UpdateWeek[];
+  count: number;
+} {
+  const about: Section[] = [];
+  const weeks: UpdateWeek[] = [];
+  let count = 0;
+  for (const s of sections) {
+    const m = COACH_UPDATE.exec(s.title);
+    if (!m) {
+      about.push(s);
+      continue;
+    }
+    count += 1;
+    const label = m[1]?.trim() || "Undated";
+    const week = weeks.find((w) => w.label === label);
+    if (week) week.bodies.push(s.body);
+    else weeks.push({ label, bodies: [s.body] });
+  }
+  return { about, weeks, count };
+}
+
 /**
  * What comes after the first answers. Null while the loop could not be read: the line then
  * names the check-in without saying when it opens.
@@ -186,6 +222,31 @@ export default function AboutYouPage() {
   }
 
   const sections = current ? sectionsOf(current.body) : [];
+  const { about, weeks: updateWeeks, count: updateCount } = splitCoachUpdates(sections);
+  const recentChanges = changes.slice(0, RECENT_CHANGES);
+  const olderChanges = changes.slice(RECENT_CHANGES);
+  const changeItem = (c: DossierProposal) => (
+    <li key={c.id} className="flex flex-col gap-1 border-b border-border pb-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <span className="font-semibold">
+          {dayLabel(c.createdAt)} · {KIND_WORDS[c.kind ?? "settings"]}
+          {c.status === "undone" ? " · undone" : ""}
+        </span>
+        {c.status === "accepted" && c.previousVersionId !== null ? (
+          <Button disabled={undoing === c.id} onClick={() => void undo(c.id)}>
+            Undo
+          </Button>
+        ) : null}
+      </div>
+      <ul
+        className={`m-0 flex list-disc flex-col gap-1 pl-5 ${c.status === "undone" ? "text-muted line-through" : ""}`}
+      >
+        {c.summaryBullets.map((b) => (
+          <li key={b}>{b}</li>
+        ))}
+      </ul>
+    </li>
+  );
   const knowsYou = current !== null || waiting.length > 0;
   // While the first answers wait, the card's Fix something is the one way to correct them.
   const firstAnswersWaiting = waiting.some((p) => p.kind === "onboarding");
@@ -288,7 +349,7 @@ export default function AboutYouPage() {
           <SectionTitle>What Coach Cade knows</SectionTitle>
           {sections.length > 0 ? (
             <div className="flex flex-col">
-              {sections.map((s, i) => (
+              {about.map((s, i) => (
                 <details
                   key={`${s.title}-${i}`}
                   open={i === 0}
@@ -300,6 +361,31 @@ export default function AboutYouPage() {
                   {s.body ? <CoachText className="mt-3">{s.body}</CoachText> : null}
                 </details>
               ))}
+              {updateCount > 0 ? (
+                <details className="border-b border-border py-3" data-part="coach-updates">
+                  <summary className="cursor-pointer text-lg font-semibold">
+                    Since the last tidy-up ({updateCount})
+                  </summary>
+                  <div className="mt-3 flex flex-col gap-4">
+                    <Muted>
+                      What Coach Cade has noted week by week. The next tidy-up folds these into
+                      the sections above.
+                    </Muted>
+                    {updateWeeks.map((w) => (
+                      <div key={w.label} className="flex flex-col gap-2">
+                        <h3 className="m-0 font-semibold">{w.label}</h3>
+                        {w.bodies.map((body, i) =>
+                          body ? (
+                            <div key={i} data-part="coach-update">
+                              <CoachText>{body}</CoachText>
+                            </div>
+                          ) : null,
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
             </div>
           ) : (
             <CoachText>{current.body}</CoachText>
@@ -310,33 +396,17 @@ export default function AboutYouPage() {
       {changes.length > 0 ? (
         <section className="flex flex-col gap-3" aria-label="Changes">
           <SectionTitle>Changes</SectionTitle>
-          <ul className="m-0 flex list-none flex-col gap-4 p-0">
-            {changes.map((c) => (
-              <li key={c.id} className="flex flex-col gap-1 border-b border-border pb-3">
-                <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <span className="font-semibold">
-                    {dayLabel(c.createdAt)} · {KIND_WORDS[c.kind ?? "settings"]}
-                    {c.status === "undone" ? " · undone" : ""}
-                  </span>
-                  {c.status === "accepted" && c.previousVersionId !== null ? (
-                    <Button
-                      disabled={undoing === c.id}
-                      onClick={() => void undo(c.id)}
-                    >
-                      Undo
-                    </Button>
-                  ) : null}
-                </div>
-                <ul
-                  className={`m-0 flex list-disc flex-col gap-1 pl-5 ${c.status === "undone" ? "text-muted line-through" : ""}`}
-                >
-                  {c.summaryBullets.map((b) => (
-                    <li key={b}>{b}</li>
-                  ))}
-                </ul>
-              </li>
-            ))}
-          </ul>
+          <ul className="m-0 flex list-none flex-col gap-4 p-0">{recentChanges.map(changeItem)}</ul>
+          {olderChanges.length > 0 ? (
+            <details data-part="older-changes">
+              <summary className="cursor-pointer font-semibold text-muted">
+                Older changes ({olderChanges.length})
+              </summary>
+              <ul className="m-0 mt-4 flex list-none flex-col gap-4 p-0">
+                {olderChanges.map(changeItem)}
+              </ul>
+            </details>
+          ) : null}
         </section>
       ) : null}
 
