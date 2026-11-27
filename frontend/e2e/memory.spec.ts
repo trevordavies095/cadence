@@ -35,8 +35,14 @@ test.describe("what Coach Cade noted", () => {
     // The note is now part of what the coach knows.
     await page.goto("/dossier");
     await expect(page.getByRole("region", { name: "Changes" })).toContainText("Noted by Coach Cade");
-    const updateSection = page.getByText(/^Coach update/);
-    await expect(updateSection).toHaveCount(1);
+    // It sits in the one folded group of what Coach Cade has noted, not among the sections about you.
+    const updates = page.locator('[data-part="coach-updates"]');
+    await expect(updates.locator("summary")).toHaveText("Since the last tidy-up (1)");
+    await expect(updates.locator('[data-part="coach-update"]')).toHaveCount(1);
+    await expect(updates.locator('[data-part="coach-update"]')).toBeHidden();
+    await updates.locator("summary").click();
+    await expect(updates.locator('[data-part="coach-update"]')).toBeVisible();
+    await expect(page.getByRole("region", { name: "What Coach Cade knows" }).getByText(/^Coach update/)).toHaveCount(0);
 
     // Undo from the card, and the profile goes back.
     await page.goto("/chat");
@@ -45,7 +51,7 @@ test.describe("what Coach Cade noted", () => {
     await expect(page.locator('[aria-label="You undid this"]').last()).toBeVisible();
 
     await page.goto("/dossier");
-    await expect(page.getByText(/^Coach update/)).toHaveCount(0);
+    await expect(page.locator('[data-part="coach-updates"]')).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Changes" })).toContainText("undone");
   });
 

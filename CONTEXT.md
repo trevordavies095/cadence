@@ -12,6 +12,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | correction | **Fix something** | An athlete sentence that rewrites part of About you. |
 | training goal, goal version | **What you’re training for** (the question in onboarding and the section in Settings) | What the athlete is training for, stored as a record and appended, never edited. Onboarding sets the first one; after that only Settings changes it, and saving there also tells Coach Cade "My goal is now …" through **Fix something**. Chat never changes it. |
 | audit | "Coach Cade tidied what it knows about you" | The periodic trim of About you. |
+| coach update sections | **Since the last tidy-up (19)** (the folded group on About you), each week under its dates | The dated "Coach update" sections a weekly read or a chat note appends to About you. They build up until the next audit folds them into the sections about the athlete, so the page shows them as one closed group after those sections, by week. Display only: the text Coach Cade reads is unchanged (ADR 0009). The **Changes** list shows its five most recent entries, with the rest under **Older changes**. |
 | week session | **week**, **this week**, **past week** | The Monday to Sunday unit in the athlete timezone. |
 | ISO week (2026-W43) | "Oct 19 – 25" | Never show the ISO label. |
 | archived week | **past week** | A week before the current one. Chat is read-only there. |
