@@ -30,6 +30,7 @@ export function CoachRead({
   emptyText,
   fresh,
   todayYmd,
+  part = "all",
 }: {
   record: Pick<PrescribedWeekRecord, "analysis" | "safetyCallouts" | "readSections" | "planWarnings">;
   /** Shown when there is no read; nothing is shown when left out. */
@@ -46,6 +47,11 @@ export function CoachRead({
    * stays as a record. Safety notices are never left out.
    */
   todayYmd?: string | null;
+  /**
+   * This week's Plan shows the notices above the days and the read below them,
+   * so it asks for each on its own (ADR 0009). Everywhere else the two stay together.
+   */
+  part?: "all" | "notices" | "read";
 }) {
   // The fold starts open where the read is fresh; Watching's details follow it.
   const [open, setOpen] = useState(fresh);
@@ -84,7 +90,7 @@ export function CoachRead({
   const hasFold = Boolean(sections && (analysis || foldAnswers));
   // With nothing to open, the details have nowhere to fold to, so they stay.
   const watchingDetails = fresh || open || !hasFold;
-  return (
+  const noticeList = (
     <>
       {(record.safetyCallouts ?? []).map((c) => (
         <Notice key={`${c.title}:${c.body}`} title={c.title} severity={c.severity ?? "info"}>
@@ -97,12 +103,18 @@ export function CoachRead({
           {w.body}
         </Notice>
       ))}
+    </>
+  );
+  if (part === "notices") return noticeList;
+  return (
+    <>
+      {part === "all" ? noticeList : null}
       {headline || analysis ? (
         <CoachSurface
           className={cx(
             sections && "flex flex-col gap-4",
             // A notice above gets room, so the two boxes do not read as one.
-            notices > 0 && "mt-3",
+            part === "all" && notices > 0 && "mt-3",
           )}
         >
           {headline ? (

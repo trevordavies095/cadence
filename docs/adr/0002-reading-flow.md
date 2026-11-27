@@ -33,7 +33,7 @@ The substance was good. The demo reads are careful coaching. The tempting fix, a
 
 **Fold by freshness.** On next week's plan and on Your week, where the read is fresh, everything is open. On this week's plan, the answers to last Sunday's questions fold away with the full read, so the week's first days are on the first screen. Safety notices are never folded.
 
-*Status, 2026-11-26: ADR 0009 takes this one step further on this week's plan. Watching keeps only its titles until the full read is opened, and a plan notice about days that have passed is no longer shown there. Safety notices are still never folded.*
+*Status, 2026-11-26: ADR 0009 takes this one step further on this week's plan. Watching keeps only its titles until the full read is opened, and a plan notice about days that have passed is no longer shown there. Safety notices are still never folded. On this week's plan the days now come before the read; the notices stay above them.*
 
 **Shape the writing.** The prompt asks for the conclusion first, one idea per paragraph, at most three sentences per paragraph, sentences under 25 words, and tables for more than three related numbers. Reasoning stays as sentences, because a list carries one relationship at a time and the "why" needs more. Corrections come first: when the athlete ran a session differently from the plan, it is flagged and explained. Flags and answers stand on their own, since the read below them may be folded.
 

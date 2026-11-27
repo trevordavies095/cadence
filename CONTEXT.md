@@ -21,7 +21,7 @@ Two vocabularies live in this repo. The **internal** vocabulary names things in 
 | data-only recap, skipped subjective | "You skipped this week's check-in" | A report built without check-in answers. |
 | weekly reply | "Coach Cade’s read" (the analysis), **next week's plan** (the plan) | The Sunday coach call: analysis of week N and a plan for N+1. Its read has parts the pages lay out on their own (the rows below), stored together as the plan's read sections. |
 | headline | (no label: the first, bold line of Coach Cade’s read) | The one or two sentences Coach Cade would say if it could say only one thing. Also the Sunday message in the conversation and the "From Coach Cade" line on History. |
-| flags | **Watching** | What Coach Cade is watching: up to five, each a short title and one line of detail. Corrections come first. On this week's plan only the titles show until the full read is opened (ADR 0009). |
+| flags | **Watching** | What Coach Cade is watching: up to five, each a short title and one line of detail. Corrections come first. On this week's plan, where the read sits below the days, only the titles show until the full read is opened (ADR 0009). |
 | answers | **Your questions** | One answer per question the athlete asked in the check-in or the conversation, under the question in their own words. |
 | analysis | **The full read** | The rest of Coach Cade’s reasoning. Folded on this week's plan, together with the answers, under **Your questions and the full read**; open on next week's plan and on Your week. |
 | day notes | (no label: the muted line under a day on the plan) | Why this session, this week: one or two sentences beside the session. |
