@@ -368,8 +368,8 @@ export default function AboutYouPage() {
                   </summary>
                   <div className="mt-3 flex flex-col gap-4">
                     <Muted>
-                      What Coach Cade has noted week by week. The next tidy-up folds these into
-                      the sections above.
+                      What Coach Cade has noted since it last tidied this page. It folds these
+                      into the sections above before each weekly read.
                     </Muted>
                     {updateWeeks.map((w) => (
                       <div key={w.label} className="flex flex-col gap-2">

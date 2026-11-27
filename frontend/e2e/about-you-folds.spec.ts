@@ -61,6 +61,7 @@ test.describe("About you once it has grown", () => {
     const updates = knows.locator('[data-part="coach-updates"]');
     await expect(updates.getByText("The calf niggle has cleared.")).toBeHidden();
     await updates.locator("summary").click();
+    await expect(updates).toContainText("It folds these into the sections above before each weekly read.");
     // Two updates from the same week sit under one date.
     await expect(updates.getByRole("heading", { level: 3 })).toHaveText(["Oct 12 – 18", "Oct 19 – 25"]);
     await expect(updates.locator('[data-part="coach-update"]')).toHaveCount(3);

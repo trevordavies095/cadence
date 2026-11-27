@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Hono } from "hono";
 import type { Clock } from "../clock/clock.js";
 import { createProposalFromWeeklyReply } from "../dossier/fromWeeklyReply.js";
+import { runWeeklyTidy } from "../dossier/weeklyTidy.js";
 import {
   LlmHttpError,
   LlmNotConfiguredError,
@@ -269,6 +270,11 @@ export function createReplyRunner(options: WeeklyReplyRouteOptions): ReplyRunner
         };
       }
     } else {
+      // About you is tidied first, so the read is written from the tidy text
+      // (issue #86). It never throws, and a tidy that fails or is held back
+      // leaves the text as it was. A caller that brings its own packet has
+      // already chosen the text Coach Cade reads, so nothing is tidied for it.
+      await runWeeklyTidy({ llmPort, clock, session: focusSession });
       const assembled = await assemblePacket(
         { ...body, weekSessionId: body.weekSessionId ?? focusSession.id },
         tempoPort,

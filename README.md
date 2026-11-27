@@ -143,7 +143,7 @@ stateDiagram-v2
     }
 
     note right of ReviewNotes
-        Every few weeks: "About you" audit
+        Every week, before the read: "About you" tidy
     end note
 
     Week --> Race: final week
