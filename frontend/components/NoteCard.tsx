@@ -32,7 +32,9 @@ function heading(note: ThreadNote): string {
       : "Coach Cade tidied what it knows about you";
   }
   // Something the athlete said yes to, rather than a note the coach took itself.
-  if (note.kind === "onboarding" || note.kind === "audit") return "Saved";
+  if (note.kind === "onboarding") return "Saved";
+  // A tidy-up is applied by the weekly report as often as by Looks right, so it is named for what it is.
+  if (note.kind === "audit") return "Coach Cade tidied what it knows about you";
   if (note.kind === "correction") return "Coach Cade made your change";
   return "Coach Cade noted";
 }

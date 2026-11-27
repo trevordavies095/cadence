@@ -456,7 +456,7 @@ function buildDossierAuditUserPrompt(input: DossierAuditInput): string {
   const week = weekLabelOf(input.week);
   return [
     `Today: ${dayLabel(nowIso)}${week ? ` (week of ${week})` : ""}`,
-    `Next tidy-up due: ${dayLabel(next)} (every ${intervalWeeks} weeks)`,
+    `Next tidy-up due: ${dayLabel(next)} (${intervalWeeks === 1 ? "every week" : `every ${intervalWeeks} weeks`})`,
     "Tidy the document below. Call the submit_about_you tool exactly once with the whole tidied document.",
     "Current About you document:",
     input.currentDossier.body,

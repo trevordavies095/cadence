@@ -935,6 +935,7 @@ export function buildStubDossierAudit(
   const nextDueYmd = addWeeksYmd(updatedYmd, intervalWeeks);
   const updatedDay = formatDayShort(updatedYmd);
   const nextDueDay = formatDayShort(nextDueYmd);
+  const every = intervalWeeks === 1 ? "every week" : `every ${intervalWeeks} weeks`;
 
   const { preface, sections } = splitMarkdownSections(
     input.currentDossier.body,
@@ -989,7 +990,7 @@ export function buildStubDossierAudit(
     title: "Tidy-ups",
     body: [
       `- Last tidy-up: ${updatedDay}`,
-      `- Next one around ${nextDueDay} (every ${intervalWeeks} weeks)`,
+      `- Next one around ${nextDueDay} (${every})`,
     ].join("\n"),
   });
 
@@ -1006,7 +1007,7 @@ export function buildStubDossierAudit(
     removed > 0
       ? `Fold ${removed} older update section(s) into Current Status and remove superseded log entries.`
       : "No older update sections to fold in. Current Status is rewritten.",
-    `Next tidy-up around ${nextDueDay} (every ${intervalWeeks} weeks). Accept to apply.`,
+    `Next tidy-up around ${nextDueDay} (${every}). Accept to apply.`,
   ];
 
   return { summaryBullets, proposedBody };
